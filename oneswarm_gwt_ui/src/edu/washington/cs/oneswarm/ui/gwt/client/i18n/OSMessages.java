@@ -2,7 +2,7 @@ package edu.washington.cs.oneswarm.ui.gwt.client.i18n;
 
 /**
  * Interface to represent the messages contained in resource bundle:
- * 	/Users/michaelp/oneswarm-git/oneswarm_src/oneswarm_gwt_ui/src/edu/washington/cs/oneswarm/ui/gwt/client/i18n/OSMessages.properties'.
+ * 	/Users/michaelp/OneSwarm/oneswarm_gwt_ui/src/edu/washington/cs/oneswarm/ui/gwt/client/i18n/OSMessages.properties'.
  */
 public interface OSMessages extends com.google.gwt.i18n.client.Messages {
   

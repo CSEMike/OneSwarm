@@ -39,17 +39,45 @@
 		 <classpath>
 			<path refid="libs.classpath" />
 		</classpath>
-	  </javac>
+	  </javac>		
    </target>
 
    <target name="core-jar" depends="compile-core" >
-	
-		<!-- Copy the relevant png/jpg files to the output directory. -->
+		
+		<!-- Copy the relevant png/jpg/properties files to the output directory. -->
+		<patternset id="non.source.types">
+		  <include name="**/*.png"/>
+		  <include name="**/*.jpg"/>
+		  <include name="**/*.properties"/>
+		</patternset>
+		
 		<copy todir="${core-bin.dir}">
 			<fileset dir="az_src/src">
-			<include name="**/*.png" />
-			<include name="**/*.jpg" />
-			<include name="**/*.properties" />
+				<patternset refid="non.source.types" />
+			</fileset>
+			<fileset dir="oneswarm_az_mods/mods_autoupdate">
+				<patternset refid="non.source.types" />
+			</fileset>
+			<fileset dir="oneswarm_az_mods/mods_az_bugfixes">
+				<patternset refid="non.source.types" />
+			</fileset>
+			<fileset dir="oneswarm_az_mods/mods_constants">
+				<patternset refid="non.source.types" />
+			</fileset>
+			<fileset dir="oneswarm_az_mods/mods_f2f">
+				<patternset refid="non.source.types" />
+			</fileset>
+			<fileset dir="oneswarm_az_mods/mods_gwt_ui">
+				<patternset refid="non.source.types" />
+			</fileset>
+			<fileset dir="oneswarm_az_mods/mods_onehop">
+				<patternset refid="non.source.types" />
+			</fileset>
+			<fileset dir="oneswarm_az_mods/mods_plugins">
+				<patternset refid="non.source.types" />
+			</fileset>
+			<fileset dir="oneswarm_az_mods/mods_swt">
+				<patternset refid="non.source.types" />
 			</fileset>
 		</copy>
 	
@@ -59,11 +87,14 @@
 			<include name="**/*.class" />
 			<include name="**/*.png" />
 			<include name="**/*.jpg" />
+			<include name="**/*.gif" />
+			<include name="**/*.properties" />
 		</fileset>
 		
-		<!-- Get the version properties files -->
-		<fileset file="oneswarm_az_mods/OneSwarmAzMods.properties" />
+		<fileset file="oneswarm_az_mods/OneSwarmAzMods.properties" /> 
 	  </jar>
+	
+	<copy file="build/core-libs/derby.jar" todir="core-dist" />
 	  
    </target>
 
@@ -243,7 +274,7 @@
 		<echo>Compiling UI code</echo>
 		
 		<!-- Sets gwt.recompile, used by the gwt-webui target. -->
-		<GWTRecompileCheck directory="oneswarm_gwt_ui/src" lastBuild="${build.timestamp}" />
+		<GWTRecompileCheck directory="oneswarm_gwt_ui/src/edu/washington/cs/oneswarm/ui/gwt/client" lastBuild="${build.timestamp}" />
 				
 	</target>
 	
@@ -382,7 +413,7 @@
 		
 	</target>
 	
-	<target name="oneswarm-incremental" description="Builds and packages GWT and F2F components, assuming a previously merged core." depends="gwt-dist,f2f-dist">
+	<target name="inc" description="Builds and packages GWT and F2F components, assuming a previously merged core." depends="gwt-dist,f2f-dist">
 		
 		<unjar dest="merge-scratch/"> 
 			<fileset dir="f2f-dist/" includes="*.jar"/>
@@ -400,6 +431,9 @@
 		</jar>
 		
 	</target>
+	
+	<!-- This target will update only the GWT servlet code. -->
+	<target name="servlet-inc" depends="gwt-servlet,gwt-dist,inc"/>
 	
 	<!-- =============================== Clean ==================== -->
 
@@ -432,5 +466,22 @@
 		<delete file="OneSwarm.jar" />
 		
    </target>
+
+	<!-- A target which runs OneSwarm. (This assumes that the appropriate targets have been built.) -->
+	<target name="run">
+		
+		<echo>Starting OneSwarm...</echo>
+		
+		<java classname="com.aelitis.azureus.ui.Main" failonerror="true" fork="true">
+			<jvmarg value="-XstartOnFirstThread" />
+			<jvmarg value="-Xmx256M" />
+			
+			<classpath>
+				<pathelement location="OneSwarm.jar" />
+				<pathelement location="build/swt/swt-osx-cocoa-x86_64.jar" />
+			</classpath>
+		</java>
+		
+	</target>
 
 </project>

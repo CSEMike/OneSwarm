@@ -4,3 +4,17 @@
 .DS_Store
 .settings
 .svn
+
+# Build output.
+OneSwarm.jar
+core-bin
+core-dist
+f2f-dist
+gwt-bin
+gwt-dist
+merge-scratch
+build.properties
+
+# Run output
+plugins/
+speed_check.log

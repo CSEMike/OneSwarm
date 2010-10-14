@@ -39,7 +39,7 @@ public class FileHandler extends AbstractHandler {
 
 	private final static String EMBEDDED_FILE_NAME = "oneswarmgwt/OneSwarmEmbedded.html";
 
-	public static String mServerRootPath = "/";
+	public static String mServerRootPath = "";
 
 	private static long jarBuiltTime = System.currentTimeMillis();
 	static {
@@ -150,8 +150,8 @@ public class FileHandler extends AbstractHandler {
 		/**
 		 * Hack to deal with 1.6 upgrade hosted / real world mode hacks
 		 */
-		if (fullPath.startsWith("/images") || fullPath.equals("/favicon.ico") || fullPath.startsWith("/player/")) {
-			fullPath = "/oneswarmgwt" + fullPath;
+		if (fullPath.startsWith("images") || fullPath.equals("favicon.ico") || fullPath.startsWith("player/")) {
+			fullPath = mServerRootPath + "oneswarmgwt/" + fullPath;
 		}
 
 		boolean useCache = true;
@@ -204,7 +204,7 @@ public class FileHandler extends AbstractHandler {
 				int oneYearInSeconds = 365 * 24 * 60 * 60;
 				response.setDateHeader(HttpHeaders.EXPIRES, System.currentTimeMillis() + (oneYearInSeconds * 1000));
 				response.setHeader(HttpHeaders.CACHE_CONTROL, "max-age=" + oneYearInSeconds + ", public");
-			} else if (filename.startsWith("/oneswarmgwt/images/") || filename.startsWith("gwt/standard")) {
+			} else if (filename.startsWith("oneswarmgwt/images/") || filename.startsWith("gwt/standard")) {
 				// tell the browser to cache images up to 24 hours to speed up
 				// load
 				int secondsToCache = 24 * 60 * 60;
