@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app>
+
+  <!-- Default page to serve -->
+  <welcome-file-list>
+    <welcome-file>OneSwarmGWT.html</welcome-file>
+  </welcome-file-list>
+  
+  <!-- Servlets -->
+  <servlet>
+    <servlet-name>1S GWT Main Impl</servlet-name>
+    <servlet-class>edu.washington.cs.oneswarm.ui.gwt.server.OneSwarmUIServiceImpl</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>1S GWT Main Impl</servlet-name>
+    <url-pattern>/oneswarmgwt/OneSwarmGWT</url-pattern>
+  </servlet-mapping>
+
+	<servlet>
+	    <servlet-name>Preview image generation</servlet-name>
+	    <servlet-class>edu.washington.cs.oneswarm.ui.gwt.server.PreviewImageGenerator</servlet-class>
+	  </servlet>
+	  <servlet-mapping>
+	    <servlet-name>Preview image generation</servlet-name>
+	    <url-pattern>/oneswarmgwt/image</url-pattern>
+	  </servlet-mapping>
+	
+	<servlet>
+	    <servlet-name>Flash conversion</servlet-name>
+	    <servlet-class>edu.washington.cs.oneswarm.ui.gwt.server.FlashVideoConverterPlayer</servlet-class>
+	  </servlet>
+	  <servlet-mapping>
+	    <servlet-name>Flash conversion</servlet-name>
+	    <url-pattern>/oneswarmgwt/flv_movie</url-pattern>
+	  </servlet-mapping>
+
+</web-app>

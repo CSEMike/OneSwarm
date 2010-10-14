@@ -1,0 +1,2 @@
+OneSwarm is based on Azureus Vuze version 3.0.5.0. Subsequent changes are listed at:
+http://wiki.oneswarm.org/index.php/Changelog

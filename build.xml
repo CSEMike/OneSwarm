@@ -1,0 +1,436 @@
+<?xml version="1.0"?>
+
+<project default="oneswarm-all" name="OneSwarm" basedir=".">
+
+   <property name="root.dir" value="." />
+   <property name="core-libs.dir" value="build/core-libs" />
+   <property name="core-dist.dir" value="core-dist" />
+   <property name="core-bin.dir" value="core-bin" />
+   
+   <property name="generic.excludes" value="**/*.jar **/*.txt **/*.jardesc **/.classpath **/.project **/aereg.lib **/aereg.dll" />
+   <property name="core-dist.jar.excludes" value="${generic.excludes} **/*.java " />
+
+	<!-- ====================================== Custom Ant tasks =============== -->
+	<target name="custom-tasks">
+		<mkdir dir="${root.dir}/ant-custom-bin" />
+		<javac srcdir="ant-custom" destdir="${root.dir}/ant-custom-bin" includeantruntime="true"/>
+	</target>
+
+	<!-- =================================== AZ MODS / CORE ==================== -->
+
+   <target name="core-init" depends="custom-tasks">
+	  <echo message="Building OneSwarmCore.jar..." />
+	  <tstamp/>
+	  <mkdir dir="${root.dir}/${core-dist.dir}" />
+	  <mkdir dir="${root.dir}/${core-bin.dir}" />
+	
+		<!-- Register our custom tasks -->
+		<taskdef name="GWTRecompileCheck" classname="edu.washington.cs.oneswarm.ant.GWTRecompileCheck" classpath="${root.dir}/ant-custom-bin" />
+   </target>
+   
+   <target name="compile-core" depends="core-init" >
+	  <path id="libs.classpath">
+		<fileset dir="${root.dir}/${core-libs.dir}" includes="**/*.jar" />
+		<fileset dir="${root.dir}/build/swt/" includes="**/*.jar" />
+	  </path>
+
+	<javac srcdir="az_src/src:oneswarm_az_mods/mods_autoupdate:oneswarm_az_mods/mods_az_bugfixes:oneswarm_az_mods/mods_constants:oneswarm_az_mods/mods_f2f:oneswarm_az_mods/mods_gwt_ui:oneswarm_az_mods/mods_onehop:oneswarm_az_mods/mods_plugins:oneswarm_az_mods/mods_swt:" destdir="${root.dir}/${core-bin.dir}" nowarn="yes" source="1.5" target="1.5" includeAntRuntime="no" debug="true" debuglevel="lines,vars,source" >
+					
+		 <classpath>
+			<path refid="libs.classpath" />
+		</classpath>
+	  </javac>
+   </target>
+
+   <target name="core-jar" depends="compile-core" >
+	
+		<!-- Copy the relevant png/jpg files to the output directory. -->
+		<copy todir="${core-bin.dir}">
+			<fileset dir="az_src/src">
+			<include name="**/*.png" />
+			<include name="**/*.jpg" />
+			<include name="**/*.properties" />
+			</fileset>
+		</copy>
+	
+	  <jar destfile="${root.dir}/${core-dist.dir}/OneSwarmCore.jar" basedir="${core-bin.dir}" excludes="${core-dist.jar.excludes}" >
+		
+		<fileset dir="${core-bin.dir}">
+			<include name="**/*.class" />
+			<include name="**/*.png" />
+			<include name="**/*.jpg" />
+		</fileset>
+		
+		<!-- Get the version properties files -->
+		<fileset file="oneswarm_az_mods/OneSwarmAzMods.properties" />
+	  </jar>
+	  
+   </target>
+
+	<!-- =============================== F2F ==================== -->
+	
+	<property name="f2f-libs.dir" value="build/f2f-libs" />
+   	<property name="publickey.jar" value="${f2f-libs.dir}/publickey-client.jar" />
+	<property name="smack.jar" value="${f2f-libs.dir}/smack.jar" />
+	<property name="ecs.jar" value="${f2f-libs.dir}/ecs-1.4.2.jar" />
+	<property name="apache-io.jar" value="build/gwt-libs/commons-http/commons-io-1.3.2.jar" />
+	
+	<property name="f2f-bin.dir" value="${root.dir}/f2f-bin" />
+	<property name="f2f-src.dir" value="${root.dir}/oneswarm_f2f/src" />
+	
+	<property name="f2f-plugin.dir" value="${root.dir}/f2f-dist/" />
+	<property name="f2f-plugin.jar" value="${f2f-plugin.dir}/osf2f_plugin.jar" />
+	
+	<property name="gwt.dir" value="${root.dir}/oneswarm_gwt_ui/lib/gwt" />
+	
+	<path id="libs.classpath">
+		<fileset dir="${root.dir}/${core-libs.dir}" includes="**/*.jar" />
+		<fileset dir="${root.dir}/swt/" includes="**/*.jar" />
+	</path>
+	
+	<path id="f2f.class.path">
+		<pathelement path="${publickey.jar}" />
+		<pathelement path="${smack.jar}" />
+		<pathelement path="${ecs.jar}" />
+		<pathelement path="${apache-io.jar}" />
+		<path refid="libs.classpath" />
+		
+		<!-- For DateTimeFormat, TODO: remove dependency or merge. -->
+		<pathelement path="build/gwt-libs/gwt/gwt-servlet.jar" />
+		
+		<!-- Built by the core-jar target -->
+		<pathelement path="core-dist/OneSwarmCore.jar" />
+	</path>
+	
+	<target name="f2f-compile" description="Compiles the F2F plugin" depends="core-jar">
+		<mkdir dir="${f2f-bin.dir}" />
+
+		<javac srcdir="${f2f-src.dir}" destdir="${f2f-bin.dir}" nowarn="yes" source="1.5" target="1.5" includeAntRuntime="no" debug="true" debuglevel="lines,vars,source" fork="yes" memoryMaximumSize="256m">
+			<classpath refid="f2f.class.path" />
+		</javac>
+	</target>
+	
+	<target name="f2f-dist" depends="f2f-compile" description="Create the F2F jar.">
+				
+		<mkdir dir="${f2f-plugin.dir}" />
+		<jar destfile="${f2f-plugin.jar}" basedir="${f2f-bin.dir}" includes="**/*.class,**/*.html">
+			<fileset file="${root.dir}/oneswarm_f2f/plugin.properties" />
+			<manifest>
+				<attribute name="Main-Class" value="${MainClass}" />
+			</manifest>
+		</jar>
+		<copy todir="${f2f-plugin.dir}" file="${smack.jar}" />
+		<copy todir="${f2f-plugin.dir}" file="${publickey.jar}" />
+		<copy todir="${f2f-plugin.dir}" file="${ecs.jar}" />
+		<copy todir="${f2f-plugin.dir}" file="${apache-io.jar}" />
+		
+		<!-- Delete the bin directory tree -->
+		<delete dir="${bin.dir}" />
+	</target>
+	
+	<target name="f2f-version">
+		<!-- update the version -->
+		<propertyfile file="${root.dir}/onewarm_f2f/plugin.properties" comment="Build version info">
+			<entry key="OSF2F_MINOR_VERSION" default="0" type="int" operation="+" value="1" />
+		</propertyfile>
+		<property file="${root.dir}/oneswarm_f2f/plugin.properties" />
+		<propertyfile file="${root.dir}/oneswarm_f2f/plugin.properties" comment="Build version info">
+			<entry key="plugin.version" value="${OSF2F_MAJOR_VERSION}.${OSF2F_MINOR_VERSION}" />
+		</propertyfile>
+	</target>
+
+	<target name="f2f-deploy" depends="f2f-version,f2f-dist" description="Called from the deploy script -- updates the build version, pack the jar, and signs it.">
+		<copy file="${root.dir}/oneswarm_f2f/plugin.properties" todir="${f2f-plugin.dir}"/>
+
+		<!-- pack the file -->
+		<exec executable="pack200">
+			<arg value="--repack" />
+			<arg value="${f2f-plugin.jar}" />
+		</exec>
+
+	</target>
+	
+	<!-- =============================== GWT ==================== -->
+	
+	<property name="root.dir" value="." />
+	<property name="gwt_output.dir" value="${root.dir}/gwt-dist/war/oneswarmgwt" />
+	
+	<property name="jetty.dir" value="build/gwt-libs/jetty" />
+	<property name="jaudio.jar" value="build/gwt-libs/jaudiotagger.jar" />
+	
+	<path id="project.class.path.servlet">
+		
+		<!-- GWT core -->
+		<pathelement path="build/gwt-libs/gwt/gwt-user.jar" />
+		<pathelement path="build/gwt-libs/gwt/gwt-dev.jar" />
+		<pathelement path="build/gwt-libs/gwt/gwt-servlet.jar" />
+		
+		<!-- GWT add-ons -->
+		<pathelement path="build/gwt-libs/gwt-incubator/gwt-incubator.jar" />
+		<pathelement path="build/gwt-libs/gwt-dnd/gwt-dnd-2.6.5.jar" />
+		
+		<pathelement path="build/gwt-libs/gwt-incubator/gwt-incubator.jar" />
+		<pathelement path="build/gwt-libs/gwt-fx/gwt-fx 2.0.0 RC2.jar" />
+		<pathelement path="build/gwt-libs/gwt-dnd/gwt-dnd-2.6.5.jar" />
+		<pathelement path="build/gwt-libs/commons-http/httpcore-4.0.1.jar" />
+		<pathelement path="build/gwt-libs/commons-http/httpmime-4.0.jar" />
+		<pathelement path="build/gwt-libs/commons-http/httpclient-4.0.jar" />
+		<pathelement path="build/gwt-libs/commons-http/apache-mime4j-0.6.jar" />
+		<pathelement path="build/gwt-libs/commons-http/jcip-annotations.jar" />
+		<pathelement path="build/gwt-libs/commons-http/commons-logging-1.1.1.jar" />
+		<pathelement path="build/gwt-libs/commons-http/commons-codec-1.4.jar" />
+		
+		<pathelement path="${jaudio.jar}" />
+		
+		<pathelement path="${jetty.dir}/jetty.jar" />
+		<pathelement path="${jetty.dir}/jetty-util.jar" />
+		<pathelement path="${jetty.dir}/jetty-servlet-api.jar" />
+		<pathelement path="${jetty.dir}/jetty-management.jar" />
+		
+		<pathelement path="${f2f-plugin.jar}" />
+		<pathelement path="${root.dir}/${core-dist.dir}/OneSwarmCore.jar" />
+		
+		<!-- For SWT libraries. -->
+		<path refid="libs.classpath" />
+	</path>
+	
+	
+	<!-- 
+		Check the last modified time of the GWT source code. (Used to skip lengthy GWT compiler invocation
+		if possible.)
+	-->
+	<property file="oneswarm_gwt_ui/build.properties" />
+	<condition property="gwt.code.modified">
+		<isset property="build.timestamp" />
+	</condition>
+	
+	<target name="gwt-war-init" description="Creates the war/ directory structure in the gwt output directory.">
+		<mkdir dir="${root.dir}/gwt-bin/war" />
+		<copy todir="${root.dir}/gwt-bin/war">
+			<fileset dir="oneswarm_gwt_ui/war"/>
+		</copy>
+	</target>
+	
+	<path id="gwt.classpath">
+		
+		<!-- Other 1S components -->
+		<pathelement path="core-dist/OneSwarmCore.jar" />
+		<pathelement path="gwt-bin/war/WEB-INF/classes" />
+		
+		<!-- GWT core -->
+		<pathelement path="build/gwt-libs/gwt/gwt-user.jar" />
+		<pathelement path="build/gwt-libs/gwt/gwt-dev.jar" />
+		<pathelement path="build/gwt-libs/gwt/gwt-servlet.jar" />
+		
+		<!-- GWT add-ons -->
+		<pathelement path="build/gwt-libs/gwt-incubator/gwt-incubator.jar" />
+		<pathelement path="build/gwt-libs/gwt-dnd/gwt-dnd-2.6.5.jar" />
+		
+		<!-- src -->
+		<pathelement path="oneswarm_gwt_ui/src" />
+		
+	</path>
+	
+	<target name="gwt-servlet"  depends="f2f-dist,gwt-war-init">
+		
+		<!-- compile the servlet code -->
+		<javac destdir="${root.dir}/gwt-bin/war/WEB-INF/classes" nowarn="yes" source="1.5" target="1.5" includeAntRuntime="no" debug="true" debuglevel="lines,vars,source" fork="yes" memoryMaximumSize="256m">
+			<src path="${root.dir}/oneswarm_gwt_ui/src" />
+			<src path="${root.dir}/oneswarm_gwt_ui/src_planetlab"/>
+			<classpath refid="project.class.path.servlet" />
+		</javac>
+
+		<echo>Compiling UI code</echo>
+		
+		<!-- Sets gwt.recompile, used by the gwt-webui target. -->
+		<GWTRecompileCheck directory="oneswarm_gwt_ui/src" lastBuild="${build.timestamp}" />
+				
+	</target>
+	
+	<target name="gwt-webui" description="Java -> Javascript using the GWT compiler." if="gwt.recompile" depends="gwt-servlet,i18n-OsMessages,gwt-war-init">
+		
+		<!-- 
+		  Invoke the GWT compiler. The build can be customized during development to 
+		  significantly reduce build times. See:
+		  src/edu/washington/cs/oneswarm/ui/gwt/OneSwarmGWT.gwt.xml
+		  for details.
+		-->
+		
+		<java failonerror="true" dir="oneswarm_gwt_ui" fork="true" classname="com.google.gwt.dev.Compiler">
+			<classpath>
+				<path refid="gwt.classpath" />
+			</classpath>
+			<jvmarg value="-XstartOnFirstThread" />
+			<jvmarg value="-Xmx512M" />
+			
+			<arg value="-localWorkers" />
+			<arg value="2" />
+			
+			<arg value="-war" />
+			<arg value="../gwt-bin/war" />
+			
+			<arg value="edu.washington.cs.oneswarm.ui.gwt.OneSwarmGWT" />
+		</java>
+
+		<!-- 
+			Record the last time this was built - this is used in the gwt.code.modified condition to detect 
+			whether a recompile is necessary. (Note: the pattern much match that used by the
+			GWTRecompileCheck custom task.)
+		-->
+		<propertyfile file="oneswarm_gwt_ui/build.properties">
+		    <entry key="build.timestamp"
+		     type="date"
+		     value="now"
+		     pattern="MM/dd/yyyy HH:mm"/>
+		</propertyfile>
+	</target>
+	
+	<property name="gwt-deploy.dir" value="${root.dir}/gwt-dist" />
+	
+	<target name="i18n-OsMessages" description="(Re)generates the OSMessages interface based on the OSMessages.properties file." if="gwt.recompile">
+		
+		<echo>Generating language files...</echo>
+		
+		<javac destdir="${root.dir}/gwt-bin/war/WEB-INF/classes" nowarn="yes" source="1.5" target="1.5" includeAntRuntime="no" debug="true" debuglevel="lines,vars,source" fork="yes" memoryMaximumSize="256m">
+			<src path="${root.dir}/oneswarm_gwt_ui/gwt_override"/>
+			<classpath refid="project.class.path.servlet" />
+		</javac>
+		
+		<java classname="com.google.gwt.i18n.tools.I18NSync" failonerror="true">
+			<arg value="edu.washington.cs.oneswarm.ui.gwt.client.i18n.OSMessages" />
+			<arg value="-out" />
+			<arg value="oneswarm_gwt_ui/src" />
+			<arg value="-createMessages" />
+			<classpath>
+				<pathelement location="gwt-bin/war/WEB-INF/classes" />
+				<pathelement location="oneswarm_gwt_ui/src/" />
+				<pathelement location="build/gwt-libs/gwt/gwt-dev.jar" />
+				<pathelement location="build/gwt-libs/gwt/gwt-user.jar" />
+			</classpath>
+		</java>
+		
+	</target>
+	
+	<target name="gwt-dist" description="Creates the GWT dist package." depends="gwt-webui">
+		
+		<jar destfile="gwt-dist/oneswarm_gwt_ui.jar">
+
+			<!-- Az plugin properties file -->
+			<fileset file="oneswarm_gwt_ui/plugin.properties" />
+			
+			<!-- RPC serializable file -->
+			<fileset dir="${root.dir}/gwt-bin/war/oneswarmgwt/">
+				<include name="**/*.rpc" />
+			</fileset>
+
+			<!-- Servlet binaries -->
+			<fileset dir="gwt-bin/war/WEB-INF/classes">
+				<include name="**/*.class" />
+				<exclude name="**/planetlab/**.class" unless="plab.build" />
+			</fileset>
+			
+			<!-- Language files -->
+			<fileset dir="${root.dir}/oneswarm_gwt_ui/src">
+				<include name="edu/washington/cs/oneswarm/ui/gwt/client/i18n/*.properties" />
+			</fileset>
+			
+			<!-- www/www directory; i.e. the generated java script -->
+			<fileset dir="gwt-bin/war/" includes="war">
+				<include name="oneswarmgwt/**" />
+			</fileset>
+			
+		</jar>
+		
+		<!-- Libraries -->
+		<copy file="${jetty.dir}/jetty.jar" todir="${gwt-deploy.dir}" />
+		<copy file="${jetty.dir}/jetty-util.jar" todir="${gwt-deploy.dir}" />
+		<copy file="${jetty.dir}/jetty-servlet-api.jar" todir="${gwt-deploy.dir}" />
+		<copy file="${jetty.dir}/jetty-management.jar" todir="${gwt-deploy.dir}" />
+		<copy file="build/gwt-libs/gwt/gwt-servlet.jar" todir="${gwt-deploy.dir}" />
+		<copy file="${jaudio.jar}" todir="${gwt-deploy.dir}" />
+
+		<copy file="${root.dir}/build/gwt-libs/commons-http/httpcore-4.0.1.jar" todir="${gwt-deploy.dir}" />
+		<copy file="${root.dir}/build/gwt-libs/commons-http/httpmime-4.0.jar" todir="${gwt-deploy.dir}" />
+		<copy file="${root.dir}/build/gwt-libs/commons-http/httpclient-4.0.jar" todir="${gwt-deploy.dir}" />
+		<copy file="${root.dir}/build/gwt-libs/commons-http/apache-mime4j-0.6.jar" todir="${gwt-deploy.dir}" />
+		<copy file="${root.dir}/build/gwt-libs/commons-http/jcip-annotations.jar" todir="${gwt-deploy.dir}" />
+		<copy file="${root.dir}/build/gwt-libs/commons-http/commons-logging-1.1.1.jar" todir="${gwt-deploy.dir}" />
+		<copy file="${root.dir}/build/gwt-libs/commons-http/commons-codec-1.4.jar" todir="${gwt-deploy.dir}" />
+		
+	</target>
+	
+	<!-- =============================== Merge ==================== -->
+	<target name="oneswarm-all" description="Builds and packages all required components." depends="gwt-dist,f2f-dist,core-jar">
+		
+		<delete dir="merge-scratch/" failonerror="false"/>
+		<mkdir dir="merge-scratch"/> 
+		<unjar dest="merge-scratch/"> 
+			<fileset dir="core-dist/" includes="*.jar"/> 
+			<fileset dir="f2f-dist/" includes="*.jar"/>
+			<fileset dir="gwt-dist/" includes="*.jar"/>
+		</unjar>
+		
+		<!-- Remove any junk META-INF or properties that may have leaked in during the merge. -->
+		<delete dir="merge-scratch/META-INF"/>
+		<delete file="merge-scratch/plugin.properties"/> 
+		
+		<jar destfile="OneSwarm.jar" basedir="merge-scratch">
+			<manifest>
+				<attribute name="Main-Class" value="org.gudy.azureus2.ui.swt.Main"/>
+			</manifest>
+		</jar>
+		
+	</target>
+	
+	<target name="oneswarm-incremental" description="Builds and packages GWT and F2F components, assuming a previously merged core." depends="gwt-dist,f2f-dist">
+		
+		<unjar dest="merge-scratch/"> 
+			<fileset dir="f2f-dist/" includes="*.jar"/>
+			<fileset dir="gwt-dist/" includes="*.jar"/>
+		</unjar>
+		
+		<!-- Remove any junk META-INF or properties that may have leaked in during the merge. -->
+		<delete dir="merge-scratch/META-INF"/>
+		<delete file="merge-scratch/plugin.properties"/> 
+		
+		<jar destfile="OneSwarm.jar" basedir="merge-scratch">
+			<manifest>
+				<attribute name="Main-Class" value="org.gudy.azureus2.ui.swt.Main"/>
+			</manifest>
+		</jar>
+		
+	</target>
+	
+	<!-- =============================== Clean ==================== -->
+
+   <target name="clean" >
+
+		<!-- Ant tasks -->
+		<delete dir="${root.dir}/ant-custom-bin" />
+		
+		<!-- Core -->
+		<delete quiet="true" >
+			<fileset dir="${root.dir}/azureus/com" includes="**/*.class"/>
+			<fileset dir="${root.dir}/azureus/org" includes="**/*.class"/>
+			<fileset dir="${root.dir}/azureus/bin" includes="**/*.class"/>
+	  	</delete>
+
+		<delete dir="${root.dir}/${core-dist.dir}" />
+		<delete dir="${root.dir}/${core-bin.dir}" />
+		
+		<!-- F2F -->
+		<delete dir="${f2f-bin.dir}" />
+		<delete dir="${f2f-plugin.dir}" />
+		
+		<!-- GWT -->
+		<delete dir="gwt-dist" />
+		<delete dir="gwt-bin" />
+		<delete file="oneswarm_gwt_ui/build.properties" />
+		
+		<!-- Merged jars -->
+		<delete dir="merge-scratch" />
+		<delete file="OneSwarm.jar" />
+		
+   </target>
+
+</project>
