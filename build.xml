@@ -321,6 +321,7 @@
 		
 		<!-- src -->
 		<pathelement path="oneswarm_gwt_ui/src" />
+		<pathelement path="oneswarm_az_mods/mods_gwt_ui" />
 		
 	</path>
 	
