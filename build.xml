@@ -48,6 +48,7 @@
 		<patternset id="non.source.types">
 		  <include name="**/*.png"/>
 		  <include name="**/*.jpg"/>
+		  <include name="**/*.gif"/>
 		  <include name="**/*.properties"/>
 		</patternset>
 		
