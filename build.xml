@@ -2,11 +2,71 @@
 
 <project default="oneswarm-all" name="OneSwarm" basedir=".">
 
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties" />
+
    <property name="root.dir" value="." />
    <property name="core-libs.dir" value="build/core-libs" />
    <property name="core-dist.dir" value="core-dist" />
    <property name="core-bin.dir" value="core-bin" />
+
+	<!-- Conditions which we need for platform specific build options. -->
+	<condition property="isMac">
+		<os family="mac" />
+	</condition>
+
+	<condition property="isWindows">
+		<os family="windows" />
+	</condition>
+	
+	<condition property="isUnixButNotMacOsX">
+	  <and>
+	    <os family="unix"/>
+	    <not>
+	      <os family="mac"/>
+	    </not>
+	  </and>
+	</condition>
    
+	<!-- 
+		Mac SWT apps require startOnFirstThread, but this argument usually throws an 
+		error on other platforms.
+	 -->
+	<if>
+	 <istrue value="${isMac}" />
+		<then>
+			<property name="optStartOnFirstThread" value="-XstartOnFirstThread" />
+		</then>
+		<else>
+			<property name="optStartOnFirstThread" value="" />
+		</else>
+	</if>
+	
+	<!--
+		Choose the appropriate SWT jar for the given platform. This is used by the
+		run target.
+	-->
+	<if>
+		<istrue value="${isMac}" />
+		<then>
+			<property name="platform.swt.jar" value="build/swt/swt-osx-cocoa-x86_64.jar" />
+		</then>
+		<elseif>
+			<istrue value="${isUnixButNotMacOSX}" />
+			<then>
+				<property name="platform.swt.jar" value="build/swt/swt-gtk-linux-x86.jar" />
+			</then>
+		</elseif>
+		<elseif>
+			<istrue value="${isWindows}" />
+			<then>
+				<property name="platform.swt.jar" value="build/swt/swt-win32-x86.jar" />
+			</then>
+		</elseif>
+		<else>
+			<echo>Unrecognized platform. (Likely no SWT available.)</echo>
+		</else>
+	</if>
+
    <property name="generic.excludes" value="**/*.jar **/*.txt **/*.jardesc **/.classpath **/.project **/aereg.lib **/aereg.dll" />
    <property name="core-dist.jar.excludes" value="${generic.excludes} **/*.java " />
 
@@ -236,7 +296,7 @@
 		<isset property="build.timestamp" />
 	</condition>
 	
-	<target name="gwt-war-init" description="Creates the war/ directory structure in the gwt output directory.">
+	<target name="gwt-war-init" description="Creates the war/ directory structure in the gwt output directory.">		
 		<copy todir="${root.dir}/gwt-bin/war">
 			<fileset dir="oneswarm_gwt_ui/war"/>
 		</copy>		
@@ -287,12 +347,13 @@
 		  src/edu/washington/cs/oneswarm/ui/gwt/OneSwarmGWT.gwt.xml
 		  for details.
 		-->
-		
+				
 		<java failonerror="true" dir="oneswarm_gwt_ui" fork="true" classname="com.google.gwt.dev.Compiler">
 			<classpath>
 				<path refid="gwt.classpath" />
 			</classpath>
-			<jvmarg value="-XstartOnFirstThread" />
+			
+			<jvmarg value="${optStartOnFirstThread}" />			
 			<jvmarg value="-Xmx512M" />
 			
 			<arg value="-localWorkers" />
@@ -344,6 +405,8 @@
 	</target>
 	
 	<target name="gwt-dist" description="Creates the GWT dist package." depends="gwt-webui">
+		
+		<mkdir dir="${root.dir}/gwt-dist" />
 		
 		<jar destfile="gwt-dist/oneswarm_gwt_ui.jar">
 
@@ -474,12 +537,12 @@
 		<echo>Starting OneSwarm...</echo>
 		
 		<java classname="com.aelitis.azureus.ui.Main" failonerror="true" fork="true">
-			<jvmarg value="-XstartOnFirstThread" />
+			<jvmarg value="${optStartOnFirstThread}" />
 			<jvmarg value="-Xmx256M" />
 			
 			<classpath>
 				<pathelement location="OneSwarm.jar" />
-				<pathelement location="build/swt/swt-osx-cocoa-x86_64.jar" />
+				<pathelement location="${platform.swt.jar}" />
 			</classpath>
 		</java>
 		
