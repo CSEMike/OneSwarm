@@ -4,6 +4,7 @@
 .DS_Store
 .settings
 .svn
+.cvsignore
 
 # Build output.
 OneSwarm.jar
