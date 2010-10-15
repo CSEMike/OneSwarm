@@ -5,6 +5,7 @@
 .settings
 .svn
 .cvsignore
+.externalToolBuilders
 
 # Build output.
 OneSwarm.jar
