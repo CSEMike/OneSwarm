@@ -92,6 +92,7 @@
 	  <path id="libs.classpath">
 		<fileset dir="${root.dir}/${core-libs.dir}" includes="**/*.jar" />
 		<fileset dir="${root.dir}/build/swt/" includes="**/*.jar" />
+		<fileset dir="${root.dir}/build/gwt-libs/gwt/" includes="**/*.jar" />
 	  </path>
 
 	<javac srcdir="az_src/src:oneswarm_az_mods/mods_autoupdate:oneswarm_az_mods/mods_az_bugfixes:oneswarm_az_mods/mods_constants:oneswarm_az_mods/mods_f2f:oneswarm_az_mods/mods_gwt_ui:oneswarm_az_mods/mods_onehop:oneswarm_az_mods/mods_plugins:oneswarm_az_mods/mods_swt:" destdir="${root.dir}/${core-bin.dir}" nowarn="yes" source="1.5" target="1.5" includeAntRuntime="no" debug="true" debuglevel="lines,vars,source" >
