@@ -20,3 +20,6 @@ build.properties
 # Run output
 plugins/
 speed_check.log
+
+# Eclipse
+eclipse-bin/
