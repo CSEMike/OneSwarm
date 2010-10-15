@@ -240,6 +240,7 @@
 		<copy todir="${root.dir}/gwt-bin/war">
 			<fileset dir="oneswarm_gwt_ui/war"/>
 		</copy>
+		<mkdir dir="${root.dir}/gwt-bin/war/WEB-INF/classes" />
 	</target>
 	
 	<path id="gwt.classpath">
