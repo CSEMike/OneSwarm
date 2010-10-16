@@ -18,12 +18,14 @@
 		<os family="windows" />
 	</condition>
 	
-	<condition property="isUnixButNotMacOsX">
+	<condition property="isUnix">
+		<os family="unix" />
+	</condition>
+	
+	<condition property="isUnixButNotMacOSX">
 	  <and>
-	    <os family="unix"/>
-	    <not>
-	      <os family="mac"/>
-	    </not>
+	   	<isfalse value="${isMac}" />
+		<istrue value="${isUnix}" />
 	  </and>
 	</condition>
    
@@ -37,7 +39,8 @@
 			<property name="optStartOnFirstThread" value="-XstartOnFirstThread" />
 		</then>
 		<else>
-			<property name="optStartOnFirstThread" value="" />
+			<!-- Because empty properties cause errors, use something innocuous. -->
+			<property name="optStartOnFirstThread" value="-Xms64M" />
 		</else>
 	</if>
 	
@@ -48,17 +51,20 @@
 	<if>
 		<istrue value="${isMac}" />
 		<then>
+			<echo>Using OSX SWT</echo>
 			<property name="platform.swt.jar" value="build/swt/swt-osx-cocoa-x86_64.jar" />
 		</then>
 		<elseif>
 			<istrue value="${isUnixButNotMacOSX}" />
 			<then>
+				<echo>Using Linux SWT</echo>
 				<property name="platform.swt.jar" value="build/swt/swt-gtk-linux-x86.jar" />
 			</then>
 		</elseif>
 		<elseif>
 			<istrue value="${isWindows}" />
 			<then>
+				<echo>Using Windows SWT</echo>
 				<property name="platform.swt.jar" value="build/swt/swt-win32-x86.jar" />
 			</then>
 		</elseif>
