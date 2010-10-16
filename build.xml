@@ -28,6 +28,10 @@
 		<istrue value="${isUnix}" />
 	  </and>
 	</condition>
+	
+	<condition property="is64Bit">
+		<equals arg1="${sun.arch.data.model}" arg2="64" />
+	</condition>
    
 	<!-- 
 		Mac SWT apps require startOnFirstThread, but this argument usually throws an 
@@ -57,8 +61,17 @@
 		<elseif>
 			<istrue value="${isUnixButNotMacOSX}" />
 			<then>
-				<echo>Using Linux SWT</echo>
-				<property name="platform.swt.jar" value="build/swt/swt-gtk-linux-x86.jar" />
+				<if>
+					<istrue value="${is64Bit}"/>
+					<then>
+						<echo>Using Linux SWT-64 bit</echo>
+						<property name="platform.swt.jar" value="build/swt/swt-gtk-linux-x86_64.jar" />
+					</then>
+					<else>
+						<echo>Using Linux SWT-32 bit</echo>
+						<property name="platform.swt.jar" value="build/swt/swt-gtk-linux-x86.jar" />
+					</else>
+				</if>
 			</then>
 		</elseif>
 		<elseif>
