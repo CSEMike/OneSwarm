@@ -23,10 +23,13 @@ package org.gudy.azureus2.ui.swt.mainwindow;
 
 import java.util.*;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.internat.MessageText;
@@ -38,6 +41,7 @@ import org.gudy.azureus2.core3.util.*;
 import org.gudy.azureus2.platform.PlatformManagerFactory;
 
 import com.aelitis.azureus.ui.IUIIntializer;
+import com.aelitis.azureus.ui.UIFunctionsManager;
 
 /**
  * The main SWT Thread, the only one that should run any GUI code.
@@ -149,23 +153,56 @@ public class SWTThread {
 			}
 		});
     
-    if ( Constants.isOSX ){
-    	
-    		// use reflection here so we decouple generic SWT from OSX specific stuff to an extent
-    	
-    	 try{
-    	 	
-            Class ehancerClass = Class.forName("org.gudy.azureus2.ui.swt.osx.CarbonUIEnhancer");
-            
-            Constructor constructor = ehancerClass.getConstructor(new Class[]{});
-            
-            constructor.newInstance(new Object[] {});
+	if (Constants.isOSX) {
+		
+		// On Cocoa, we get a Close trigger on display.  Need to check if all
+		// platforms send this.
+		display.addListener(SWT.Close, new Listener() {
+			public void handleEvent(Event event) {
+				event.doit = UIFunctionsManager.getUIFunctions().dispose(false, false);
+			}
+		});
 
-        } catch (Exception e) {
-        	
-            Debug.printStackTrace(e);
-        }
-    }
+		String platform = SWT.getPlatform();
+		// use reflection here so we decouple generic SWT from OSX specific stuff to an extent
+
+		if (platform.equals("carbon")) {
+			try {
+
+				Class<?> ehancerClass = Class.forName("org.gudy.azureus2.ui.swt.osx.CarbonUIEnhancer");
+
+				Constructor<?> constructor = ehancerClass.getConstructor(new Class[] {});
+
+				constructor.newInstance(new Object[] {});
+
+			} catch (Throwable e) {
+
+				Debug.printStackTrace(e);
+			}
+		} else if (platform.equals("cocoa")) {
+			try {
+
+				Class<?> ehancerClass = Class.forName("org.gudy.azureus2.ui.swt.osx.CocoaUIEnhancer");
+
+				Method mGetInstance = ehancerClass.getMethod("getInstance", new Class[0]);
+				Object claObj = mGetInstance.invoke(null, new Object[0] );
+
+				Method mHookAppMenu = claObj.getClass().getMethod("hookApplicationMenu", new Class[] {});
+				if (mHookAppMenu != null) {
+					mHookAppMenu.invoke(claObj, new Object[0]);
+				}
+
+				Method mHookDocOpen = claObj.getClass().getMethod("hookDocumentOpen", new Class[] {});
+				if (mHookDocOpen != null) {
+					mHookDocOpen.invoke(claObj, new Object[0]);
+				}
+				
+			} catch (Throwable e) {
+
+				Debug.printStackTrace(e);
+			}
+		}
+	}   
     
     if (app != null) {
 			runner = new Thread(new AERunnable() {

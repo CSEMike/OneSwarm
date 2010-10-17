@@ -6,6 +6,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Device;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.internal.C;
+import org.eclipse.swt.internal.Callback;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Shell;
@@ -48,6 +49,8 @@ import com.aelitis.azureus.ui.UIFunctionsManager;
  */
 public class CocoaUIEnhancer
 {
+	public static final boolean is64bit = (System.getProperty("os.arch").indexOf("64") != -1);
+	
 	private static final boolean DEBUG = false;
 
 	private static Object /*Callback*/ callBack3;
@@ -156,7 +159,7 @@ public class CocoaUIEnhancer
 				String.class,
 				int.class
 			});
-			//callBack3 = new Callback(clazz, "actionProc", 3);
+//			callBack3 = new Callback(clazz, "actionProc", 3);
 			callBack3 = consCallback.newInstance(new Object[] {
 				clazz,
 				"actionProc",
@@ -182,6 +185,11 @@ public class CocoaUIEnhancer
 		} catch (Throwable e) {
 			Debug.out(e);
 		}
+	}
+	
+	/** Will be used with 64-bit SWT. */
+	static long actionProc(long id, long sel, long arg0) {
+		return (long)actionProc((int) id, (int) sel, (int) arg0);
 	}
 
 	static int actionProc(int id, int sel, int arg0) {
@@ -246,6 +254,13 @@ public class CocoaUIEnhancer
 
 		}
 		return 0;
+	}
+	
+	/** Will be used with 64-bit SWT. */
+	static long actionProc(long id, long sel,
+			long arg0, long arg1)
+			throws Throwable {
+		return (long)actionProc((int) id, (int) sel, (int) arg0, (int) arg1); 
 	}
 
 	static int /*long*/actionProc(int /*long*/id, int /*long*/sel,
@@ -671,7 +686,7 @@ public class CocoaUIEnhancer
 			menuId,
 			osCls.getField("sel_insertItem_atIndex_").get(null),
 			sep,
-			numOfItems - 1
+			is64bit ? (long) (numOfItems - 1) : (numOfItems - 1)
 		});
 
 		numOfItems++;
@@ -697,7 +712,7 @@ public class CocoaUIEnhancer
 			});
 			invoke(nsmenuitemCls, nsItem, "initWithTitle", new Object[] {
 				nsStrTitle,
-				0,
+				is64bit ? 0L : 0,
 				nsStrEmpty
 			});
 			invoke(nsItem, "setTarget", new Class<?>[] {
@@ -714,7 +729,7 @@ public class CocoaUIEnhancer
 				menuId,
 				osCls.getField("sel_insertItem_atIndex_").get(null),
 				nsmenuitemCls.getField("id").get(nsItem),
-				index
+				is64bit ? (long) index : index
 			});
 		} catch (Throwable e) {
 			Debug.out(e);
