@@ -187,12 +187,12 @@ public class CocoaUIEnhancer
 		}
 	}
 	
-	/** Will be used with 64-bit SWT. */
-	static long actionProc(long id, long sel, long arg0) {
-		return (long)actionProc((int) id, (int) sel, (int) arg0);
+	/** Will be used with 32-bit SWT. */
+	static int actionProc(int id, int sel, int arg0) {
+		return (int)actionProc((long) id, (long) sel, (long) arg0);
 	}
 
-	static int actionProc(int id, int sel, int arg0) {
+	static long actionProc(long id, long sel, long arg0) {
 		if (DEBUG) {
 			System.err.println("id=" + id + ";sel=" + sel);
 		}
@@ -256,15 +256,15 @@ public class CocoaUIEnhancer
 		return 0;
 	}
 	
-	/** Will be used with 64-bit SWT. */
-	static long actionProc(long id, long sel,
-			long arg0, long arg1)
+	/** Will be used with 32-bit SWT. */
+	static int actionProc(int id, int sel,
+			int arg0, int arg1)
 			throws Throwable {
-		return (long)actionProc((int) id, (int) sel, (int) arg0, (int) arg1); 
+		return (int)actionProc((long) id, (long) sel, (long) arg0, (long) arg1); 
 	}
 
-	static int /*long*/actionProc(int /*long*/id, int /*long*/sel,
-			int /*long*/arg0, int /*long*/arg1)
+	static long actionProc(long id, long sel,
+			long arg0, long arg1)
 			throws Throwable {
 		if (DEBUG) {
 			System.err.println("actionProc 4 " + id + "/" + sel);
