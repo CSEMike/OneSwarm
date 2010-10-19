@@ -92,19 +92,7 @@ public class AboutWindow {
     labelImage.setImage(image);
     gridData = new GridData(GridData.HORIZONTAL_ALIGN_CENTER);
     labelImage.setLayoutData(gridData);
-  
-//    Group gTranslators = new Group(window, SWT.NULL);
-//    gTranslators.setLayout(new GridLayout());
-//    Messages.setLanguageText(gTranslators, "MainWindow.about.section.translators"); //$NON-NLS-1$
-//    gridData = new GridData(GridData.VERTICAL_ALIGN_FILL | GridData.HORIZONTAL_ALIGN_FILL);
-//    gTranslators.setLayoutData(gridData);
-  
-//    Text txtTrans = new Text(gTranslators, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP | SWT.NO_FOCUS);
-//    txtTrans.setText(properties.getProperty("translators")); //$NON-NLS-1$ //$NON-NLS-2$
-//    gridData = new GridData(GridData.FILL_BOTH);
-//    txtTrans.setLayoutData(gridData);
-//    txtTrans.setBackground(display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
-    
+      
     Group gInternet = new Group(window, SWT.NULL);
     GridLayout gridLayout = new GridLayout();
     gridLayout.numColumns = 2;
@@ -115,22 +103,6 @@ public class AboutWindow {
     gridData.horizontalSpan = 2;
     gInternet.setLayoutData(gridData);
   
-//    Group gSys = new Group(window, SWT.NULL);
-//    gSys.setLayout(new GridLayout());
-//    Messages.setLanguageText(gSys, "MainWindow.about.section.system"); //$NON-NLS-1$
-//    gridData = new GridData(GridData.VERTICAL_ALIGN_FILL | GridData.HORIZONTAL_ALIGN_FILL);
-//    gridData.verticalSpan = 1;
-//    gSys.setLayoutData(gridData);
-//
-//    Text txtSysInfo = new Text(gSys, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP);
-//    txtSysInfo.setBackground(display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
-//    txtSysInfo.setText("Java " + System.getProperty("java.version") + "\n "
-//				+ System.getProperty("java.vendor") + "\n"
-//				+ "SWT v" + SWT.getVersion() + ", " + SWT.getPlatform() + "\n"
-//				+ System.getProperty("os.name") + " v"
-//				+ System.getProperty("os.version") + ", "
-//				+ System.getProperty("os.arch"));
-//    txtSysInfo.setLayoutData(gridData = new GridData(GridData.FILL_BOTH));
     if (window.getCaret() != null)
     	window.getCaret().setVisible(false);
 
