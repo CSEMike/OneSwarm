@@ -273,16 +273,16 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 				}
 				if (!logConfLoaded) {
 					logManager.readConfiguration(new FileInputStream(logConfig));
-					System.out.println("read log configuration: " + logConfig.getCanonicalPath());
+					System.err.println("read log configuration: " + logConfig.getCanonicalPath());
 					Enumeration<String> loggerNames = logManager.getLoggerNames();
 					while (loggerNames.hasMoreElements()) {
 						final String l = loggerNames.nextElement();
-						System.out.println("log: " + l + " " + Logger.getLogger(l).getLevel());
+						System.err.println("log: " + l + " " + Logger.getLogger(l).getLevel());
 					}
 				}
 			}
 		} else {
-			logger.info("logging disabled (no log file: " + logConfig.getCanonicalPath() + ")");
+			System.err.println("logging disabled (no log file: " + logConfig.getCanonicalPath() + ")");
 		}
 	}
 

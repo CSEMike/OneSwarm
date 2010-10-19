@@ -148,6 +148,11 @@ public final class CommunityServerManager extends Thread {
 		}
 		mCommunityServerHashesFile = new File(keysDir, "community_server_hashes");
 		
+		if (mCommunityServerHashesFile.exists() == false) {
+			logger.warning("community_server_hashes file does not exist.");
+			return;
+		}
+		
 		try {
 			certificateHashes.load(new FileInputStream(mCommunityServerHashesFile));
 			
