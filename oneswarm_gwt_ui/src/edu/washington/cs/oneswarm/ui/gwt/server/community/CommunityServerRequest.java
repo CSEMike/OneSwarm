@@ -49,8 +49,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import sun.nio.ch.PollSelectorProvider;
-
 import com.aelitis.azureus.core.networkmanager.impl.osssl.OneSwarmSslKeyManager;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
