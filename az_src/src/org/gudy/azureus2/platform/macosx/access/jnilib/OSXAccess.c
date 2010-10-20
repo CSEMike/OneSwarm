@@ -1,8 +1,14 @@
 #include <Carbon/Carbon.h>
 #include <jni.h>
-#include <AEDataModel.h>
+//#include <AEDataModel.h>
 
-#define VERSION "1.03"
+#define VERSION "1.03os"
+
+// from jlong.h
+// All pointers in and out of JNI functions should be expressed as jlongs
+// to accomodate for both 32-bit and 64-bit pointer sizes
+#define jlong_to_ptr(a) ((void *)(uintptr_t)(a))
+#define ptr_to_jlong(a) ((jlong)(uintptr_t)(a))
 
 /**
  * AEDesc code from SWT, os_structs.c

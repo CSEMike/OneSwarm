@@ -311,7 +311,7 @@ public class CocoaUIEnhancer
 			}
 			fileOpen(files);
 		} else if (sel == sel_applicationShouldHandleReopen_) {
-			Event event = new Event ();
+			Event event = new Event();
 			event.detail = 1;
 			if (display != null) {
 				invoke(Display.class, display, "sendEvent", new Class[] {

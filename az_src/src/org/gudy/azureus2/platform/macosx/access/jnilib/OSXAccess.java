@@ -34,9 +34,10 @@ public class OSXAccess
 	private static boolean bLoaded = false;
 
 	static {
-		if (!Constants.isOSX_10_5_OrHigher || !loadLibrary("OSXAccess_10.5")) {
-			loadLibrary("OSXAccess");
-		}
+		// We give up on this library and JNI in general. It's a nightmare across 64/32 bit OS X.
+//		if (!Constants.isOSX_10_5_OrHigher || !loadLibrary("OSXAccess_10.5")) {
+//			loadLibrary("OSXAccess");
+//		}
 	}
 
 

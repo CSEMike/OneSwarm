@@ -30,6 +30,7 @@ import org.eclipse.swt.SWTException;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Shell;
 
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.internat.MessageText;
@@ -42,6 +43,8 @@ import org.gudy.azureus2.platform.PlatformManagerFactory;
 
 import com.aelitis.azureus.ui.IUIIntializer;
 import com.aelitis.azureus.ui.UIFunctionsManager;
+import com.aelitis.azureus.ui.swt.UIFunctionsManagerSWT;
+import com.aelitis.azureus.ui.swt.UIFunctionsSWT;
 
 /**
  * The main SWT Thread, the only one that should run any GUI code.
@@ -152,7 +155,7 @@ public class SWTThread {
 				}
 			}
 		});
-    
+    	
 	if (Constants.isOSX) {
 		
 		// On Cocoa, we get a Close trigger on display.  Need to check if all

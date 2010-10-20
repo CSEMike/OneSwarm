@@ -98,12 +98,13 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
             class_mon.exit();
         }
 
-        COConfigurationManager.addAndFireParameterListener("FileBrowse.usePathFinder", new ParameterListener() {
-					public void parameterChanged(String parameterName) {
-						fileBrowserName = COConfigurationManager.getBooleanParameter("FileBrowse.usePathFinder")
-	        		? "Path Finder" : "Finder";
-					}
-				});
+        // Skip this -- causes a cyclic creation of the PlatformManager.
+//        COConfigurationManager.addAndFireParameterListener("FileBrowse.usePathFinder", new ParameterListener() {
+//					public void parameterChanged(String parameterName) {
+//						fileBrowserName = COConfigurationManager.getBooleanParameter("FileBrowse.usePathFinder")
+//	        		? "Path Finder" : "Finder";
+//					}
+//				});
     }
 
     /**
@@ -174,7 +175,9 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 			
     	}catch( Throwable e ){
     		
-    		Debug.out( "Failed to update plist", e );
+    		// Using Debug.out causes a cyclic construction of the PlatformManager, so 
+    		// we instead use System.err.
+    		System.err.println( "Failed to update plist " + e );
     	}
 	
     }

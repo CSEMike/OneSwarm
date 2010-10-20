@@ -29,76 +29,68 @@ import org.gudy.azureus2.plugins.platform.PlatformManagerException;
 
 /**
  * @author parg
- *
+ * 
  */
-public class 
-PlatformManagerFactory 
-{
-	protected static PlatformManager		platform_manager;
-	protected static AEMonitor				class_mon	= new AEMonitor( "PlatformManagerFactory");
-	
-	public static PlatformManager
-	getPlatformManager()
-	{
-		try{
-			class_mon.enter();
-		
-			if ( platform_manager == null ){
-										  
-				try{
-					if ( getPlatformType() == PlatformManager.PT_WINDOWS ){
-						
-						platform_manager = org.gudy.azureus2.platform.win32.PlatformManagerImpl.getSingleton();
-						
-					}else if( getPlatformType() == PlatformManager.PT_MACOSX ){
-						
-	                    platform_manager = org.gudy.azureus2.platform.macosx.PlatformManagerImpl.getSingleton();
-	                    
-					}else if( getPlatformType() == PlatformManager.PT_UNIX ){
-						
-            platform_manager = org.gudy.azureus2.platform.unix.PlatformManagerImpl.getSingleton();
+public class PlatformManagerFactory {
+	protected static PlatformManager platform_manager;
+	protected static AEMonitor class_mon = new AEMonitor("PlatformManagerFactory");
 
+	public static PlatformManager getPlatformManager() {
+		try {
+			class_mon.enter();
+			
+			System.out.println("here");
+
+			if (platform_manager == null) {
+				try {
+					if (getPlatformType() == PlatformManager.PT_WINDOWS) {
+
+						platform_manager = org.gudy.azureus2.platform.win32.PlatformManagerImpl
+								.getSingleton();
+					} else if (getPlatformType() == PlatformManager.PT_MACOSX) {
+
+						platform_manager = org.gudy.azureus2.platform.macosx.PlatformManagerImpl
+								.getSingleton();
+					} else if (getPlatformType() == PlatformManager.PT_UNIX) {
+
+						platform_manager = org.gudy.azureus2.platform.unix.PlatformManagerImpl
+								.getSingleton();
 					}
-				}catch( PlatformManagerException e ){
-					
-						// exception will already have been logged
-					
-				}catch( Throwable e ){
-					
+				} catch (PlatformManagerException e) {
+					e.printStackTrace();
+					Debug.printStackTrace(e);
+				} catch (Throwable e) {
+					e.printStackTrace();
 					Debug.printStackTrace(e);
 				}
 			}
-			
-			if ( platform_manager == null ){
-				
-				platform_manager = org.gudy.azureus2.platform.dummy.PlatformManagerImpl.getSingleton();
+
+			if (platform_manager == null) {
+				platform_manager = org.gudy.azureus2.platform.dummy.PlatformManagerImpl
+						.getSingleton();
 			}
-			
-			return( platform_manager );
-			
-		}finally{
-			
+
+			return (platform_manager);
+		} finally {
 			class_mon.exit();
 		}
 	}
-	
-	public static int
-	getPlatformType()
-	{
+
+	public static int getPlatformType() {
 		if (Constants.isWindows) {
 
-			return (PlatformManager.PT_WINDOWS );
+			return (PlatformManager.PT_WINDOWS);
 
 		} else if (Constants.isOSX) {
 
-			return (PlatformManager.PT_MACOSX );
+			return (PlatformManager.PT_MACOSX);
 
 		} else if (Constants.isUnix) {
 
-			return (PlatformManager.PT_UNIX );
+			return (PlatformManager.PT_UNIX);
 
 		} else {
-			return (PlatformManager.PT_OTHER );
+			return (PlatformManager.PT_OTHER);
 		}
 	}
 }
