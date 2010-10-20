@@ -39,8 +39,6 @@ public class PlatformManagerFactory {
 		try {
 			class_mon.enter();
 			
-			System.out.println("here");
-
 			if (platform_manager == null) {
 				try {
 					if (getPlatformType() == PlatformManager.PT_WINDOWS) {
