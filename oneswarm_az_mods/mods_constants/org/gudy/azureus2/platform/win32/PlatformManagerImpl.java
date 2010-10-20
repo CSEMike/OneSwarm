@@ -53,16 +53,8 @@ PlatformManagerImpl
 	public static final int			RT_OTHER 	= 2;
 	
 	public static final String					DLL_NAME = "aereg";
-	
-	// *****************************************************************
-	  /* EDIT:
-	   * made by isdal@cs.washington.edu
-	   * 
-	   * some name edits
-	   * more by piatek -- magnet support, other things
-	   */
-	
-	public static final String				NEW_MAIN_ASSOC	= "OneSwarm";//"Azureus";
+		
+	public static final String				NEW_MAIN_ASSOC	= "OneSwarm";
 	public static final String				OLD_MAIN_ASS0C	= "BitTorrent";
 	
 	//********************************************************************

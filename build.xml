@@ -560,6 +560,7 @@
 		<java classname="com.aelitis.azureus.ui.Main" failonerror="true" fork="true">
 			<jvmarg value="${optStartOnFirstThread}" />
 			<jvmarg value="-Xmx256M" />
+			<jvmarg value="-Dazureus.security.manager.install=0" />
 			
 			<classpath>
 				<pathelement location="OneSwarm.jar" />
