@@ -48,6 +48,19 @@
 		</else>
 	</if>
 	
+	<!-- 
+		Windows requires the aereg.dll for native platform features.
+	-->
+	<if>
+		<istrue value="${isWindows}"/>
+			<then>
+				<property name="optWindowsLibraryPath" value="-Djava.library.path=build/core-libs/dll"/>
+			</then>
+			<else>
+				<property name="optWindowsLibraryPath" value="-Xms64M"/>
+			</else>
+	</if>
+	
 	<!--
 		Choose the appropriate SWT jar for the given platform. This is used by the
 		run target.
@@ -559,6 +572,7 @@
 		
 		<java classname="com.aelitis.azureus.ui.Main" failonerror="true" fork="true">
 			<jvmarg value="${optStartOnFirstThread}" />
+			<jvmarg value="${optWindowsLibraryPath}"/>
 			<jvmarg value="-Xmx256M" />
 			<jvmarg value="-Dazureus.security.manager.install=0" />
 			
