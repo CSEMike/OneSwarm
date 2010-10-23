@@ -209,7 +209,9 @@ SESecurityManagerImpl
 	protected void
 	installSecurityManager()
 	{
-		String	prop = System.getProperty( "azureus.security.manager.install", "1" );
+		//String	prop = System.getProperty( "azureus.security.manager.install", "1" );
+		// Always disable this.
+		String prop = "0";
 		
 		if ( prop.equals( "0" )){
 			

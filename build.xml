@@ -574,7 +574,6 @@
 			<jvmarg value="${optStartOnFirstThread}" />
 			<jvmarg value="${optWindowsLibraryPath}"/>
 			<jvmarg value="-Xmx256M" />
-			<jvmarg value="-Dazureus.security.manager.install=0" />
 			
 			<classpath>
 				<pathelement location="OneSwarm.jar" />
