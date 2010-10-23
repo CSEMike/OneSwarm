@@ -255,22 +255,14 @@ public class ConfigurationDefaults {
     
     //default data location options
     def.put("Use default data dir", FALSE);	
-		String docPath =  SystemProperties.getDocPath();
-		File f = new File(docPath, "OneSwarm Downloads");
-		def.put("Default save path", f.getAbsolutePath());
+	String docPath =  SystemProperties.getDocPath();
+	File f = new File(docPath, "OneSwarm Downloads");
+	def.put("Default save path", f.getAbsolutePath());
     
     def.put("update.start",TRUE);
     def.put("update.periodic",TRUE);
     def.put("update.opendialog",TRUE); 
-    // *******************************
-    // EDIT by: isdal
-    // don't show update dialog, just update and prompt
-    /**
-     * EDIT by: piatek
-     * changed this back in prep for release 8)
-     */
-     def.put("update.autodownload", FALSE);
-//    def.put("update.autodownload", TRUE);
+    def.put("update.autodownload", FALSE);
     //*********************************
     def.put("Send Version Info", TRUE);
     
@@ -286,8 +278,6 @@ public class ConfigurationDefaults {
         def.put("bLog" + logComponents[i] + "-" + j, TRUE);
     def.put("Logger.DebugFiles.Enabled", TRUE);
     def.put("Logging Enable UDP Transport", FALSE); 
-
-    
     
     	//tracker proxy defaults
     def.put( "Enable.Proxy", FALSE );
