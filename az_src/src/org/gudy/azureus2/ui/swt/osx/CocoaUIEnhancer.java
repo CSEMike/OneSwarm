@@ -598,13 +598,32 @@ public class CocoaUIEnhancer
 			wrapPointer(callBack3Addr),
 			"@:@"
 		});
-		invoke(osCls, "class_addMethod", new Object[] {
+		
+		/** 
+		 * class_addMethod will fail if someone has previously registered for this selector.
+		 * The latest cocoa version of SWT does this, simply returning '1' when called. 
+		 * (See Display.java lines 4711--4713.) 
+		 * To replace their implementation, we need to use method_setImplementation instead.
+		 * (Since SWT doesn't provide method_setImplementation.)
+		 */
+		Boolean success = (Boolean)invoke(osCls, "class_addMethod", new Object[] {
 			wrapPointer(delegateIdSWTApplication),
 			wrapPointer(sel_applicationShouldHandleReopen_),
 			wrapPointer(callBack4Addr),
 			"@:@c"
 		});
-
+		if (!success) {
+			Long method = (Long)invoke(osCls, "class_getInstanceMethod", new Object[] {
+				wrapPointer(delegateIdSWTApplication),
+				wrapPointer(sel_applicationShouldHandleReopen_)
+			});
+			
+			invoke(osCls, "method_setImplementation", new Object[] {
+					wrapPointer(method.longValue()),
+					wrapPointer(callBack4Addr)
+			});
+		}
+		
 		// Get the Mac OS X Application menu.
 		Object sharedApplication = invoke(nsapplicationCls, "sharedApplication");
 		Object mainMenu = invoke(sharedApplication, "mainMenu");

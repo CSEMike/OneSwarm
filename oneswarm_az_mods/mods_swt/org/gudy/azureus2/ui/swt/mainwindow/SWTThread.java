@@ -22,8 +22,10 @@
 package org.gudy.azureus2.ui.swt.mainwindow;
 
 import java.util.*;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Field;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
@@ -155,6 +157,39 @@ public class SWTThread {
 				}
 			}
 		});
+    
+    // SWT.OpenDocument is only available on 3637
+	try {
+		Field fldOpenDoc = SWT.class.getDeclaredField("OpenDocument");
+		int SWT_OpenDocument = fldOpenDoc.getInt(null);
+
+		display.addListener(SWT_OpenDocument, new Listener() {
+			public void handleEvent(final Event event) {
+				TorrentOpener.openTorrents(new String[] { event.text } );
+			}
+		});
+	} catch (Throwable t) {
+	}
+
+	Listener lShowMainWindow = new Listener() {
+		public void handleEvent(Event event) {
+			Shell as = Display.getDefault().getActiveShell();
+			if (as != null) {
+				as.setVisible(true);
+				as.forceActive();
+				return;
+			}
+			UIFunctionsSWT uif = UIFunctionsManagerSWT.getUIFunctionsSWT();
+			if (uif != null) {
+				Shell mainShell = uif.getMainShell();
+				if (mainShell == null || !mainShell.isVisible() || mainShell.getMinimized()) {
+					uif.bringToFront(false);
+				}
+			}
+		}
+	};
+	display.addListener(SWT.Activate, lShowMainWindow);
+	display.addListener(SWT.Selection, lShowMainWindow);
     	
 	if (Constants.isOSX) {
 		
