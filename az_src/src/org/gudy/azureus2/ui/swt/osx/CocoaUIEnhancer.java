@@ -550,11 +550,9 @@ public class CocoaUIEnhancer
 	private void initialize()
 			throws Exception {
 
-
 		// Register names in objective-c.
 		if (sel_preferencesMenuItemSelected_ == 0) {
-			sel_preferencesMenuItemSelected_ = registerName(osCls,
-					"preferencesMenuItemSelected:");
+			sel_preferencesMenuItemSelected_ = registerName(osCls, "preferencesMenuItemSelected:");
 			sel_aboutMenuItemSelected_ = registerName(osCls, "aboutMenuItemSelected:");
 			sel_restartMenuSelected_ = registerName(osCls, "restartMenuItemSelected:");
 			sel_natMenuSelected_ = registerName(osCls, "natMenuItemSelected:");
@@ -658,14 +656,14 @@ public class CocoaUIEnhancer
 		if (!isAZ3) {
 			// add Wizard, NAT Test, Speed Test
 
-			addMenuItem(menuId, 5, (int) sel_wizardMenuSelected_,
+			addMenuItem(menuId, 5,  sel_wizardMenuSelected_,
 					MessageText.getString("MainWindow.menu.file.configure").replaceAll(
 							"&", ""));
 
-			addMenuItem(menuId, 6, (int) sel_natMenuSelected_, MessageText.getString(
+			addMenuItem(menuId, 6, sel_natMenuSelected_, MessageText.getString(
 					"MainWindow.menu.tools.nattest").replaceAll("&", ""));
 
-			addMenuItem(menuId, 7, (int) sel_speedMenuSelected_,
+			addMenuItem(menuId, 7, sel_speedMenuSelected_,
 					MessageText.getString("MainWindow.menu.tools.speedtest").replaceAll(
 							"&", ""));
 
@@ -698,7 +696,7 @@ public class CocoaUIEnhancer
 		initialized = true;
 	}
 
-	private void addMenuItem(Object menuId, int index, int selector, String title) {
+	private void addMenuItem(Object menuId, int index, long selector, String title) {
 		try {
 			//NSMenuItem nsItem = (NSMenuItem) new SWTMenuItem().alloc();
 			Object oSWTMenuItem = swtmenuitemCls.newInstance();
