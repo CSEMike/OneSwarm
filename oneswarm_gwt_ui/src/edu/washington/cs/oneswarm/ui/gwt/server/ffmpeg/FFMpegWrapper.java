@@ -5,11 +5,9 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -37,11 +35,6 @@ import edu.washington.cs.oneswarm.ui.gwt.RequiresShutdown;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants.InOrderType;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.FFMpegException.ErrorType;
-import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.io.IOHelper;
-import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.metadata.EmbeddedData;
-import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.metadata.FlvHeader;
-import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.metadata.TagBroker;
-import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.parse.ParseMeta;
 import edu.washington.cs.oneswarm.ui.gwt.server.handlers.FileHandler;
 import edu.washington.cs.oneswarm.ui.gwt.server.handlers.SharedFileHandler;
 
@@ -113,7 +106,7 @@ public class FFMpegWrapper implements RequiresShutdown {
 
 	private final DiskManagerFileInfo fileInfo;
 
-	//private final File imageFile;
+	// private final File imageFile;
 
 	private boolean quit = false;
 
@@ -126,12 +119,13 @@ public class FFMpegWrapper implements RequiresShutdown {
 	private final int videorate;
 	private final double startAtSecond;
 
-	public FFMpegWrapper(CoreInterface coreInterface, DiskManagerFileInfo sourceFile, Download download, boolean remote, double startAtByte) throws TorrentException {
+	public FFMpegWrapper(CoreInterface coreInterface, DiskManagerFileInfo sourceFile,
+			Download download, boolean remote, double startAtByte) throws TorrentException {
 		this.remoteAccess = remote;
 		this.fileInfo = sourceFile;
 		this.download = download;
 		this.torrent = download.getTorrent();
-		//this.imageFile = coreInterface.getImageFile(torrent);
+		// this.imageFile = coreInterface.getImageFile(torrent);
 		this.coreInterface = coreInterface;
 		this.audiorate = getAudioBitRate();
 		this.videorate = getVideoBitRate(audiorate);
@@ -152,7 +146,7 @@ public class FFMpegWrapper implements RequiresShutdown {
 		this.fileInfo = null;
 		this.download = null;
 		this.torrent = null;
-		//this.imageFile = null;
+		// this.imageFile = null;
 		this.coreInterface = null;
 		this.audiorate = getAudioBitRate();
 		this.videorate = getVideoBitRate(audiorate);
@@ -161,17 +155,20 @@ public class FFMpegWrapper implements RequiresShutdown {
 
 	}
 
-	private void createNewFileConverter(File sourceFile, OutputStream destinationStream, MovieStreamInfo movieInfo) throws FFMpegException, InterruptedException {
+	private void createNewFileConverter(File sourceFile, OutputStream destinationStream,
+			MovieStreamInfo movieInfo) throws FFMpegException, InterruptedException {
 
 		if (!sourceFile.exists()) {
-			throw new FFMpegException(FFMpegException.ErrorType.FILE_NOT_FOUND, "File does not exist");
+			throw new FFMpegException(FFMpegException.ErrorType.FILE_NOT_FOUND,
+					"File does not exist");
 		}
 
 		String sourceFileName;
 		try {
 			sourceFileName = sourceFile.getCanonicalPath();
 		} catch (IOException e) {
-			throw new FFMpegException(FFMpegException.ErrorType.FILE_NOT_FOUND, "Problem reading file", e);
+			throw new FFMpegException(FFMpegException.ErrorType.FILE_NOT_FOUND,
+					"Problem reading file", e);
 		}
 		logger.fine("using file: '" + sourceFileName + "'");
 
@@ -179,7 +176,9 @@ public class FFMpegWrapper implements RequiresShutdown {
 		try {
 			converter = new ProcessBuilder(mpegExecArray).start();
 		} catch (IOException e) {
-			FFMpegException mpegException = new FFMpegException(FFMpegException.ErrorType.FFMPEG_BIN_ERROR, "Unable to create FFMpeg process '" + mpegExecArray + "'", e);
+			FFMpegException mpegException = new FFMpegException(
+					FFMpegException.ErrorType.FFMPEG_BIN_ERROR, "Unable to create FFMpeg process '"
+							+ mpegExecArray + "'", e);
 			mpegException.setFFMpegExecArray(mpegExecArray);
 			throw mpegException;
 		}
@@ -187,11 +186,14 @@ public class FFMpegWrapper implements RequiresShutdown {
 		// make sure to dump anything showing up on stderr
 		boolean showError = false;
 		int bytesToStore = 5000;
-		final StreamDumper streamDumper = new StreamDumper(converter.getErrorStream(), bytesToStore, showError);
+		final StreamDumper streamDumper = new StreamDumper(converter.getErrorStream(),
+				bytesToStore, showError);
 
 		InputStream ffmpegOutput = converter.getInputStream();
 
-		FlvOutputBufferManager flvTool2ToWebBufferHandler = new FlvOutputBufferManager(ffmpegOutput, destinationStream, audiorate, videorate, false, movieInfo, startAtSecond);
+		FlvOutputBufferManager flvTool2ToWebBufferHandler = new FlvOutputBufferManager(
+				ffmpegOutput, destinationStream, audiorate, videorate, false, movieInfo,
+				startAtSecond);
 
 		Thread t = new Thread(flvTool2ToWebBufferHandler);
 		t.setName("BufferHandler");
@@ -211,7 +213,9 @@ public class FFMpegWrapper implements RequiresShutdown {
 			if (converterExitVal == 255) {
 				logger.fine("ffmpeg got killed (exit 255)");
 			} else if (converterExitVal != 0) {
-				final FFMpegException mpegException = new FFMpegException(FFMpegException.ErrorType.FORMAT_ERROR, converterExitVal, streamDumper.getStoredOutput());
+				final FFMpegException mpegException = new FFMpegException(
+						FFMpegException.ErrorType.FORMAT_ERROR, converterExitVal,
+						streamDumper.getStoredOutput());
 				mpegException.setDataWritten(flvTool2ToWebBufferHandler.getTotal());
 				mpegException.setFFMpegExecArray(mpegExecArray);
 				lastFFMpegException = mpegException;
@@ -220,12 +224,15 @@ public class FFMpegWrapper implements RequiresShutdown {
 		}
 	}
 
-	private void createNewStreamConverter(InputStream sourceStream, ServletOutputStream destinationStream, MovieStreamInfo movieInfo) throws FFMpegException, InterruptedException {
+	private void createNewStreamConverter(InputStream sourceStream,
+			ServletOutputStream destinationStream, MovieStreamInfo movieInfo)
+			throws FFMpegException, InterruptedException {
 		String[] mpegExecArray = getFFMpegExecArray("-", movieInfo);
 		try {
 			converter = new ProcessBuilder(mpegExecArray).start();
 		} catch (IOException e) {
-			throw new FFMpegException(FFMpegException.ErrorType.FFMPEG_BIN_ERROR, "Unable to create FFMpeg process: '" + mpegExecArray + "'", e);
+			throw new FFMpegException(FFMpegException.ErrorType.FFMPEG_BIN_ERROR,
+					"Unable to create FFMpeg process: '" + mpegExecArray + "'", e);
 		}
 		OutputStream ffmpegInput = converter.getOutputStream();
 
@@ -236,12 +243,14 @@ public class FFMpegWrapper implements RequiresShutdown {
 		// make sure to dump anything showing up on stderr
 		boolean showError = false;
 		int numBytesToSave = 5000;
-		final StreamDumper streamDumper = new StreamDumper(converter.getErrorStream(), numBytesToSave, showError);
+		final StreamDumper streamDumper = new StreamDumper(converter.getErrorStream(),
+				numBytesToSave, showError);
 
 		// start the bufferhandler moving data from ffmpeg to the webserver
 
 		InputStream ffmpegOutput = converter.getInputStream();
-		FlvOutputBufferManager ffmpegToWebBufferHandler = new FlvOutputBufferManager(ffmpegOutput, destinationStream, audiorate, videorate, true, movieInfo, startAtSecond);
+		FlvOutputBufferManager ffmpegToWebBufferHandler = new FlvOutputBufferManager(ffmpegOutput,
+				destinationStream, audiorate, videorate, true, movieInfo, startAtSecond);
 
 		int position = 0;
 
@@ -252,12 +261,15 @@ public class FFMpegWrapper implements RequiresShutdown {
 		// write as much as we can
 		try {
 			logger.fine("Starting to read");
-			while ((read = downloadStream.read(buf)) != -1 && ffmpegToWebBufferHandler.isRunning() && !quit) {
+			while ((read = downloadStream.read(buf)) != -1 && ffmpegToWebBufferHandler.isRunning()
+					&& !quit) {
 				ffmpegInput.write(buf, 0, read);
 				position += read;
 			}
 		} catch (IOException e) {
-			final FFMpegException mpegException = new FFMpegException(FFMpegException.ErrorType.FORMAT_ERROR_DOWNLOADING, "Error writing to ffmpeg (app closed??)", e);
+			final FFMpegException mpegException = new FFMpegException(
+					FFMpegException.ErrorType.FORMAT_ERROR_DOWNLOADING,
+					"Error writing to ffmpeg (app closed??)", e);
 			mpegException.setStdErr(streamDumper.getStoredOutput());
 			mpegException.setFFMpegExecArray(mpegExecArray);
 			throw mpegException;
@@ -285,7 +297,9 @@ public class FFMpegWrapper implements RequiresShutdown {
 			if (converterExitVal == 255) {
 				logger.fine("ffmpeg got killed (exit 255)");
 			} else if (converterExitVal != 0) {
-				final FFMpegException mpegException = new FFMpegException(FFMpegException.ErrorType.FORMAT_ERROR_DOWNLOADING, converterExitVal, streamDumper.getStoredOutput());
+				final FFMpegException mpegException = new FFMpegException(
+						FFMpegException.ErrorType.FORMAT_ERROR_DOWNLOADING, converterExitVal,
+						streamDumper.getStoredOutput());
 				mpegException.setDataWritten(ffmpegToWebBufferHandler.getTotal());
 				lastFFMpegException = mpegException;
 				mpegException.setFFMpegExecArray(mpegExecArray);
@@ -320,7 +334,8 @@ public class FFMpegWrapper implements RequiresShutdown {
 		return audioRate;
 	}
 
-	private String[] getFFMpegExecArray(String sourceFile, MovieStreamInfo movieInfo) throws FFMpegException {
+	private String[] getFFMpegExecArray(String sourceFile, MovieStreamInfo movieInfo)
+			throws FFMpegException {
 		// set the maximum rate allowed
 		int videoRate = (int) (videorate / FFMPEG_UNITS);
 		int audioRate = (int) (audiorate / FFMPEG_UNITS);
@@ -369,9 +384,12 @@ public class FFMpegWrapper implements RequiresShutdown {
 		 * to make the conversion faster: scale down if res is larger than
 		 * player width or player height
 		 */
-		if (movieInfo.getResolutionX() > OneSwarmConstants.DEFAULT_WEB_PLAYER_WIDTH || movieInfo.getResolutionY() > OneSwarmConstants.DEFAULT_WEB_PLAYER_HEIGTH) {
-			double resizeFactorWidth = movieInfo.getResolutionX() / (double) OneSwarmConstants.DEFAULT_WEB_PLAYER_WIDTH;
-			double resizeFactorHeight = movieInfo.getResolutionY() / (double) OneSwarmConstants.DEFAULT_WEB_PLAYER_HEIGTH;
+		if (movieInfo.getResolutionX() > OneSwarmConstants.DEFAULT_WEB_PLAYER_WIDTH
+				|| movieInfo.getResolutionY() > OneSwarmConstants.DEFAULT_WEB_PLAYER_HEIGTH) {
+			double resizeFactorWidth = movieInfo.getResolutionX()
+					/ (double) OneSwarmConstants.DEFAULT_WEB_PLAYER_WIDTH;
+			double resizeFactorHeight = movieInfo.getResolutionY()
+					/ (double) OneSwarmConstants.DEFAULT_WEB_PLAYER_HEIGTH;
 			double resizeFactor = Math.max(resizeFactorWidth, resizeFactorHeight);
 
 			int newWidth = getResolution(movieInfo.getResolutionX(), resizeFactor);
@@ -393,7 +411,9 @@ public class FFMpegWrapper implements RequiresShutdown {
 		parameters.add("-ab");
 		parameters.add("" + audioRate);
 
-		if (movieInfo.isCropSet() && (movieInfo.getCropTop() > 0 || movieInfo.getCropBottom() > 0 || movieInfo.getCropLeft() > 0 || movieInfo.getCropRight() > 0)) {
+		if (movieInfo.isCropSet()
+				&& (movieInfo.getCropTop() > 0 || movieInfo.getCropBottom() > 0
+						|| movieInfo.getCropLeft() > 0 || movieInfo.getCropRight() > 0)) {
 			parameters.add("-croptop");
 			parameters.add("" + movieInfo.getCropTop());
 			parameters.add("-cropbottom");
@@ -445,13 +465,16 @@ public class FFMpegWrapper implements RequiresShutdown {
 			}
 			int maxUploadBps = maxUpload * 8 * 1024;
 
-			int available = Math.round((maxUploadBps - aRate) * REMOTE_ACCESS_RATE_MARGIN) - (STREAM_MAX_USE_UPLOAD_LEAVE_KBPS * 1000 * 8);
-			String msg = "video rate calc: maxupload=" + maxUpload + " maxUploadBps=" + maxUploadBps + " audio=" + aRate + " avilable=" + available;
+			int available = Math.round((maxUploadBps - aRate) * REMOTE_ACCESS_RATE_MARGIN)
+					- (STREAM_MAX_USE_UPLOAD_LEAVE_KBPS * 1000 * 8);
+			String msg = "video rate calc: maxupload=" + maxUpload + " maxUploadBps="
+					+ maxUploadBps + " audio=" + aRate + " avilable=" + available;
 			logger.finest(msg);
 			System.err.println(msg);
 			videoRate = Math.max(VIDEO_RATE_MIN, Math.min(VIDEO_RATE_MAX, available));
 		} else {
-			videoRate = COConfigurationManager.getIntParameter("OSGWT.flash bit rate", VIDEO_RATE_DEFAULT);
+			videoRate = COConfigurationManager.getIntParameter("OSGWT.flash bit rate",
+					VIDEO_RATE_DEFAULT);
 		}
 		String msg = "calculated video rate, returning: " + videoRate;
 		logger.finer(msg);
@@ -459,12 +482,15 @@ public class FFMpegWrapper implements RequiresShutdown {
 		return videoRate;
 	}
 
-	private void handleFFMpegConvertFile(InOrderType type, HttpServletResponse response, HttpServletRequest request, MovieStreamInfo movieStreamInfo) throws IOException, FFMpegException, InterruptedException {
+	private void handleFFMpegConvertFile(InOrderType type, HttpServletResponse response,
+			HttpServletRequest request, MovieStreamInfo movieStreamInfo) throws IOException,
+			FFMpegException, InterruptedException {
 
 		response.setContentType(type.convertedMime);
 		response.setStatus(HttpServletResponse.SC_OK);
 
-		long contentLengthGuess = (long) Math.round(movieStreamInfo.getDuration() * streamByteRate * STREAM_RATE_ERROR_MARGIN);
+		long contentLengthGuess = (long) Math.round(movieStreamInfo.getDuration() * streamByteRate
+				* STREAM_RATE_ERROR_MARGIN);
 		SharedFileHandler.setContentLength(response, contentLengthGuess);
 
 		ServletOutputStream responseStream = response.getOutputStream();
@@ -474,7 +500,9 @@ public class FFMpegWrapper implements RequiresShutdown {
 
 	}
 
-	private void handleFFMpegStream(InOrderType type, HttpServletResponse response, HttpServletRequest request, MovieStreamInfo movieStreamInfo, InputStream sourceStream) throws IOException, FFMpegException, InterruptedException {
+	private void handleFFMpegStream(InOrderType type, HttpServletResponse response,
+			HttpServletRequest request, MovieStreamInfo movieStreamInfo, InputStream sourceStream)
+			throws IOException, FFMpegException, InterruptedException {
 		logger.fine("handleFFMpegStream");
 		response.setContentType(type.convertedMime);
 		response.setStatus(HttpServletResponse.SC_OK);
@@ -489,14 +517,16 @@ public class FFMpegWrapper implements RequiresShutdown {
 	public void process(HttpServletResponse response, HttpServletRequest request) {
 		boolean downloadCompleted = false;
 		try {
-			downloadCompleted = fileInfo.getDownloaded() == fileInfo.getLength() && fileInfo.getFile().exists();
+			downloadCompleted = fileInfo.getDownloaded() == fileInfo.getLength()
+					&& fileInfo.getFile().exists();
 
 			InOrderType type = InOrderType.getType(fileInfo.getFile().getName());
 			if (type == null) {
 				if (downloadCompleted) {
 					throw new FFMpegException(ErrorType.FORMAT_ERROR, "Unknown media type");
 				} else {
-					throw new FFMpegException(ErrorType.FORMAT_ERROR_DOWNLOADING, "Unknown media type");
+					throw new FFMpegException(ErrorType.FORMAT_ERROR_DOWNLOADING,
+							"Unknown media type");
 				}
 			}
 
@@ -507,7 +537,8 @@ public class FFMpegWrapper implements RequiresShutdown {
 				 * we need to convert this, get the movie info so we can set the
 				 * movie and http content length
 				 */
-				MovieStreamInfo movieStreamInfo = FFMpegTools.getMovieInfo(fileInfo.getDownload().getTorrent().getHash(), fileInfo.getFile());
+				MovieStreamInfo movieStreamInfo = FFMpegTools.getMovieInfo(fileInfo.getDownload()
+						.getTorrent().getHash(), fileInfo.getFile());
 				if (movieStreamInfo.isFlashReady()) {
 					new SharedFileHandler(fileInfo, download).process(response, request);
 				} else {
@@ -518,7 +549,8 @@ public class FFMpegWrapper implements RequiresShutdown {
 				 * need to convert it and it is not yet downloaded
 				 */
 				MovieStreamInfo movieStreamInfo = waitForDownloadAndGetMovieInfo();
-				InputStream sourceStream = download.getStats().getFileStream(fileInfo, movieStreamInfo.getBitRate());
+				InputStream sourceStream = download.getStats().getFileStream(fileInfo,
+						movieStreamInfo.getBitRate());
 				if (movieStreamInfo.isFlashReady()) {
 					new SharedFileHandler(fileInfo, download).process(response, request);
 				} else {
@@ -538,12 +570,16 @@ public class FFMpegWrapper implements RequiresShutdown {
 				if (e.getDataWritten() == 0) {
 					System.err.println("sending error file instead");
 					if (!downloadCompleted) {
-						new FileHandler().handle("/oneswarmgwt/images/format_error_downloading.flv", request, response, 0);
+						new FileHandler().handle(
+								"/oneswarmgwt/images/format_error_downloading.flv", request,
+								response, 0);
 					} else {
-						new FileHandler().handle("/oneswarmgwt/images/format_error.flv", request, response, 0);
+						new FileHandler().handle("/oneswarmgwt/images/format_error.flv", request,
+								response, 0);
 					}
 				} else {
-					System.err.println("error even though some data written: " + e.toString() + " / dataWritten: " + e.getDataWritten());
+					System.err.println("error even though some data written: " + e.toString()
+							+ " / dataWritten: " + e.getDataWritten());
 				}
 				if (COConfigurationManager.getBooleanParameter("oneswarm.beta.updates")) {
 					// BackendErrorLog.get().logString("\n" + e.toString());
@@ -574,15 +610,18 @@ public class FFMpegWrapper implements RequiresShutdown {
 		this.quit = true;
 	}
 
-	private MovieStreamInfo waitForDownloadAndGetMovieInfo() throws InterruptedException, DownloadException, FFMpegException {
+	private MovieStreamInfo waitForDownloadAndGetMovieInfo() throws InterruptedException,
+			DownloadException, FFMpegException {
 		// ok, file is not downloaded
 		// check if the download is running
 		final Semaphore s = new Semaphore(0);
-		DownloadManagerStarter.startDownload(AzureusCoreImpl.getSingleton().getGlobalManager().getDownloadManager(new HashWrapper(download.getTorrent().getHash())), new DownloadManagerStartListener() {
-			public void downloadStarted() {
-				s.release();
-			}
-		});
+		DownloadManagerStarter.startDownload(AzureusCoreImpl.getSingleton().getGlobalManager()
+				.getDownloadManager(new HashWrapper(download.getTorrent().getHash())),
+				new DownloadManagerStartListener() {
+					public void downloadStarted() {
+						s.release();
+					}
+				});
 		s.acquire();
 		logger.fine("file is downloading");
 
@@ -598,7 +637,8 @@ public class FFMpegWrapper implements RequiresShutdown {
 			}
 		}
 
-		MovieStreamInfo movieStreamInfo = FFMpegTools.getMovieInfo(fileInfo.getDownload().getTorrent().getHash(), fileInfo.getFile());
+		MovieStreamInfo movieStreamInfo = FFMpegTools.getMovieInfo(fileInfo.getDownload()
+				.getTorrent().getHash(), fileInfo.getFile());
 		logger.fine("got movie info: " + movieStreamInfo.toString());
 
 		return movieStreamInfo;
@@ -739,9 +779,11 @@ public class FFMpegWrapper implements RequiresShutdown {
 					logger.fine("got exception from the sequential stream reader");
 
 					if (fileInfo.getLength() == fileInfo.getDownloaded()) {
-						logger.fine("Download is complete, continuing from the file instead, starting at pos: " + position);
+						logger.fine("Download is complete, continuing from the file instead, starting at pos: "
+								+ position);
 						try {
-							BufferedInputStream in = new BufferedInputStream(new FileInputStream(fileInfo.getFile()));
+							BufferedInputStream in = new BufferedInputStream(new FileInputStream(
+									fileInfo.getFile()));
 							in.skip(position);
 							while ((len = in.read(buf, 0, buf.length)) != -1) {
 								buffer.write(buf, len);
