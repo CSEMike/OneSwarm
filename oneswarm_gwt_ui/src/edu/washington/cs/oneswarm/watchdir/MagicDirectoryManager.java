@@ -1122,46 +1122,6 @@ public final class MagicDirectoryManager extends Thread implements ParameterList
 			tree.update();
 			Thread.sleep(5 * 1000);
 		}
-		//		
-		// int tried = 0, success = 0;
-		//		
-		// List<UpdatingFileTree> stack = new ArrayList<UpdatingFileTree>();
-		// stack.add(tree);
-		//		
-		// while( stack.isEmpty() == false )
-		// {
-		// UpdatingFileTree kid = stack.remove(0);
-		// InOrderType type = InOrderType.getType(kid.getThisFile().getName());
-		// if( type != null ) {
-		//				
-		// if(
-		// type.getFileTypeFilter().equals(MagicDecider.FileTypeFilter.Audio) )
-		// {
-		// tried++;
-		//
-		// try {
-		// AudioFile f = AudioFileIO.read(kid.getThisFile());
-		// Tag tag = f.getTag();
-		//						
-		// if( tag != null )
-		// {
-		// String artist = tag.getFirstArtist();
-		// String album = tag.getFirstAlbum();
-		// System.out.println(artist + " " + album);
-		// if( artist != null || album != null )
-		// success++;
-		// }
-		// } catch( Exception e ) {
-		// System.err.println("audio tag parse error: " + e.toString());
-		// }
-		// }
-		// // if( tried > 100 )
-		// // break;
-		// }
-		//			
-		// stack.addAll(kid.getChildren());
-		// }
-
 	}
 
 	public static String computeTags(String baseParent, String path) {

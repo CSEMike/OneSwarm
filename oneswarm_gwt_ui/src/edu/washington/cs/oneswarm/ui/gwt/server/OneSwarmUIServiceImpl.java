@@ -258,6 +258,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 	public static void loadLogger(boolean force) throws SecurityException, FileNotFoundException, IOException {
 		File logConfig = new File("./logging.properties");
 		if (logConfig.exists()) {
+			System.err.println("Log file exists, attempting load...");
 			final LogManager logManager = LogManager.getLogManager();
 			synchronized (LogManager.class) {
 				Enumeration<String> loggers = logManager.getLoggerNames();
