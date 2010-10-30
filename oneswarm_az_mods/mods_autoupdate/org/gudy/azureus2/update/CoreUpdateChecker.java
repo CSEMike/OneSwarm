@@ -173,7 +173,8 @@ CoreUpdateChecker
 		System.err.println("Checking for updates: AZVersion=" + currentAzVersion
 				+ " ModsVersion=" + currentModsVersion);
 
-		boolean azUpdateRequired = shouldUpdate(currentAzVersion, latestAzVersion);
+		// Since we've merged these, we no longer require updates to the core -- ever.
+		boolean azUpdateRequired = false;
 		boolean modsUpdateRequired = shouldUpdate(currentModsVersion,
 				latestModsVersion);
 

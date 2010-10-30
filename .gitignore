@@ -9,6 +9,7 @@
 
 # Build output.
 OneSwarm.jar
+OneSwarmAzMods.jar
 core-bin
 core-dist
 f2f-dist
