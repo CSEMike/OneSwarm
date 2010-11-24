@@ -48,7 +48,13 @@ public class LocalOneSwarm {
 		String warRootPath;
 
 		/** The port on which the local webserver listens for GUI connections. */
-		int webUiPort;
+		int webUiPort = 29615;
+
+		/**
+		 * The port to use for the StartServer (used to pass params on Windows and detect
+		 * multiple concurrent invocations on other platforms.
+		 */
+		int startServerPort = 6885;
 
 		/** Classpath elements for the invocation. */
 		List<String> classPathElements = new ArrayList<String>();
@@ -64,15 +70,34 @@ public class LocalOneSwarm {
 
 		public int getWebUiPort() { return webUiPort; }
 		public void setWebUiPort(int port) { webUiPort = port; }
+
+		public int getStartServerPort() { return startServerPort; }
+		public void setStartServerPort(int port) { startServerPort = port; }
 	}
+
+	/** Forcibly shuts down the OneSwarm instance associated with this object. */
+	Thread cancelThread = new Thread() {
+		@Override
+		public void run() {
+			if (process == null) {
+				return;
+			}
+			System.out.println("Attemting to kill: " + process);
+			process.destroy();
+		}
+	};
 
 	public LocalOneSwarm() {
 		rootPath = new File(".").getAbsolutePath();
 
 		config.setLabel("LocalOneSwarm-" + instanceCount);
 
-		// 2 * instanceCount since the client uses the local port + 1 for SSL/remote access.
-		config.setWebUiPort(2000 + (2 * instanceCount));
+		/*
+		 * 2 * instanceCount since the client uses the local port + 1 for SSL/remote access, and we
+		 * specify 3*instanceCount+2 as the start server port for the instance.
+		 */
+		config.setWebUiPort(3000 + (3 * instanceCount));
+		config.setStartServerPort(3000 + (3 * instanceCount + 2));
 
 		instanceCount++;
 
@@ -199,7 +224,9 @@ public class LocalOneSwarm {
 
 		command.add("-Doneswarm.integration.test=1");
 		command.add("-Doneswarm.integration.user.data=" + scratchPaths.get("userData"));
+		command.add("-Dazureus.config.path=" + scratchPaths.get("userData"));
 		command.add("-Doneswarm.integration.web.ui.port=" + config.getWebUiPort());
+		command.add("-Doneswarm.integration.start.server.port=" + config.getStartServerPort());
 
 		// Main class
 		command.add("com.aelitis.azureus.ui.Main");
@@ -212,21 +239,19 @@ public class LocalOneSwarm {
 		// Consume the unified log.
 		new ProcessLogConsumer(config.label, process).start();
 
-		// XXX: debug
-		try {
-			System.out.println("output status code: " + process.waitFor());
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		// Make sure this process gets torn down when if the test is killed
+		Runtime.getRuntime().addShutdownHook(cancelThread);
 	}
 
 	/** Asynchronously stops the process associated with this instance. */
 	public void stop() {
-
+		cancelThread.start();
+		Runtime.getRuntime().removeShutdownHook(cancelThread);
 	}
 
 	/** Used for debugging. */
 	public static void main(String [] args) throws Exception {
+		new LocalOneSwarm().start();
 		new LocalOneSwarm().start();
 
 		while(true) {
