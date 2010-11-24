@@ -27,7 +27,10 @@ import org.gudy.azureus2.plugins.PluginView;
 import org.gudy.azureus2.ui.swt.Utils;
 import org.gudy.azureus2.ui.swt.minibar.AllTransfersBar;
 import org.gudy.azureus2.ui.swt.minibar.MiniBarManager;
-import org.gudy.azureus2.ui.swt.plugins.*;
+import org.gudy.azureus2.ui.swt.plugins.UISWTInstance;
+import org.gudy.azureus2.ui.swt.plugins.UISWTPluginView;
+import org.gudy.azureus2.ui.swt.plugins.UISWTView;
+import org.gudy.azureus2.ui.swt.plugins.UISWTViewEventListener;
 import org.gudy.azureus2.ui.swt.pluginsimpl.UISWTInstanceImpl;
 import org.gudy.azureus2.ui.swt.shells.MessageBoxShell;
 import org.gudy.azureus2.ui.swt.shells.SimpleBrowserWindow;
@@ -37,6 +40,8 @@ import org.gudy.azureus2.ui.swt.views.IView;
 import com.aelitis.azureus.ui.UIFunctionsUserPrompter;
 import com.aelitis.azureus.ui.UIStatusTextClickListener;
 import com.aelitis.azureus.ui.swt.UIFunctionsSWT;
+
+import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants;
 
 /**
  * @author TuxPaper
@@ -63,11 +68,11 @@ public class UIFunctionsImpl
 
 	public void bringToFront(final boolean tryTricks) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				//mainwindow.setVisible(true, tryTricks);
-				
-				// keep this in sync with Initializer.java
-				Utils.launch("http://127.0.0.1:" + "29615/");
+
+				Utils.launch(OneSwarmConstants.ONESWARM_ENTRY_URL);
 			}
 		});
 	}
@@ -75,6 +80,7 @@ public class UIFunctionsImpl
 	// UIFunctions
 	public void addPluginView(final PluginView view) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				PluginsMenuHelper.getInstance().addPluginView(view,
 						view.getPluginViewName());
@@ -84,6 +90,7 @@ public class UIFunctionsImpl
 
 	public void openPluginView(final PluginView view) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.openPluginView(view, view.getPluginViewName());
 			}
@@ -92,6 +99,7 @@ public class UIFunctionsImpl
 
 	public void removePluginView(final PluginView view) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				PluginsMenuHelper.getInstance().removePluginView(view,
 						view.getPluginViewName());
@@ -101,6 +109,7 @@ public class UIFunctionsImpl
 
 	public void showStats() {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.showStats();
 			}
@@ -109,6 +118,7 @@ public class UIFunctionsImpl
 
 	public void showStatsDHT() {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.showStatsDHT();
 			}
@@ -117,6 +127,7 @@ public class UIFunctionsImpl
 
 	public void showStatsTransfers() {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.showStatsTransfers();
 			}
@@ -129,6 +140,7 @@ public class UIFunctionsImpl
 
 	public void addPluginView(final UISWTPluginView view) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				PluginsMenuHelper.getInstance().addPluginView(view,
 						view.getPluginViewName());
@@ -138,6 +150,7 @@ public class UIFunctionsImpl
 
 	public void openPluginView(final UISWTPluginView view) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.openPluginView(view, view.getPluginViewName());
 			}
@@ -146,6 +159,7 @@ public class UIFunctionsImpl
 
 	public void removePluginView(final UISWTPluginView view) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				PluginsMenuHelper.getInstance().removePluginView(view,
 						view.getPluginViewName());
@@ -159,6 +173,7 @@ public class UIFunctionsImpl
 
 	public void addPluginView(final String viewID, final UISWTViewEventListener l) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				PluginsMenuHelper.getInstance().addPluginView(viewID, l);
 			}
@@ -171,6 +186,7 @@ public class UIFunctionsImpl
 
 	public void refreshLanguage() {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.setSelectedLanguageItem();
 			}
@@ -179,6 +195,7 @@ public class UIFunctionsImpl
 
 	public void closeDownloadBars() {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				MiniBarManager.getManager().closeAll();
 			}
@@ -191,6 +208,7 @@ public class UIFunctionsImpl
 
 	public void showGlobalTransferBar() {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				AllTransfersBar.open(mainwindow.getGlobalManager(),
 						mainwindow.getShell());
@@ -200,6 +218,7 @@ public class UIFunctionsImpl
 
 	public void closeGlobalTransferBar() {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				AllTransfersBar.close(mainwindow.getGlobalManager());
 			}
@@ -212,6 +231,7 @@ public class UIFunctionsImpl
 
 	public void openManagerView(final DownloadManager dm) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.openManagerView(dm);
 			}
@@ -220,6 +240,7 @@ public class UIFunctionsImpl
 
 	public void refreshIconBar() {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.refreshIconBar();
 			}
@@ -228,6 +249,7 @@ public class UIFunctionsImpl
 
 	public void removeManagerView(final DownloadManager dm) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.removeManagerView(dm);
 			}
@@ -236,6 +258,7 @@ public class UIFunctionsImpl
 
 	public void showMyTracker() {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.showMyTracker();
 			}
@@ -244,6 +267,7 @@ public class UIFunctionsImpl
 
 	public void closePluginView(final IView view) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.closePluginView(view);
 			}
@@ -258,6 +282,7 @@ public class UIFunctionsImpl
 			final UISWTViewEventListener l, final Object dataSource,
 			final boolean bSetFocus) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.openPluginView(sParentID, sViewID, l, dataSource, bSetFocus);
 			}
@@ -266,6 +291,7 @@ public class UIFunctionsImpl
 
 	public void removePluginView(final String viewID) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				PluginsMenuHelper.getInstance().removePluginViews(viewID);
 			}
@@ -274,6 +300,7 @@ public class UIFunctionsImpl
 
 	public void setStatusText(final String string) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.setStatusText(string);
 			}
@@ -283,6 +310,7 @@ public class UIFunctionsImpl
 	public void setStatusText(final int statustype, final String string,
 			final UIStatusTextClickListener l) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.setStatusText(statustype, string, l);
 			}
@@ -302,6 +330,7 @@ public class UIFunctionsImpl
 
 	public void closePluginViews(final String sViewID) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.closePluginViews(sViewID);
 			}
@@ -310,6 +339,7 @@ public class UIFunctionsImpl
 
 	public void openPluginView(final AbstractIView view, final String name) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.openPluginView(view, name);
 			}
@@ -318,6 +348,7 @@ public class UIFunctionsImpl
 
 	public void showMyShares() {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.showMyShares();
 			}
@@ -326,6 +357,7 @@ public class UIFunctionsImpl
 
 	public void showMyTorrents() {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.showMyTorrents();
 			}
@@ -334,6 +366,7 @@ public class UIFunctionsImpl
 
 	public void showAllPeersView() {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.showAllPeersView();
 			}
@@ -342,6 +375,7 @@ public class UIFunctionsImpl
 
 	public void showMultiOptionsView(final DownloadManager[] dms) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.showMultiOptionsView(dms);
 			}
@@ -350,6 +384,7 @@ public class UIFunctionsImpl
 
 	public void showConsole() {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				mainwindow.showConsole();
 			}
@@ -364,6 +399,7 @@ public class UIFunctionsImpl
 	public boolean viewURL(final String url, final String target, final int w,
 			final int h, final boolean allowResize, final boolean isModal) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				SimpleBrowserWindow window = new SimpleBrowserWindow(
 						mainwindow.getShell(), url, w, h, allowResize, isModal);
@@ -377,6 +413,7 @@ public class UIFunctionsImpl
 	public boolean viewURL(final String url, final String target, final double w,
 			final double h, final boolean allowResize, final boolean isModal) {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				SimpleBrowserWindow window = new SimpleBrowserWindow(
 						mainwindow.getShell(), url, w, h, allowResize, isModal);

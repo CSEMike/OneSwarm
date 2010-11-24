@@ -27,7 +27,7 @@ public class InvitationCreatePanel extends FriendsImportWithBack {
 	public static final String FRIEND_INVITE_NAME_HELP = msg.add_friends_invite_create_nickname_help();
 	private static final long MAX_AGE = 14 * 24 * 60 * 60 * 1000;
 
-	private FriendsImportCallback friendWizardCallback;
+	private final FriendsImportCallback friendWizardCallback;
 
 	public InvitationCreatePanel(String email, FriendsImportCallback cb) {
 		String nick = email;
@@ -46,8 +46,8 @@ public class InvitationCreatePanel extends FriendsImportWithBack {
 
 	private class Step1 extends FriendsImportWithBackStep implements KeyUpHandler {
 
-		private TextBox nickBox = new TextBox();
-		private InvitationCreatePanel parent;
+		private final TextBox nickBox = new TextBox();
+		private final InvitationCreatePanel parent;
 
 		public Step1(InvitationCreatePanel parent) {
 			this.parent = parent;
@@ -280,7 +280,7 @@ public class InvitationCreatePanel extends FriendsImportWithBack {
 			text += "\n\n" + msg.add_friends_invite_email_invite1_download();
 			text += "\n" + msg.add_friends_invite_email_invite2_run();
 			text += "\n" + msg.add_friends_invite_email_invite3_click_link();
-			text += "\n" + URL.encode("http://127.0.0.1:29615/#" + OneSwarmConstants.FRIEND_INVITE_PREFIX + OneSwarmConstants.FRIEND_INVITE_CODE_PREFIX + code + ":" + OneSwarmConstants.FRIEND_INVITE_NICK_PREFIX + nick);
+			text += "\n" + URL.encode(OneSwarmConstants.ONESWARM_ENTRY_URL + "#" + OneSwarmConstants.FRIEND_INVITE_PREFIX + OneSwarmConstants.FRIEND_INVITE_CODE_PREFIX + code + ":" + OneSwarmConstants.FRIEND_INVITE_NICK_PREFIX + nick);
 			text += "\n" + msg.add_friends_invite_email_invite4_redeem();
 			return text;
 		}
@@ -368,6 +368,7 @@ public class InvitationCreatePanel extends FriendsImportWithBack {
 		friendWizardCallback.back();
 	}
 
+	@Override
 	protected void onLastNext() {
 		friendWizardCallback.cancel();
 	}

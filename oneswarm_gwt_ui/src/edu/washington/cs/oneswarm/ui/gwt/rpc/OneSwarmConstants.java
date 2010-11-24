@@ -1,7 +1,6 @@
 package edu.washington.cs.oneswarm.ui.gwt.rpc;
 
 import java.util.Date;
-import java.util.Locale;
 
 import com.google.gwt.user.client.rpc.IsSerializable;
 
@@ -25,9 +24,11 @@ public interface OneSwarmConstants {
 	public final static String FRIEND_INVITE_CODE_PREFIX = "code=";
 	public final static String FRIEND_INVITE_NICK_PREFIX = "nick=";
 	public final static String FRIEND_INVITE_PREFIX = "invite:";
-	public final static int LOCAL_WEB_SERVER_PORT = 29615;
+	public final static int LOCAL_WEB_SERVER_PORT =
+		System.getProperty("oneswarm.integration.web.ui.port") == null ? 29615 :
+			Integer.parseInt(System.getProperty("oneswarm.integration.web.ui.port"));
 
-	public final static int LOCAL_WEB_SERVER_PORT_AUTH = 29616;
+	public final static int LOCAL_WEB_SERVER_PORT_AUTH = LOCAL_WEB_SERVER_PORT+1;
 
 	public final static String ONESWARM_ENTRY_URL = "http://127.0.0.1:" + LOCAL_WEB_SERVER_PORT + "/";
 	public final static String ONESWARM_DIRECT_LINK = ONESWARM_ENTRY_URL + "redirect.html";
@@ -93,7 +94,7 @@ public interface OneSwarmConstants {
 		AAC("aac", true, "audio/x-aac", "audio", FileTypeFilter.Audio),
 
 		ASF("asf", true, "video/x-FLV", "video", FileTypeFilter.Videos),
-		
+
 		AVI("avi", true, "video/x-FLV", "video", FileTypeFilter.Videos),
 
 		DIVX("divx", true, "video/x-FLV", "video", FileTypeFilter.Videos),

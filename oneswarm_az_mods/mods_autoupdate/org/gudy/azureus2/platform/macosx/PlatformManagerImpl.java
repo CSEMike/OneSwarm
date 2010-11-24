@@ -14,25 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- * 
+ *
  * AELITIS, SAS au capital de 46,603.30 euros
  * 8 Allee Lenotre, La Grille Royale, 78600 Le Mesnil le Roi, France.
  *
  */
 
 package org.gudy.azureus2.platform.macosx;
-
-import org.gudy.azureus2.core3.config.COConfigurationManager;
-import org.gudy.azureus2.core3.config.ParameterListener;
-import org.gudy.azureus2.core3.logging.*;
-import org.gudy.azureus2.core3.util.*;
-import org.gudy.azureus2.platform.PlatformManager;
-import org.gudy.azureus2.platform.PlatformManagerCapabilities;
-import org.gudy.azureus2.platform.PlatformManagerListener;
-import org.gudy.azureus2.platform.PlatformManagerPingCallback;
-import org.gudy.azureus2.platform.macosx.access.jnilib.OSXAccess;
-
-import org.gudy.azureus2.plugins.platform.PlatformManagerException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -41,6 +29,24 @@ import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.text.MessageFormat;
 import java.util.HashSet;
+
+import org.gudy.azureus2.core3.logging.LogAlert;
+import org.gudy.azureus2.core3.logging.LogEvent;
+import org.gudy.azureus2.core3.logging.LogIDs;
+import org.gudy.azureus2.core3.logging.Logger;
+import org.gudy.azureus2.core3.util.AEDiagnostics;
+import org.gudy.azureus2.core3.util.AEDiagnosticsEvidenceGenerator;
+import org.gudy.azureus2.core3.util.AEMonitor;
+import org.gudy.azureus2.core3.util.Constants;
+import org.gudy.azureus2.core3.util.Debug;
+import org.gudy.azureus2.core3.util.IndentWriter;
+import org.gudy.azureus2.core3.util.SystemProperties;
+import org.gudy.azureus2.platform.PlatformManager;
+import org.gudy.azureus2.platform.PlatformManagerCapabilities;
+import org.gudy.azureus2.platform.PlatformManagerListener;
+import org.gudy.azureus2.platform.PlatformManagerPingCallback;
+import org.gudy.azureus2.platform.macosx.access.jnilib.OSXAccess;
+import org.gudy.azureus2.plugins.platform.PlatformManagerException;
 
 
 /**
@@ -56,7 +62,7 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 
     protected static PlatformManagerImpl singleton;
     protected static AEMonitor class_mon = new AEMonitor("PlatformManager");
-    
+
     private static String fileBrowserName = "Finder";
 
     //T: PlatformManagerCapabilities
@@ -119,28 +125,28 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
         capabilitySet.add(PlatformManagerCapabilities.GetUserDataDirectory);
         capabilitySet.add(PlatformManagerCapabilities.UseNativeScripting);
         capabilitySet.add(PlatformManagerCapabilities.PlaySystemAlert);
-        
+
         if (OSXAccess.isLoaded()) {
 	        capabilitySet.add(PlatformManagerCapabilities.GetVersion);
         }
         AEDiagnostics.addEvidenceGenerator(this);
-        
+
         checkPList();
     }
-    
+
     protected PListEditor
     getPList()
-    
+
     	throws IOException
     {
-    	
+
     	/**
-    	 * Bugfix: on OSX, install4j sets the working directory to the app subdir, so we need to back out a bit to get 
-    	 * the proper directory. e.g., user.dir is: /Applications/OneSwarm.app/Contents/Resources/app 
+    	 * Bugfix: on OSX, install4j sets the working directory to the app subdir, so we need to back out a bit to get
+    	 * the proper directory. e.g., user.dir is: /Applications/OneSwarm.app/Contents/Resources/app
     	 */
-  
+
     	// the default construction
-//		String	plist = 
+//		String	plist =
 //			System.getProperty("user.dir") +
 //			SystemProperties.SEP+ SystemProperties.getApplicationName() + ".app/Contents/Info.plist";
 
@@ -151,18 +157,18 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     	} catch( Exception e ) {
     		throw new IOException(e.getMessage());
     	}
-    	
+
 		PListEditor editor = new PListEditor( plist );
-	
+
 		return( editor );
     }
-    
+
     protected void
     checkPList()
     {
     	try{
     		PListEditor editor = getPList();
-    		
+
     		editor.setFileTypeExtensions(new String[] {"torrent","tor","oneswarm"});
     		editor.setSimpleStringValue("CFBundleName", "OneSwarm");
 			editor.setSimpleStringValue("CFBundleTypeName", "OneSwarm Download");
@@ -172,26 +178,26 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 			if( editor.setArrayValues("CFBundleURLSchemes", "string", new String[] { "magnet", "dht", "oneswarm"}) == false ) {
 				editor.getPushyWithURLTypes(new String[] { "magnet", "dht", "oneswarm"});
 			}
-			
+
     	}catch( Throwable e ){
-    		
-    		// Using Debug.out causes a cyclic construction of the PlatformManager, so 
+
+    		// Using Debug.out causes a cyclic construction of the PlatformManager, so
     		// we instead use System.err.
     		System.err.println( "Failed to update plist " + e );
     	}
-	
+
     }
-    
+
     protected void
     touchPList()
     {
        	try{
     		PListEditor editor = getPList();
-  	
+
     		editor.touchFile();
-    		
+
        	}catch( Throwable e ){
-    		
+
     		Debug.out( "Failed to touch plist", e );
     	}
     }
@@ -212,7 +218,7 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     	if (!OSXAccess.isLoaded()) {
         throw new PlatformManagerException("Unsupported capability called on platform manager");
     	}
-    	
+
     	return OSXAccess.getVersion();
     }
 
@@ -222,8 +228,14 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
      */
     public String getUserDataDirectory() throws PlatformManagerException
     {
+    	// Special-case: we're running a LocalOneSwarm test instance and we
+    	// don't want to pollute the system-wide settings directory.
+    	if (System.getProperty("oneswarm.integration.user.data") != null) {
+    		return System.getProperty("oneswarm.integration.user.data");
+    	}
+
     	return new File(System.getProperty("user.home")
-    			+ "/Library/Application Support/" 
+    			+ "/Library/Application Support/"
     			+ SystemProperties.APPLICATION_NAME).getPath()
     			+ SystemProperties.SEP;
     }
@@ -231,13 +243,13 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 	public File
 	getLocation(
 		long	location_id )
-	
+
 		throws PlatformManagerException
 	{
 		switch ((int)location_id) {
 			case LOC_USER_DATA:
 				return new File(getUserDataDirectory());
-				
+
 			case LOC_DOCUMENTS:
 				try {
 					return new File(OSXAccess.getDocDir());
@@ -248,15 +260,15 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 					// Usually in user.home + Documents
 					return new File(System.getProperty("user.home"), "Documents");
 				}
-				
+
 			case LOC_MUSIC:
-				
+
 			case LOC_VIDEO:
 
 			default:
 				return( null );
 		}
-		
+
 	}
     /**
      * Not implemented; returns True
@@ -266,13 +278,13 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
         return true;
     }
 
-    
+
 	public String
 	getApplicationCommandLine()
 		throws PlatformManagerException
 	{
-		try{	    
-			
+		try{
+
 			//*****************************************************
 			/*
 			 * EDIT: by isdal
@@ -285,60 +297,60 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 			{
 				bundle_path = bundle_path.substring(0,macSpecificStart);
 			}
-			
+
 			File osx_app_bundle = new File( bundle_path ).getAbsoluteFile();
-			
+
 			if( !osx_app_bundle.exists() ) {
 				String msg = "OSX app bundle not found: [" +osx_app_bundle.toString()+ "]";
 				System.out.println( msg );
 				if (Logger.isEnabled())
-					Logger.log(new LogEvent(LOGID, msg));		
+					Logger.log(new LogEvent(LOGID, msg));
 				throw new PlatformManagerException( msg );
 			}
-			
+
 			return "open -a \"" +osx_app_bundle.toString()+ "\"";
 			//return osx_app_bundle.toString() +"/Contents/MacOS/JavaApplicationStub";
-			
+
 		}
-		catch( Throwable t ){	
+		catch( Throwable t ){
 			t.printStackTrace();
 			return null;
 		}
 	}
-	
-	
+
+
 	public boolean
 	isAdditionalFileTypeRegistered(
 		String		name,				// e.g. "BitTorrent"
 		String		type )				// e.g. ".torrent"
-	
+
 		throws PlatformManagerException
 	{
 	    throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
-	
+
 	public void
 	unregisterAdditionalFileType(
 		String		name,				// e.g. "BitTorrent"
 		String		type )				// e.g. ".torrent"
-		
+
 		throws PlatformManagerException
 	{
 		throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
-	
+
 	public void
 	registerAdditionalFileType(
 		String		name,				// e.g. "BitTorrent"
 		String		description,		// e.g. "BitTorrent File"
 		String		type,				// e.g. ".torrent"
 		String		content_type )		// e.g. "application/x-bittorrent"
-	
+
 		throws PlatformManagerException
 	{
 	   throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
-	
+
     /**
      * Not implemented; does nothing
      */
@@ -426,12 +438,12 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     copyFilePermissions(
 		String	from_file_name,
 		String	to_file_name )
-	
+
 		throws PlatformManagerException
 	{
-	    throw new PlatformManagerException("Unsupported capability called on platform manager");		
+	    throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
-	
+
     /**
      * {@inheritDoc}
      */
@@ -733,44 +745,44 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     {
     	return fileBrowserName;
     }
-    
+
 	public boolean
 	testNativeAvailability(
 		String	name )
-	
+
 		throws PlatformManagerException
 	{
-	    throw new PlatformManagerException("Unsupported capability called on platform manager");		
+	    throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
-    
+
 	public void
 	traceRoute(
 		InetAddress							interface_address,
 		InetAddress							target,
 		PlatformManagerPingCallback			callback )
-	
+
 		throws PlatformManagerException
 	{
-	    throw new PlatformManagerException("Unsupported capability called on platform manager");		
+	    throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
-	
+
 	public void
 	ping(
 		InetAddress							interface_address,
 		InetAddress							target,
 		PlatformManagerPingCallback			callback )
-	
+
 		throws PlatformManagerException
 	{
-	    throw new PlatformManagerException("Unsupported capability called on platform manager");		
+	    throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
-	
+
     public void
     addListener(
     	PlatformManagerListener		listener )
     {
     }
-    
+
     public void
     removeListener(
     	PlatformManagerListener		listener )
@@ -782,7 +794,7 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 			writer.println("PlatformManager: MacOSX");
 			try {
 				writer.indent();
-				
+
 				if (OSXAccess.isLoaded()) {
 					try {
 						writer.println("Version " + getVersion());

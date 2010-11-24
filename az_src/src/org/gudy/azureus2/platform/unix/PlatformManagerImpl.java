@@ -29,8 +29,10 @@ import org.gudy.azureus2.core3.logging.LogIDs;
 import org.gudy.azureus2.core3.logging.Logger;
 import org.gudy.azureus2.core3.util.AEMonitor;
 import org.gudy.azureus2.core3.util.SystemProperties;
-import org.gudy.azureus2.platform.*;
-
+import org.gudy.azureus2.platform.PlatformManager;
+import org.gudy.azureus2.platform.PlatformManagerCapabilities;
+import org.gudy.azureus2.platform.PlatformManagerListener;
+import org.gudy.azureus2.platform.PlatformManagerPingCallback;
 import org.gudy.azureus2.plugins.platform.PlatformManagerException;
 
 /**
@@ -115,6 +117,12 @@ public class PlatformManagerImpl implements PlatformManager
 	public String getUserDataDirectory()
 		throws PlatformManagerException
 	{
+    	// Special-case: we're running a LocalOneSwarm test instance and we
+    	// don't want to pollute the system-wide settings directory.
+    	if (System.getProperty("oneswarm.integration.user.data") != null) {
+    		return System.getProperty("oneswarm.integration.user.data");
+    	}
+
 		String userhome = System.getProperty("user.home");
 		String temp_user_path = userhome + SystemProperties.SEP + "."
 				+ SystemProperties.APPLICATION_NAME.toLowerCase()
@@ -209,12 +217,12 @@ public class PlatformManagerImpl implements PlatformManager
 		switch ((int)location_id) {
 			case LOC_USER_DATA:
 				return( new File( getUserDataDirectory() ));
-				
+
 			case LOC_DOCUMENTS:
 				return new File(System.getProperty("user.home"));
-				
+
 			case LOC_MUSIC:
-				
+
 			case LOC_VIDEO:
 
 			default:

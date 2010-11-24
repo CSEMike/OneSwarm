@@ -2,7 +2,7 @@
  * File    : SystemTraySWT.java
  * Created : 2 avr. 2004
  * By      : Olivier
- * 
+ *
  * Azureus - a Java Bittorrent client
  *
  * This program is free software; you can redistribute it and/or modify
@@ -60,6 +60,8 @@ import com.aelitis.azureus.core.AzureusCore;
 import com.aelitis.azureus.core.AzureusCoreFactory;
 import com.aelitis.azureus.ui.swt.UIFunctionsManagerSWT;
 import com.aelitis.azureus.ui.swt.UIFunctionsSWT;
+
+import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants;
 
 public class SystemTraySWT
 {
@@ -131,10 +133,10 @@ public class SystemTraySWT
 			long lastTime = 0;
 
 			public void handleEvent(Event arg0) {
-				// Bug in Windows (seems to have started around SWT 3.3 Release 
+				// Bug in Windows (seems to have started around SWT 3.3 Release
 				// Candidates) where double click isn't interpreted as DefaultSelection
 				// Since we "know" SWT.Selection is actually a mouse down, check
-				// if two mouse downs happen in a short timespan and fake a 
+				// if two mouse downs happen in a short timespan and fake a
 				// DefaultSelection
 				if (Constants.isWindows) {
 					long now = SystemTime.getCurrentTime();
@@ -169,7 +171,7 @@ public class SystemTraySWT
 		//		final MenuItem itemCloseAll = new MenuItem(menu, SWT.NULL);
 		//		Messages.setLanguageText(itemCloseAll,
 		//				"SystemTray.menu.closealldownloadbars");
-		//		
+		//
 		//		final MenuItem itemShowGlobalTransferBar = new MenuItem(menu, SWT.CHECK);
 		//		Messages.setLanguageText(itemShowGlobalTransferBar,
 		//			"SystemTray.menu.open_global_transfer_bar");
@@ -188,7 +190,7 @@ public class SystemTraySWT
 		createDownloadLimitMenu(menu);
 
 		/*
-		 * if we are running on windows: 
+		 * if we are running on windows:
 		 */
 		if (Constants.isWindows) {
 			new MenuItem(menu, SWT.SEPARATOR);
@@ -285,7 +287,7 @@ public class SystemTraySWT
 		//				uiFunctions.closeDownloadBars();
 		//			}
 		//		});
-		//		
+		//
 		//		itemShowGlobalTransferBar.setSelection(uiFunctions.isGlobalTransferBarShown());
 		//		itemShowGlobalTransferBar.addListener(SWT.Selection, new Listener() {
 		//			public void handleEvent(Event arg0) {
@@ -345,6 +347,7 @@ public class SystemTraySWT
 
 	public void dispose() {
 		Utils.execSWTThread(new AERunnable() {
+			@Override
 			public void runSupport() {
 				if (trayItem != null && !trayItem.isDisposed()) {
 					trayItem.dispose();
@@ -449,12 +452,12 @@ public class SystemTraySWT
 
 		//Why should we refresh the image? it never changes ...
 		//and is a memory bottleneck for some non-obvious reasons.
-		//trayItem.setImage(ImageRepository.getImage("azureus"));   
+		//trayItem.setImage(ImageRepository.getImage("azureus"));
 		trayItem.setVisible(true);
 	}
 
 	private void showMainWindow() {
-		Utils.launch("http://127.0.0.1:" + "29615/");
+		Utils.launch(OneSwarmConstants.ONESWARM_ENTRY_URL);
 	}
 
 	public void updateLanguage() {

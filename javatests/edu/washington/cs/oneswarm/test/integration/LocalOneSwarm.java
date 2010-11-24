@@ -3,9 +3,12 @@ package edu.washington.cs.oneswarm.test.integration;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.gudy.azureus2.core3.util.Constants;
+import org.gudy.azureus2.core3.util.FileUtil;
 
 import edu.washington.cs.oneswarm.test.util.ProcessLogConsumer;
 
@@ -16,6 +19,9 @@ import edu.washington.cs.oneswarm.test.util.ProcessLogConsumer;
  * This class should only be used by integration tests.
  */
 public class LocalOneSwarm {
+
+	// Used to automatically choose instance labels.
+	private static int instanceCount = 0;
 
 	/** The set of listeners. */
 	List<LocalOneSwarmListener> listeners = new ArrayList<LocalOneSwarmListener>();
@@ -41,6 +47,9 @@ public class LocalOneSwarm {
 		/** The path to the GWT war output directory. */
 		String warRootPath;
 
+		/** The port on which the local webserver listens for GUI connections. */
+		int webUiPort;
+
 		/** Classpath elements for the invocation. */
 		List<String> classPathElements = new ArrayList<String>();
 
@@ -52,10 +61,20 @@ public class LocalOneSwarm {
 
 		public List<String> getClassPathElements() { return classPathElements; }
 		public void addClassPathElement(String path) { classPathElements.add(path); }
+
+		public int getWebUiPort() { return webUiPort; }
+		public void setWebUiPort(int port) { webUiPort = port; }
 	}
 
 	public LocalOneSwarm() {
 		rootPath = new File(".").getAbsolutePath();
+
+		config.setLabel("LocalOneSwarm-" + instanceCount);
+
+		// 2 * instanceCount since the client uses the local port + 1 for SSL/remote access.
+		config.setWebUiPort(2000 + (2 * instanceCount));
+
+		instanceCount++;
 
 		/* TODO(piatek): Remove user-specific paths here. */
 		config.setWarRootPath("gwt-bin/war");
@@ -143,8 +162,9 @@ public class LocalOneSwarm {
 		// Construct a ProcessBuilder with common options
 		ProcessBuilder pb = new ProcessBuilder(config.javaPath,
 			"-Xmx256m",
-			"-Ddebug.war=" + config.warRootPath,
-			"-Dazureus.security.manager.install=0");
+			"-Ddebug.war=" + new File(rootPath, config.warRootPath),
+			"-Dazureus.security.manager.install=0",
+			"-DMULTI_INSTANCE=true");
 
 		List<String> command = pb.command();
 
@@ -163,11 +183,30 @@ public class LocalOneSwarm {
 		// -1 because of the spurious ':' at the end
 		command.add(cpString.substring(0, cpString.length()-1));
 
+		// Configure system properties for test instances
+		Map<String, String> scratchPaths = new HashMap<String, String>();
+		for (String dir : new String[]{"userData", "workingDir"}) {
+			File tmpDir = new File(System.getProperty("java.io.tmpdir"), config.getLabel() +
+					"-" + dir);
+			FileUtil.recursiveDelete(tmpDir);
+			FileUtil.mkdirs(tmpDir);
+
+			scratchPaths.put(dir, tmpDir.getAbsolutePath());
+
+			// XXX: use proper logging
+			System.out.println(config.getLabel() + " " + dir + ": " + tmpDir.getAbsolutePath());
+		}
+
+		command.add("-Doneswarm.integration.test=1");
+		command.add("-Doneswarm.integration.user.data=" + scratchPaths.get("userData"));
+		command.add("-Doneswarm.integration.web.ui.port=" + config.getWebUiPort());
+
 		// Main class
 		command.add("com.aelitis.azureus.ui.Main");
 
-		// Kick-off
+		// Kick-off: merge stderr and stdout, set the working directory, and start.
 		pb.redirectErrorStream(true);
+		pb.directory(new File(scratchPaths.get("workingDir")));
 		process = pb.start();
 
 		// Consume the unified log.
