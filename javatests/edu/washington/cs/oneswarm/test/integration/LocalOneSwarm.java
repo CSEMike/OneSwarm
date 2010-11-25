@@ -39,7 +39,7 @@ public class LocalOneSwarm {
 	/** The running OneSwarm process. */
 	Process process = null;
 
-	/** The root path from which we're running tests. Paths are constructed relative to this. */
+	/** The root path to the OneSwarm. Paths are constructed relative to this. */
 	String rootPath = null;
 
 	/** The experimental coordinator for this instance. */
@@ -317,5 +317,10 @@ public class LocalOneSwarm {
 		while(true) {
 			Thread.sleep(100);
 		}
+	}
+
+	/** Returns the root path of the OneSwarm build folder. */
+	public String getRootPath() {
+		return rootPath;
 	}
 }

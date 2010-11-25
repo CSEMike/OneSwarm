@@ -3,6 +3,7 @@ package edu.washington.cs.oneswarm.test.integration;
 import static org.junit.Assert.assertTrue;
 import junit.framework.JUnit4TestAdapter;
 
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -21,9 +22,13 @@ public class SimpleWebUITests {
 	/** A locally running instance of OneSwarm. */
 	static LocalOneSwarm instance;
 
+	/** The locally running selenium test server. */
+	static Process seleniumServer;
+
 	@BeforeClass
 	public static void setUpClass() throws Exception {
 		instance = new LocalOneSwarm();
+		seleniumServer = TestUtils.startSeleniumServer(instance.getRootPath());
 		instance.start();
 		TestUtils.awaitInstanceStart(instance);
 	}
@@ -60,6 +65,12 @@ public class SimpleWebUITests {
 		assertTrue(selenium.getTitle().contains("OneSwarm"));
 	}
 
+	@AfterClass
+	public static void tearDownClass() throws Exception {
+		instance.stop();
+		seleniumServer.destroy();
+	}
+
 	/** Boilerplate code for running as executable. */
 	public static void main (String [] args) {
         junit.textui.TestRunner.run (suite());
@@ -68,5 +79,4 @@ public class SimpleWebUITests {
 	public static junit.framework.Test suite() {
         return new JUnit4TestAdapter(SimpleWebUITests.class);
 	}
-
 }

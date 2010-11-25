@@ -301,14 +301,11 @@ Initializer
 					}
 				}
 
-				if( COConfigurationManager.getBooleanParameter("Open URL on startup") )
-				{
-					if( COConfigurationManager.getBooleanParameter("OneSwarm restarting") )
-					{
+				if( COConfigurationManager.getBooleanParameter("Open URL on startup") )	{
+					if( COConfigurationManager.getBooleanParameter("OneSwarm restarting") ) {
 						COConfigurationManager.setParameter("OneSwarm restarting", false);
 					}
-					else
-					{
+					else {
 						// taken from OneSwarmConstants.java since we can't use that directly here
 						// keep this in sync with UIFunctionsImpl.java bringToFront()
 						if( System.getProperty("nolaunch_startup") == null ) {
