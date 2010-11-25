@@ -1,11 +1,14 @@
 package edu.washington.cs.oneswarm.test.integration;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.util.Constants;
 import org.gudy.azureus2.core3.util.FileUtil;
@@ -19,6 +22,8 @@ import edu.washington.cs.oneswarm.test.util.ProcessLogConsumer;
  * This class should only be used by integration tests.
  */
 public class LocalOneSwarm {
+
+	private static Logger logger = Logger.getLogger(LocalOneSwarm.class.getName());
 
 	// Used to automatically choose instance labels.
 	private static int instanceCount = 0;
@@ -34,6 +39,9 @@ public class LocalOneSwarm {
 
 	/** The root path from which we're running tests. Paths are constructed relative to this. */
 	String rootPath = null;
+
+	/** The experimental coordinator for this instance. */
+	LocalOneSwarmCoordinator coordinator = null;
 
 	/** Configuration parameters for the local instance. */
 	public class Config {
@@ -82,12 +90,12 @@ public class LocalOneSwarm {
 			if (process == null) {
 				return;
 			}
-			System.out.println("Attemting to kill: " + process);
+			logger.info("Attemting to kill: " + process);
 			process.destroy();
 		}
 	};
 
-	public LocalOneSwarm() {
+	public LocalOneSwarm() throws IOException {
 		rootPath = new File(".").getAbsolutePath();
 
 		config.setLabel("LocalOneSwarm-" + instanceCount);
@@ -98,6 +106,10 @@ public class LocalOneSwarm {
 		 */
 		config.setWebUiPort(3000 + (3 * instanceCount));
 		config.setStartServerPort(3000 + (3 * instanceCount + 2));
+
+		// The coordinator listens for connections from running clients and sends commands
+		coordinator = new LocalOneSwarmCoordinator();
+		coordinator.start();
 
 		instanceCount++;
 
@@ -218,15 +230,30 @@ public class LocalOneSwarm {
 
 			scratchPaths.put(dir, tmpDir.getAbsolutePath());
 
-			// XXX: use proper logging
-			System.out.println(config.getLabel() + " " + dir + ": " + tmpDir.getAbsolutePath());
+			logger.info(config.getLabel() + " " + dir + ": " + tmpDir.getAbsolutePath());
 		}
 
+		/*
+		 * Create the experimental config file that will register this client with our locally
+		 * running coordination server.
+		 */
+		scratchPaths.put("experimentalConfig",
+				new File(scratchPaths.get("workingDir"), "exp.config").getAbsolutePath());
+		PrintStream experimentalConfig = new PrintStream(new FileOutputStream(
+				scratchPaths.get("experimentalConfig")));
+		experimentalConfig.println("name " + config.getLabel());
+		experimentalConfig.println(
+				"register http://127.0.0.1:" + coordinator.getServerPort() + "/s");
+		experimentalConfig.close();
+
+		// Add the appropriate config properties
 		command.add("-Doneswarm.integration.test=1");
 		command.add("-Doneswarm.integration.user.data=" + scratchPaths.get("userData"));
 		command.add("-Dazureus.config.path=" + scratchPaths.get("userData"));
 		command.add("-Doneswarm.integration.web.ui.port=" + config.getWebUiPort());
 		command.add("-Doneswarm.integration.start.server.port=" + config.getStartServerPort());
+		command.add("-Doneswarm.experimental.config.file=" +
+				scratchPaths.get("experimentalConfig"));
 
 		// Main class
 		command.add("com.aelitis.azureus.ui.Main");
@@ -246,13 +273,14 @@ public class LocalOneSwarm {
 	/** Asynchronously stops the process associated with this instance. */
 	public void stop() {
 		cancelThread.start();
+		coordinator.setDone();
 		Runtime.getRuntime().removeShutdownHook(cancelThread);
 	}
 
 	/** Used for debugging. */
 	public static void main(String [] args) throws Exception {
 		new LocalOneSwarm().start();
-		new LocalOneSwarm().start();
+//		new LocalOneSwarm().start();
 
 		while(true) {
 			Thread.sleep(100);
