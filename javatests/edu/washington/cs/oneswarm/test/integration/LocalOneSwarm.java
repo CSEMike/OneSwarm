@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,8 @@ public class LocalOneSwarm {
 	private static int instanceCount = 0;
 
 	/** The set of listeners. */
-	List<LocalOneSwarmListener> listeners = new ArrayList<LocalOneSwarmListener>();
+	List<LocalOneSwarmListener> listeners = Collections
+			.synchronizedList(new ArrayList<LocalOneSwarmListener>());
 
 	/** The configuration of this instance. */
 	LocalOneSwarm.Config config = new LocalOneSwarm.Config();
@@ -42,6 +44,16 @@ public class LocalOneSwarm {
 
 	/** The experimental coordinator for this instance. */
 	LocalOneSwarmCoordinator coordinator = null;
+
+	/** The current state of this instance. */
+	State state = State.CONFIGURING;
+
+	/** Possible states of a LocalOneSwarm instance. */
+	public enum State {
+		CONFIGURING,
+		STARTING,
+		RUNNING,
+	};
 
 	/** Configuration parameters for the local instance. */
 	public class Config {
@@ -108,7 +120,7 @@ public class LocalOneSwarm {
 		config.setStartServerPort(3000 + (3 * instanceCount + 2));
 
 		// The coordinator listens for connections from running clients and sends commands
-		coordinator = new LocalOneSwarmCoordinator();
+		coordinator = new LocalOneSwarmCoordinator(this);
 		coordinator.start();
 
 		instanceCount++;
@@ -193,8 +205,27 @@ public class LocalOneSwarm {
 		listeners.remove(listener);
 	}
 
+	/** Returns the current state of the instance. */
+	public State getState() {
+		return state;
+	}
+
+	/** Called by our OneSwarmCoordinator when receiving heartbeats from clients. */
+	void coordinatorReceivedHeartbeat() {
+		if (state == State.STARTING) {
+			state = State.RUNNING;
+
+			// Broadcast the start event to listeners
+			for (LocalOneSwarmListener l : listeners.toArray(new LocalOneSwarmListener[0])) {
+				l.instanceStarted(this);
+			}
+		}
+	}
+
 	/** Asynchronously starts the process associated with this instance. */
 	public void start() throws IOException {
+
+		state = State.STARTING;
 
 		// Construct a ProcessBuilder with common options
 		ProcessBuilder pb = new ProcessBuilder(config.javaPath,
@@ -254,6 +285,7 @@ public class LocalOneSwarm {
 		command.add("-Doneswarm.integration.start.server.port=" + config.getStartServerPort());
 		command.add("-Doneswarm.experimental.config.file=" +
 				scratchPaths.get("experimentalConfig"));
+		command.add("-Dnolaunch_startup=1");
 
 		// Main class
 		command.add("com.aelitis.azureus.ui.Main");

@@ -19,7 +19,13 @@ class LocalOneSwarmCoordinator extends Thread {
 	/** Whether this thread is terminating. */
 	boolean done = false;
 
-	public LocalOneSwarmCoordinator() throws IOException {
+	/** The local OneSwarm instance we are coordinating. */
+	private final LocalOneSwarm instance;
+
+	public LocalOneSwarmCoordinator(LocalOneSwarm instance) throws IOException {
+
+		this.instance = instance;
+
 		// Bind to any free port. Listen on localhost only.
 		serverSocket = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"));
 	}
@@ -50,6 +56,8 @@ class LocalOneSwarmCoordinator extends Thread {
 				} catch(SocketTimeoutException e) {
 					continue;
 				}
+
+				instance.coordinatorReceivedHeartbeat();
 
 				// TODO(piatek): Expand LocalOneSwarm to actually track state
 				// and send commands here. For now, simply give an ok.
