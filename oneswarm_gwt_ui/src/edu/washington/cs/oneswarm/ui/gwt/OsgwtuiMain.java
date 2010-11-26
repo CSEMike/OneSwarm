@@ -83,7 +83,7 @@ public class OsgwtuiMain implements Plugin {
 			logger.fine("enabling remote access");
 			Connector connector = new SelectChannelConnector();
 			connector.setHost(LOCALHOST);
-			connector.setPort(OneSwarmConstants.LOCAL_WEB_SERVER_PORT_AUTH);
+			connector.setPort(Constants.LOCAL_WEB_SERVER_PORT_AUTH);
 
 			authenticatedServer = new Server();
 			authenticatedServer.addConnector(connector);
@@ -115,9 +115,9 @@ public class OsgwtuiMain implements Plugin {
 			Context root = new Context(contexts, "/", Context.NO_SESSIONS);
 
 			root.addFilter(new FilterHolder(new GzipFilter()), "/*", Handler.ALL);
-			
+
 			MultiHandler mh = new MultiHandler(coreInterface, true);
-			
+
 			if (System.getProperty("com.sun.management.jmxremote") != null) {
 				RequestLogHandler requestLogHandler = new RequestLogHandler();
 
@@ -161,12 +161,12 @@ public class OsgwtuiMain implements Plugin {
 		// make sure to unload in case of shutdown
 
 		this.pluginInterface = pluginInterface;
-		
+
 		logger.fine("oneswarm ui plugin loaded");
 
 		Connector connector = new SelectChannelConnector();
 		connector.setHost(LOCALHOST);
-		connector.setPort(OneSwarmConstants.LOCAL_WEB_SERVER_PORT);
+		connector.setPort(Constants.LOCAL_WEB_SERVER_PORT);
 
 		server = new Server();
 
@@ -292,7 +292,7 @@ public class OsgwtuiMain implements Plugin {
 
 					public void completed(Sha1Result result) {
 						BackendTaskManager.get().removeTask(taskID);
-						
+
 					}
 				};
 			}
@@ -386,6 +386,7 @@ public class OsgwtuiMain implements Plugin {
 			this.useSha1 = useSha1;
 		}
 
+		@Override
 		public Principal authenticate(String username, Object credentials, Request request) {
 			try {
 
@@ -405,11 +406,13 @@ public class OsgwtuiMain implements Plugin {
 
 		}
 
+		@Override
 		public void setSingleSignOn(Request request, Response response, Principal principal, Credential credential) {
 			Debug.out("set single sign-on called");
 			super.setSingleSignOn(request, response, principal, credential);
 		}
 
+		@Override
 		public Credential getSingleSignOn(Request request, Response response) {
 			Debug.out("getSingleSignOn");
 			return super.getSingleSignOn(request, response);

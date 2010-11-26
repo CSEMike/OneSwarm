@@ -25,6 +25,7 @@ import org.gudy.azureus2.core3.config.impl.ConfigurationManager;
 import org.gudy.azureus2.core3.ipfilter.IpRange;
 import org.gudy.azureus2.core3.ipfilter.impl.IpRangeImpl;
 import org.gudy.azureus2.core3.util.Average;
+import org.gudy.azureus2.core3.util.Constants;
 import org.gudy.azureus2.core3.util.Debug;
 
 import com.aelitis.azureus.core.networkmanager.EventWaiter;
@@ -46,7 +47,7 @@ public class RemoteAccessForward {
 	private static Logger logger = Logger.getLogger(RemoteAccessForward.class.getName());
 
 	private final ConcurrentHashMap<ConnectionForwarder, Long> connectionForwarders;
-	private NetworkManager.ByteMatcher matcher;
+	private final NetworkManager.ByteMatcher matcher;
 	private volatile boolean running = false;
 
 	// private final GlobalManagerStats stats;
@@ -78,7 +79,7 @@ public class RemoteAccessForward {
 	public synchronized void stop() {
 		if (running) {
 			for (Iterator<ConnectionForwarder> iterator = connectionForwarders.keySet().iterator(); iterator.hasNext();) {
-				ConnectionForwarder cf = (ConnectionForwarder) iterator.next();
+				ConnectionForwarder cf = iterator.next();
 				cf.stop(false);
 				iterator.remove();
 			}
@@ -239,15 +240,15 @@ public class RemoteAccessForward {
 			return hostname;
 		}
 
-		private GwtWebToSSL gwtWebToSSL = new GwtWebToSSL();
-		private SSLToGwtWeb sslToGwtWeb = new SSLToGwtWeb();
+		private final GwtWebToSSL gwtWebToSSL = new GwtWebToSSL();
+		private final SSLToGwtWeb sslToGwtWeb = new SSLToGwtWeb();
 		private final boolean lanLocal;
 
 		public void start() throws UnknownHostException, IOException {
 			started = System.currentTimeMillis();
 			socket = new Socket();
 
-			socket.connect(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), OneSwarmConstants.LOCAL_WEB_SERVER_PORT_AUTH));
+			socket.connect(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), Constants.LOCAL_WEB_SERVER_PORT_AUTH));
 			logger.fine("connected to:" + socket.getInetAddress().getHostAddress() + ":" + socket.getPort());
 			webToSslStream = socket.getInputStream();
 			sslToWebStream = socket.getOutputStream();
@@ -631,7 +632,7 @@ public class RemoteAccessForward {
 			return allowedRanges;
 		}
 		/*
-		 * 
+		 *
 		 */
 		String[] split = filterString.split(",");
 		for (String s : split) {
@@ -782,7 +783,7 @@ public class RemoteAccessForward {
 		@Override
 		public void run() {
 			for (Iterator<ConnectionForwarder> iterator = connectionForwarders.keySet().iterator(); iterator.hasNext();) {
-				ConnectionForwarder cf = (ConnectionForwarder) iterator.next();
+				ConnectionForwarder cf = iterator.next();
 				if (cf.isTimedOut()) {
 					logger.fine("closing remote access connection (idle time out)");
 					cf.stop(false);

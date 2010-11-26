@@ -86,6 +86,7 @@ public class TestUtils {
 		System.setProperty("oneswarm.integration.web.ui.port", JVM_INSTANCE_WEB_UI_PORT + "");
 		System.setProperty("oneswarm.integration.start.server.port",
 				Integer.toString(JVM_INSTANCE_START_SERVER_PORT));
+		System.setProperty("azureus.security.manager.install", "0");
 		System.setProperty("oneswarm.experimental.config.file",
 				scratchPaths.get("experimentalConfig"));
 		System.setProperty("nolaunch_startup", "1");

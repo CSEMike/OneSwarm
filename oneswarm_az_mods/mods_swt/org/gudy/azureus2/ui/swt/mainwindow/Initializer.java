@@ -37,6 +37,7 @@ import org.gudy.azureus2.core3.logging.Logger;
 import org.gudy.azureus2.core3.util.AEMonitor;
 import org.gudy.azureus2.core3.util.AESemaphore;
 import org.gudy.azureus2.core3.util.AEThread;
+import org.gudy.azureus2.core3.util.Constants;
 import org.gudy.azureus2.core3.util.Debug;
 import org.gudy.azureus2.ui.common.util.UserAlerts;
 import org.gudy.azureus2.ui.swt.Alerts;
@@ -69,8 +70,6 @@ import com.aelitis.azureus.ui.IUIIntializer;
 import com.aelitis.azureus.ui.InitializerListener;
 import com.aelitis.azureus.ui.swt.UIFunctionsManagerSWT;
 import com.aelitis.azureus.ui.swt.UIFunctionsSWT;
-
-import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants;
 
 
 /**
@@ -307,7 +306,7 @@ Initializer
 					}
 					else {
 						if( System.getProperty("nolaunch_startup") == null ) {
-							Utils.launch(OneSwarmConstants.ONESWARM_ENTRY_URL);
+							Utils.launch(Constants.ONESWARM_ENTRY_URL);
 						}
 					}
 				}

@@ -24,14 +24,10 @@ public interface OneSwarmConstants {
 	public final static String FRIEND_INVITE_CODE_PREFIX = "code=";
 	public final static String FRIEND_INVITE_NICK_PREFIX = "nick=";
 	public final static String FRIEND_INVITE_PREFIX = "invite:";
-	public final static int LOCAL_WEB_SERVER_PORT =
-		System.getProperty("oneswarm.integration.web.ui.port") == null ? 29615 :
-			Integer.parseInt(System.getProperty("oneswarm.integration.web.ui.port"));
 
-	public final static int LOCAL_WEB_SERVER_PORT_AUTH = LOCAL_WEB_SERVER_PORT+1;
+	public static final String ONESWARM_DEFAULT_ENTRY_URL = "http://127.0.0.1:29615/";
 
-	public final static String ONESWARM_ENTRY_URL = "http://127.0.0.1:" + LOCAL_WEB_SERVER_PORT + "/";
-	public final static String ONESWARM_DIRECT_LINK = ONESWARM_ENTRY_URL + "redirect.html";
+	public final static String ONESWARM_DIRECT_LINK = ONESWARM_DEFAULT_ENTRY_URL + "redirect.html";
 
 	public final static String REMOTE_ACCESS_LIMIT_IPS_KEY = "OSGWTUI.RemoteAccess.Limit.IPs";
 

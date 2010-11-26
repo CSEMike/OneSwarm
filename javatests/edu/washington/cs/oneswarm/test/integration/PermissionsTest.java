@@ -9,4 +9,7 @@ public class PermissionsTest {
 	//
 	// Remove permissions, confirm that file is eventually inaccessible.
 
+	public static final void main (String [] args) throws Exception {
+		// placeholder
+	}
 }

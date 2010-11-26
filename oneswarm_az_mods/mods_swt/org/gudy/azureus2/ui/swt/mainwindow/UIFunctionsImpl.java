@@ -23,6 +23,7 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Shell;
 import org.gudy.azureus2.core3.download.DownloadManager;
 import org.gudy.azureus2.core3.util.AERunnable;
+import org.gudy.azureus2.core3.util.Constants;
 import org.gudy.azureus2.plugins.PluginView;
 import org.gudy.azureus2.ui.swt.Utils;
 import org.gudy.azureus2.ui.swt.minibar.AllTransfersBar;
@@ -40,8 +41,6 @@ import org.gudy.azureus2.ui.swt.views.IView;
 import com.aelitis.azureus.ui.UIFunctionsUserPrompter;
 import com.aelitis.azureus.ui.UIStatusTextClickListener;
 import com.aelitis.azureus.ui.swt.UIFunctionsSWT;
-
-import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants;
 
 /**
  * @author TuxPaper
@@ -72,7 +71,7 @@ public class UIFunctionsImpl
 			public void runSupport() {
 				//mainwindow.setVisible(true, tryTricks);
 
-				Utils.launch(OneSwarmConstants.ONESWARM_ENTRY_URL);
+				Utils.launch(Constants.ONESWARM_ENTRY_URL);
 			}
 		});
 	}

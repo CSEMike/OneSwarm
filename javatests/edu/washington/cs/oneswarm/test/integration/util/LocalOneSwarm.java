@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.util.Constants;
+import org.junit.Assert;
 
 import edu.washington.cs.oneswarm.test.util.ProcessLogConsumer;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
@@ -124,9 +125,28 @@ public class LocalOneSwarm {
 
 		instanceCount++;
 
-		/* TODO(piatek): Remove user-specific paths here. */
 		config.setWarRootPath("gwt-bin/war");
-		config.addClassPathElement("eclipse-bin");
+
+		if (System.getProperty("oneswarm.test.local.classpath") == null) {
+
+			System.err.println(
+				"********************************************************\n" +
+				"*     Need to specify oneswarm.test.local.classpath    *\n" +
+				"*                                                      *\n" +
+				"* To support both IDE auto builds and ant builds,      *\n" +
+				"* LocalOneSwarm requires you to manually set the       *\n" +
+				"* OneSwarm-specific classpath entries. See the ant     *\n" +
+				"* build.xml run-tests target for an example of this    *\n" +
+				"* value.                                               *\n" +
+				"********************************************************");
+			Assert.fail();
+		}
+
+		String [] entries = System.getProperty("oneswarm.test.local.classpath").split(":");
+		for (String entry : entries) {
+			config.addClassPathElement(entry);
+			System.out.println("Added " + entry + " to cp");
+		}
 
 		/* SWT */
 		String swt = "build/swt/";
@@ -295,16 +315,6 @@ public class LocalOneSwarm {
 		cancelThread.start();
 		coordinator.setDone();
 		Runtime.getRuntime().removeShutdownHook(cancelThread);
-	}
-
-	/** Used for debugging. */
-	public static void main(String [] args) throws Exception {
-		new LocalOneSwarm().start();
-//		new LocalOneSwarm().start();
-
-		while(true) {
-			Thread.sleep(100);
-		}
 	}
 
 	/** Returns the root path of the OneSwarm build folder. */

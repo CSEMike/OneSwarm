@@ -61,8 +61,6 @@ import com.aelitis.azureus.core.AzureusCoreFactory;
 import com.aelitis.azureus.ui.swt.UIFunctionsManagerSWT;
 import com.aelitis.azureus.ui.swt.UIFunctionsSWT;
 
-import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants;
-
 public class SystemTraySWT
 {
 
@@ -457,7 +455,7 @@ public class SystemTraySWT
 	}
 
 	private void showMainWindow() {
-		Utils.launch(OneSwarmConstants.ONESWARM_ENTRY_URL);
+		Utils.launch(Constants.ONESWARM_ENTRY_URL);
 	}
 
 	public void updateLanguage() {

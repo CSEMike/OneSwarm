@@ -118,6 +118,8 @@
 	
 		<!-- Register our custom tasks -->
 		<taskdef name="GWTRecompileCheck" classname="edu.washington.cs.oneswarm.ant.GWTRecompileCheck" classpath="${root.dir}/ant-custom-bin" />
+		
+		<taskdef name="DiscoverTestClasses" classname="edu.washington.cs.oneswarm.ant.DiscoverTestClasses" classpath="${root.dir}/ant-custom-bin" />
    </target>
    
    <target name="compile-core" depends="core-init" >
@@ -210,7 +212,6 @@
 	
 	<path id="libs.classpath">
 		<fileset dir="${root.dir}/${core-libs.dir}" includes="**/*.jar" />
-		<fileset dir="${root.dir}/swt/" includes="**/*.jar" />
 	</path>
 	
 	<path id="f2f.class.path">
@@ -563,7 +564,62 @@
 		<delete dir="merge-scratch" />
 		<delete file="OneSwarm.jar" />
 		
+		<!-- Test -->
+		<delete dir="test-bin" />
+		
    </target>
+
+	<!-- =============================== Test ==================== -->
+	<target name="compile-tests" depends="gwt-dist,f2f-dist,core-jar">
+		<mkdir dir="test-bin" />
+
+		<javac srcdir="javatests" destdir="test-bin" nowarn="yes" source="1.5" target="1.5" includeAntRuntime="no" debug="true" debuglevel="lines,vars,source" fork="yes" memoryMaximumSize="256m">
+
+			<classpath>
+				<pathelement location="gwt-bin/war/WEB-INF/classes" />
+				<path refid="project.class.path.servlet" />
+				<pathelement location="build/test-libs/selenium-server.jar" />
+				<pathelement location="build/test-libs/selenium-java-client-driver.jar" />
+			</classpath>
+			
+		</javac>
+	</target>
+	
+	<!--
+	  Detect the set of tests in javatests/ and execute each one. 
+	
+	  The need for this hack as opposed to ordinary JUnit execution is because
+      we can't use the JUnit ant task directly. Due to OSX SWT issues, we need
+ 	  to run each test as an individual java execution.
+	-->
+	<target name="run-tests" depends="compile-tests" >
+		<!-- Sets oneswarm.test.cases -->
+		<DiscoverTestClasses />
+		<foreach target="run-single-test" list="${oneswarm.test.cases}" param="testClass" />	
+	</target>
+	
+	<target name="run-single-test" >
+		<echo message="Running ${testClass}"/>
+		
+		<java classname="${testClass}" failonerror="true" fork="true">
+			<jvmarg value="${optStartOnFirstThread}" />
+			<jvmarg value="${optWindowsLibraryPath}"/>
+			<jvmarg value="-Xmx256M" />
+			<jvmarg value="-Doneswarm.test.local.classpath=gwt-bin/war/WEB-INF/classes:f2f-dist/osf2f_plugin.jar:core-dist/OneSwarmCore.jar"/>
+			
+			<classpath>
+				<pathelement location="test-bin" />
+				<path refid="project.class.path.servlet" />
+				<pathelement location="f2f-dist/osf2f_plugin.jar" />
+				<pathelement location="gwt-bin/war/WEB-INF/classes" />
+				<pathelement location="build/core-libs/junit.jar" />
+				<pathelement location="${platform.swt.jar}" />
+				<pathelement location="build/test-libs/selenium-server.jar" />
+				<pathelement location="build/test-libs/selenium-java-client-driver.jar" />
+				<path refid="f2f.class.path" />
+			</classpath>
+		</java>
+	</target>
 
 	<!-- A target which runs OneSwarm. (This assumes that the appropriate targets have been built.) -->
 	<target name="run">

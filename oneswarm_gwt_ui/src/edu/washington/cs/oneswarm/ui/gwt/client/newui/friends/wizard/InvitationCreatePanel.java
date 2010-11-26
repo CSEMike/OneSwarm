@@ -280,7 +280,7 @@ public class InvitationCreatePanel extends FriendsImportWithBack {
 			text += "\n\n" + msg.add_friends_invite_email_invite1_download();
 			text += "\n" + msg.add_friends_invite_email_invite2_run();
 			text += "\n" + msg.add_friends_invite_email_invite3_click_link();
-			text += "\n" + URL.encode(OneSwarmConstants.ONESWARM_ENTRY_URL + "#" + OneSwarmConstants.FRIEND_INVITE_PREFIX + OneSwarmConstants.FRIEND_INVITE_CODE_PREFIX + code + ":" + OneSwarmConstants.FRIEND_INVITE_NICK_PREFIX + nick);
+			text += "\n" + URL.encode(OneSwarmConstants.ONESWARM_DEFAULT_ENTRY_URL + "#" + OneSwarmConstants.FRIEND_INVITE_PREFIX + OneSwarmConstants.FRIEND_INVITE_CODE_PREFIX + code + ":" + OneSwarmConstants.FRIEND_INVITE_NICK_PREFIX + nick);
 			text += "\n" + msg.add_friends_invite_email_invite4_redeem();
 			return text;
 		}
