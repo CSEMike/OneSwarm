@@ -1,4 +1,4 @@
-package edu.washington.cs.oneswarm.test.integration;
+package edu.washington.cs.oneswarm.test.integration.util;
 
 import java.io.IOException;
 import java.io.PrintStream;

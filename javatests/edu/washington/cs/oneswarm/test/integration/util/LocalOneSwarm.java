@@ -1,4 +1,4 @@
-package edu.washington.cs.oneswarm.test.integration;
+package edu.washington.cs.oneswarm.test.integration.util;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -6,15 +6,14 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.util.Constants;
-import org.gudy.azureus2.core3.util.FileUtil;
 
 import edu.washington.cs.oneswarm.test.util.ProcessLogConsumer;
+import edu.washington.cs.oneswarm.test.util.TestUtils;
 
 /**
  * Encapsulates a locally running testing instance of OneSwarm. Each instance of this class
@@ -252,24 +251,13 @@ public class LocalOneSwarm {
 		command.add(cpString.substring(0, cpString.length()-1));
 
 		// Configure system properties for test instances
-		Map<String, String> scratchPaths = new HashMap<String, String>();
-		for (String dir : new String[]{"userData", "workingDir"}) {
-			File tmpDir = new File(System.getProperty("java.io.tmpdir"), config.getLabel() +
-					"-" + dir);
-			FileUtil.recursiveDelete(tmpDir);
-			FileUtil.mkdirs(tmpDir);
-
-			scratchPaths.put(dir, tmpDir.getAbsolutePath());
-
-			logger.info(config.getLabel() + " " + dir + ": " + tmpDir.getAbsolutePath());
-		}
+		Map<String, String> scratchPaths = TestUtils.createScratchLocationsForTest(config.label);
+		logger.info(config.getLabel() + " paths: " + scratchPaths);
 
 		/*
 		 * Create the experimental config file that will register this client with our locally
 		 * running coordination server.
 		 */
-		scratchPaths.put("experimentalConfig",
-				new File(scratchPaths.get("workingDir"), "exp.config").getAbsolutePath());
 		PrintStream experimentalConfig = new PrintStream(new FileOutputStream(
 				scratchPaths.get("experimentalConfig")));
 		experimentalConfig.println("name " + config.getLabel());

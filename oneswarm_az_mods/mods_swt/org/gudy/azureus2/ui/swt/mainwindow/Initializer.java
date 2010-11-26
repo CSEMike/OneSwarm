@@ -306,8 +306,6 @@ Initializer
 						COConfigurationManager.setParameter("OneSwarm restarting", false);
 					}
 					else {
-						// taken from OneSwarmConstants.java since we can't use that directly here
-						// keep this in sync with UIFunctionsImpl.java bringToFront()
 						if( System.getProperty("nolaunch_startup") == null ) {
 							Utils.launch(OneSwarmConstants.ONESWARM_ENTRY_URL);
 						}

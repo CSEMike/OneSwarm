@@ -21,14 +21,11 @@
 package org.gudy.azureus2.ui.swt;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.logging.LogAlert;
@@ -46,7 +43,7 @@ import edu.washington.cs.oneswarm.ui.gwt.RemoteAccessConfig;
 
 /**
  * @author Olivier
- * 
+ *
  */
 public class Main
 {
@@ -63,8 +60,6 @@ public class Main
 			if (Launcher.checkAndLaunch(Main.class, args))
 				return;
 
-			System.out.println("custom main");
-
 			// This *has* to be done first as it sets system properties that are read and cached by Java
 
 			COConfigurationManager.preInitialise();
@@ -75,7 +70,7 @@ public class Main
 
 			/**
 			 * isdal mod, check for autostart flag and set nosplash
-			 * 
+			 *
 			 * check for configure flag as run configure script
 			 */
 			List<String> newargs = new LinkedList<String>();
@@ -97,7 +92,6 @@ public class Main
 				System.setProperty("nolaunch_startup", "");
 				// and continue without the --autostart arg
 				args = newargs.toArray(new String[newargs.size()]);
-				System.out.println("setting nolaunch");
 			}
 
 			if (configure) {
@@ -106,15 +100,15 @@ public class Main
 			}
 
 			/**
-			 * PIAMOD -- 
-			 * 
-			 * Special case the multi instance code here -- by default, we launch with MULTI_INSTANCE since 
-			 * we wanted to coexist with Azureus. Special case is if we're launching with arguments since, on 
-			 * windows, that's how URL handlers are invoked, and Azureus uses the start server to transfer passed 
-			 * URI info to the running process. 
-			 * 
-			 * These days, we've just switched the port of the StartServer, so we don't need this anymore. and, we need 
-			 * to pass arguments to support links 
+			 * PIAMOD --
+			 *
+			 * Special case the multi instance code here -- by default, we launch with MULTI_INSTANCE since
+			 * we wanted to coexist with Azureus. Special case is if we're launching with arguments since, on
+			 * windows, that's how URL handlers are invoked, and Azureus uses the start server to transfer passed
+			 * URI info to the running process.
+			 *
+			 * These days, we've just switched the port of the StartServer, so we don't need this anymore. and, we need
+			 * to pass arguments to support links
 			 */
 			mi = false;
 
@@ -260,7 +254,7 @@ public class Main
 
 		/*  if another instance is running then set the property which is checked during
 		 *	class instantiation by various stuff to to avoid pulling in too much state
-		 *	from the already running instance  
+		 *	from the already running instance
 		 */
 		if (another_instance)
 
