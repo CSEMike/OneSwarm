@@ -30,7 +30,7 @@ public class DiscoverTestClasses extends Task {
 	}
 
 	private String transform(String inFullPath) {
-		return inFullPath.replace(root.getAbsolutePath(), "").replace("/", ".").replace(".class", "").substring(1);
+		return inFullPath.replace(root.getAbsolutePath(), "").replace(File.separator, ".").replace(".class", "").substring(1);
 	}
 
 	private void recursiveScan(File root) {

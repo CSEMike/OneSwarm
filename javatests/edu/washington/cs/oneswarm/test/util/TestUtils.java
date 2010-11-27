@@ -164,7 +164,7 @@ public class TestUtils {
 	public static Process startSeleniumServer(String rootPath) throws IOException {
 
 		// TODO(piatek): Replace /usr/bin/java with something configurable
-		ProcessBuilder pb = new ProcessBuilder("/usr/bin/java",
+		ProcessBuilder pb = new ProcessBuilder("java",
 				"-jar",
 				rootPath + "/build/test-libs/selenium-server.jar");
 
