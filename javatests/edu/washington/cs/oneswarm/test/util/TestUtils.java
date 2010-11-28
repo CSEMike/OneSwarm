@@ -213,14 +213,6 @@ public class TestUtils {
 				.getEncoded()));
 		localOneSwarm.getCoordinator().addCommand("addkey TEST " + base64Key + " true true");
 
-		// Next add remote friend's key to our instance
-		String remoteKey = localOneSwarm.getPublicKey();
-		Friend f = new Friend(true, true, new Date(), new Date(), InetAddress.getLocalHost(),
-				localOneSwarm.getCoordinator().getPort(),
-				localOneSwarm.getLabel(),
-			Base64.decode(remoteKey), "test", 0, 0, false, true);
-		f2fMain.getFriendManager().addFriend(f);
-
 		// Wait for the friend connectors to become available (prerequisite for friend connection)
 		new ConditionWaiter(new ConditionWaiter.Predicate(){
 			public boolean satisfied() {
@@ -231,6 +223,14 @@ public class TestUtils {
 			public boolean satisfied() {
 				return localOneSwarm.getCoordinator().isFriendConnectorAvailable();
 			}}, 90*1000).await();
+
+		// Next add remote friend's key to our instance
+		String remoteKey = localOneSwarm.getPublicKey();
+		Friend f = new Friend(true, true, new Date(), new Date(), InetAddress.getLocalHost(),
+				localOneSwarm.getCoordinator().getPort(),
+				localOneSwarm.getLabel(),
+			Base64.decode(remoteKey), "test", 0, 0, false, true);
+		f2fMain.getFriendManager().addFriend(f);
 
 		f2fMain.getDHTConnector().connectToFriend(f);
 

@@ -626,6 +626,8 @@ public class CoordinatorExecutor extends Thread {
 		f.setGroup(group);
 		f.setDateAdded(new Date());
 		coreInterface.getF2FInterface().addFriend(f);
+
+		logger.info("addfriend: " + keybase64);
 	}
 
 	private Friend getFriendForKey( String base64key ) {

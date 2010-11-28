@@ -133,6 +133,7 @@ public class LocalOneSwarmCoordinator extends Thread {
 						String [] toks = kv.split("=");
 						if (toks[0].equals("key")) {
 							encodedPublicKey = URLDecoder.decode(toks[1], "UTF-8");
+							logger.info("Got public key from LocalOneSwarm: " + encodedPublicKey);
 						} else if (toks[0].equals("onlinefriends")) {
 							onlineFriendCount = Integer.parseInt(toks[1]);
 						} else if (toks[0].equals("friendConnectorAvailable")) {

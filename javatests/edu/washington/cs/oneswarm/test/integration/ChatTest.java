@@ -84,7 +84,7 @@ public class ChatTest {
 			public boolean satisfied() {
 				return selenium.isTextPresent(chatMessage);
 			}
-		}, 3000).await();
+		}, 5000).await();
 
 		// Switch to the other instance
 		selenium.selectWindow("local");
@@ -94,7 +94,7 @@ public class ChatTest {
 			public boolean satisfied() {
 				return selenium.isElementPresent("link=1 unread message");
 			}
-		},2000).await();
+		},10000).await();
 
 		// Click to bring up chat box
 		selenium.click("link=1 unread message");
@@ -104,7 +104,7 @@ public class ChatTest {
 			public boolean satisfied() {
 				return selenium.isTextPresent("ChatMessage JVM to Local");
 			}
-		},2000).await();
+		},5000).await();
 
 		// Finally, verify that this message was stored in our local database
 		List<Chat> storedMessage = ChatDAO.get().getMessagesForUser(localOneSwarm.getPublicKey(),
