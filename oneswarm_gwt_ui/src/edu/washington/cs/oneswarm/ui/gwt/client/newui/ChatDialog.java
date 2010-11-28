@@ -48,7 +48,7 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 	public static final int DEFAULT_HEIGHT = 350;
 
 	public static final int MAX_LENGTH = 1024;
-	
+
 	public static final String CSS_CHAT_DIALOG = "os-chat_dialog";
 	public static final String CSS_CHAT_OFFLINE = "os-chat_offline";
 
@@ -58,7 +58,7 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 	Map<String, FriendInfoLite> keyToFriend = new HashMap<String, FriendInfoLite>();
 	private String mSelectedBase64PublicKey;
 	private VerticalPanel mChatPanel = new VerticalPanel();
-	private ScrollPanel mChatScroll = new ScrollPanel();
+	private final ScrollPanel mChatScroll = new ScrollPanel();
 	final private HelpButton mErrorHelpButton = new HelpButton("Some text here");
 	final private VerticalPanel mMainRHSVP = new VerticalPanel();
 	private HorizontalSplitPanel mainPanel;
@@ -71,8 +71,8 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 	 * When switching among multiple chats, we should keep the display constant
 	 * among them
 	 */
-	private Map<String, VerticalPanel> mKeyToChatPanel = new HashMap<String, VerticalPanel>();
-	private Set<String> mShowingFullHistory = new HashSet<String>();
+	private final Map<String, VerticalPanel> mKeyToChatPanel = new HashMap<String, VerticalPanel>();
+	private final Set<String> mShowingFullHistory = new HashSet<String>();
 	private EntireUIRoot mUIRoot;
 
 	private static ChatDialog showing = null;
@@ -95,14 +95,14 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 	}
 
 	public ChatDialog(FriendInfoLite[] friendInfoLites, String inSelectedPublicKey, EntireUIRoot root) {
-		
+
 		mSelectedBase64PublicKey = inSelectedPublicKey;
 		mFriends = friendInfoLites;
 		mUIRoot = root;
-		
+
 		addStyleName(CSS_CHAT_DIALOG);
 		setText(msg.swarm_browser_chat());
-		
+
 		GWT.runAsync(new RunAsyncCallback() {
 			public void onFailure(Throwable reason) {
 				Window.alert("Error loading Chat dialog javascript: " + reason.toString());
@@ -113,7 +113,7 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 				if( mFriends == null ) {
 					return;
 				}
-				
+
 				ChatDialog dlg = onInitialized();
 				dlg.show();
 				dlg.setVisible(false);
@@ -123,20 +123,20 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 				} else {
 					try {
 						String [] toks = Cookies.getCookie("os-chat-position").split("_");
-						int left = Integer.parseInt(toks[0]), 
-							top = Integer.parseInt(toks[1]), 
-							width = Integer.parseInt(toks[2]), 
+						int left = Integer.parseInt(toks[0]),
+							top = Integer.parseInt(toks[1]),
+							width = Integer.parseInt(toks[2]),
 							height = Integer.parseInt(toks[3]);
-						
+
 						if( left < 0 || top < 0 ) {
 							throw new Exception("Bad cookie -- negative left/top: " + left + " / " + top);
 						}
-						
+
 						if( width > 25 && height > 25 ) {
 							dlg.setPopupPosition(left, top);
 
 							dlg.resized(width, height);
-							
+
 						} else {
 							throw new Exception("Bad width / height: " + width + " / " + height);
 						}
@@ -147,17 +147,18 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 				}
 				dlg.setVisible(true);
 			}
-			
+
 		});
-		
+
 	}
-	
+
 	protected ChatDialog onInitialized() {
-				
+
 		for (FriendInfoLite f : mFriends) {
 			keyToFriend.put(f.getPublicKey(), f);
 		}
 
+		mTextBox.getElement().setId("chatTextBox");
 		mTextBox.setMaxLength(MAX_LENGTH);
 
 		mainPanel = new HorizontalSplitPanel();
@@ -275,42 +276,44 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 		ResizablePanel rp = new ResizablePanel();
 		rp.add(mainPanel);
 		rp.addResizeListener(this);
-		
+
 		this.setWidget(rp);
 
 		OneSwarmGWT.addToUpdateTask(this);
-		
+
 		return this;
 	}
-	
+
 	public void resized(Integer width, Integer height) {
 
 		mainPanel.setWidth(width+"px");
 		mainPanel.setHeight(height+"px");
-		
+
 		mUserList.setHeight(height+"px");
 		mChatScroll.setHeight((height - (39 + 16 + 3)) + "px");
-		
+
 		setWidth(width+"px");
 		setHeight(height+"px");
-		
+
 	}
 
 	public boolean isWriting() {
 		return mTextBox.getText().length() > 0;
 	}
 
+	@Override
 	public void onDetach() {
-		
-		Cookies.setCookie("os-chat-position", 
-				this.getAbsoluteLeft() + "_" + this.getAbsoluteTop() + "_" + this.getOffsetWidth() + "_" + this.getOffsetHeight(), 
+
+		Cookies.setCookie("os-chat-position",
+				this.getAbsoluteLeft() + "_" + this.getAbsoluteTop() + "_" + this.getOffsetWidth() + "_" + this.getOffsetHeight(),
 				OneSwarmConstants.TEN_YEARS_FROM_NOW);
-		
+
 		super.onDetach();
 		OneSwarmGWT.removeFromUpdateTask(this);
 		showing = null;
 	}
 
+	@Override
 	public void onAttach() {
 		super.onAttach();
 		showing = this;
@@ -337,7 +340,7 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 			public void onSuccess(Boolean result) {
 				mSending = false;
 				nextRPC = 0; // induce immediate refresh
-				
+
 				if( result == false ) {
 					updateFriendStatus(msg.chat_user_offline());
 				}
@@ -359,7 +362,7 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 	}
 
 	private void updateFriendStatus( String msg ) {
-		
+
 		if( msg == null ) {
 			mChatPanel.getWidget(0).setVisible(false);
 		} else {
@@ -367,7 +370,7 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 			((Label)mChatPanel.getWidget(0)).setText(msg);
 		}
 	}
-	
+
 	private void createChatPanel(final boolean include_read) {
 
 		mLastAdded = WhichAdding.First;
@@ -392,11 +395,11 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 			mChatPanel.add(new Label());
 			mChatPanel.getWidget(0).setVisible(false);
 			mChatPanel.getWidget(0).addStyleName(CSS_CHAT_OFFLINE);
-			
+
 			mChatPanel.setWidth("100%");
 			mKeyToChatPanel.put(mSelectedBase64PublicKey, mChatPanel);
 		}
-		
+
 		FriendInfoLite f = keyToFriend.get(mSelectedBase64PublicKey);
 		if( f != null ) {
 			if( f.isConnected() == false ) {
@@ -405,7 +408,7 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 				updateFriendStatus(null);
 			}
 		} else {
-			// the friend list only contains online friends. 
+			// the friend list only contains online friends.
 			updateFriendStatus(msg.chat_user_offline());
 		}
 
@@ -513,11 +516,11 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 
 			Label chatLabel = new Label(chat.getMessage());
 			Label timestamp = new Label();
-			
+
 			if( chat.isSent() == false ) {
 				chatLabel.setText(chatLabel.getText() + " (" + msg.chat_pending() + ")");
 			}
-			
+
 			chatLabel.setWordWrap(true);
 
 			transmorphLinks(chatLabel, "http", "<a href=\"#\" onclick=\"window.open('", "', '_blank', '')\">", "</a>");
@@ -628,7 +631,7 @@ public class ChatDialog extends OneSwarmDialogBox implements Updateable, Resizab
 		mUserList.setVisibleItemCount(10);
 		mUserList.setHeight(DEFAULT_HEIGHT + "px");
 		mUserList.setWidth("100%");
-		
+
 		userChangeListener = new ChangeListener() {
 			public void onChange(Widget sender) {
 				System.out.println("change listener " + mUserList.getSelectedIndex() + " / ");

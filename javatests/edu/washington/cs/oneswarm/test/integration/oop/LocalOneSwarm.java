@@ -1,4 +1,4 @@
-package edu.washington.cs.oneswarm.test.integration.util;
+package edu.washington.cs.oneswarm.test.integration.oop;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 import org.gudy.azureus2.core3.util.Constants;
 import org.junit.Assert;
 
+import edu.washington.cs.oneswarm.test.util.ConditionWaiter;
 import edu.washington.cs.oneswarm.test.util.ProcessLogConsumer;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 
@@ -138,6 +139,9 @@ public class LocalOneSwarm {
 				"* OneSwarm-specific classpath entries. See the ant     *\n" +
 				"* build.xml run-tests target for an example of this    *\n" +
 				"* value.                                               *\n" +
+				"* (If you're building in eclipse, perhaps add:         *\n" +
+				"*     -Doneswarm.test.local.classpath=eclipse-bin      *\n" +
+				"* to your run configuration JVM parameters.            *\n" +
 				"********************************************************");
 			Assert.fail();
 		}
@@ -294,6 +298,7 @@ public class LocalOneSwarm {
 		command.add("-Doneswarm.experimental.config.file=" +
 				scratchPaths.get("experimentalConfig"));
 		command.add("-Dnolaunch_startup=1");
+		command.add("-Doneswarm.test.coordinator.poll=2");
 
 		// Main class
 		command.add("com.aelitis.azureus.ui.Main");
@@ -317,8 +322,48 @@ public class LocalOneSwarm {
 		Runtime.getRuntime().removeShutdownHook(cancelThread);
 	}
 
+	/** Blocks until {@count} friends are online. */
+	public void waitForOnlineFriends(final int count) {
+		new ConditionWaiter(new ConditionWaiter.Predicate(){
+			public boolean satisfied() {
+				return getCoordinator().onlineFriendCount >= count;
+			}}, 20*1000).await();
+	}
+
+	/** Blocks until the instance's public key is available and returns it. */
+	public String getPublicKey() {
+		new ConditionWaiter(new ConditionWaiter.Predicate() {
+			public boolean satisfied() {
+				return getCoordinator().encodedPublicKey != null;
+			}
+		}, 20*1000).await();
+		return getCoordinator().encodedPublicKey;
+	}
+
 	/** Returns the root path of the OneSwarm build folder. */
 	public String getRootPath() {
 		return rootPath;
 	}
+
+	public LocalOneSwarmCoordinator getCoordinator() {
+		return coordinator;
+	}
+
+	@Override
+	public String toString() {
+		return config.label;
+	}
+
+	public static void main (String [] args) throws Exception {
+		new LocalOneSwarm().start();
+		while (true) {
+			Thread.sleep(100);
+		}
+	}
+
+	/** Returns the label of this instance. */
+	public String getLabel() {
+		return config.label;
+	}
+
 }

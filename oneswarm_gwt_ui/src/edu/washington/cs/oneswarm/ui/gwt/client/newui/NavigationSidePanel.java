@@ -1,7 +1,6 @@
 package edu.washington.cs.oneswarm.ui.gwt.client.newui;
 
 import java.util.HashMap;
-import java.util.Map;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -57,8 +56,8 @@ public class NavigationSidePanel extends VerticalPanel implements Updateable {
 
 	private long mNextUpdate = 0;
 
-	private FriendsSidePanel mFriendPanel;
-	private CommunityServersSidePanel mCommunityServers;
+	private final FriendsSidePanel mFriendPanel;
+	private final CommunityServersSidePanel mCommunityServers;
 
 	public NavigationSidePanel() {
 		addStyleName(CSS_NAV);
@@ -68,6 +67,7 @@ public class NavigationSidePanel extends VerticalPanel implements Updateable {
 				EntireUIRoot.getRoot(NavigationSidePanel.this).startChat(null);
 			}
 		});
+		unreadChatHTML.getElement().setId("unreadChatNotification");
 		unreadChatHTML.addStyleName(CSS_CHAT_NOTIFICATION);
 
 		upRateLabel.addStyleName(CSS_SIDEBAR_STATS);
@@ -105,11 +105,13 @@ public class NavigationSidePanel extends VerticalPanel implements Updateable {
 		return mCommunityServers;
 	}
 
+	@Override
 	public void onDetach() {
 		super.onDetach();
 		OneSwarmGWT.removeFromUpdateTask(this);
 	}
 
+	@Override
 	public void onAttach() {
 		super.onAttach();
 		OneSwarmGWT.addToUpdateTask(this);

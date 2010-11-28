@@ -55,8 +55,6 @@ public class OSF2FMain {
 	private static Logger logger = Logger.getLogger(OSF2FMain.class.getName());
 
 	private boolean initialized = false;
-	// private NetworkManager.ByteMatcher osMatcher;
-	// private NetworkManager.ByteMatcher osAuthMatcher;
 
 	private OverlayManager overlayManager;
 	private FriendManager friendManager;
@@ -71,6 +69,7 @@ public class OSF2FMain {
 	private OSF2FNatChecker natChecker;
 	private OSF2FSpeedChecker speedChecker;
 	private Sha1DownloadManager sha1DownloadManager;
+
 	public static OSF2FMain getSingelton() {
 		return instance;
 	}
@@ -191,6 +190,7 @@ public class OSF2FMain {
 				pIf.addListener(new PluginListener() {
 					public void initializationComplete() {
 						AEThread2 t = new AEThread2("OSF2F::dhtConnect", true) {
+							@Override
 							public void run() {
 								logWithTime("loading DHT manager", Level.FINE);
 								DistributedDatabase distributedDatabase = pIf.getDistributedDatabase();
@@ -477,5 +477,5 @@ public class OSF2FMain {
 
 	public List<FriendInvitation> getLocallyCreatedInvitations() {
 		return invitationManager.getLocallyCreatedInvitations();
-	}	
+	}
 }

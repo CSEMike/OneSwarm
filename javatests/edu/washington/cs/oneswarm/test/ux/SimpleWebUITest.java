@@ -26,6 +26,9 @@ public class SimpleWebUITest {
 	/** The locally running selenium test server. */
 	static Process seleniumServer;
 
+	/** The selenium control interface. */
+	private static Selenium selenium;
+
 	@BeforeClass
 	public static void setUpClass() throws Exception {
 		seleniumServer = TestUtils.startSeleniumServer((new File(".").getAbsolutePath()));
@@ -41,8 +44,6 @@ public class SimpleWebUITest {
         };
         selenium.start();
 	}
-
-	private static Selenium selenium;
 
 	/** Opens the web UI in Firefox. */
 	@Before

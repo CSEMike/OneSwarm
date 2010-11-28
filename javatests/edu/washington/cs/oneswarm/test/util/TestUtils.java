@@ -4,22 +4,30 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.InetAddress;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import junit.framework.JUnit4TestAdapter;
 
 import org.apache.commons.io.FileUtils;
+import org.bouncycastle.util.encoders.Base64;
+import org.junit.Assert;
 
 import com.aelitis.azureus.core.AzureusCore;
 import com.aelitis.azureus.core.AzureusCoreComponent;
 import com.aelitis.azureus.core.AzureusCoreException;
 import com.aelitis.azureus.core.AzureusCoreLifecycleListener;
 import com.aelitis.azureus.core.impl.AzureusCoreImpl;
+import com.thoughtworks.selenium.Selenium;
 
-import edu.washington.cs.oneswarm.test.integration.util.LocalOneSwarm;
-import edu.washington.cs.oneswarm.test.integration.util.LocalOneSwarmListener;
+import edu.washington.cs.oneswarm.f2f.Friend;
+import edu.washington.cs.oneswarm.f2f.OSF2FMain;
+import edu.washington.cs.oneswarm.test.integration.oop.LocalOneSwarm;
+import edu.washington.cs.oneswarm.test.integration.oop.LocalOneSwarmListener;
 
 /**
  * Miscellaneous utility functions for running OneSwarm integration tests.
@@ -57,7 +65,9 @@ public class TestUtils {
 			if (instance.getState() == LocalOneSwarm.State.RUNNING) {
 				latch.countDown();
 			}
-			latch.await();
+			if (!latch.await(30, TimeUnit.SECONDS)) {
+				Assert.fail();
+			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		} finally {
@@ -104,11 +114,11 @@ public class TestUtils {
 		// Await start of this JVM's instance of OneSwarm.
 		final CountDownLatch latch = new CountDownLatch(1);
 
-		try {
-			while (AzureusCoreImpl.isCoreAvailable() == false) {
-				Thread.sleep(50);
+		new ConditionWaiter(new ConditionWaiter.Predicate() {
+			public boolean satisfied() {
+				return AzureusCoreImpl.isCoreAvailable();
 			}
-		} catch (InterruptedException e) {}
+		}, 10*1000).await();
 
 		AzureusCore core = AzureusCoreImpl.getSingleton();
 		AzureusCoreLifecycleListener l = new AzureusCoreLifecycleListener(){
@@ -174,7 +184,7 @@ public class TestUtils {
 	}
 
 	/**
-	 * Asynchornously executes JUnit tests for a particular class in a manner
+	 * Asynchronously executes JUnit tests for a particular class in a manner
 	 * suitable for OSX, which requires SWT execution on the main thread.
 	 */
 	public static void swtCompatibleTestRunner(Class<?> testClass) throws IOException {
@@ -186,5 +196,56 @@ public class TestUtils {
 			}
 		}.start();
 		TestUtils.startOneSwarmForTest();
+	}
+
+	/**
+	 * Blocks while creating a new {@code LocalOneSwarm} instance which has
+	 * the local JVM client added and connected as a friend.
+	 */
+	public static LocalOneSwarm spawnConnectedOneSwarmInstance() throws Exception {
+		final LocalOneSwarm localOneSwarm = new LocalOneSwarm();
+		localOneSwarm.start();
+		TestUtils.awaitInstanceStart(localOneSwarm);
+
+		// Connect the two clients. First, get our key and add it to the remote instance.
+		final OSF2FMain f2fMain = OSF2FMain.getSingelton();
+		String base64Key = new String(Base64.encode(f2fMain.getOverlayManager().getOwnPublicKey()
+				.getEncoded()));
+		localOneSwarm.getCoordinator().addCommand("addkey TEST " + base64Key + " true true");
+
+		// Next add remote friend's key to our instance
+		String remoteKey = localOneSwarm.getPublicKey();
+		Friend f = new Friend(true, true, new Date(), new Date(), InetAddress.getLocalHost(),
+				localOneSwarm.getCoordinator().getPort(),
+				localOneSwarm.getLabel(),
+			Base64.decode(remoteKey), "test", 0, 0, false, true);
+		f2fMain.getFriendManager().addFriend(f);
+
+		// Wait for the friend connectors to become available (prerequisite for friend connection)
+		new ConditionWaiter(new ConditionWaiter.Predicate(){
+			public boolean satisfied() {
+				return f2fMain.getDHTConnector() != null;
+			}}, 90*1000).await();
+
+		new ConditionWaiter(new ConditionWaiter.Predicate() {
+			public boolean satisfied() {
+				return localOneSwarm.getCoordinator().isFriendConnectorAvailable();
+			}}, 90*1000).await();
+
+		f2fMain.getDHTConnector().connectToFriend(f);
+
+		// Wait for the connection to be established
+		localOneSwarm.waitForOnlineFriends(1);
+
+		return localOneSwarm;
+	}
+
+	/** Blocks until a given selenium {@code elementId} can be found. */
+	public static void awaitElement(final Selenium selenium, final String elementId) {
+		new ConditionWaiter(new ConditionWaiter.Predicate() {
+			public boolean satisfied() {
+				return selenium.isElementPresent(elementId);
+			}
+		}, 5000).await();
 	}
 }

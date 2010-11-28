@@ -23,6 +23,8 @@ import com.aelitis.azureus.core.AzureusCore;
 import com.aelitis.azureus.core.impl.AzureusCoreImpl;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
+import edu.washington.cs.oneswarm.f2f.OSF2FMain;
+
 public class CoordinatorHeartbeatThread extends Thread {
 
 	private final String url;
@@ -32,6 +34,8 @@ public class CoordinatorHeartbeatThread extends Thread {
 	private long lastSessionULTime = System.currentTimeMillis(), lastSessionDLTime = System.currentTimeMillis();
 
 	private static Logger logger = Logger.getLogger(CoordinatorHeartbeatThread.class.getName());
+
+	private boolean includeBuildInfo = true;
 
 	public CoordinatorHeartbeatThread( ExperimentConfigManager experimentConfigManager, String url ) {
 		this.expConfig = experimentConfigManager;
@@ -46,20 +50,6 @@ public class CoordinatorHeartbeatThread extends Thread {
 		while( true ) {
 			try {
 				AzureusCore core = AzureusCoreImpl.getSingleton();
-//				String neuurl = url + "&ul=" + core.getGlobalManager().getStats().getDataAndProtocolSendRate() +
-//						"&dl=" + core.getGlobalManager().getStats().getDataAndProtocolReceiveRate() +
-//						"&mem=" + Runtime.getRuntime().totalMemory() +
-//						"&totfriends=" + expConfig.getCoreInterface().getF2FInterface().getFriends(true, true).length +
-//						"&onlinefriends=" + expConfig.getCoreInterface().getF2FInterface().getFriends(false, false).length +
-//						"&started=" + started +
-//						"&sessionul=" + core.getGlobalManager().getStats().getTotalDataBytesSent() + core.getGlobalManager().getStats().getTotalProtocolBytesSent() +
-//						"&sessiondl=" + core.getGlobalManager().getStats().getTotalDataBytesReceived() + core.getGlobalManager().getStats().getTotalProtocolBytesReceived() +
-//						"&dls=" + core.getGlobalManager().getDownloadManagers().size() +
-//						"&totsent=" + StatsFactory.getStats().getUploadedBytes() +
-//						"&totrecv=" + StatsFactory.getStats().getDownloadedBytes() +
-//						"&totup=" + StatsFactory.getStats().getTotalUpTime() +
-//						"&key=" + URLEncoder.encode(expConfig.getCoreInterface().getF2FInterface().getMyPublicKey().replaceAll("\n", ""), "UTF-8");
-
 				Map<String, String> formParams = new HashMap<String, String>();
 
 				long sessionUL = core.getGlobalManager().getStats().getTotalDataBytesSent() + core.getGlobalManager().getStats().getTotalProtocolBytesSent();
@@ -78,11 +68,20 @@ public class CoordinatorHeartbeatThread extends Thread {
 
 				lastSessionDLTime = lastSessionULTime = System.currentTimeMillis();
 
+				boolean connectorAvailable = false;
+				try {
+					OSF2FMain f2fMain = OSF2FMain.getSingelton();
+					connectorAvailable = f2fMain.getDHTConnector() != null;
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
 				formParams.put("ul", minuteDL + "" );
 				formParams.put("dl", minuteUL + "" );
 				formParams.put("mem", Runtime.getRuntime().totalMemory() + "" );
 				formParams.put("totfriends", expConfig.getCoreInterface().getF2FInterface().getFriends(true, true).length + "" );
 				formParams.put("onlinefriends", expConfig.getCoreInterface().getF2FInterface().getFriends(false, false).length + "" );
+				formParams.put("friendConnectorAvailable", connectorAvailable + "");
 				formParams.put("started", started + "" );
 				formParams.put("sessionul", sessionUL + "" );
 				formParams.put("sessiondl", sessionDL + "" );
@@ -93,15 +92,18 @@ public class CoordinatorHeartbeatThread extends Thread {
 				formParams.put("key", expConfig.getCoreInterface().getF2FInterface().getMyPublicKey().replaceAll("\n", "") );
 
 				String versionString = "Unknown";
-				try {
-					versionString = Constants.getOneSwarmAzureusModsVersion();
-					InputStream buildInfo = getClass().getClassLoader().getResourceAsStream("build.txt");
-					Properties info = new Properties();
-					info.load(buildInfo);
-					versionString = info.getProperty("build.number");
-				} catch( Exception e ) {
-					logger.warning("Error loading build info: " + e.toString());
-					e.printStackTrace();
+				if (includeBuildInfo) {
+					try {
+						versionString = Constants.getOneSwarmAzureusModsVersion();
+						InputStream buildInfo = getClass().getClassLoader().getResourceAsStream("build.txt");
+						Properties info = new Properties();
+						info.load(buildInfo);
+						versionString = info.getProperty("build.number");
+					} catch( Exception e ) {
+						logger.warning("Error loading build info: " + e.toString());
+						includeBuildInfo = false;
+						e.printStackTrace();
+					}
 				}
 
 				formParams.put("corevers", versionString);
@@ -183,7 +185,17 @@ public class CoordinatorHeartbeatThread extends Thread {
 				e.printStackTrace();
 			}
 			try {
-				Thread.sleep(1 * 60 * 1000); // 1 min
+
+				int secondsToWait = 60;
+				try {
+					if (System.getProperty("oneswarm.test.coordinator.poll") != null) {
+						secondsToWait = Integer.parseInt(System.getProperty("oneswarm.test.coordinator.poll"));
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				Thread.sleep(secondsToWait * 1000); // 1 min
 			} catch( Exception e ) {}
 		}
 	}

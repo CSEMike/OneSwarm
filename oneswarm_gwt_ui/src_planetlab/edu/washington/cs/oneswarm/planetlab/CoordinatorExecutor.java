@@ -56,89 +56,105 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.FriendInfoLite;
 import edu.washington.cs.oneswarm.ui.gwt.server.FriendInfoLiteFactory;
 
 public class CoordinatorExecutor extends Thread {
-	
+
 	private static Logger logger = Logger.getLogger(CoordinatorHeartbeatThread.class.getName());
-	
+
 	List<String> commands = new ArrayList<String>();
 
 	private CoreInterface coreInterface;
 
 	private AzureusCore azCore;
 
-	private CoordinatorHeartbeatThread parent;
-	
+	private final CoordinatorHeartbeatThread parent;
+
 	public CoordinatorExecutor( CoordinatorHeartbeatThread parent, byte [] commands ) throws IOException {
 		this.parent = parent;
 		BufferedReader in = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(commands)));
-		while( in.ready() ) { 
+		while( in.ready() ) {
 			String line = in.readLine();
 			if( line != null ) {
 				this.commands.add(line);
 			}
 		}
 	}
-	
+
 	public CoordinatorExecutor( CoordinatorHeartbeatThread parent, String [] inCommands ) {
 		this.parent = parent;
 		for( String s : inCommands ) {
 			commands.add(s);
 		}
 	}
-	
-	public void run() { 
-		
+
+	@Override
+	public void run() {
+
 		coreInterface = ExperimentConfigManager.get().getCoreInterface();
 		azCore = AzureusCoreImpl.getSingleton();
-		
+
 		try {
 			for( String s : commands ) {
-				
+
 				if( s.length() == 0 ) {
 					continue;
 				}
-				
+
 				String [] toks = s.split("\\s+");
-				
+
 				logger.info("Processing command: " + s + " / " + toks[0]);
-				
+
 				if( toks[0].equals("ok") ) {
-					; 
+					;
 				}
-				else if( toks[0].equals("shutdown") ) { 
+				else if (toks[0].equals("setprop")) {
+					System.setProperty(toks[1], toks[2]);
+				}
+				else if( toks[0].equals("shutdown") ) {
 					while( UIFunctionsManager.getUIFunctions() == null ) {
 						logger.warning("Waiting for non-null UI functions...");
 						Thread.sleep(1000);
 					}
-					
+
 					if( UIFunctionsManager.getUIFunctions().requestShutdown() == false ) {
 						System.err.println("Requested shutdown failed, so we are halting forcefully.");
 						Runtime.getRuntime().halt(-1);
 					}
-				} else if( toks[0].equals("addkey") ) { 
-					addFriend(toks[1], toks[2]);
-				} else if( toks[0].equals("removekey") ) { 
+				} else if( toks[0].equals("addkey") ) {
+
+					boolean allowChat = false;
+					boolean shareFileList = false;
+
+					if (toks.length > 3) {
+						allowChat = Boolean.parseBoolean(toks[3]);
+					}
+					if (toks.length > 4) {
+						shareFileList = Boolean.parseBoolean(toks[4]);
+					}
+
+					addFriend(toks[1], toks[2], allowChat, shareFileList);
+
+				} else if( toks[0].equals("removekey") ) {
 					Friend toDel = coreInterface.getF2FInterface().getFriend(toks[1]);
 					if( toDel != null ) {
 						coreInterface.getF2FInterface().deleteFriend(FriendInfoLiteFactory.createFriendInfo(toDel));
-					} else { 
+					} else {
 						logger.warning("couldn't find friend to delete for key: " + toks[1]);
 					}
-				} else if( toks[0].equals("blockgroup") ) { 
+				} else if( toks[0].equals("blockgroup") ) {
 					for( FriendInfoLite flite : coreInterface.getF2FInterface().getFriends(true, true) ) {
 						Friend f = coreInterface.getF2FInterface().getFriend(flite.getPublicKey());
-						if( f.getGroup().equals(toks[1]) ) { 
+						if( f.getGroup().equals(toks[1]) ) {
 							f.setBlocked(true);
 						}
 					}
-				} else if( toks[0].equals("removegroup") ) { 
+				} else if( toks[0].equals("removegroup") ) {
 					for( FriendInfoLite flite : coreInterface.getF2FInterface().getFriends(true, true) ) {
 						Friend f = coreInterface.getF2FInterface().getFriend(flite.getPublicKey());
-						if( f.getGroup().equals(toks[1]) ) { 
+						if( f.getGroup().equals(toks[1]) ) {
 							coreInterface.getF2FInterface().deleteFriend(FriendInfoLiteFactory.createFriendInfo(f));
 						}
 					}
 				} else if( toks[0].equals("forceall") ) {
-					for( FriendInfoLite f : coreInterface.getF2FInterface().getFriends(true, false) ) { 
+					for( FriendInfoLite f : coreInterface.getF2FInterface().getFriends(true, false) ) {
 						coreInterface.getF2FInterface().connectToFriend(f.getPublicKey());
 					}
 					// wait some time for connections to come up
@@ -150,13 +166,13 @@ public class CoordinatorExecutor extends Thread {
 						if( blockFriend.isConnected() ) {
 							coreInterface.getF2FInterface().disconnectFriend(blockFriend);
 						}
-					} else { 
+					} else {
 						logger.warning("tried to block key not in friend list: " + toks[1]);
 					}
 				} else if( toks[0].equals("unblockgroup") ) {
 					for( FriendInfoLite flite : coreInterface.getF2FInterface().getFriends(true, true) ) {
 						Friend f = coreInterface.getF2FInterface().getFriend(flite.getPublicKey());
-						if( f.getGroup().equals(toks[1]) ) { 
+						if( f.getGroup().equals(toks[1]) ) {
 							f.setBlocked(false);
 						}
 					}
@@ -166,20 +182,20 @@ public class CoordinatorExecutor extends Thread {
 					long start = System.currentTimeMillis();
 					FriendInfoLite [] online;
 					boolean done = false;
-					do { 
+					do {
 						online = coreInterface.getF2FInterface().getFriends(false, false);
-						if( toks.length > 1 ) { 
-							for( FriendInfoLite f : online ) { 
-								if( f.getPublicKey().equals(toks[1]) ) { 
+						if( toks.length > 1 ) {
+							for( FriendInfoLite f : online ) {
+								if( f.getPublicKey().equals(toks[1]) ) {
 									done = true;
 								}
 							}
-						} else { 
+						} else {
 							done = online.length > 0;
 						}
 						Thread.sleep(1000);
 					} while( !done );
-					
+
 					logger.info("Waited " + (System.currentTimeMillis()-start) + " for connected");
 				} else if( toks[0].equals("blockall") ) {
 					for( FriendInfoLite flite : coreInterface.getF2FInterface().getFriends(true, true) ) {
@@ -204,13 +220,13 @@ public class CoordinatorExecutor extends Thread {
 					}
 					FriendInfoLite[] allFriends = coreInterface.getF2FInterface().getFriends(true, false);
 					FriendInfoLite[] onlineFriends = coreInterface.getF2FInterface().getFriends(false, false);
-					
+
 					Collections.shuffle(Arrays.asList(allFriends));
 					int onlineToBlock = onlineFriends.length - target;
 					int onlineBlocked = 0, stillOnline = 0;
 					logger.info("Total friends: " + allFriends.length + " onlineToBlock: " + onlineToBlock + " online: " + onlineFriends.length );
 					for( FriendInfoLite flite : allFriends ) {
-						
+
 						Friend f = coreInterface.getF2FInterface().getFriend(flite.getPublicKey());
 						if( f.isConnected() == false ) {
 							logger.info("blocking disconnected user: " + f.getNick());
@@ -230,11 +246,11 @@ public class CoordinatorExecutor extends Thread {
 					}
 					logger.info("finished, stillOnline="+stillOnline);
 //					coreInterface.getF2FInterface().stopTransfers();
-//					coreInterface.getF2FInterface().restartTransfers();	
+//					coreInterface.getF2FInterface().restartTransfers();
 				} else if( toks[0].equals("unblockall" ) ) {
 					for( FriendInfoLite flite : coreInterface.getF2FInterface().getFriends(true, true) ) {
 						Friend f = coreInterface.getF2FInterface().getFriend(flite.getPublicKey());
-						if( f.isBlocked() == true ) { 
+						if( f.isBlocked() == true ) {
 							f.setBlocked(false);
 						}
 					}
@@ -248,7 +264,7 @@ public class CoordinatorExecutor extends Thread {
 					downloadAndStart(toks[1], when);
 				} else if( toks[0].equals("cleardls") ) {
 					for( DownloadManager dm : (List<DownloadManager>)azCore.getGlobalManager().getDownloadManagers() ) {
-						azCore.getGlobalManager().removeDownloadManager(dm, true, true);	
+						azCore.getGlobalManager().removeDownloadManager(dm, true, true);
 					}
 				} else if( toks[0].equals("share") ) {
 					if( toks[2].startsWith("http") ) {
@@ -257,7 +273,7 @@ public class CoordinatorExecutor extends Thread {
 						createRandomAndShare(toks[1], Long.parseLong(toks[2]));
 					}
 				} else if( toks[0].equals("btshare") ) {
-					long at = 0; 
+					long at = 0;
 					int maxul_bytes = 0;
 					if( toks.length >= 3 ) {
 						at = Long.parseLong(toks[2]);
@@ -293,7 +309,7 @@ public class CoordinatorExecutor extends Thread {
 					ConfigurationManager.getInstance().setParameter(toks[1].replaceAll("@", " "), Float.parseFloat(toks[2]));
 					ConfigurationManager.getInstance().setDirty();
 				} else if( toks[0].equals("restart") ) {
-					
+
 					// make sure whatever we did gets written
 					try {
 						ConfigurationManager.getInstance().save();
@@ -301,30 +317,30 @@ public class CoordinatorExecutor extends Thread {
 					} catch( Exception e ) {
 						e.printStackTrace();
 					}
-					
+
 					(new File("/tmp/atcmds")).delete();
 					RandomAccessFile f = new RandomAccessFile("/tmp/atcmds", "rw");
 					f.write("/home/uw_oneswarm/plab_exec.bash>/tmp/restart.out\n".getBytes());
 					f.close();
-					
+
 					Runtime.getRuntime().exec(new String[]{
 							"/usr/bin/at",
 							"-f",
-							"/tmp/atcmds", 
+							"/tmp/atcmds",
 							"now"});
-					
-				} else { 
+
+				} else {
 					logger.warning("Unknown command: " + s);
 				}
 			}
-		} catch( Exception e ) { 
+		} catch( Exception e ) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private void downloadTorrentAndStart(final String url, final long at, final ArrayList<GroupBean> perms, final int maxul_bytes) {
-		
-		// we only use single file torrents, and are sure to remove things before adding to prevent unintended seeding. 
+
+		// we only use single file torrents, and are sure to remove things before adding to prevent unintended seeding.
 		TorrentDownloader downloader = TorrentDownloaderFactory.create(new TorrentDownloaderCallBackInterface() {
 			public void TorrentDownloaderEvent(int state, TorrentDownloader inf) {
 				switch( state ) {
@@ -333,12 +349,13 @@ public class CoordinatorExecutor extends Thread {
 					case TorrentDownloader.STATE_ERROR:
 						logger.warning("Error during download: " + url + " / " + state + " " + inf.getError());
 						break;
-						
+
 					case TorrentDownloader.STATE_FINISHED:
 						final File file = inf.getFile();
 						(new File("/tmp/expfile")).delete();
 						logger.info("Waiting until: " + (new Date(at)) + " to start");
 						(new Thread("startWaiter for download: " + url) {
+							@Override
 							public void run() {
 								try {
 									while( System.currentTimeMillis() < at ) {
@@ -347,17 +364,17 @@ public class CoordinatorExecutor extends Thread {
 								} catch( Exception e ) {
 									e.printStackTrace();
 								}
-								
+
 								logger.info("starting " + url + " @ " + (new Date()));
-								
+
 								try {
 									TOTorrent tor = TOTorrentFactory.deserialiseFromBEncodedFile(file);
 									byte[] hashBytes = tor.getHash();
 									PermissionsDAO.get().setGroupsForHash(ByteFormatter.encodeString(hashBytes), perms, true);
 									DownloadManager dm = azCore.getGlobalManager().addDownloadManager(file.getAbsolutePath(), "/tmp/expfile");
-									
+
 									dm.getStats().setUploadRateLimitBytesPerSecond(maxul_bytes);
-									
+
 									watch_locally(dm);
 								} catch (TOTorrentException e) {
 									logger.warning(e.toString());
@@ -368,12 +385,12 @@ public class CoordinatorExecutor extends Thread {
 						break;
 				}
 			}}, url);
-		
+
 		downloader.setDeleteFileOnCancel(true);
 		downloader.start();
-		
+
 	}
-	
+
 	private synchronized void watch_locally( final DownloadManager dm ) {
 		dm.addListener(new DownloadManagerListener() {
 			public void completionChanged(DownloadManager manager, boolean completed) {
@@ -395,7 +412,7 @@ public class CoordinatorExecutor extends Thread {
 		dm.addPeerListener(new DownloadManagerPeerListener(){
 			final long added = System.currentTimeMillis();
 			public void peerAdded(PEPeer peer) {
-				if( start_times.containsKey(dm) == false ) { 
+				if( start_times.containsKey(dm) == false ) {
 					start_times.put(dm, System.currentTimeMillis());
 				}
 				if( parent != null ) {
@@ -410,17 +427,17 @@ public class CoordinatorExecutor extends Thread {
 	}
 
 	private void createRandomAndShare(String name, long sizeBytes ) throws IOException, TOTorrentException {
-		
+
 		logger.info("createRandomAndShare()");
-		
+
 		Random r = new Random();
 		File randomBytes = File.createTempFile("ost", "randombytes");
 		randomBytes.deleteOnExit();
 		FileOutputStream out = new FileOutputStream(randomBytes);
-		
+
 		byte [] chunk = new byte[16*1024];
 		long tot = 0;
-		while( tot < sizeBytes ) { 
+		while( tot < sizeBytes ) {
 			r.nextBytes(chunk);
 			long howmany = Math.min(chunk.length, sizeBytes-tot);
 			out.write(chunk, 0, (int)howmany);
@@ -428,40 +445,40 @@ public class CoordinatorExecutor extends Thread {
 		}
 		out.flush();
 		out.close();
-		
+
 		logger.info("wrote " + tot + " random bytes, creating...");
-		
+
 		creatTorrentAndShare(randomBytes);
 	}
-	
+
 	private void downloadAndShare(String swarmName, String url) throws MalformedURLException, IOException, TOTorrentException {
-		
+
 		logger.info("downloadAndShare()");
-		
+
 		HttpURLConnection conn = (HttpURLConnection) (new URL(url)).openConnection();
 		byte [] data = new byte[16*1024];
-		
+
 		File outFile = File.createTempFile("ost", "sharescratch");
 		outFile.deleteOnExit();
 		FileOutputStream out = new FileOutputStream(outFile);
-		
+
 		InputStream in = conn.getInputStream();
 		int read = 0, tot=0;
 		int last_perc = 0;
-		while( (read = in.read(data)) > 0 ) { 
+		while( (read = in.read(data)) > 0 ) {
 			out.write(data, 0, read);
 			tot += read;
-			
-			if( conn.getContentLength() > 0 ) { 
+
+			if( conn.getContentLength() > 0 ) {
 				int perc = (tot * 100 / conn.getContentLength());
-				if( perc > last_perc ) { 
+				if( perc > last_perc ) {
 					last_perc = perc;
 					logger.info("HTTP download completion: " + last_perc);
 				}
 			}
 		}
 		out.flush();
-		
+
 		creatTorrentAndShare(outFile);
 	}
 
@@ -481,7 +498,7 @@ public class CoordinatorExecutor extends Thread {
 	}
 
 	ConcurrentHashMap<DownloadManager, Long> start_times = new ConcurrentHashMap<DownloadManager, Long>();
-	
+
 	private void downloadAndStart(final String base64hash, final long when) throws IOException, TOTorrentException {
 		byte [] hash_bytes = Base64.decode(base64hash.getBytes());
 		int searchID = coreInterface.getF2FInterface().sendSearch("id:" + base64hash);
@@ -522,11 +539,12 @@ public class CoordinatorExecutor extends Thread {
 			}
 			if (out.size() > 0) {
 				logger.info("Read " + out.size() + " bytes of metainfo");
-				
+
 				// will crash if this doesn't parse, which is what we want
 				final TOTorrent torrent = TorrentUtils.readFromBEncodedInputStream(new ByteArrayInputStream(out.toByteArray()));
-				
+
 				(new Thread("f2f dl exp start wait thread for: " + base64hash) {
+					@Override
 					public void run() {
 						try {
 							final DownloadManager dm = addAndStartTorrent(torrent);
@@ -541,21 +559,21 @@ public class CoordinatorExecutor extends Thread {
 						}
 					}
 				}).start();
-				
+
 				done = true;
 				break;
 			}
-			try { 
+			try {
 				Thread.sleep(100);
 			} catch( Exception e ) {}
 		}
 	}
-	
+
 	private DownloadManager addAndStartTorrent( TOTorrent torrent ) throws TOTorrentException, IOException {
 		return addAndStartTorrent(torrent, null);
 	}
-	
-	private DownloadManager addAndStartTorrent( TOTorrent torrent, File outFile ) throws TOTorrentException, IOException { 
+
+	private DownloadManager addAndStartTorrent( TOTorrent torrent, File outFile ) throws TOTorrentException, IOException {
 		File scratch = File.createTempFile("ost", "expdl");
 		scratch.deleteOnExit();
 //		(new FileOutputStream(scratch)).write(out.toByteArray());
@@ -564,8 +582,8 @@ public class CoordinatorExecutor extends Thread {
 			outFile = File.createTempFile("ost", "savedl");
 		}
 		outFile.deleteOnExit();
-		
-		ArrayList<GroupBean> converted_groups = new ArrayList<GroupBean>();		
+
+		ArrayList<GroupBean> converted_groups = new ArrayList<GroupBean>();
 		converted_groups.add(GroupBean.ALL_FRIENDS);
 		try {
 			PermissionsDAO.get().setGroupsForHash(ByteFormatter.encodeString(torrent.getHash()), converted_groups, true);
@@ -578,39 +596,39 @@ public class CoordinatorExecutor extends Thread {
 			e.printStackTrace();
 			Debug.out("couldn't set perms for swarm! " + torrent.getName());
 		}
-		
+
 		logger.info("set permissions");
-		
+
 		return azCore.getGlobalManager().addDownloadManager(scratch.getAbsolutePath(), outFile.getAbsolutePath());
 	}
 
-	private void addFriend(String group, String keybase64) throws InvalidKeyException {
-		
+	private void addFriend(String group, String keybase64, boolean allowChat, boolean shareFileList) throws InvalidKeyException {
+
 		String deDupedNick = "Experimental"+keybase64.hashCode();
 		FriendInfoLite[] friends = coreInterface.getF2FInterface().getFriends(true, true);
 		boolean dupe = false;
-		do { 
+		do {
 			dupe = false;
-			for( int i=0; i<friends.length; i++ ) { 
-				if( friends[i].getName().equals(deDupedNick) ) { 
+			for( int i=0; i<friends.length; i++ ) {
+				if( friends[i].getName().equals(deDupedNick) ) {
 					deDupedNick += ".";
 					dupe = true;
 					break;
 				}
 			}
 		} while( dupe );
-		
+
 		Friend f = new Friend("EXPERIMENTAL", deDupedNick, keybase64);
 		f.setBlocked(false);
-		f.setCanSeeFileList(false);
-		f.setAllowChat(false);
+		f.setCanSeeFileList(shareFileList);
+		f.setAllowChat(allowChat);
 		f.setNewFriend(true);
 		f.setGroup(group);
 		f.setDateAdded(new Date());
 		coreInterface.getF2FInterface().addFriend(f);
 	}
-	
-	private Friend getFriendForKey( String base64key ) { 
+
+	private Friend getFriendForKey( String base64key ) {
 		return coreInterface.getF2FInterface().getFriend(base64key);
 	}
 }
