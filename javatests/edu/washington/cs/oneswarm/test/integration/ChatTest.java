@@ -61,7 +61,6 @@ public class ChatTest {
 		 */
 
 		selenium.openWindow("http://127.0.0.1:4000/", "jvm");
-		selenium.openWindow("http://127.0.0.1:3000/", "local");
 
 		selenium.selectWindow("jvm");
 
@@ -87,14 +86,16 @@ public class ChatTest {
 		}, 5000).await();
 
 		// Switch to the other instance
+		selenium.openWindow("http://127.0.0.1:3000/", "local");
 		selenium.selectWindow("local");
 
-		// Verify notification presence
+		// Verify notification presence -- this could take up to 10 seconds since
+		// we have a 10 seconds poll (See {@code FriendListPanel.java}).
 		new ConditionWaiter(new ConditionWaiter.Predicate() {
 			public boolean satisfied() {
 				return selenium.isElementPresent("link=1 unread message");
 			}
-		},10000).await();
+		},15000).await();
 
 		// Click to bring up chat box
 		selenium.click("link=1 unread message");

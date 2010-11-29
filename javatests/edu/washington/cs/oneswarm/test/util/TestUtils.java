@@ -12,6 +12,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.JUnit4TestAdapter;
+import junit.framework.Test;
+import junit.framework.TestResult;
 
 import org.apache.commons.io.FileUtils;
 import org.bouncycastle.util.encoders.Base64;
@@ -187,15 +189,34 @@ public class TestUtils {
 	 * Asynchronously executes JUnit tests for a particular class in a manner
 	 * suitable for OSX, which requires SWT execution on the main thread.
 	 */
-	public static void swtCompatibleTestRunner(Class<?> testClass) throws IOException {
+	public static void swtCompatibleTestRunner(final Class<?> testClass) throws IOException {
 		final junit.framework.Test suite = new JUnit4TestAdapter(testClass);
+		final TestResult [] box = new TestResult[1];
+		final CountDownLatch latch = new CountDownLatch(1);
 		new Thread("Off-main TestRunner") {
 			@Override
 			public void run() {
-		        junit.textui.TestRunner.run (suite);
+				box[0] = new junit.textui.TestRunner() {
+					@Override
+					public void testFailed(int status, Test test, Throwable t) {
+						// Early exit on first failure
+						System.err.println("[[ EARLY FAILURE ]]");
+						System.exit(-1);
+					}
+				}.doRun(suite);
+				latch.countDown();
 			}
 		}.start();
 		TestUtils.startOneSwarmForTest();
+		try {
+			latch.await();
+		} catch (final InterruptedException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		if (box[0].errorCount() + box[0].failureCount() > 0) {
+			System.exit(-1);
+		}
 	}
 
 	/**
