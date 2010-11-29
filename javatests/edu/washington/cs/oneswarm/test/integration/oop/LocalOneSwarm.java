@@ -320,13 +320,6 @@ public class LocalOneSwarm {
 		
 		// Consume the unified log.
 		new ProcessLogConsumer(config.label, process).start();
-
-		try {
-			System.out.println("**** proc resp: " + process.waitFor());
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		
 		// Make sure this process gets torn down when if the test is killed
 		Runtime.getRuntime().addShutdownHook(cancelThread);
