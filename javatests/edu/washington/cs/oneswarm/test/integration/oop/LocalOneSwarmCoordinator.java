@@ -17,6 +17,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
+import org.junit.Assert;
+
 /** A OneSwarm experimental coordinator that manages a single LocalOneSwarm instance only. */
 public class LocalOneSwarmCoordinator extends Thread {
 
@@ -52,7 +54,10 @@ public class LocalOneSwarmCoordinator extends Thread {
 		this.instance = instance;
 
 		// Bind to any free port. Listen on localhost only.
-		serverSocket = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"));
+		serverSocket = new ServerSocket(0, 10, InetAddress.getByName("127.0.0.1"));
+
+		setDaemon(true);
+		setName("LocalOneSwarmCoordinator. Instance: " + instance.getLabel());
 	}
 
 	/** Returns the bound local port of this coordinator. */
@@ -81,46 +86,60 @@ public class LocalOneSwarmCoordinator extends Thread {
 
 	@Override
 	public void run() {
-		try {
-			while (!done) {
+		while (!done) {
 
+			Socket socket = null;
+			try {
 				// Use a timeout so we can detect and cleanup expired threads.
 				serverSocket.setSoTimeout(1000);
 
 				// Since this is 1-1 with an instance, we only need to deal with one connection
 				// at a time.
-				Socket socket = null;
 				try {
 					socket = serverSocket.accept();
+					socket.setSoTimeout(1000);
 				} catch(SocketTimeoutException e) {
 					continue;
 				}
+			} catch (IOException e) {
+				e.printStackTrace();
+				Assert.fail();
+			}
 
+			try {
 				instance.coordinatorReceivedHeartbeat();
 
 				ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 				InputStream in = socket.getInputStream();
 				byte [] b = new byte[4096];
-				while (in.available() > 0) {
-					int c = in.read(b);
-					bytes.write(b, 0, c);
+
+				while (true) {
+					try {
+						int c = in.read(b);
+						if (c == -1) {
+							break;
+						}
+						bytes.write(b, 0, c);
+					} catch (SocketTimeoutException e) {
+						break;
+					}
 				}
 
-				BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(bytes.toByteArray())));
+				logger.info("Read " + bytes.size() + " bytes from client");
+				if (bytes.size() == 0) {
+					continue;
+				}
+
+				BufferedReader reader = new BufferedReader(new InputStreamReader(
+						new ByteArrayInputStream(bytes.toByteArray())));
 				String lastLine = "";
-				while (reader.ready()) {
+				while (true) {
 					String line = reader.readLine();
-
-					try {
-						if (line.contains("?port=")) {
-							port = Integer.parseInt(line.split("=")[1].split("\\s+")[0]);
-						}
-					} catch(NumberFormatException e) {
-						e.printStackTrace();
-					}
-
 					if (line == null){
 						break;
+					}
+					if (line.contains("?port=")) {
+						port = Integer.parseInt(line.split("=")[1].split("\\s+")[0]);
 					}
 					lastLine = line;
 				}
@@ -133,7 +152,6 @@ public class LocalOneSwarmCoordinator extends Thread {
 						String [] toks = kv.split("=");
 						if (toks[0].equals("key")) {
 							encodedPublicKey = URLDecoder.decode(toks[1], "UTF-8");
-							logger.info("Got public key from LocalOneSwarm: " + encodedPublicKey);
 						} else if (toks[0].equals("onlinefriends")) {
 							onlineFriendCount = Integer.parseInt(toks[1]);
 						} else if (toks[0].equals("friendConnectorAvailable")) {
@@ -147,16 +165,23 @@ public class LocalOneSwarmCoordinator extends Thread {
 				out.print("ok\r\n");
 				synchronized(pendingCommands) {
 					for (String cmd : pendingCommands) {
-						out.println(cmd);
+						out.print(cmd + "\r\n");
 					}
-					pendingCommands.clear();
 				}
-				out.close();
+				out.flush();
 
 				logger.info("Got ping from local instance: " + socket);
+				pendingCommands.clear();
+			} catch (IOException e) {
+				logger.warning("LocalOneSwarm coordinator stopped: " + e.toString());
+				e.printStackTrace();
+				Assert.fail();
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
+			finally {
+				try {
+					socket.close();
+				} catch (Exception e) {}
+			}
 		}
 	}
 
@@ -174,5 +199,9 @@ public class LocalOneSwarmCoordinator extends Thread {
 
 	public boolean isFriendConnectorAvailable() {
 		return friendConnectorAvailable;
+	}
+
+	public List<String> getPendingCommands() {
+		return new ArrayList<String>(pendingCommands);
 	}
 }

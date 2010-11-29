@@ -100,9 +100,9 @@ public class CoordinatorHeartbeatThread extends Thread {
 						info.load(buildInfo);
 						versionString = info.getProperty("build.number");
 					} catch( Exception e ) {
-						logger.warning("Error loading build info: " + e.toString());
+						logger.warning("Error loading build info: " + e.toString()
+								+ " (This is expected in integration tests.)");
 						includeBuildInfo = false;
-						e.printStackTrace();
 					}
 				}
 
@@ -172,7 +172,6 @@ public class CoordinatorHeartbeatThread extends Thread {
 				int read = 0;
 				ByteArrayOutputStream commands = new ByteArrayOutputStream();
 				while( (read = in.read(dat, 0, dat.length)) > 0 ) {
-//					System.out.println("regread: " + (new String(dat)));
 					commands.write(dat, 0, read);
 				}
 				(new CoordinatorExecutor(this, commands.toByteArray())).start();

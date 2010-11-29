@@ -12,7 +12,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.JUnit4TestAdapter;
-import junit.framework.Test;
 import junit.framework.TestResult;
 
 import org.apache.commons.io.FileUtils;
@@ -196,14 +195,7 @@ public class TestUtils {
 		new Thread("Off-main TestRunner") {
 			@Override
 			public void run() {
-				box[0] = new junit.textui.TestRunner() {
-					@Override
-					public void testFailed(int status, Test test, Throwable t) {
-						// Early exit on first failure
-						System.err.println("[[ EARLY FAILURE ]]");
-						System.exit(-1);
-					}
-				}.doRun(suite);
+				box[0] = junit.textui.TestRunner.run(suite);
 				latch.countDown();
 			}
 		}.start();

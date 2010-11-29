@@ -129,9 +129,7 @@ public class CoordinatorExecutor extends Thread {
 					if (toks.length > 4) {
 						shareFileList = Boolean.parseBoolean(toks[4]);
 					}
-
 					addFriend(toks[1], toks[2], allowChat, shareFileList);
-
 				} else if( toks[0].equals("removekey") ) {
 					Friend toDel = coreInterface.getF2FInterface().getFriend(toks[1]);
 					if( toDel != null ) {

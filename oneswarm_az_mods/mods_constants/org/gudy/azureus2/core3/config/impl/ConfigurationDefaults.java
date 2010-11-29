@@ -270,8 +270,12 @@ public class ConfigurationDefaults {
 	File f = new File(docPath, "OneSwarm Downloads");
 	def.put("Default save path", f.getAbsolutePath());
 
-    def.put("update.start",TRUE);
-    def.put("update.periodic",TRUE);
+	// Disable update checking if we're running integration tests.
+	long DEFAULT_UPDATE_CHECK =
+		System.getProperty("oneswarm.integration.test") == null ? TRUE : FALSE;
+    def.put("update.start", DEFAULT_UPDATE_CHECK);
+    def.put("update.periodic", DEFAULT_UPDATE_CHECK);
+
     def.put("update.opendialog",TRUE);
     def.put("update.autodownload", FALSE);
     //*********************************

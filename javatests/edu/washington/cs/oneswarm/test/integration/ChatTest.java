@@ -11,7 +11,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.aelitis.azureus.core.impl.AzureusCoreImpl;
+import com.aelitis.azureus.ui.UIFunctionsManager;
 import com.thoughtworks.selenium.DefaultSelenium;
 import com.thoughtworks.selenium.Selenium;
 
@@ -124,7 +124,13 @@ public class ChatTest {
 	@AfterClass
 	public static void tearDownClass() throws Exception {
 		// Quit OneSwarm
-		AzureusCoreImpl.getSingleton().stop();
+		UIFunctionsManager.getUIFunctions().requestShutdown();
+		localOneSwarm.getCoordinator().addCommand("shutdown");
+		new ConditionWaiter(new ConditionWaiter.Predicate() {
+			public boolean satisfied() {
+				return localOneSwarm.getCoordinator().getPendingCommands().size() == 0;
+			}
+		}, 10000).await();
 		// Quit browser
 		if (selenium != null) {
 			selenium.stop();

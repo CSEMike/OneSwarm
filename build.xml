@@ -609,14 +609,14 @@
 			
 			<classpath>
 				<pathelement location="test-bin" />
-				<path refid="project.class.path.servlet" />
 				<pathelement location="f2f-dist/osf2f_plugin.jar" />
 				<pathelement location="gwt-bin/war/WEB-INF/classes" />
+				<path refid="project.class.path.servlet" />
+				<path refid="f2f.class.path" />
 				<pathelement location="build/core-libs/junit.jar" />
 				<pathelement location="${platform.swt.jar}" />
 				<pathelement location="build/test-libs/selenium-server.jar" />
 				<pathelement location="build/test-libs/selenium-java-client-driver.jar" />
-				<path refid="f2f.class.path" />
 			</classpath>
 		</java>
 	</target>
