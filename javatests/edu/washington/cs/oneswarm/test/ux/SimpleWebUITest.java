@@ -71,7 +71,9 @@ public class SimpleWebUITest {
 	@AfterClass
 	public static void tearDownClass() throws Exception {
 		// Quit OneSwarm
-		UIFunctionsManager.getUIFunctions().requestShutdown();
+		if (UIFunctionsManager.getUIFunctions() != null) {
+			UIFunctionsManager.getUIFunctions().requestShutdown();
+		}
 		// Quit browser
 		if (selenium != null) {
 			selenium.stop();

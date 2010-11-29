@@ -5,7 +5,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -303,7 +302,7 @@ public class LocalOneSwarm {
 				scratchPaths.get("experimentalConfig"));
 		command.add("-Dnolaunch_startup=1");
 		command.add("-Doneswarm.test.coordinator.poll=2");
-		
+
 		if (Constants.isWindows) {
 			command.add("-Djava.library.path=" + (new File(rootPath, "build/core-libs/dll").getAbsolutePath()));
 		}
@@ -315,19 +314,12 @@ public class LocalOneSwarm {
 		pb.redirectErrorStream(true);
 		pb.directory(new File(scratchPaths.get("workingDir")));
 		process = pb.start();
-		
+
 		logger.info("Forked OneSwarm instance: " + config.label);
-		
+
 		// Consume the unified log.
 		new ProcessLogConsumer(config.label, process).start();
 
-		try {
-			System.out.println("**** proc resp: " + process.waitFor());
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
 		// Make sure this process gets torn down when if the test is killed
 		Runtime.getRuntime().addShutdownHook(cancelThread);
 	}
