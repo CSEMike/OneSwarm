@@ -259,7 +259,7 @@ public class TestUtils {
 			public boolean satisfied() {
 				return selenium.isElementPresent(elementId);
 			}
-		}, 5000).await();
+		}, 15000).await();
 	}
 	
 	public static void main(String[] args) throws Exception {
