@@ -22,8 +22,6 @@ package org.gudy.azureus2.platform.macosx;
  *
  */
 
-import org.gudy.azureus2.core3.util.Debug;
-
 import java.io.File;
 
 /**
@@ -39,28 +37,27 @@ public abstract class NativeInvocationBridge
 
     protected NativeInvocationBridge(){}
 
-    static
-    {
-        try
-        {
-            Object newInstance = Class.forName("org.gudy.azureus2.platform.macosx.access.cocoa.CocoaJavaBridge").getConstructor(null).newInstance(null);
-            instance = (NativeInvocationBridge)newInstance;
-        }
-        catch(Exception e)
-        {
-            Debug.out(e);
-            instance = new DummyBridge();
-        }
-    }
+  /**
+   * Gets the singleton
+   * @return The NativeInvocationBridge singleton
+   */
+	protected static final NativeInvocationBridge sharedInstance() {
+		if (instance == null) {
+			try {
+				Object newInstance = Class.forName(
+						"org.gudy.azureus2.platform.macosx.access.cocoa.CocoaJavaBridge").getConstructor().newInstance();
+				instance = (NativeInvocationBridge) newInstance;
+			} catch (Throwable e) {
+				//Debug.out(e);
+				instance = new DummyBridge();
+			}
+		}
+		return instance;
+	}
 
-    /**
-     * Gets the singleton
-     * @return The NativeInvocationBridge singleton
-     */
-    protected static final NativeInvocationBridge sharedInstance()
-    {
-        return instance;
-    }
+	protected final static boolean hasSharedInstance() {
+		return instance != null;
+	}
 
      /**
      * @see PlatformManager#performRecoverableFileDelete(java.io.File)
@@ -88,7 +85,8 @@ public abstract class NativeInvocationBridge
      */
     private static class DummyBridge extends NativeInvocationBridge
     {
-        public boolean isEnabled()
+        @Override
+		public boolean isEnabled()
         {
             return false;
         }

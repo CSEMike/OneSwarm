@@ -125,7 +125,7 @@ public class LocalOneSwarmCoordinator extends Thread {
 					}
 				}
 
-				logger.info("Read " + bytes.size() + " bytes from client");
+				logger.finer("Read " + bytes.size() + " bytes from client");
 				if (bytes.size() == 0) {
 					continue;
 				}

@@ -11,7 +11,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.aelitis.azureus.core.impl.AzureusCoreImpl;
+import com.aelitis.azureus.ui.UIFunctionsManager;
 import com.thoughtworks.selenium.DefaultSelenium;
 import com.thoughtworks.selenium.Selenium;
 
@@ -71,11 +71,15 @@ public class SimpleWebUITest {
 	@AfterClass
 	public static void tearDownClass() throws Exception {
 		// Quit OneSwarm
-		AzureusCoreImpl.getSingleton().stop();
+		UIFunctionsManager.getUIFunctions().requestShutdown();
 		// Quit browser
-		selenium.stop();
+		if (selenium != null) {
+			selenium.stop();
+		}
 		// Quit RC Server
-		seleniumServer.destroy();
+		if (seleniumServer != null) {
+			seleniumServer.destroy();
+		}
 	}
 
 	/** Boilerplate code for running as executable. */
