@@ -3,6 +3,7 @@ package edu.washington.cs.oneswarm.test.integration;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Logger;
 
 import junit.framework.Assert;
 
@@ -22,6 +23,8 @@ import edu.washington.cs.oneswarm.test.util.ConditionWaiter;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 
 public class ChatTest {
+
+	private static Logger logger = Logger.getLogger(ChatTest.class.getName());
 
 	/** The locally running selenium test server. */
 	static Process seleniumServer;
@@ -123,20 +126,24 @@ public class ChatTest {
 
 	@AfterClass
 	public static void tearDownClass() throws Exception {
+		logger.info("Tearing down test. Quitting JVM instance");
 		// Quit OneSwarm
 		if (UIFunctionsManager.getUIFunctions() != null) {
 			UIFunctionsManager.getUIFunctions().requestShutdown();
 		}
+		logger.info("Sending shutdown to oop instance");
 		localOneSwarm.getCoordinator().addCommand("shutdown");
 		new ConditionWaiter(new ConditionWaiter.Predicate() {
 			public boolean satisfied() {
 				return localOneSwarm.getCoordinator().getPendingCommands().size() == 0;
 			}
 		}, 10000).await();
+		logger.info("selenium.stop()");
 		// Quit browser
 		if (selenium != null) {
 			selenium.stop();
 		}
+		logger.info("selenium server stop");
 		// Quit RC Server
 		if (seleniumServer != null) {
 			seleniumServer.destroy();
