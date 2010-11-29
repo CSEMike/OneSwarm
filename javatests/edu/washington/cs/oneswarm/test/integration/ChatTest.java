@@ -124,7 +124,9 @@ public class ChatTest {
 	@AfterClass
 	public static void tearDownClass() throws Exception {
 		// Quit OneSwarm
-		UIFunctionsManager.getUIFunctions().requestShutdown();
+		if (UIFunctionsManager.getUIFunctions() != null) {
+			UIFunctionsManager.getUIFunctions().requestShutdown();
+		}
 		localOneSwarm.getCoordinator().addCommand("shutdown");
 		new ConditionWaiter(new ConditionWaiter.Predicate() {
 			public boolean satisfied() {

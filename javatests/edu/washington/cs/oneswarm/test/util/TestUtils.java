@@ -119,7 +119,7 @@ public class TestUtils {
 			public boolean satisfied() {
 				return AzureusCoreImpl.isCoreAvailable();
 			}
-		}, 10*1000).await();
+		}, 60*1000).await();
 
 		AzureusCore core = AzureusCoreImpl.getSingleton();
 		AzureusCoreLifecycleListener l = new AzureusCoreLifecycleListener(){
@@ -260,5 +260,9 @@ public class TestUtils {
 				return selenium.isElementPresent(elementId);
 			}
 		}, 5000).await();
+	}
+	
+	public static void main(String[] args) throws Exception {
+		TestUtils.startOneSwarmForTest();
 	}
 }

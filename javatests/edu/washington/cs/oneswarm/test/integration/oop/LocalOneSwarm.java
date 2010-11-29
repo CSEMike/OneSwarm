@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +64,7 @@ public class LocalOneSwarm {
 		String label = "LocalOneSwarm";
 
 		/** The path to system java. */
-		String javaPath = "/usr/bin/java";
+		String javaPath = "java";
 
 		/** The path to the GWT war output directory. */
 		String warRootPath;
@@ -210,7 +211,6 @@ public class LocalOneSwarm {
 			CORE + "log4j.jar",
 			CORE + "junit.jar",
 			CORE + "commons-cli.jar",
-			CORE + "apple-extensions.jar",
 		};
 
 		for (String dep : deps) {
@@ -267,8 +267,12 @@ public class LocalOneSwarm {
 		// Add classpath
 		StringBuilder cpString = new StringBuilder();
 		for (String path : config.classPathElements) {
-			cpString.append(rootPath + "/" + path);
-			cpString.append(':');
+			File entry = new File(rootPath, path);
+			if (entry.exists() == false) {
+				logger.warning("Classpath entry not found: " + entry.getAbsolutePath());
+			}
+			cpString.append(entry.getAbsolutePath());
+			cpString.append(File.pathSeparator);
 		}
 		command.add("-cp");
 		// -1 because of the spurious ':' at the end
@@ -299,6 +303,10 @@ public class LocalOneSwarm {
 				scratchPaths.get("experimentalConfig"));
 		command.add("-Dnolaunch_startup=1");
 		command.add("-Doneswarm.test.coordinator.poll=2");
+		
+		if (Constants.isWindows) {
+			command.add("-Djava.library.path=" + (new File(rootPath, "build/core-libs/dll").getAbsolutePath()));
+		}
 
 		// Main class
 		command.add("com.aelitis.azureus.ui.Main");
@@ -307,10 +315,19 @@ public class LocalOneSwarm {
 		pb.redirectErrorStream(true);
 		pb.directory(new File(scratchPaths.get("workingDir")));
 		process = pb.start();
-
+		
+		logger.info("Forked OneSwarm instance: " + config.label);
+		
 		// Consume the unified log.
 		new ProcessLogConsumer(config.label, process).start();
 
+		try {
+			System.out.println("**** proc resp: " + process.waitFor());
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		// Make sure this process gets torn down when if the test is killed
 		Runtime.getRuntime().addShutdownHook(cancelThread);
 	}
