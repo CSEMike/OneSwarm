@@ -179,6 +179,7 @@ public class TestUtils {
 				"-jar",
 				rootPath + "/build/test-libs/selenium-server.jar");
 
+		pb.redirectErrorStream(true);
 		Process p = pb.start();
 		new ProcessLogConsumer("SeleniumServer", p).start();
 		return p;
@@ -261,7 +262,7 @@ public class TestUtils {
 			}
 		}, 15000).await();
 	}
-	
+
 	public static void main(String[] args) throws Exception {
 		TestUtils.startOneSwarmForTest();
 	}
