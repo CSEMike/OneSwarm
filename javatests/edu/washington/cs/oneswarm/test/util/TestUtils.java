@@ -198,6 +198,15 @@ public class TestUtils {
 			public void run() {
 				box[0] = junit.textui.TestRunner.run(suite);
 				latch.countDown();
+
+				if (box[0].errorCount() + box[0].failureCount() > 0) {
+					System.exit(-1);
+				}
+				
+				// TODO(piatek): [bug] For some reason, the MainWindow$16 inner class throws a ClassNotFoundException
+				// on Windows and Linux that prevents a proper shutdown from the test. As a work-around, we quit here
+				// manually.
+				System.exit(0);
 			}
 		}.start();
 		TestUtils.startOneSwarmForTest();
@@ -205,9 +214,6 @@ public class TestUtils {
 			latch.await();
 		} catch (final InterruptedException e) {
 			e.printStackTrace();
-			System.exit(-1);
-		}
-		if (box[0].errorCount() + box[0].failureCount() > 0) {
 			System.exit(-1);
 		}
 	}
