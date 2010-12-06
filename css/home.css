@@ -1,0 +1,72 @@
+body {
+	font-family: Georgia, Times New Roman, Times, serif;
+	text-align: left;
+	direction: ltr;
+	width: 800px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+#nav {
+	text-align: center;
+}
+
+.headerNews {
+	font-size: 14px;
+}
+
+h3 {
+	border-bottom: 1px solid #36322f;
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-variant: normal;
+	font-weight: bold;
+	text-align: left;
+}
+
+h4 {
+	font-weight: normal;
+	font-style: italic;
+}
+
+li {
+	margin-bottom: 10px;
+}
+
+#footer {
+	text-align: center;
+	font-size: 10pt;
+	border-top: 1px solid #36322f;
+	padding-top: 10px;
+}
+
+#sshot {
+	display: block;
+	margin-left:  auto;
+	margin-right:  auto;
+	text-align: center;
+}
+
+#acknowledgments {
+	margin-top: 10px;
+}
+
+#download_table {
+	border: 1px solid #c2c2c2;
+	border-collapse: collapse;
+}
+
+#dino {
+	margin-right: auto;
+	margin-left: auto;
+	text-align: center;
+}
+
+blockquote { 
+	width: 650px; 
+} 
+
+#sites {
+	text-align: center;
+	font-size: small;
+	vertical-align: middle;
+}
