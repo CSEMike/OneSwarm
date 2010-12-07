@@ -23,7 +23,7 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 public class QueueManager {
 
 	/*
-	 * all calls that are modifying the queue should syncronize on this object
+	 * all calls that are modifying the queue should synchronize on this object
 	 */
 
 	private static BigFatLock lock = OverlayManager.lock;
@@ -31,18 +31,18 @@ public class QueueManager {
 
 	public static final int MAX_GLOBAL_QUEUE_LEN_MS = 200;
 
-	// no matter how slow the connection is, always allow at least 2.5 friend
+	// no matter how slow the connection is, always allow at least 3.5 friend
 	// connection queues
-	public static final int MIN_GLOBAL_QUEUE_LEN_BYTES = (int) (2.5 * FriendConnectionQueue.MAX_FRIEND_QUEUE_LENGTH);
+	public static final int MIN_GLOBAL_QUEUE_LEN_BYTES = (int) (3.5 * FriendConnectionQueue.MAX_FRIEND_QUEUE_LENGTH);
 
-	// 20*4K = 80K
-	public static final int MAX_GLOBAL_QUEUE_LEN_BYTES = 20 * FriendConnectionQueue.MAX_FRIEND_QUEUE_LENGTH;
+	// 40*4K = 160K
+	public static final int MAX_GLOBAL_QUEUE_LEN_BYTES = 40 * FriendConnectionQueue.MAX_FRIEND_QUEUE_LENGTH;
 
 	public static final boolean QUEUE_DEBUG_LOGGING = System.getProperty("oneswarm.queue.debug.logging") != null;
 
 	final static boolean QUEUE_LOCK_DEBUG = System.getProperty("oneswarm.queue.lock.debug") != null;
 
-	private LinkedList<FriendConnectionQueue> forwards = new LinkedList<FriendConnectionQueue>();
+	private final LinkedList<FriendConnectionQueue> forwards = new LinkedList<FriendConnectionQueue>();
 
 	private int globalQueueLengthBytes = 0;
 	private final SpeedManager globalSpeedManager;
@@ -54,15 +54,15 @@ public class QueueManager {
 
 	private int memFreed = 0;
 
-	private ConcurrentLinkedQueue<OSF2FMessage> messagesToBeFreed = new ConcurrentLinkedQueue<OSF2FMessage>();
+	private final ConcurrentLinkedQueue<OSF2FMessage> messagesToBeFreed = new ConcurrentLinkedQueue<OSF2FMessage>();
 
-	private Map<FriendConnection, FriendConnectionQueue> queueManagers = Collections.synchronizedMap(new HashMap<FriendConnection, FriendConnectionQueue>());
+	private final Map<FriendConnection, FriendConnectionQueue> queueManagers = Collections.synchronizedMap(new HashMap<FriendConnection, FriendConnectionQueue>());
 
-	private LinkedList<FriendConnectionQueue> searches = new LinkedList<FriendConnectionQueue>();
+	private final LinkedList<FriendConnectionQueue> searches = new LinkedList<FriendConnectionQueue>();
 
 	private int totalQueueDiffFixed = 0;
 
-	private LinkedList<FriendConnectionQueue> transports = new LinkedList<FriendConnectionQueue>();
+	private final LinkedList<FriendConnectionQueue> transports = new LinkedList<FriendConnectionQueue>();
 
 	private final Random random = new Random();
 
@@ -131,7 +131,20 @@ public class QueueManager {
 	}
 
 	public String getDebug() {
-		return "can_queue=" + canQueuePacket() + " queued_bytes=" + globalQueueLengthBytes + " last_queued=" + (System.currentTimeMillis() - lastPacketSent) + " speed=" + globalSpeedManager.getCurrentUploadSpeed() + " total_drift=" + totalQueueDiffFixed + " last_min_drift=" + lastQueueDiff + " mem_freed=" + memFreed + "\nready to send: forwards=" + forwards.size() + " transports=" + transports.size() + " searches=" + searches.size();
+		StringBuilder sb = new StringBuilder();
+
+		boolean canQueue = canQueuePacket();
+
+		sb.append("can_queue=" + canQueue + " queued_bytes=" + globalQueueLengthBytes + " last_queued=" + (System.currentTimeMillis() - lastPacketSent) + " speed=" + globalSpeedManager.getCurrentUploadSpeed() + " total_drift=" + totalQueueDiffFixed + " last_min_drift=" + lastQueueDiff + " mem_freed=" + memFreed + "\nready to send: forwards=" + forwards.size() + " transports=" + transports.size() + " searches=" + searches.size());
+
+		// If we can't queue, include extra information which may be helpful when debugging.
+		if (!canQueue) {
+			sb.append("\nglobalQueueLengthBytes > MAX_GLOBAL_QUEUE_LEN_BYTES: " + (globalQueueLengthBytes > MAX_GLOBAL_QUEUE_LEN_BYTES));
+			sb.append("\nglobalSpeedManager.canQueuePacket(globalQueueLengthBytes, MAX_GLOBAL_QUEUE_LEN_MS): " + globalSpeedManager.canQueuePacket(globalQueueLengthBytes, MAX_GLOBAL_QUEUE_LEN_MS));
+			sb.append("\ncurrentUploadSpeeD: " + globalSpeedManager.getCurrentUploadSpeed());
+		}
+
+		return sb.toString();
 	}
 
 	public String getForwardQueueLengthDebug() {
@@ -325,16 +338,17 @@ public class QueueManager {
 	}
 
 	/**
-	 * 
+	 *
 	 * The per-friend connection queues are authoritative, and the global queue
 	 * length is just a heuristic that's designed to roughly approximate it.
 	 * Unexpected events (e.g., client disconnects, etc.) can cause the byte
 	 * accounting that we rely on to measure the sum of the individual friend
 	 * queues to drift. So, periodically, we synchronize it.
-	 * 
+	 *
 	 */
 	private class QueueChecker extends TimerTask {
 
+		@Override
 		public void run() {
 
 			lock.lock();
