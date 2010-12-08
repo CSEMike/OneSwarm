@@ -27,11 +27,11 @@ import org.gudy.azureus2.core3.util.ByteFormatter;
 import org.gudy.azureus2.core3.util.Debug;
 
 import com.aelitis.azureus.core.networkmanager.ConnectionEndpoint;
+import com.aelitis.azureus.core.networkmanager.IncomingMessageQueue.MessageQueueListener;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
+import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
 import com.aelitis.azureus.core.networkmanager.NetworkManager;
 import com.aelitis.azureus.core.networkmanager.OutgoingMessageQueue;
-import com.aelitis.azureus.core.networkmanager.IncomingMessageQueue.MessageQueueListener;
-import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
 import com.aelitis.azureus.core.networkmanager.impl.NetworkConnectionImpl;
 import com.aelitis.azureus.core.networkmanager.impl.osssl.OneSwarmSslTools;
 import com.aelitis.azureus.core.networkmanager.impl.osssl.OneSwarmSslTransportHelperFilterStream;
@@ -101,7 +101,7 @@ public class FriendConnection {
 
 	private static final long RECENTLY_CLOSED_TIME = 30 * 1000;
 
-	final double FORWARD_SEARCH_PROBABILITY = (double)COConfigurationManager.getFloatParameter("f2f_forward_search_probability", 0.95f);
+	final double FORWARD_SEARCH_PROBABILITY = COConfigurationManager.getFloatParameter("f2f_forward_search_probability", 0.95f);
 
 	private int activeOverlays = 0;
 
@@ -178,7 +178,7 @@ public class FriendConnection {
 
 	/**
 	 * outgoing
-	 * 
+	 *
 	 * @param _manager
 	 * @param remoteFriendAddr
 	 * @param _remoteFriend
@@ -272,7 +272,7 @@ public class FriendConnection {
 
 	/**
 	 * creates a new incoming connection
-	 * 
+	 *
 	 * @param _connection
 	 * @param _remoteFriend
 	 * @param _filelistManager
@@ -331,9 +331,9 @@ public class FriendConnection {
 				return "connection listener: OSF2F session, incoming";
 			}
 		});
-		NetworkManager.getSingleton().startTransferProcessing(connection);		
+		NetworkManager.getSingleton().startTransferProcessing(connection);
 		enableFastMessageProcessing(true);
-		
+
 		this.sendHandshake();
 
 	}
@@ -365,7 +365,7 @@ public class FriendConnection {
 		 * and clear the recently closed channels maps
 		 */
 		for (Iterator<Integer> iterator = recentlyClosedChannels.keySet().iterator(); iterator.hasNext();) {
-			Integer channel = (Integer) iterator.next();
+			Integer channel = iterator.next();
 			if (System.currentTimeMillis() - recentlyClosedChannels.get(channel) > RECENTLY_CLOSED_TIME) {
 				iterator.remove();
 			}
@@ -390,7 +390,7 @@ public class FriendConnection {
 	public void clearTimedOutSearchRecords() {
 		long currTime = System.currentTimeMillis();
 		for (Iterator<Long> iterator = receivedSearches.values().iterator(); iterator.hasNext();) {
-			Long searchTime = (Long) iterator.next();
+			Long searchTime = iterator.next();
 			long age = currTime - searchTime;
 			// delete old ones but keep a slighly longer history to make sure
 			// that we don't let any messages through that were in the queue
@@ -403,7 +403,7 @@ public class FriendConnection {
 	public void close() {
 
 		mClosing = true;
-		
+
 		if (connection != null) {
 			try {
 				/*
@@ -544,6 +544,7 @@ public class FriendConnection {
 	/**
 	 * don't override, used in overlaymanager.handleSearch
 	 */
+	@Override
 	public boolean equals(Object obj) {
 		return super.equals(obj);
 	}
@@ -790,17 +791,17 @@ public class FriendConnection {
 	private void sendDhtLocation() {
 		/*
 		 * protocol:
-		 * 
+		 *
 		 * if( no address is confirmed) the user connecting (u1) generate 2
 		 * addresses, start to publish and read from both the special locations
 		 * and the public key based locations
-		 * 
+		 *
 		 * u1 sends the addresses
-		 * 
+		 *
 		 * the user responding (u2) will save the addresses, set the dht
 		 * location status to confirmed and then send back a new message with
 		 * the addresses
-		 * 
+		 *
 		 * u1 receives the addresses, sets dht location status to confirmed and
 		 * stops updating the public key based addresses
 		 */
@@ -818,7 +819,7 @@ public class FriendConnection {
 		 * the read and write locations in hte message are from the point of the
 		 * receiver, which means that they are swapped compared to what we have
 		 * stored locally
-		 * 
+		 *
 		 * the location we write to is the location the other user should read
 		 * from, and similarly for the read location
 		 */
@@ -1006,6 +1007,7 @@ public class FriendConnection {
 		}
 	}
 
+	@Override
 	public int hashCode() {
 		// don't override, return hash;
 		return super.hashCode();
@@ -1118,18 +1120,7 @@ public class FriendConnection {
 
 	void sendChannelRst(OSF2FChannelReset message) {
 		friendConnectionQueue.queuePacket(QueueBuckets.FORWARD, message, false);
-		// connection.getOutgoingMessageQueue().removeMessage(
-		// new OSF2FChannelMsg(OSF2FMessage.CURRENT_VERSION, message
-		// .getChannelID(), null), false);
 	}
-
-	// public void sendSearch(int newSearchId, int maxTTL, long
-	// metainfohashhash) {
-	// OSF2FHashSearch search = new OSF2FHashSearch(
-	// OSF2FMessage.CURRENT_VERSION, newSearchId, maxTTL,
-	// metainfohashhash);
-	// this.sendSearch(search);
-	// }
 
 	void sendChannelSetup(OSF2FHashSearchResp message, boolean forwarded) {
 		// we need to add some deterministic randomness to this.
@@ -1144,19 +1135,6 @@ public class FriendConnection {
 		}
 	}
 
-	// public void printRatelimitInfo() {
-	// LimitedRateGroup[] g = connection.getRateLimiters(true);
-	// System.out.println("rate limiters: " + g.length);
-	// for (LimitedRateGroup limitedRateGroup : g) {
-	// System.out.println(limitedRateGroup.getRateLimitBytesPerSecond());
-	// }
-	// LimitedRateGroup[] u = connection.getRateLimiters(false);
-	// System.out.println("rate limiters: " + u.length);
-	// for (LimitedRateGroup limitedRateGroup : u) {
-	// System.out.println(limitedRateGroup.getRateLimitBytesPerSecond());
-	// }
-	// }
-
 	public void sendFileListRequest(byte type, PluginCallback<FileList> callback) {
 		if (type == OSF2FMessage.FILE_LIST_TYPE_COMPLETE) {
 			fileListRequestHandler.sendFileListRequest(callback);
@@ -1164,31 +1142,6 @@ public class FriendConnection {
 			throw new RuntimeException("File list type: " + type + " not implemented");
 		}
 	}
-
-	// public void setFriendToFriendOnly(DownloadManager dm) {
-	// DownloadManagerState state = dm.getDownloadState();
-	// logger.fine("state=" + state.toString());
-	// // set the peer sources to only be f2f
-	// for (int i = 0; i < PEPeerSource.PS_SOURCES.length; i++) {
-	// String source = PEPeerSource.PS_SOURCES[i];
-	// if (source.equals(PEPeerSource.PS_OSF2F)) {
-	//
-	// state.setPeerSourceEnabled(source, true);
-	// } else {
-	// state.setPeerSourceEnabled(source, false);
-	// }
-	// }
-	//
-	// // set the networks to make sure there is no leakage
-	// for (int i = 0; i < AENetworkClassifier.AT_NETWORKS.length; i++) {
-	// String network = AENetworkClassifier.AT_NETWORKS[i];
-	// if (network.equals(AENetworkClassifier.AT_OSF2F)) {
-	// state.setNetworkEnabled(network, true);
-	// } else {
-	// state.setNetworkEnabled(network, false);
-	// }
-	// }
-	// }
 
 	private void sendFileListResponse(byte type, int searchId, int lastId, boolean sendResponseOnNoChange) {
 		long t = System.currentTimeMillis();
@@ -1224,17 +1177,14 @@ public class FriendConnection {
 	}
 
 	public void sendChat(String plaintextMessage) {
-
 		if( logger.isLoggable(Level.FINE) ) {
 			logger.fine("[" + this.getRemoteFriend().getNick() + "]: Sending chat message: " + plaintextMessage);
 		}
-		
-		connection.getOutgoingMessageQueue().addMessage(new OSF2FChat((byte) 1, plaintextMessage), false);
 
+		connection.getOutgoingMessageQueue().addMessage(new OSF2FChat((byte) 1, plaintextMessage), false);
 	}
 
 	private void sendHandshake() {
-
 		if (remoteFriend.isAllowChat()) {
 			connection.getOutgoingMessageQueue().addMessage(new OSF2FHandshake((byte) 1, OSF2FHandshake.OS_FLAGS), false);
 		} else {
@@ -1289,9 +1239,12 @@ public class FriendConnection {
 			return;
 		}
 
+		if (logger.isLoggable(Level.FINE) && search instanceof OSF2FTextSearch) {
+			logger.fine("Forwarding text search: " + ((OSF2FTextSearch)search).getSearchString());
+		}
+
 		logger.finest(getDescription() + "forwarding search, rate=" + average);
 		sendMessage(search, skipQueue);
-
 	}
 
 	void sendTextSearchResp(OSF2FTextSearchResp message, boolean forwarded) {
@@ -1305,6 +1258,7 @@ public class FriendConnection {
 
 	private String desc = null;
 
+	@Override
 	public String toString() {
 		if (desc == null) {
 			desc = connection + " :: " + remoteFriend + " id=" + hashCode();
@@ -1494,6 +1448,7 @@ public class FriendConnection {
 			final long time;
 			final int num;
 
+			@Override
 			public String toString() {
 				return formatter.format(time / 1000.0) + "\t" + action + ":" + numFormatter.format(num) + "\t" + message;
 			}
@@ -1635,7 +1590,7 @@ public class FriendConnection {
 			if (debugMessageLog != null) {
 				debugMessageLog.messageReceived(message.getDescription());
 			}
-			
+
 			lastByteRecvTime = System.currentTimeMillis();
 			if( logger.isLoggable(Level.FINEST) ) {
 				if (!message.getID().equals(OSF2FMessage.ID_OS_CHANNEL_DATA_MSG) || packetNum++ % 100 == 0) {
@@ -1714,13 +1669,13 @@ public class FriendConnection {
 
 		public void clearOldRequests() {
 			for (Iterator<MetaInfoRequest> iterator = imageRequests.values().iterator(); iterator.hasNext();) {
-				MetaInfoRequest r = (MetaInfoRequest) iterator.next();
+				MetaInfoRequest r = iterator.next();
 				if (r.getAge() > MAX_METAINFO_REQUEST_AGE) {
 					iterator.remove();
 				}
 			}
 			for (Iterator<MetaInfoRequest> iterator = torrentRequests.values().iterator(); iterator.hasNext();) {
-				MetaInfoRequest r = (MetaInfoRequest) iterator.next();
+				MetaInfoRequest r = iterator.next();
 				if (r.getAge() > MAX_METAINFO_REQUEST_AGE) {
 					iterator.remove();
 				}
@@ -1783,7 +1738,7 @@ public class FriendConnection {
 
 		/**
 		 * return true if we sent this message
-		 * 
+		 *
 		 * @param msg
 		 * @return
 		 */
@@ -1835,10 +1790,10 @@ public class FriendConnection {
 			private int metaInfoLength;
 			private boolean[] receivedBytes;
 			private boolean sentAllRequest = false;
-			private long createdTime;
+			private final long createdTime;
 			private final byte type;
 			// private final long startTime;
-			private List<PluginCallback<byte[]>> subscribers = new LinkedList<PluginCallback<byte[]>>();
+			private final List<PluginCallback<byte[]>> subscribers = new LinkedList<PluginCallback<byte[]>>();
 
 			public MetaInfoRequest(byte type, int channelId, byte[] infohash, int lengthHint) {
 				this.type = type;
@@ -2114,6 +2069,7 @@ public class FriendConnection {
 			this.message = message;
 		}
 
+		@Override
 		public String toString() {
 			return "source=" + setupMessageSource + " channel=" + channelId;
 		}
