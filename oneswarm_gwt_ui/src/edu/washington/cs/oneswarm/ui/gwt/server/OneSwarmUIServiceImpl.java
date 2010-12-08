@@ -103,6 +103,7 @@ import edu.washington.cs.oneswarm.f2f.multisource.Sha1HashManager;
 import edu.washington.cs.oneswarm.f2f.permissions.GroupBean;
 import edu.washington.cs.oneswarm.f2f.permissions.PermissionsDAO;
 import edu.washington.cs.oneswarm.f2f.share.ShareManagerTools;
+import edu.washington.cs.oneswarm.ui.gwt.BackendErrorLog;
 import edu.washington.cs.oneswarm.ui.gwt.CoreInterface;
 import edu.washington.cs.oneswarm.ui.gwt.CoreTools;
 import edu.washington.cs.oneswarm.ui.gwt.RemoteAccessConfig;
@@ -124,6 +125,7 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.FriendInvitationLite;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.FriendList;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.LocaleLite;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants;
+import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants.SecurityLevel;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmException;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmUIService;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.PagedTorrentInfo;
@@ -136,16 +138,15 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.TextSearchResultLite;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.TorrentInfo;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.TorrentList;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.UnknownUserException;
-import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants.SecurityLevel;
 import edu.washington.cs.oneswarm.ui.gwt.server.BackendTaskManager.CancellationListener;
 import edu.washington.cs.oneswarm.ui.gwt.server.StatelessSwarmFilter.SortMetric;
 import edu.washington.cs.oneswarm.ui.gwt.server.community.CommunityServerManager;
 import edu.washington.cs.oneswarm.ui.gwt.server.community.CommunityServerRequest;
 import edu.washington.cs.oneswarm.ui.gwt.server.community.PublishSwarmsThread;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.FFMpegAsyncOperationManager;
+import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.FFMpegAsyncOperationManager.DataNotAvailableException;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.FFMpegException;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.FFMpegWrapper;
-import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.FFMpegAsyncOperationManager.DataNotAvailableException;
 import edu.washington.cs.oneswarm.watchdir.MagicDecider;
 import edu.washington.cs.oneswarm.watchdir.MagicDirectoryManager;
 import edu.washington.cs.oneswarm.watchdir.UpdatingFileTree;
@@ -157,16 +158,16 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 	private AddTorrentManager addTorrentManager;
 	private DownloadManager downloadManager;
 	private CoreInterface coreInterface;
-	private DataUsageOperation usagestats = new DataUsageOperation();
+	private final DataUsageOperation usagestats = new DataUsageOperation();
 	// private DataUsageOperation usagestats = null;
 	private StatelessSwarmFilter mSwarmFilter = null;
 	private int mLastCount;
 	private boolean stopped = false;
 	private boolean firstRun = true;
-	private boolean limitedrestrict = false;
+	private final boolean limitedrestrict = false;
 	private boolean recentchanges = false;
 
-	private boolean LOG_REQUEST_TIMES = false;
+	private final boolean LOG_REQUEST_TIMES = false;
 
 	static class RpcProfiling implements Comparable<RpcProfiling> {
 		long totalTime;
@@ -204,6 +205,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 			}
 		}
 
+		@Override
 		public String toString() {
 			return method + " calls=" + totalCalls + " callTime=" + totalTime + " avg=" + getAvgCallTime() + " median=" + getMedianTime();
 		}
@@ -232,6 +234,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public String processCall(String payload) throws SerializationException {
 		if (!LOG_REQUEST_TIMES) {
 			return super.processCall(payload);
@@ -325,7 +328,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 	}
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = -3609953294130895972L;
 
@@ -366,6 +369,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 			 */
 			if (metaInfoPruner == null) {
 				metaInfoPruner = new Thread("Metainfo directory pruning") {
+					@Override
 					public void run() {
 						try {
 
@@ -838,7 +842,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 				 * transferdetailstable to take forever to redraw in the
 				 * browser, so we only include things that are actually
 				 * _downloading_ or things that are seeding with >0 traffic
-				 * 
+				 *
 				 * isdal: include ones that have peers or seeds connected as
 				 * well
 				 */
@@ -905,9 +909,9 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 			/**
 			 * We can't do this every time the sidebar updates -- (once/second)
 			 * since it traverses every download!
-			 * 
+			 *
 			 * Also, it tends to cause errors:
-			 * 
+			 *
 			 * Caused by: java.lang.NullPointerException at
 			 * edu.washington.cs.oneswarm
 			 * .f2f.network.F2FDownloadManager.getState
@@ -1947,8 +1951,8 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 	public ArrayList<String> getStringListParameterValue(String session, String inParamName) {
 		StringList toPut = COConfigurationManager.getStringListParameter(inParamName);
 		ArrayList<String> converted = new ArrayList<String>();
-		for (int i = 0; i < ((StringList) toPut).size(); i++)
-			converted.add(((StringList) toPut).get(i));
+		for (int i = 0; i < (toPut).size(); i++)
+			converted.add((toPut).get(i));
 		return converted;
 	}
 
@@ -2183,7 +2187,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 				TOTorrent torrent = dm.getTorrent();
 				for (int i = 0; i < files.length; i++) {
 					org.gudy.azureus2.core3.disk.DiskManagerFileInfo f = files[i];
-					lites[i] = new FileListLite(new String(Base64.encode(torrent.getHash())), dm.getDisplayName(), f.getFile(false).getName(), f.getLength(), (long) files.length, (new Date()).getTime(), 1, files[i].isSkipped(), files[i].getDownloaded() == files[i].getLength());
+					lites[i] = new FileListLite(new String(Base64.encode(torrent.getHash())), dm.getDisplayName(), f.getFile(false).getName(), f.getLength(), files.length, (new Date()).getTime(), 1, files[i].isSkipped(), files[i].getDownloaded() == files[i].getLength());
 					if (sha1List != null && sha1List.length > i) {
 						lites[i].setSha1Hash(sha1List[i]);
 					}
@@ -2753,6 +2757,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 				}
 			});
 			(new Thread() {
+				@Override
 				public void run() {
 					try {
 						Thread.sleep(10 * 1000);
@@ -2857,11 +2862,11 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 
 	/**
 	 * returns the listening addresses, format, string[]
-	 * 
+	 *
 	 * addresses[0]: external ip:port
-	 * 
+	 *
 	 * addresses[1]: internal ip:port
-	 * 
+	 *
 	 * @param session
 	 * @return addresses
 	 */
@@ -3198,7 +3203,12 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 			System.err.println("bad session: getBackenedErrors");
 			return null;
 		}
-		return BackendErrorLog.get().getReports();
+		List<BackendErrorLog.ErrorReport> reports = BackendErrorLog.get().getReports();
+		ArrayList<BackendErrorReport> serialized = new ArrayList<BackendErrorReport>();
+		for (BackendErrorLog.ErrorReport report : reports) {
+			serialized.add(new BackendErrorReport(report.message, report.show_report_text));
+		}
+		return serialized;
 	}
 
 	public String[] getBase64HashesForOneSwarmHashes(String session, String[] inOneSwarmHashes) {

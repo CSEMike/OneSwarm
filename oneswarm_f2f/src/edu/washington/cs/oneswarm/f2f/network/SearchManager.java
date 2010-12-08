@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -24,7 +23,6 @@ import org.bouncycastle.util.encoders.Base64;
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.config.ParameterListener;
 import org.gudy.azureus2.core3.config.StringList;
-import org.gudy.azureus2.core3.config.impl.ConfigurationManager;
 import org.gudy.azureus2.core3.disk.DiskManagerFileInfo;
 import org.gudy.azureus2.core3.download.DownloadManager;
 import org.gudy.azureus2.core3.download.DownloadManagerStats;
@@ -59,8 +57,12 @@ import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExec
 import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExecutor;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayRegistrationError;
 import edu.washington.cs.oneswarm.f2f.share.ShareManagerTools;
+import edu.washington.cs.oneswarm.ui.gwt.BackendErrorLog;
 
 public class SearchManager {
+
+	public static final String SEARCH_QUEUE_THREAD_NAME = "DelayedSearchQueue";
+
 	private final static BigFatLock lock = OverlayManager.lock;
 	private static Logger logger = Logger.getLogger(SearchManager.class.getName());
 	// search sources are remembered for 1 minute, any replies after this will
@@ -68,9 +70,9 @@ public class SearchManager {
 	public static final long MAX_SEARCH_AGE = 60 * 1000;
 	public static final int MAX_SEARCH_QUEUE_LENGTH = 1000;
 //	private static final int MAX_SEARCH_RESP_BEFORE_CANCEL = COConfigurationManager.getIntParameter("f2f_search_max_paths");
-	
+
 	protected int mMaxSearchResponsesBeforeCancel = COConfigurationManager.getIntParameter("f2f_search_max_paths");
-	
+
 	// don't respond if average torrent upload rate is less than 10K/s
 	private static final double NO_RESPONSE_TORRENT_AVERAGE_RATE = 10000;
 
@@ -87,7 +89,7 @@ public class SearchManager {
 	private static final long RECENT_SEARCH_MEMORY = 60 * 60 * 1000;
 //	static final int SEARCH_DELAY = COConfigurationManager.getIntParameter("f2f_search_forward_delay");
 	protected int mSearchDelay = COConfigurationManager.getIntParameter("f2f_search_forward_delay");
-	
+
 
 	private int bloomSearchesBlockedCurr = 0;
 
@@ -96,7 +98,7 @@ public class SearchManager {
 	private int bloomSearchesSentPrev = 0;
 
 	private final HashMap<Integer, Long> canceledSearches;
-	private DebugChannelSetupErrorStats debugChannelIdErrorSetupErrorStats = new DebugChannelSetupErrorStats();
+	private final DebugChannelSetupErrorStats debugChannelIdErrorSetupErrorStats = new DebugChannelSetupErrorStats();
 
 	private final DelayedSearchQueue delayedSearchQueue;
 
@@ -141,7 +143,7 @@ public class SearchManager {
 		this.textSearchManager = new TextSearchManager();
 		this.recentSearches = new RotatingBloomFilter(RECENT_SEARCH_MEMORY, RECENT_SEARCH_BUCKETS);
 		this.delayedSearchQueue = new DelayedSearchQueue(mSearchDelay);
-		COConfigurationManager.addAndFireParameterListeners(new String[] { "LAN Speed Enabled", "Max Upload Speed KBs", "oneswarm.search.filter.keywords", 
+		COConfigurationManager.addAndFireParameterListeners(new String[] { "LAN Speed Enabled", "Max Upload Speed KBs", "oneswarm.search.filter.keywords",
 				"f2f_search_max_paths", "f2f_search_forward_delay" }, new ParameterListener() {
 			public void parameterChanged(String parameterName) {
 				includeLanUploads = !COConfigurationManager.getBooleanParameter("LAN Speed Enabled");
@@ -157,9 +159,9 @@ public class SearchManager {
 					filteredKeywords = neu;
 					logger.fine("Updated filtered keywords " + keywords.size());
 				}
-				
+
 				mMaxSearchResponsesBeforeCancel = COConfigurationManager.getIntParameter("f2f_search_max_paths");
-				
+
 				mSearchDelay = COConfigurationManager.getIntParameter("f2f_search_forward_delay");
 				delayedSearchQueue.setDelay(mSearchDelay);
 			}
@@ -652,7 +654,7 @@ public class SearchManager {
 	 * There are 2 possible explanations for getting a search response, either
 	 * we got a response for a search we sent ourselves, or we got a response
 	 * for a search we forwarded
-	 * 
+	 *
 	 * @param source
 	 *            connection from where we got the setup
 	 * @param msg
@@ -674,7 +676,7 @@ public class SearchManager {
 			sentSearch.gotResponse();
 			/*
 			 * check if we got enough search responses to cancel this search
-			 * 
+			 *
 			 * we will still use the data, even if the search is canceled. I
 			 * mean, since it already made it here why not use it...
 			 */
@@ -789,7 +791,7 @@ public class SearchManager {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param source
 	 * @param msg
 	 * @return
@@ -831,6 +833,7 @@ public class SearchManager {
 					final OSF2FTextSearchResp resp = new OSF2FTextSearchResp(OSF2FMessage.CURRENT_VERSION, OSF2FMessage.FILE_LIST_TYPE_PARTIAL, msg.getSearchID(), channelId, encoded);
 					int delay = overlayManager.getSearchDelayForInfohash(source.getRemoteFriend(), c.getUniqueIdBytes());
 					delayedExecutionTasks.add(new DelayedExecutionEntry(time + delay, 0, new TimerTask() {
+						@Override
 						public void run() {
 							/*
 							 * check if the search got canceled while we were
@@ -1059,26 +1062,26 @@ public class SearchManager {
 	class DelayedSearchQueue {
 
 		private long mDelay;
-		private LinkedBlockingQueue<DelayedSearchQueueEntry> queue = new LinkedBlockingQueue<DelayedSearchQueueEntry>();
-		private HashMap<Integer, DelayedSearchQueueEntry> queuedSearches = new HashMap<Integer, DelayedSearchQueueEntry>();
+		private final LinkedBlockingQueue<DelayedSearchQueueEntry> queue = new LinkedBlockingQueue<DelayedSearchQueueEntry>();
+		private final HashMap<Integer, DelayedSearchQueueEntry> queuedSearches = new HashMap<Integer, DelayedSearchQueueEntry>();
 
 		public DelayedSearchQueue(long delay) {
 			this.mDelay = delay;
 			Thread t = new Thread(new DelayedSearchQueueThread());
 			t.setDaemon(true);
-			t.setName("DelayedSearchQueue");
+			t.setName(SEARCH_QUEUE_THREAD_NAME);
 			t.start();
 		}
-		
+
 		/**
-		 * Warning -- changing this won't re-order things already in the queue, so if you add something with 
+		 * Warning -- changing this won't re-order things already in the queue, so if you add something with
 		 * a much smaller delay than the current head of the queue, it will wait until that's removed before
-		 * sending the new message. 
+		 * sending the new message.
 		 */
 		public void setDelay( long inDelay ) {
 			this.mDelay = inDelay;
 		}
-		
+
 		public void add(FriendConnection source, OSF2FSearch search) {
 			lock.lock();
 			try {
@@ -1109,8 +1112,8 @@ public class SearchManager {
 		class DelayedSearchQueueThread implements Runnable {
 
 			public void run() {
-				try {
-					while (true) {
+				while (true) {
+					try {
 						DelayedSearchQueueEntry e = queue.take();
 						long timeUntilSend = e.dontSendBefore - System.currentTimeMillis();
 						if (timeUntilSend > 0) {
@@ -1139,14 +1142,13 @@ public class SearchManager {
 							Thread.sleep(msFloor, Math.min(999999, nanosLeft));
 						}
 
+					} catch (Exception e1) {
+						logger.warning("*** Delayed search queue thread error: " + e1.toString());
+						e1.printStackTrace();
+						BackendErrorLog.get().logException(e1);
 					}
-
-				} catch (InterruptedException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
 				}
 			}
-
 		}
 	}
 
@@ -1212,7 +1214,7 @@ public class SearchManager {
 		private static final int SIZE_IN_BITS = 256 * 1024;
 
 		private long currentFilterCreated;
-		private LinkedList<BloomFilter> filters = new LinkedList<BloomFilter>();
+		private final LinkedList<BloomFilter> filters = new LinkedList<BloomFilter>();
 		private final int maxBuckets;
 		private final long maxFilterAge;
 

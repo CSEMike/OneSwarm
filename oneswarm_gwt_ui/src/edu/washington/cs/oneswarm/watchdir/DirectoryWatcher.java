@@ -14,9 +14,9 @@ import java.util.logging.Logger;
 import org.gudy.azureus2.core3.util.FileUtil;
 
 import edu.uw.cse.netlab.reputation.GloballyAwareOneHopUnchoker;
+import edu.washington.cs.oneswarm.ui.gwt.BackendErrorLog;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.settings.MagicPath;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.settings.MagicWatchType;
-import edu.washington.cs.oneswarm.ui.gwt.server.BackendErrorLog;
 
 public class DirectoryWatcher extends Thread implements UpdatingFileTreeListener {
 

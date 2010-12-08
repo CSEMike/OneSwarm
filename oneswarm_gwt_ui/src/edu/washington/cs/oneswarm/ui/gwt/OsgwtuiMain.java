@@ -35,6 +35,7 @@ import org.mortbay.servlet.GzipFilter;
 import org.mortbay.thread.BoundedThreadPool;
 import org.mortbay.thread.QueuedThreadPool;
 
+import edu.washington.cs.oneswarm.HealthChecker;
 import edu.washington.cs.oneswarm.f2f.multisource.Sha1HashManager;
 import edu.washington.cs.oneswarm.f2f.multisource.Sha1HashManager.Sha1CalcListener;
 import edu.washington.cs.oneswarm.f2f.multisource.Sha1HashManager.Sha1HashJobListener;
@@ -297,6 +298,12 @@ public class OsgwtuiMain implements Plugin {
 				};
 			}
 		});
+
+		/**
+		 * Start health checking
+		 */
+		HealthChecker health = new HealthChecker();
+		health.start();
 	}
 
 	private void checkAutoStartRegistry() {

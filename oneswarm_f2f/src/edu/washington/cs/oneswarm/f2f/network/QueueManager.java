@@ -19,6 +19,7 @@ import org.gudy.azureus2.core3.util.Debug;
 
 import edu.washington.cs.oneswarm.f2f.BigFatLock;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
+import edu.washington.cs.oneswarm.ui.gwt.BackendErrorLog;
 
 public class QueueManager {
 
@@ -352,101 +353,110 @@ public class QueueManager {
 		public void run() {
 
 			lock.lock();
-			try {
-				OSF2FMessage m;
-				while ((m = messagesToBeFreed.poll()) != null) {
-					memFreed += m.getMessageSize();
-					m.destroy();
-				}
 
-				int totalQueueLen = 0;
-				for (FriendConnectionQueue q : queueManagers.values()) {
-					totalQueueLen += q.getTotalOutgoingQueueLengthBytes();
-				}
-				lastQueueDiff = globalQueueLengthBytes - totalQueueLen;
-				totalQueueDiffFixed += Math.abs(lastQueueDiff);
-				globalQueueLengthBytes = totalQueueLen;
-
-				logger.finer("pre-queuelengthcorrect ul=" + globalSpeedManager.getCurrentUploadSpeed());
-				logger.finer((new Date()) + " queuelengthcorrect=" + lastQueueDiff + " tot=" + totalQueueDiffFixed + " ");
-			} finally {
-				lock.unlock();
-			}
 			try {
-				Thread.sleep(5 * 1000);
-			} catch (Exception e) {
-			}
-			lock.lock();
-			try {
-				logger.finer("post-queuelengthcorrect ul=" + globalSpeedManager.getCurrentUploadSpeed());
-			} finally {
-				lock.unlock();
-			}
-
-			/*
-			 * check for registration inconsistency as well (but only if we
-			 * havn't sent anything in 10s
-			 */
-			if (System.currentTimeMillis() - lastPacketSent > 10 * 1000) {
-				lock.lock();
 				try {
-					/*
-					 * transports
-					 */
-
-					for (FriendConnectionQueue q : queueManagers.values()) {
-						boolean reg = q.isRegisteredForForwardSelects();
-						boolean contains = transports.contains(q);
-						if (reg != contains) {
-							Debug.out("transport registration inconsistency (fixed): reg=" + reg + " contains=" + contains);
-							if (reg && !contains) {
-								transports.add(q);
-							}
-						}
+					OSF2FMessage m;
+					while ((m = messagesToBeFreed.poll()) != null) {
+						memFreed += m.getMessageSize();
+						m.destroy();
 					}
-					/*
-					 * forwards
-					 */
 
+					int totalQueueLen = 0;
 					for (FriendConnectionQueue q : queueManagers.values()) {
-						boolean reg = q.isRegisteredForForwardSelects();
-						boolean contains = forwards.contains(q);
-						if (reg != contains) {
-							Debug.out("forward registration inconsistency (fixed): reg=" + reg + " contains=" + contains);
-							if (reg && !contains) {
-								forwards.add(q);
-							}
-						}
+						totalQueueLen += q.getTotalOutgoingQueueLengthBytes();
 					}
-					/*
-					 * searches
-					 */
+					lastQueueDiff = globalQueueLengthBytes - totalQueueLen;
+					totalQueueDiffFixed += Math.abs(lastQueueDiff);
+					globalQueueLengthBytes = totalQueueLen;
 
-					for (FriendConnectionQueue q : queueManagers.values()) {
-						boolean reg = q.isRegisteredForForwardSelects();
-						boolean contains = searches.contains(q);
-						if (reg != contains) {
-							Debug.out("search registration inconsistency (fixed): reg=" + reg + " contains=" + contains);
-							if (reg && !contains) {
-								searches.add(q);
-							}
-						}
-					}
+					logger.finer("pre-queuelengthcorrect ul=" + globalSpeedManager.getCurrentUploadSpeed());
+					logger.finer((new Date()) + " queuelengthcorrect=" + lastQueueDiff + " tot=" + totalQueueDiffFixed + " ");
 				} finally {
 					lock.unlock();
 				}
+
+				try {
+					Thread.sleep(5 * 1000);
+				} catch (Exception e) {}
+
+				lock.lock();
+				try {
+					logger.finer("post-queuelengthcorrect ul=" + globalSpeedManager.getCurrentUploadSpeed());
+				} finally {
+					lock.unlock();
+				}
+
 				/*
-				 * check if it was a long time since we sent a packet if so,
-				 * trigger
+				 * check for registration inconsistency as well (but only if we
+				 * havn't sent anything in 10s
 				 */
-				long timeSinceLastPacket = System.currentTimeMillis() - lastPacketSending;
-				if (timeSinceLastPacket > 30 * 1000) {
-					int packetsSent = triggerPacketSending();
-					if (packetsSent > 0) {
-						Debug.out("recovered from packet sending error, no packets sent last 30 senconds but after trigger " + packetsSent + " were sent");
+				if (System.currentTimeMillis() - lastPacketSent > 10 * 1000) {
+					lock.lock();
+					try {
+						/*
+						 * transports
+						 */
+
+						for (FriendConnectionQueue q : queueManagers.values()) {
+							boolean reg = q.isRegisteredForForwardSelects();
+							boolean contains = transports.contains(q);
+							if (reg != contains) {
+								Debug.out("transport registration inconsistency (fixed): reg=" + reg + " contains=" + contains);
+								if (reg && !contains) {
+									transports.add(q);
+								}
+							}
+						}
+						/*
+						 * forwards
+						 */
+
+						for (FriendConnectionQueue q : queueManagers.values()) {
+							boolean reg = q.isRegisteredForForwardSelects();
+							boolean contains = forwards.contains(q);
+							if (reg != contains) {
+								Debug.out("forward registration inconsistency (fixed): reg=" + reg + " contains=" + contains);
+								if (reg && !contains) {
+									forwards.add(q);
+								}
+							}
+						}
+						/*
+						 * searches
+						 */
+
+						for (FriendConnectionQueue q : queueManagers.values()) {
+							boolean reg = q.isRegisteredForForwardSelects();
+							boolean contains = searches.contains(q);
+							if (reg != contains) {
+								Debug.out("search registration inconsistency (fixed): reg=" + reg + " contains=" + contains);
+								if (reg && !contains) {
+									searches.add(q);
+								}
+							}
+						}
+					} finally {
+						lock.unlock();
+					}
+
+					/*
+					 * check if it was a long time since we sent a packet if so,
+					 * trigger
+					 */
+					long timeSinceLastPacket = System.currentTimeMillis() - lastPacketSending;
+					if (timeSinceLastPacket > 30 * 1000) {
+						int packetsSent = triggerPacketSending();
+						if (packetsSent > 0) {
+							Debug.out("recovered from packet sending error, no packets sent last 30 senconds but after trigger " + packetsSent + " were sent");
+						}
 					}
 				}
+			} catch (Throwable t) {
+				logger.warning("*** Unhandled error in the QueueChecker timer task: " + t.toString());
+				t.printStackTrace();
+				BackendErrorLog.get().logException(t);
 			}
-		}
+		} // run()
 	}
 }

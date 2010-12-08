@@ -30,11 +30,11 @@ import org.gudy.azureus2.plugins.torrent.Torrent;
 
 import com.aelitis.azureus.core.impl.AzureusCoreImpl;
 
+import edu.washington.cs.oneswarm.ui.gwt.BackendErrorLog;
 import edu.washington.cs.oneswarm.ui.gwt.CoreInterface;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.BackendTask;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.TorrentInfo;
-import edu.washington.cs.oneswarm.ui.gwt.server.BackendErrorLog;
 import edu.washington.cs.oneswarm.ui.gwt.server.BackendTaskManager;
 import edu.washington.cs.oneswarm.ui.gwt.server.OneSwarmHashUtils;
 import edu.washington.cs.oneswarm.ui.gwt.server.PreviewImageGenerator;
