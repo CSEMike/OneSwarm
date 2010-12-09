@@ -929,7 +929,9 @@ public class FriendConnection {
 			close();
 			return;
 		}
-		logger.finest(getDescription() + "incoming search, rate=" + average);
+		if (logger.isLoggable(Level.FINEST)) {
+			logger.finest("Incoming search. desc: " + getDescription() + " , rate=" + average);
+		}
 		if (message instanceof OSF2FSearch) {
 			OSF2FSearch msg = (OSF2FSearch) message;
 			// check special case, search ID = 0 means no forward

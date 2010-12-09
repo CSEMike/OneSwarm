@@ -100,7 +100,6 @@ public class QueueManager {
 	}
 
 	private boolean canQueuePacket() {
-		// return globalQueueLengthBytes < MAX_GLOBAL_QUEUE_LEN_BYTES;
 		if (globalQueueLengthBytes > MAX_GLOBAL_QUEUE_LEN_BYTES) {
 			if (logger.isLoggable(Level.FINEST)) {
 				logger.finest("Queue manager: can queue=false: " + globalQueueLengthBytes + ">" + MAX_GLOBAL_QUEUE_LEN_BYTES);
@@ -354,7 +353,7 @@ public class QueueManager {
 
 		// If this friendQueue currently has queued more than
 		// MAX_QUEUE_FRACTION_PER_FRIEND of the global queue size, refuse.
-		long totalQueuedBytes = friendQueue.getTotalOutgoingQueueLengthBytes();
+		long totalQueuedBytes = friendQueue.getTotalOutgoingBytesContributionToGlobalQueue();
 
 		if (totalQueuedBytes > MAX_GLOBAL_QUEUE_LEN_BYTES) {
 			logger.warning("*** Total queued bytes for friendQueue exceeds max queue. total: "
@@ -362,7 +361,7 @@ public class QueueManager {
 					+ friendQueue.toString());
 		}
 
-		if ((totalQueuedBytes) > MAX_QUEUE_FRACTION_PER_FRIEND * MAX_GLOBAL_QUEUE_LEN_BYTES) {
+		if (totalQueuedBytes > MAX_QUEUE_FRACTION_PER_FRIEND * MAX_GLOBAL_QUEUE_LEN_BYTES) {
 			return false;
 		}
 

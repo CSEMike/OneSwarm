@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package edu.washington.cs.oneswarm.f2f.network;
 
@@ -87,7 +87,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 	private long transportQueueDelay = 0;
 
 	private final ConcurrentLinkedQueue<WriteQueueWaiter> transportWaiters = new ConcurrentLinkedQueue<WriteQueueWaiter>();
-	private Average uploadAverage = Average.getInstance(1000, 10);
+	private final Average uploadAverage = Average.getInstance(1000, 10);
 
 	public FriendConnectionQueue(QueueManager queueManager, FriendConnection fc) {
 		// this.friendConnection = fc;
@@ -104,7 +104,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 	/**
 	 * closes the queue, also returns any messages that are still in the queue
 	 * for the queuemanager to free in it's next checking run
-	 * 
+	 *
 	 * @return
 	 */
 	List<OSF2FMessage> close() {
@@ -193,7 +193,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 
 	/*
 	 * return the friend score of the friend associated with this queue
-	 * 
+	 *
 	 * @param update set to true if the score should be recomputed, false if the
 	 * cached score should be returned. Only use cached values unless the
 	 * QueueWeight array has been sorted to reflect the new values
@@ -279,7 +279,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 					logger.finest(getDescription() + "queueing transport: " + msg.getDescription());
 				}
 				transportQueue.add(msg);
-				transportQueueBytes += ((OSF2FMessage) msg).getMessageSize();
+				transportQueueBytes += (msg).getMessageSize();
 				if (QueueManager.QUEUE_DEBUG_LOGGING) {
 					// the size operation is expensive, don't run unless
 					// debugging
@@ -418,7 +418,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 		}
 		/*
 		 * second, check if we have anything
-		 * 
+		 *
 		 * use peek instead of size, size is a O(n) operation on
 		 * concurrentlinkedqueues
 		 */
@@ -538,7 +538,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 	/**
 	 * this function should only be called from the queue manager, it will
 	 * return true if more packets are available, false otherwise
-	 * 
+	 *
 	 * make sure to have the queue manager lock when calling this funtion
 	 */
 	boolean sendQueuedTransportPacket() {
@@ -609,6 +609,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 		return packetSent;
 	}
 
+	@Override
 	public String toString() {
 		NumberFormat f = new DecimalFormat("#,###,###");
 		final String nick = friend.getNick();
@@ -641,7 +642,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 		 * the intial file list request that is sent during handshake and
 		 * contains the complete file list. These shouldn't be rate-limited so
 		 * that connections / handshakes are fast even when the queue is full
-		 * 
+		 *
 		 * 2). Real text searches -- of which there may be many
 		 */
 		if (msg instanceof OSF2FTextSearch) {
@@ -687,7 +688,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 
 		private long mLastByteMessageCompare = 0;
 
-		private ConcurrentLinkedQueue<MessageDigest> mMessages = new ConcurrentLinkedQueue<MessageDigest>();
+		private final ConcurrentLinkedQueue<MessageDigest> mMessages = new ConcurrentLinkedQueue<MessageDigest>();
 
 		/**
 		 * We use these to check the drift between dataBytesUploaded and the sum
@@ -845,6 +846,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 				timestamp = System.currentTimeMillis();
 			}
 
+			@Override
 			public boolean equals(Object rhs) {
 				if (rhs instanceof MessageDigest) {
 					return ((MessageDigest) rhs).message == message;
@@ -852,6 +854,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 				return false;
 			}
 
+			@Override
 			public String toString() {
 				return message.toString();
 			}
@@ -890,7 +893,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 		try {
 			int count = 0;
 			for (Iterator<OSF2FMessage> iterator = forwardQueue.iterator(); iterator.hasNext();) {
-				OSF2FMessage osf2fMessage = (OSF2FMessage) iterator.next();
+				OSF2FMessage osf2fMessage = iterator.next();
 				if (osf2fMessage instanceof OSF2FChannelMsg) {
 					OSF2FChannelMsg msg = (OSF2FChannelMsg) osf2fMessage;
 					if (msg.getChannelId() == channelId) {
@@ -909,5 +912,15 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 			lock.unlock();
 		}
 		doListenerNotifications();
+	}
+
+	/**
+	 * Returns the contribution of this individual {@code FriendConnectionQueue}
+	 * to the overall global queue (maintained by {@code QueueManager}.
+	 *
+	 * This is used to enforce per-friend limits on the share of the global queue.
+	 */
+	public long getTotalOutgoingBytesContributionToGlobalQueue() {
+		return queueListener.accountingQueueLength;
 	}
 }

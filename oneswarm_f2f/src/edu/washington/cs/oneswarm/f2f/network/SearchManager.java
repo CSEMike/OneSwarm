@@ -200,7 +200,9 @@ public class SearchManager {
 		if (torrentAvgSpeed > NO_RESPONSE_TORRENT_AVERAGE_RATE) {
 			return true;
 		}
-		logger.finer("not responding to search (overloaded, util=" + transUtil + ")");
+		if (logger.isLoggable(Level.FINER)) {
+			logger.finer("not responding to search (overloaded, util=" + transUtil + ")");
+		}
 		return false;
 	}
 
@@ -304,24 +306,26 @@ public class SearchManager {
 			// check if search is canceled or forwarded first
 			int searchID = search.getSearchID();
 			if (forwardedSearches.containsKey(searchID)) {
-				logger.finest("not forwarding search, already forwarded");
+				logger.finest("not forwarding search, already forwarded. id: " + searchID);
 				return;
 			}
 
 			if (canceledSearches.containsKey(searchID)) {
-				logger.finest("not forwarding search, cancel received");
+				logger.finest("not forwarding search, cancel received. id: " + searchID);
 				return;
 			}
 
 			int valueID = search.getValueID();
 			if (recentSearches.contains(searchID, valueID)) {
 				bloomSearchesBlockedCurr++;
-				logger.finest("not forwarding search, in recent filter");
+				logger.finest("not forwarding search, in recent filter. id: " + searchID);
 				return;
 			}
 			bloomSearchesSentCurr++;
 			forwardedSearchNum++;
-			logger.finest("forwarding search " + search.getDescription());
+			if (logger.isLoggable(Level.FINEST)) {
+				logger.finest("forwarding search " + search.getDescription() + " id: " + searchID);
+			}
 			forwardedSearches.put(searchID, new ForwardedSearch(source, search));
 			recentSearches.insert(searchID, valueID);
 		} finally {
@@ -738,7 +742,7 @@ public class SearchManager {
 				logger.finest("got response to forwarded search: " + search.getSearch().getDescription());
 
 				if (canceledSearches.containsKey(msg.getSearchID())) {
-					logger.finer("not forwarding search, it is already canceled, " + msg);
+					logger.finer("not forwarding search, it is already canceled, " + msg.getSearchID());
 					return;
 				}
 			} finally {
@@ -1086,12 +1090,17 @@ public class SearchManager {
 			lock.lock();
 			try {
 				if (queuedSearches.size() > MAX_SEARCH_QUEUE_LENGTH) {
-					logger.finer("not forwarding search, queue length to large");
+					if (logger.isLoggable(Level.FINER)) {
+						logger.finer("not forwarding search, queue length too large. id: "
+								+ search.getSearchID());
+					}
 					return;
 				}
 				if (!queuedSearches.containsKey(search.getSearchID())) {
-					logger.finer("adding search to forward queue, will forward in " + mDelay + " ms");
-					DelayedSearchQueueEntry entry = new DelayedSearchQueueEntry(search, source, System.currentTimeMillis() + mDelay);
+					logger.finer("adding search to forward queue, will forward in " + mDelay
+							+ " ms");
+					DelayedSearchQueueEntry entry = new DelayedSearchQueueEntry(search, source,
+							System.currentTimeMillis() + mDelay);
 					queuedSearches.put(search.getSearchID(), entry);
 					queue.add(entry);
 				} else {
