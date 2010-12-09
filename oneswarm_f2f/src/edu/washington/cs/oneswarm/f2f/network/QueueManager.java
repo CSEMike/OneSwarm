@@ -205,7 +205,12 @@ public class QueueManager {
 
 	FriendConnectionQueue registerConnectionForQueueHandling(FriendConnection fc) {
 		FriendConnectionQueue m = new FriendConnectionQueue(this, fc);
-		queueManagers.put(fc, m);
+		lock.lock();
+		try {
+			queueManagers.put(fc, m);
+		} finally {
+			lock.unlock();
+		}
 		return m;
 	}
 
