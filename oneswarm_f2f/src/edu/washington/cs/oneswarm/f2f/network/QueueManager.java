@@ -73,6 +73,12 @@ public class QueueManager {
 	private final static double LIMIT_TRANSPORT_TRAFFIC = 1.0 - PROB_FORWARD_TRAFFIC - PROB_SEARCH_TRAFFIC;
 	private final static double LIMIT_FORWARD_TRAFFIC = 1.0 - PROB_SEARCH_TRAFFIC;
 
+	/**
+	 * The maximum fraction of the global queue length
+	 * (MAX_GLOBAL_QUEUE_LEN_BYTES) allowed for each friend.
+	 */
+	private static final double MAX_QUEUE_FRACTION_PER_FRIEND = 0.4;
+
 	public QueueManager() {
 		this.globalSpeedManager = new SpeedManager(this, true);
 
@@ -278,7 +284,7 @@ public class QueueManager {
 				logger.finest("packet sending triggered");
 
 				// ok, there is room to queue a packet
-				if (transports.peek() != null && rand < LIMIT_TRANSPORT_TRAFFIC) {
+				if (isFriendQueueAdmissible(transports.peek()) && rand < LIMIT_TRANSPORT_TRAFFIC) {
 					// lets use round robin for now, remove the first and put it
 					// last
 					FriendConnectionQueue luckyFriendQueue = transports.remove();
@@ -290,7 +296,7 @@ public class QueueManager {
 						packetsSent++;
 						toNotify.add(luckyFriendQueue);
 					}
-				} else if (forwards.peek() != null && rand < LIMIT_FORWARD_TRAFFIC) {
+				} else if (isFriendQueueAdmissible(forwards.peek()) && rand < LIMIT_FORWARD_TRAFFIC) {
 					FriendConnectionQueue luckyFriendQueue = forwards.remove();
 					// tell it to send a packet
 					boolean packetSent = luckyFriendQueue.sendQueuedForwardPacket();
@@ -300,7 +306,7 @@ public class QueueManager {
 						packetsSent++;
 						toNotify.add(luckyFriendQueue);
 					}
-				} else if (searches.peek() != null) {
+				} else if (isFriendQueueAdmissible(searches.peek())) {
 					FriendConnectionQueue luckyFriendQueue = searches.remove();
 					// tell it to send a packet
 					boolean packetSent = luckyFriendQueue.sendQueuedSearchPacket();
@@ -332,6 +338,35 @@ public class QueueManager {
 
 		return packetsSent;
 
+	}
+
+	/**
+	 * Returns true iff our queueing policy permits sending from a given queue.
+	 *
+	 * Overall, our goal is to prevent one friend connection from dominating
+	 * 'too much' of our overall queue. If this happens, the global queue can
+	 * become temporarily 'stuck' waiting for queued bytes to time out.
+	 */
+	private boolean isFriendQueueAdmissible(FriendConnectionQueue friendQueue) {
+		if (friendQueue == null) {
+			return false;
+		}
+
+		// If this friendQueue currently has queued more than
+		// MAX_QUEUE_FRACTION_PER_FRIEND of the global queue size, refuse.
+		long totalQueuedBytes = friendQueue.getTotalOutgoingQueueLengthBytes();
+
+		if (totalQueuedBytes > MAX_GLOBAL_QUEUE_LEN_BYTES) {
+			logger.warning("*** Total queued bytes for friendQueue exceeds max queue. total: "
+					+ totalQueuedBytes + " max: " + MAX_GLOBAL_QUEUE_LEN_BYTES + " friend: "
+					+ friendQueue.toString());
+		}
+
+		if ((totalQueuedBytes) > MAX_QUEUE_FRACTION_PER_FRIEND * MAX_GLOBAL_QUEUE_LEN_BYTES) {
+			return false;
+		}
+
+		return true;
 	}
 
 	public static enum QueueBuckets {
