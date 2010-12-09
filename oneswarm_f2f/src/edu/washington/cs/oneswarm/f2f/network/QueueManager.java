@@ -282,7 +282,10 @@ public class QueueManager {
 		LinkedList<FriendConnectionQueue> toNotify = new LinkedList<FriendConnectionQueue>();
 		lock.lock();
 		try {
-			while (canQueuePacket() && (transports.peek() != null || forwards.peek() != null || searches.peek() != null)) {
+			while (canQueuePacket() && (
+					isFriendQueueAdmissible(transports.peek()) ||
+					isFriendQueueAdmissible(forwards.peek()) ||
+					isFriendQueueAdmissible(searches.peek()))) {
 				double rand = random.nextDouble();
 				lastPacketSending = System.currentTimeMillis();
 				logger.finest("packet sending triggered");
@@ -324,7 +327,6 @@ public class QueueManager {
 				if (packetsSent > 0) {
 					lastPacketSent = System.currentTimeMillis();
 				}
-
 			}
 		} finally {
 			lock.unlock();
