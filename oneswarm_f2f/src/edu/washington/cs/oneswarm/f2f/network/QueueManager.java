@@ -147,7 +147,7 @@ public class QueueManager {
 		if (!canQueue) {
 			sb.append("\nglobalQueueLengthBytes > MAX_GLOBAL_QUEUE_LEN_BYTES: " + (globalQueueLengthBytes > MAX_GLOBAL_QUEUE_LEN_BYTES));
 			sb.append("\nglobalSpeedManager.canQueuePacket(globalQueueLengthBytes, MAX_GLOBAL_QUEUE_LEN_MS): " + globalSpeedManager.canQueuePacket(globalQueueLengthBytes, MAX_GLOBAL_QUEUE_LEN_MS));
-			sb.append("\ncurrentUploadSpeeD: " + globalSpeedManager.getCurrentUploadSpeed());
+			sb.append("\ncurrentUploadSpeed: " + globalSpeedManager.getCurrentUploadSpeed());
 		}
 
 		return sb.toString();
@@ -353,6 +353,7 @@ public class QueueManager {
 	 * 'too much' of our overall queue. If this happens, the global queue can
 	 * become temporarily 'stuck' waiting for queued bytes to time out.
 	 */
+	static boolean loggedOnce = false;
 	private boolean isFriendQueueAdmissible(FriendConnectionQueue friendQueue) {
 		if (friendQueue == null) {
 			return false;
@@ -362,7 +363,8 @@ public class QueueManager {
 		// MAX_QUEUE_FRACTION_PER_FRIEND of the global queue size, refuse.
 		long totalQueuedBytes = friendQueue.getTotalOutgoingBytesContributionToGlobalQueue();
 
-		if (totalQueuedBytes > MAX_GLOBAL_QUEUE_LEN_BYTES) {
+		if (totalQueuedBytes > MAX_GLOBAL_QUEUE_LEN_BYTES && !loggedOnce) {
+			loggedOnce = true;
 			logger.warning("*** Total queued bytes for friendQueue exceeds max queue. total: "
 					+ totalQueuedBytes + " max: " + MAX_GLOBAL_QUEUE_LEN_BYTES + " friend: "
 					+ friendQueue.toString());

@@ -49,7 +49,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 	 */
 	private final static int MAX_SEARCH_AGE = 6 * 1000;
 	private final static int MAX_SEARCH_QUEUE = 50;
-	public static final boolean QUEUE_LENGTH_DEBUG = false;
+	public static final boolean QUEUE_LENGTH_DEBUG = System.getProperty("oneswarm.queue.length.debug") != null;
 
 	private long dataBytesUploaded = 0;
 

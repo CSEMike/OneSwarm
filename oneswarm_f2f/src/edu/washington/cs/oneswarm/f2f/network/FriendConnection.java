@@ -78,8 +78,14 @@ public class FriendConnection {
 	/*
 	 * the max search rate, average over 10 s
 	 */
-	public final static double MAX_OUTGOING_SEARCH_RATE = 1000;
-	private final static double MAX_INCOMING_SEARCH_RATE = MAX_OUTGOING_SEARCH_RATE * 1.5;
+	public final static double MAX_OUTGOING_SEARCH_RATE = 40;
+
+	/** The average search rate after which to drop incoming searches, but not ban. */
+	private static final long PROP_DROP_SEARCH_RATE = 40;
+
+	// This is set to 1000 for legacy clients who had a MAX_OUTGOING_SEARCH_RATE of 1000.
+	// We don't want to ban these people just yet.
+	private final static double MAX_INCOMING_SEARCH_RATE = 1000 * 1.5;
 
 	private final Average incomingSearchRate = Average.getInstance(1000, 10);
 	private final Average outgoingSearchRate = Average.getInstance(1000, 10);
@@ -113,6 +119,8 @@ public class FriendConnection {
 	private final long connectionTime;
 
 	private long dataBytesDownloaded = 0;
+
+	Random random = new Random();
 
 	private final FileListManager filelistManager;
 	private final FileListRequestHandler fileListRequestHandler = new FileListRequestHandler();
@@ -702,6 +710,7 @@ public class FriendConnection {
 	}
 
 	private final static int MAX_FILE_LIST_REQUESTS = 10;
+
 	private int numFileListRequestsReceived = 0;
 
 	private void handleFileListRequest(OSF2FTextSearch message) {
@@ -921,7 +930,15 @@ public class FriendConnection {
 	private void handleSearch(Message message) {
 
 		incomingSearchRate.addValue(1);
+
 		long average = incomingSearchRate.getAverage();
+		if (average > PROP_DROP_SEARCH_RATE) {
+			if (logger.isLoggable(Level.FINE)) {
+				logger.fine(remoteFriend.getNick() + " above RED rate. Average: " + average + " RED_rate: " + PROP_DROP_SEARCH_RATE);
+			}
+			return;
+		}
+
 		if (average > MAX_INCOMING_SEARCH_RATE) {
 			remoteFriend.updateConnectionLog(true, "Search spam detected, closing connection, friend banned for 10 min");
 			remoteFriend.setFriendBannedUntil("search spam", System.currentTimeMillis() + 10 * 60 * 1000);

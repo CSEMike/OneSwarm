@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -68,7 +69,7 @@ public class SearchManager {
 	// search sources are remembered for 1 minute, any replies after this will
 	// be dropped
 	public static final long MAX_SEARCH_AGE = 60 * 1000;
-	public static final int MAX_SEARCH_QUEUE_LENGTH = 1000;
+	public static final int MAX_SEARCH_QUEUE_LENGTH = 500;
 //	private static final int MAX_SEARCH_RESP_BEFORE_CANCEL = COConfigurationManager.getIntParameter("f2f_search_max_paths");
 
 	protected int mMaxSearchResponsesBeforeCancel = COConfigurationManager.getIntParameter("f2f_search_max_paths");
@@ -90,6 +91,16 @@ public class SearchManager {
 //	static final int SEARCH_DELAY = COConfigurationManager.getIntParameter("f2f_search_forward_delay");
 	protected int mSearchDelay = COConfigurationManager.getIntParameter("f2f_search_forward_delay");
 
+	/**
+	 * This Map is protected by the BigFatLock: lock. We use this to drop searches from friends
+	 * that are crowding the outgoing search queue early, thus allowing friends that send searches
+	 * more rarely to get through.
+	 *
+	 * This map is emptied once every 60 seconds to deal with accounting errors that may accumulate.
+	 */
+	class MutableInteger { public int v=0; }
+	long lastSearchAccountingFlush = System.currentTimeMillis();
+	private final Map<Friend, MutableInteger> searchesPerFriend = new HashMap<Friend, MutableInteger>();
 
 	private int bloomSearchesBlockedCurr = 0;
 
@@ -440,6 +451,25 @@ public class SearchManager {
 		b.append("\nbloom: stored=" + recentSearches.getPrevFilterNumElements() + " est false positives=" + (100 * recentSearches.getPrevFilterFalsePositiveEst() + "%"));
 		b.append("\nbloom blocked|sent curr=" + bloomSearchesBlockedCurr + "|" + bloomSearchesSentCurr + " prev=" + bloomSearchesBlockedPrev + "|" + bloomSearchesSentPrev);
 		b.append("\n\n" + debugChannelIdErrorSetupErrorStats.getDebugStats());
+
+		// Include per-friend queue stats
+		lock.lock();
+		try {
+			Map<String, MutableInteger> counts = new HashMap<String, MutableInteger>();
+			for (DelayedSearchQueueEntry e : delayedSearchQueue.queuedSearches.values()) {
+				String nick = e.source.getRemoteFriend().getNick();
+				if (counts.containsKey(nick) == false) {
+					counts.put(nick, new MutableInteger());
+				}
+				counts.get(nick).v++;
+			}
+			for (String nick : counts.keySet()) {
+				b.append("\n\t" + nick + " -> " + counts.get(nick).v);
+			}
+		} finally {
+			lock.unlock();
+		}
+
 		return b.toString();
 	}
 
@@ -1065,6 +1095,10 @@ public class SearchManager {
 
 	class DelayedSearchQueue {
 
+		long lastSearchesPerSecondLogTime = 0;
+		long lastBytesPerSecondCount = 0;
+		int searchCount = 0;
+
 		private long mDelay;
 		private final LinkedBlockingQueue<DelayedSearchQueueEntry> queue = new LinkedBlockingQueue<DelayedSearchQueueEntry>();
 		private final HashMap<Integer, DelayedSearchQueueEntry> queuedSearches = new HashMap<Integer, DelayedSearchQueueEntry>();
@@ -1087,8 +1121,52 @@ public class SearchManager {
 		}
 
 		public void add(FriendConnection source, OSF2FSearch search) {
+
+			if (lastSearchesPerSecondLogTime + 1000 < System.currentTimeMillis()) {
+
+				lock.lock();
+				try {
+					logger.fine("Searches/sec: " + searchCount + " bytes: "
+							+ lastBytesPerSecondCount + " searchQueueSize: "
+							+ queuedSearches.size());
+				} finally {
+					lock.unlock();
+				}
+
+				lastSearchesPerSecondLogTime = System.currentTimeMillis();
+				searchCount = 0;
+				lastBytesPerSecondCount = 0;
+			}
+
+			searchCount++;
+			lastBytesPerSecondCount += FriendConnectionQueue.getMessageLen(search);
+
 			lock.lock();
 			try {
+
+				// Flush the accounting info every 60 seconds
+				if (SearchManager.this.lastSearchAccountingFlush + 60*1000 < System.currentTimeMillis()) {
+					lastSearchAccountingFlush = System.currentTimeMillis();
+					searchesPerFriend.clear();
+				}
+
+				// If the search queue is more than half full, start dropping searches
+				// proportional to how much of the total queue each person is
+				// consuming
+				if (queuedSearches.size() > 0.5 * MAX_SEARCH_QUEUE_LENGTH) {
+					if (searchesPerFriend.containsKey(source.getRemoteFriend())) {
+						int outstanding = searchesPerFriend.get(source.getRemoteFriend()).v;
+						double acceptProb = (double) outstanding / (double) queuedSearches.size();
+						if (random.nextDouble() < acceptProb) {
+							if (logger.isLoggable(Level.FINE)) {
+								logger.fine("*** RED for search from " + source + " outstanding: "
+										+ outstanding + " total: " + queuedSearches.size());
+							}
+							return;
+						}
+					}
+				}
+
 				if (queuedSearches.size() > MAX_SEARCH_QUEUE_LENGTH) {
 					if (logger.isLoggable(Level.FINER)) {
 						logger.finer("not forwarding search, queue length too large. id: "
@@ -1097,12 +1175,21 @@ public class SearchManager {
 					return;
 				}
 				if (!queuedSearches.containsKey(search.getSearchID())) {
-					logger.finer("adding search to forward queue, will forward in " + mDelay
+					logger.finest("adding search to forward queue, will forward in " + mDelay
 							+ " ms");
 					DelayedSearchQueueEntry entry = new DelayedSearchQueueEntry(search, source,
 							System.currentTimeMillis() + mDelay);
+
+					if (searchesPerFriend.containsKey(source.getRemoteFriend()) == false) {
+						searchesPerFriend.put(source.getRemoteFriend(), new SearchManager.MutableInteger());
+					}
+					searchesPerFriend.get(source.getRemoteFriend()).v++;
+					logger.finest("Search for friend: " + source.getRemoteFriend().getNick() + " "
+							+ searchesPerFriend.get(source.getRemoteFriend()).v);
+
 					queuedSearches.put(search.getSearchID(), entry);
 					queue.add(entry);
+
 				} else {
 					logger.finer("search already in queue, not adding");
 				}
@@ -1136,6 +1223,11 @@ public class SearchManager {
 						lock.lock();
 						try {
 							queuedSearches.remove(e.search.getSearchID());
+							// If searchesPerFriend was flushed while this search was in the
+							// queue, the get() call will return null.
+							if (searchesPerFriend.containsKey(e.source.getRemoteFriend())) {
+								searchesPerFriend.get(e.source.getRemoteFriend()).v--;
+							}
 						} finally {
 							lock.unlock();
 						}
@@ -1147,7 +1239,7 @@ public class SearchManager {
 							double ms = 1000.0 / FriendConnection.MAX_OUTGOING_SEARCH_RATE;
 							int msFloor = (int) Math.floor(ms);
 							int nanosLeft = (int) Math.round((ms - msFloor) * 1000000.0);
-							logger.finer("sleeping " + msFloor + "ms + " + nanosLeft + " ns");
+							logger.finest("sleeping " + msFloor + "ms + " + nanosLeft + " ns");
 							Thread.sleep(msFloor, Math.min(999999, nanosLeft));
 						}
 
