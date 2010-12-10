@@ -834,6 +834,10 @@ public class SearchManager {
 
 		boolean shouldForward = true;
 
+		if (logger.isLoggable(Level.FINER)) {
+			logger.finer("handleTextSearch: " + msg.getSearchString() + " from " + source.getRemoteFriend().getNick());
+		}
+
 		String searchString = msg.getSearchString();
 
 		// common case is no filtering.
