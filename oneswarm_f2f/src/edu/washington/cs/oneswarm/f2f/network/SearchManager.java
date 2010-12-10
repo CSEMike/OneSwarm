@@ -69,7 +69,7 @@ public class SearchManager {
 	// search sources are remembered for 1 minute, any replies after this will
 	// be dropped
 	public static final long MAX_SEARCH_AGE = 60 * 1000;
-	public static final int MAX_SEARCH_QUEUE_LENGTH = 500;
+	public static final int MAX_SEARCH_QUEUE_LENGTH = 1000;
 //	private static final int MAX_SEARCH_RESP_BEFORE_CANCEL = COConfigurationManager.getIntParameter("f2f_search_max_paths");
 
 	protected int mMaxSearchResponsesBeforeCancel = COConfigurationManager.getIntParameter("f2f_search_max_paths");
