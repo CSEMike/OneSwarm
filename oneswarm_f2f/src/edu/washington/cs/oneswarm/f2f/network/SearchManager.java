@@ -1156,6 +1156,14 @@ public class SearchManager {
 				if (queuedSearches.size() > 0.5 * MAX_SEARCH_QUEUE_LENGTH) {
 					if (searchesPerFriend.containsKey(source.getRemoteFriend())) {
 						int outstanding = searchesPerFriend.get(source.getRemoteFriend()).v;
+
+						// We add a hard limit on the number of searches from any one person.
+						if (outstanding > 0.25 * MAX_SEARCH_QUEUE_LENGTH) {
+							logger.fine("Dropping due to 25% of total queue consumption " + source.getRemoteFriend().getNick() + " " + outstanding + " / " + MAX_SEARCH_QUEUE_LENGTH);
+							return;
+						}
+
+						// In other cases, we drop proportional to the consumption of the overall queue.
 						double acceptProb = (double) outstanding / (double) queuedSearches.size();
 						if (random.nextDouble() < acceptProb) {
 							if (logger.isLoggable(Level.FINE)) {
