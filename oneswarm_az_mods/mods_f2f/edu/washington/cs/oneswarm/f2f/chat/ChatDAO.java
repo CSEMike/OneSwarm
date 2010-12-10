@@ -147,17 +147,12 @@ public class ChatDAO {
 		Thread dequeuer = new Thread("ChatDAO message dequeuer") {
 			@Override
 			public void run() {
-				PreparedStatement stmt = null;
-					try {
-						stmt = mDB.prepareStatement("INSERT INTO messages (public_key, nick_at_receive, message, outgoing) VALUES (?, ?, ?, 0)");
-					} catch (SQLException e1) {
-						logger.severe("SQL error with chat DAO dequeuer: " + e1.toString());
-						e1.printStackTrace();
-						BackendErrorLog.get().logException(e1);
-					}
+					PreparedStatement stmt = null;
 					while( true ) {
 						try {
 							ChatScratch chat = mToProcess.take();
+
+							stmt = mDB.prepareStatement("INSERT INTO messages (public_key, nick_at_receive, message, outgoing) VALUES (?, ?, ?, 0)");
 
 							synchronized(ChatDAO.this)
 							{
@@ -173,15 +168,15 @@ public class ChatDAO {
 							logger.warning("**** Unhandled chat dequeuer thread error: " + e.toString());
 							e.printStackTrace();
 							BackendErrorLog.get().logException(e);
+							break;
 						} finally {
-							if( stmt != null ) {
+							if (stmt != null) {
 								try {
 									stmt.close();
-								} catch( Exception e ) {}
+								} catch(Exception e) {}
 							}
 						}
 					}
-
 			}
 		};
 		dequeuer.setDaemon(true);
