@@ -523,6 +523,8 @@
 		<delete dir="merge-scratch/META-INF"/>
 		<delete file="merge-scratch/plugin.properties"/> 
 		
+		<buildnumber file="merge-scratch/build.txt"/>
+		
 		<jar destfile="OneSwarm.jar" basedir="merge-scratch">
 			<manifest>
 				<attribute name="Main-Class" value="org.gudy.azureus2.ui.swt.Main"/>
