@@ -89,6 +89,8 @@ public class QueueManager {
 			logger.info("using queue.lock.debug");
 		}
 
+		logger.info("** Bound on MAX_QUEUE_FRACTION_PER_FRIEND * MAX_GLOBAL_QUEUE_LEN_BYTES: " + (MAX_QUEUE_FRACTION_PER_FRIEND * MAX_GLOBAL_QUEUE_LEN_BYTES));
+
 		/*
 		 * schedule a QueueLengthChecker to update the approximate queue length
 		 * to the exact queue length, just using the listeners is leaking a

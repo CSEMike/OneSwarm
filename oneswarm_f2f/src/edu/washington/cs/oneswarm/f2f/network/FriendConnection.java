@@ -787,7 +787,7 @@ public class FriendConnection {
 			}
 
 			while (bufferedMessages.size() != 0) {
-				sendMessage(bufferedMessages.remove());
+				sendMessage(bufferedMessages.remove(), true);
 			}
 		} else {
 			Debug.out("handleHandshake got non " + "handshake message: " + message.getDescription());
@@ -925,6 +925,44 @@ public class FriendConnection {
 	}
 
 	private void handleSearch(Message message) {
+
+		boolean possiblePrune = true;
+
+		if (message instanceof OSF2FTextSearch) {
+			OSF2FTextSearch asSearch = (OSF2FTextSearch)message;
+			if (asSearch.getSearchString().startsWith("sha1;") == false) {
+				possiblePrune = false;
+			} else {
+				// Just always skip sha; searches for now.
+				// TODO(piatek): remove this when some more principled thing is figured out.
+				return;
+			}
+		} else {
+			possiblePrune = false;
+		}
+
+		if (possiblePrune == false) {
+			logger.fine("Passing possible search: " + message.getDescription());
+		}
+
+		if (possiblePrune) {
+			// Early drop if we have it in the bloom filter
+			SearchManager searchManager = OSF2FMain.getSingelton().getOverlayManager().getSearchManager();
+			if (message instanceof OSF2FSearch) {
+				OSF2FSearch asSearch = (OSF2FSearch)message;
+				if (searchManager.isSearchInBloomFilter(asSearch)) {
+					logger.fine("Early drop of search in BF: " + asSearch.getDescription());
+					return;
+				}
+			}
+
+			// Start probablistically dropping
+			double dropProb = searchManager.getFriendSearchDropProbability(this.getRemoteFriend());
+			if (random.nextDouble() < dropProb) {
+				logger.fine("SearchQueuePressure drop: " + dropProb + " " + getRemoteFriend().getNick());
+				return;
+			}
+		}
 
 		incomingSearchRate.addValue(1);
 
@@ -1245,12 +1283,12 @@ public class FriendConnection {
 		outgoingSearchRate.addValue(1);
 		long average = outgoingSearchRate.getAverage();
 		if (average > MAX_OUTGOING_SEARCH_RATE) {
-			logger.finer(getDescription() + "Dropping search, sending to fast");
+			logger.warning(getDescription() + "Dropping search, sending too fast");
 			return;
 		}
 
 		if (logger.isLoggable(Level.FINE) && search instanceof OSF2FTextSearch) {
-			logger.fine("Forwarding text search: " + ((OSF2FTextSearch)search).getSearchString());
+			logger.finer("Forwarding text search: " + ((OSF2FTextSearch)search).getSearchString());
 		}
 
 		logger.finest(getDescription() + "forwarding search, rate=" + average);
@@ -1551,7 +1589,7 @@ public class FriendConnection {
 				lastID = previousList.getListId();
 			}
 			OSF2FMessage msg = new OSF2FTextSearch(OSF2FMessage.CURRENT_VERSION, OSF2FMessage.FILE_LIST_TYPE_COMPLETE, 0, "" + lastID);
-			sendMessage(msg);
+			sendMessage(msg, true);
 
 			if (callback != null) {
 				synchronized (listeners) {

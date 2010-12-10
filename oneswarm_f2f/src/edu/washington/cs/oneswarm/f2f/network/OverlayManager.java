@@ -15,15 +15,13 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.bouncycastle.util.encoders.Base64;
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.config.ParameterListener;
-import org.gudy.azureus2.core3.config.StringList;
-import org.gudy.azureus2.core3.config.impl.ConfigurationDefaults;
 import org.gudy.azureus2.core3.download.DownloadManager;
 import org.gudy.azureus2.core3.global.GlobalManagerStats;
 import org.gudy.azureus2.core3.logging.LogEvent;
@@ -36,7 +34,6 @@ import com.aelitis.azureus.core.impl.AzureusCoreImpl;
 import com.aelitis.azureus.core.instancemanager.AZInstance;
 import com.aelitis.azureus.core.networkmanager.ConnectionEndpoint;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
-import org.bouncycastle.util.encoders.Base64;
 
 import edu.washington.cs.oneswarm.f2f.BigFatLock;
 import edu.washington.cs.oneswarm.f2f.FileList;
@@ -71,9 +68,9 @@ public class OverlayManager {
 	private int mMAX_DELAY_LINK_LATENCY = COConfigurationManager.getIntParameter("f2f_search_emulate_hops_max") * COConfigurationManager.getIntParameter("f2f_overlay_emulate_link_latency_max");
 	private int mMIN_RESPONSE_DELAY = COConfigurationManager.getIntParameter("f2f_search_emulate_hops_min") * COConfigurationManager.getIntParameter("f2f_search_forward_delay");
 	private int mMAX_RESPONSE_DELAY = COConfigurationManager.getIntParameter("f2f_search_emulate_hops_max") * COConfigurationManager.getIntParameter("f2f_search_forward_delay");
-	
-	private double mForwardSearchProbability = (double)COConfigurationManager.getFloatParameter("f2f_forward_search_probability");
- 
+
+	private double mForwardSearchProbability = COConfigurationManager.getFloatParameter("f2f_forward_search_probability");
+
 	// this is just a way to treat requests for the local file list a bit
 	// differently
 	public final static int OWN_CONNECTION_ID_MAGIC_NUMBER = 0;
@@ -83,7 +80,7 @@ public class OverlayManager {
 	private static final int TIMEOUT_CHECK_PERIOD = 5 * 1000;
 	private final ConcurrentHashMap<Integer, FriendConnection> connections;
 	private final FileListManager filelistManager;
-	private LinkedList<FriendConnectListener> friendConnectListeners = new LinkedList<FriendConnectListener>();
+	private final LinkedList<FriendConnectListener> friendConnectListeners = new LinkedList<FriendConnectListener>();
 
 	private final FriendManager friendManager;
 	private long lastConnectionCheckRun = System.currentTimeMillis();
@@ -120,17 +117,17 @@ public class OverlayManager {
 			responseDelayRandomnesManager = new RandomnessManager();
 			COConfigurationManager.setParameter(RESPONSE_DELAY_SEED_SETTING_KEY, randomnessManager.getSecretBytes());
 		}
-		
-		COConfigurationManager.addAndFireParameterListeners(new String[] { "f2f_overlay_emulate_link_latency_max",  
-				"f2f_search_emulate_hops_min", "f2f_search_emulate_hops_max", "f2f_search_forward_delay", 
+
+		COConfigurationManager.addAndFireParameterListeners(new String[] { "f2f_overlay_emulate_link_latency_max",
+				"f2f_search_emulate_hops_min", "f2f_search_emulate_hops_max", "f2f_search_forward_delay",
 				"f2f_forward_search_probability" }, new ParameterListener() {
 			public void parameterChanged(String parameterName) {
 				 mMIN_DELAY_LINK_LATENCY = COConfigurationManager.getIntParameter("f2f_search_emulate_hops_min") * COConfigurationManager.getIntParameter("f2f_overlay_emulate_link_latency_max");
 				 mMAX_DELAY_LINK_LATENCY = COConfigurationManager.getIntParameter("f2f_search_emulate_hops_max") * COConfigurationManager.getIntParameter("f2f_overlay_emulate_link_latency_max");
 				 mMIN_RESPONSE_DELAY = COConfigurationManager.getIntParameter("f2f_search_emulate_hops_min") * COConfigurationManager.getIntParameter("f2f_search_forward_delay");
 				 mMAX_RESPONSE_DELAY = COConfigurationManager.getIntParameter("f2f_search_emulate_hops_max") * COConfigurationManager.getIntParameter("f2f_search_forward_delay");
-				 mForwardSearchProbability = (double)COConfigurationManager.getFloatParameter("f2f_forward_search_probability");
-				 
+				 mForwardSearchProbability = COConfigurationManager.getFloatParameter("f2f_forward_search_probability");
+
 				 if( mForwardSearchProbability <= 0 ) {
 					 COConfigurationManager.setParameter("f2f_forward_search_probability", 0.5f);
 					 mForwardSearchProbability = 0.5;
@@ -196,7 +193,7 @@ public class OverlayManager {
 			/*
 			 * check if there are any active connections to the friend, if not,
 			 * mark as disconnected
-			 * 
+			 *
 			 * this check is needed if there are 2 concurrent connections to the
 			 * same friend , and one is denied to register because of the other
 			 * one already connected
@@ -318,7 +315,7 @@ public class OverlayManager {
 		}
 	}
 
-	
+
 	public List<Friend> getDisconnectedFriends() {
 		List<Friend> l = new ArrayList<Friend>();
 		Friend[] friends = friendManager.getFriends();
@@ -572,7 +569,7 @@ public class OverlayManager {
 	/**
 	 * to protect against colluding friends we are only forwarding searches with
 	 * 95% probability
-	 * 
+	 *
 	 * if forcesend = true the search will be forwarded anyway even if the
 	 * randomness says that friend shouldn't be forwarded
 	 */
@@ -744,17 +741,18 @@ public class OverlayManager {
 					searchManager.sendDirectedHashSearch(friendConnection, hash);
 				}
 			}
-			
+
 			/**
 			 * Check if we need to send any pending chat messages to this user. (5/sec)
 			 */
 			Thread queryThread = new Thread("Queued chat SQL query for: " + friendConnection.getRemoteFriend().getNick()) {
+				@Override
 				public void run() {
-					
+
 					try {
 						Thread.sleep(3*1000);
 					} catch( InterruptedException e ) {}
-					
+
 					String base64Key = new String(Base64.encode(friendConnection.getRemotePublicKey()));
 					ChatDAO dao = ChatDAO.get();
 					List<Chat> out = dao.getQueuedMessagesForUser(base64Key);
@@ -762,10 +760,10 @@ public class OverlayManager {
 						if( friendConnection.isTimedOut() || friendConnection.isClosing() ) {
 							return;
 						}
-						
+
 						friendConnection.sendChat(c.getMessage() + " (sent " + StringTools.formatDateAppleLike(new Date(c.getTimestamp()), true) + ")");
 						dao.markSent(c.getUID());
-						
+
 						try {
 							Thread.sleep(200);
 						} catch( InterruptedException e ) {}
@@ -849,7 +847,7 @@ class RandomnessManager {
 	 * Returns a random int seeded with the secret appended to the seed. For a
 	 * given seed the returned value will always be the same for a given
 	 * instance of the RandomnessManager
-	 * 
+	 *
 	 * @param seed
 	 * @return
 	 * @throws NoSuchAlgorithmException

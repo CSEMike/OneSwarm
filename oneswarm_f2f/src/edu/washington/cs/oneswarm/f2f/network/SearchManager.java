@@ -87,7 +87,7 @@ public class SearchManager {
 	 */
 	private static final int RECENT_SEARCH_BUCKETS = 4;
 
-	private static final long RECENT_SEARCH_MEMORY = 60 * 60 * 1000;
+	private static final long RECENT_SEARCH_MEMORY = 10 * 60 * 1000;
 //	static final int SEARCH_DELAY = COConfigurationManager.getIntParameter("f2f_search_forward_delay");
 	protected int mSearchDelay = COConfigurationManager.getIntParameter("f2f_search_forward_delay");
 
@@ -466,6 +466,7 @@ public class SearchManager {
 			for (String nick : counts.keySet()) {
 				b.append("\n\t" + nick + " -> " + counts.get(nick).v);
 			}
+			b.append("\n\nQueue size: " + delayedSearchQueue.queuedSearches.size());
 		} finally {
 			lock.unlock();
 		}
@@ -582,6 +583,32 @@ public class SearchManager {
 			lock.unlock();
 		}
 		return canceled;
+	}
+
+	/**
+	 * Returns the probability of rejecting a search from this friend given the share of the
+	 * overall queue
+	 */
+	public double getFriendSearchDropProbability(Friend inFriend) {
+
+		lock.lock();
+		try {
+
+			// Always accept if we don't have any searches from friend.
+			if (searchesPerFriend.get(inFriend) == null) {
+				return 0;
+			}
+
+			// Reject proportionally to recent rate. Do not admit more than 400/sec.
+			// Also, proportional to processing queue size.
+			double rateBound = delayedSearchQueue.searchCount / 100.0;
+			double queueBound = (double)delayedSearchQueue.queuedSearches.size() / (double)MAX_SEARCH_QUEUE_LENGTH;
+
+			return Math.max(rateBound, queueBound);
+
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	private void handleIncomingHashSearchResponse(OSF2FHashSearch hashSearch, FriendConnection source, OSF2FHashSearchResp msg) {
@@ -937,7 +964,7 @@ public class SearchManager {
 
 		// these should go in the slow (forward) path so to route around slow
 		// nodes
-		sendSearch(newSearchId, search, true);
+		sendSearch(newSearchId, search, false);
 	}
 
 	private void sendSearch(int newSearchId, OSF2FSearch search, boolean skipQueue) {
@@ -963,7 +990,7 @@ public class SearchManager {
 
 		OSF2FSearch search = new OSF2FTextSearch(OSF2FMessage.CURRENT_VERSION, OSF2FMessage.FILE_LIST_TYPE_PARTIAL, newSearchId, searchString);
 		textSearchManager.sentSearch(newSearchId, searchString, listener);
-		sendSearch(newSearchId, search, true);
+		sendSearch(newSearchId, search, false);
 		return newSearchId;
 	}
 
@@ -1157,12 +1184,12 @@ public class SearchManager {
 				// If the search queue is more than half full, start dropping searches
 				// proportional to how much of the total queue each person is
 				// consuming
-				if (queuedSearches.size() > 0.5 * MAX_SEARCH_QUEUE_LENGTH) {
+				if (queuedSearches.size() > 0.25 * MAX_SEARCH_QUEUE_LENGTH) {
 					if (searchesPerFriend.containsKey(source.getRemoteFriend())) {
 						int outstanding = searchesPerFriend.get(source.getRemoteFriend()).v;
 
 						// We add a hard limit on the number of searches from any one person.
-						if (outstanding > 0.25 * MAX_SEARCH_QUEUE_LENGTH) {
+						if (outstanding > 0.15 * MAX_SEARCH_QUEUE_LENGTH) {
 							logger.fine("Dropping due to 25% of total queue consumption " + source.getRemoteFriend().getNick() + " " + outstanding + " / " + MAX_SEARCH_QUEUE_LENGTH);
 							return;
 						}
@@ -1320,11 +1347,9 @@ public class SearchManager {
 	}
 
 	static class RotatingBloomFilter {
-		private static final int OBJECTS_TO_STORE = 10000;
-		/*
-		 * this means roughly 1/100,000 false positives for 10,000 values
-		 */
-		private static final int SIZE_IN_BITS = 256 * 1024;
+		private static final int OBJECTS_TO_STORE = 1000000;
+
+		private static final int SIZE_IN_BITS = 10240 * 1024;
 
 		private long currentFilterCreated;
 		private final LinkedList<BloomFilter> filters = new LinkedList<BloomFilter>();
@@ -1374,8 +1399,7 @@ public class SearchManager {
 			if (filters.size() > 0) {
 				BloomFilter prevFilter = filters.getFirst();
 				String str = "Rotating bloom filter: objects=" + prevFilter.getUniqueObjectsStored() + " predicted false positive rate=" + (100 * prevFilter.getPredictedFalsePositiveRate() + "%");
-				logger.fine(str);
-				System.out.println(str);
+				logger.info(str);
 			}
 			currentFilterCreated = System.currentTimeMillis();
 			try {
@@ -1419,6 +1443,7 @@ public class SearchManager {
 			Random rand = new Random();
 
 			RotatingBloomFilter bf = new RotatingBloomFilter(60 * 1000, 4);
+
 			Set<String> inserts = new HashSet<String>();
 			for (int j = 0; j < 8; j++) {
 				for (int i = 0; i < 20000; i++) {
@@ -1449,6 +1474,8 @@ public class SearchManager {
 			}
 
 			System.out.println("false positive check, " + fps + "/" + to_check);
+
+			System.out.println("mem: " + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
 
 		}
 
@@ -1597,6 +1624,20 @@ public class SearchManager {
 
 			}
 		}
+	}
+
+	public boolean isSearchInBloomFilter(OSF2FSearch search) {
+		lock.lock();
+		try {
+			int searchID = search.getSearchID();
+			int valueID = search.getValueID();
+			if (recentSearches.contains(searchID, valueID)) {
+				bloomSearchesBlockedCurr++;
+			}
+		} finally {
+			lock.unlock();
+		}
+		return false;
 	}
 
 }
