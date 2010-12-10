@@ -56,11 +56,11 @@ public class Sha1SourceFinder {
 	private final OverlayManager overlayManager;
 	private static Logger logger = Logger.getLogger(Sha1SourceFinder.class.getName());
 
-	private HashMap<DownloadManager, AdditionalSourceFinder> finders = new HashMap<DownloadManager, AdditionalSourceFinder>();
+	private final HashMap<DownloadManager, AdditionalSourceFinder> finders = new HashMap<DownloadManager, AdditionalSourceFinder>();
 
-	private HashMap<HashWrapper, Long> alreadyDownloading = new HashMap<HashWrapper, Long>();
+	private final HashMap<HashWrapper, Long> alreadyDownloading = new HashMap<HashWrapper, Long>();
 
-	private HashSet<HashWrapper> alreadyAdded = new HashSet<HashWrapper>();
+	private final HashSet<HashWrapper> alreadyAdded = new HashSet<HashWrapper>();
 	private final static long startTime = System.currentTimeMillis();
 	private static final boolean DEBUG = false;
 
@@ -499,7 +499,7 @@ public class Sha1SourceFinder {
 
 	/**
 	 * adds a non autoadded download without any files selected
-	 * 
+	 *
 	 * @param metainfo
 	 */
 
@@ -745,6 +745,7 @@ public class Sha1SourceFinder {
 				logger.finest("skipping sha1 source check, (last one was " + timeSinceLast / 1000 + " seconds ago");
 				return;
 			}
+			lastCheck = System.currentTimeMillis();
 			if(dm.getDiskManager() == null){
 				logger.finest("skipping sha1 source check (diskmanager not ready)");
 				return;
