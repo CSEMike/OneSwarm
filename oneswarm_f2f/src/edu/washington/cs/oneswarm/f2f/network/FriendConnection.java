@@ -937,9 +937,10 @@ public class FriendConnection {
 				// TODO(piatek): remove this when some more principled thing is figured out.
 				return;
 			}
-		} else {
-			possiblePrune = false;
 		}
+//		else {
+//			possiblePrune = false;
+//		}
 
 		if (possiblePrune == false) {
 			logger.fine("Passing possible search: " + message.getDescription());
