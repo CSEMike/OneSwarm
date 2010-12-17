@@ -30,7 +30,6 @@ public class HealthChecker extends Thread {
 				"QueueLengthChecker",
 				"CommunityServer polling",
 				"torrent pruning and F2F startstop",
-				"ChatDAO message dequeuer",
 			}) {
 			EXPECTED_THREAD_NAMES.add(s);
 		}
