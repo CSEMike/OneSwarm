@@ -1,19 +1,16 @@
 package edu.washington.cs.oneswarm.test.integration;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.logging.Logger;
 
 import junit.framework.Assert;
 
-import org.gudy.azureus2.ui.swt.Utils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.aelitis.azureus.core.impl.AzureusCoreImpl;
 import com.aelitis.azureus.ui.UIFunctionsManager;
 import com.thoughtworks.selenium.DefaultSelenium;
 import com.thoughtworks.selenium.Selenium;
@@ -154,7 +151,7 @@ public class ChatTest {
 	}
 
 	/** Boilerplate code for running as executable. */
-	public static void main (String [] args) throws Exception {		
+	public static void main (String [] args) throws Exception {
 		TestUtils.swtCompatibleTestRunner(ChatTest.class);
 	}
 }
