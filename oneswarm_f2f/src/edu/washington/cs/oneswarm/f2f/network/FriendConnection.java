@@ -930,10 +930,10 @@ public class FriendConnection {
 
 		if (message instanceof OSF2FTextSearch) {
 			OSF2FTextSearch asSearch = (OSF2FTextSearch)message;
-			if (asSearch.getSearchString().startsWith("sha1;") == false) {
+			if (asSearch.getSearchString().startsWith("sha1;") == false && asSearch.getSearchString().startsWith("ed2k;") == false) {
 				possiblePrune = false;
 			} else {
-				// Just always skip sha; searches for now.
+				// Just always skip sha;, ed2k; searches for now.
 				// TODO(piatek): remove this when some more principled thing is figured out.
 				return;
 			}
