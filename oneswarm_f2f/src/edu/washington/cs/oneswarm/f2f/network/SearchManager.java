@@ -69,7 +69,7 @@ public class SearchManager {
 	// search sources are remembered for 1 minute, any replies after this will
 	// be dropped
 	public static final long MAX_SEARCH_AGE = 60 * 1000;
-	public static final int MAX_SEARCH_QUEUE_LENGTH = 1000;
+	public static final int MAX_SEARCH_QUEUE_LENGTH = 100;
 //	private static final int MAX_SEARCH_RESP_BEFORE_CANCEL = COConfigurationManager.getIntParameter("f2f_search_max_paths");
 
 	protected int mMaxSearchResponsesBeforeCancel = COConfigurationManager.getIntParameter("f2f_search_max_paths");
@@ -87,7 +87,7 @@ public class SearchManager {
 	 */
 	private static final int RECENT_SEARCH_BUCKETS = 4;
 
-	private static final long RECENT_SEARCH_MEMORY = 10 * 60 * 1000;
+	private static final long RECENT_SEARCH_MEMORY = 20 * 60 * 1000;
 //	static final int SEARCH_DELAY = COConfigurationManager.getIntParameter("f2f_search_forward_delay");
 	protected int mSearchDelay = COConfigurationManager.getIntParameter("f2f_search_forward_delay");
 
@@ -443,20 +443,32 @@ public class SearchManager {
 
 	public String getSearchDebug() {
 		StringBuilder b = new StringBuilder();
-		b.append("total_frac=" + fracUpload() + "\ntransport_frac=" + fracTransportUpload() + "\ntorrent_avg=" + getAverageUploadPerRunningTorrent());
+		b.append("total_frac=" + fracUpload() + "\ntransport_frac=" + fracTransportUpload()
+				+ "\ntorrent_avg=" + getAverageUploadPerRunningTorrent());
 		b.append("\ncan forward=" + canForwardSearch());
 		b.append("\ncan respond=" + canRespondToSearch());
 
-		b.append("\n\nforwarded searches size=" + forwardedSearches.size() + " canceled size=" + canceledSearches.size() + " sent size=" + sentSearches.size());
-		b.append("\nbloom: stored=" + recentSearches.getPrevFilterNumElements() + " est false positives=" + (100 * recentSearches.getPrevFilterFalsePositiveEst() + "%"));
-		b.append("\nbloom blocked|sent curr=" + bloomSearchesBlockedCurr + "|" + bloomSearchesSentCurr + " prev=" + bloomSearchesBlockedPrev + "|" + bloomSearchesSentPrev);
+		b.append("\n\nforwarded searches size=" + forwardedSearches.size() + " canceled size="
+				+ canceledSearches.size() + " sent size=" + sentSearches.size());
+		b.append("\nbloom: stored=" + recentSearches.getPrevFilterNumElements()
+				+ " est false positives="
+				+ (100 * recentSearches.getPrevFilterFalsePositiveEst() + "%"));
+		b.append("\nbloom blocked|sent curr=" + bloomSearchesBlockedCurr + "|"
+				+ bloomSearchesSentCurr + " prev=" + bloomSearchesBlockedPrev + "|"
+				+ bloomSearchesSentPrev);
 		b.append("\n\n" + debugChannelIdErrorSetupErrorStats.getDebugStats());
+
+		long sum = 0, now = System.currentTimeMillis(), count = 0;
 
 		// Include per-friend queue stats
 		lock.lock();
 		try {
 			Map<String, MutableInteger> counts = new HashMap<String, MutableInteger>();
 			for (DelayedSearchQueueEntry e : delayedSearchQueue.queuedSearches.values()) {
+
+				count++;
+				sum += (now - e.insertionTime);
+
 				String nick = e.source.getRemoteFriend().getNick();
 				if (counts.containsKey(nick) == false) {
 					counts.put(nick, new MutableInteger());
@@ -470,6 +482,8 @@ public class SearchManager {
 		} finally {
 			lock.unlock();
 		}
+
+		b.append("\nAverage queued search delay: " + (double)sum/(double)count);
 
 		return b.toString();
 	}
@@ -599,9 +613,9 @@ public class SearchManager {
 				return 0;
 			}
 
-			// Reject proportionally to recent rate. Do not admit more than 400/sec.
+			// Reject proportionally to recent rate. Do not admit more than X/sec.
 			// Also, proportional to processing queue size.
-			double rateBound = delayedSearchQueue.searchCount / 100.0;
+			double rateBound = delayedSearchQueue.searchCount / 80.0;
 			double queueBound = (double)delayedSearchQueue.queuedSearches.size() / (double)MAX_SEARCH_QUEUE_LENGTH;
 
 			return Math.max(rateBound, queueBound);
@@ -1296,8 +1310,10 @@ public class SearchManager {
 		final long dontSendBefore;
 		final OSF2FSearch search;
 		final FriendConnection source;
+		final long insertionTime;
 
 		public DelayedSearchQueueEntry(OSF2FSearch search, FriendConnection source, long dontSendBefore) {
+			this.insertionTime = System.currentTimeMillis();
 			this.search = search;
 			this.source = source;
 			this.dontSendBefore = dontSendBefore;
