@@ -1,1 +1,2 @@
 junit -- 4.8.2
+guava -- Release 08 -- http://code.google.com/p/guava-libraries/
