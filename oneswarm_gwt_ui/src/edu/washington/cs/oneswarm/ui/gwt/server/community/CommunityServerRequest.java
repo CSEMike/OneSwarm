@@ -60,8 +60,8 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.FriendInfoLite;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.FriendList;
 import edu.washington.cs.oneswarm.ui.gwt.server.BackendTaskManager;
-import edu.washington.cs.oneswarm.ui.gwt.server.FriendInfoLiteFactory;
 import edu.washington.cs.oneswarm.ui.gwt.server.BackendTaskManager.CancellationListener;
+import edu.washington.cs.oneswarm.ui.gwt.server.FriendInfoLiteFactory;
 
 public class CommunityServerRequest extends Thread implements CancellationListener {
 
@@ -69,25 +69,16 @@ public class CommunityServerRequest extends Thread implements CancellationListen
 
 	private static Logger logger = Logger.getLogger(CommunityServerRequest.class.getName());
 
-	// private String mRecord.getUrl();
-	// private String user;
-	// private String pw;
-	// private boolean need_auth;
-	// private boolean manual_confirmation;
-	// private boolean prune_using_server_deletes;
-	// private String group;
-	private boolean polling_refresh;
-	// private int pruning_threshold =
-	// CommunityServerAddPanel.DEFAULT_PRUNING_THRESHOLD;
+	private final boolean polling_refresh;
 
-	private String base64Key;
+	private final String base64Key;
 	private boolean cancelled;
 	private int mTaskID;
 	private BackendTask mTask;
-	private String mOurNickname;
+	private final String mOurNickname;
 	private String refreshInterval;
 
-	private CommunityRecord mRecord;
+	private final CommunityRecord mRecord;
 
 	public String getRefreshInterval() {
 		return refreshInterval;
@@ -97,19 +88,12 @@ public class CommunityServerRequest extends Thread implements CancellationListen
 		mRecord = inRecord;
 
 		setDaemon(true);
-		// this.mRecord.getUrl() = url;
-		// this.user = user;
-		// this.pw = pw;
-		// this.need_auth = need_auth;
 		this.polling_refresh = polling_refresh;
-		// this.manual_confirmation = manual_confirmation;
-		// this.prune_using_server_deletes = sync_deletes;
-		// this.group = group;
-		// this.pruning_threshold = pruning_threshold;
 		base64Key = Base64.encode(OneSwarmSslKeyManager.getInstance().getOwnPublicKey().getEncoded()).replaceAll("\n", "");
 		mOurNickname = COConfigurationManager.getStringParameter("Computer Name", "OneSwarm user");
 	}
 
+	@Override
 	public void run() {
 
 		/**
@@ -570,7 +554,7 @@ public class CommunityServerRequest extends Thread implements CancellationListen
 			out.addAll(Arrays.asList(rec.toTokens()));
 		}
 
-		COConfigurationManager.setParameter("oneswarm.community.servers", (List) out);
+		COConfigurationManager.setParameter("oneswarm.community.servers", out);
 	}
 
 	private List<String[]> parseFriendList(Node kid) {
@@ -879,7 +863,7 @@ public class CommunityServerRequest extends Thread implements CancellationListen
 
 	public ArrayList<String> getCategories() throws IOException {
 		try {
-			HttpURLConnection conn = (HttpURLConnection) getConnection(new URL(mRecord.getBaseURL() + "/categories.xml"));
+			HttpURLConnection conn = getConnection(new URL(mRecord.getBaseURL() + "/categories.xml"));
 
 			conn.setReadTimeout(1000);
 
