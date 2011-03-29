@@ -28,35 +28,40 @@ public class CommunityServerAddPanel extends VerticalPanel {
 	public static final String DEFAULT_COMMUNITY_SERVER = "https://community.oneswarm.org/";
 	public static final int DEFAULT_PRUNING_THRESHOLD = 50;
 
-	private TextBox urlTextBox = new TextBox();
+	private final TextBox urlTextBox = new TextBox();
 
-	private TextBox usernameTB = new TextBox();
-	private TextBox passwordTB = new PasswordTextBox();
+	private final TextBox usernameTB = new TextBox();
+	private final TextBox passwordTB = new PasswordTextBox();
 	// private CheckBox savePWCheckbox = new CheckBox("Save password", true);
 	// private CheckBox applyDeletes = new CheckBox("Synchronize removals",
 	// true);
 
-	private RadioButton synchronizeDeletes = new RadioButton("removalGroup", msg.add_community_sync_removals());
-	private RadioButton localThreshold = new RadioButton("removalGroup", msg.add_community_remove_old_after());
+	private final RadioButton synchronizeDeletes = new RadioButton("removalGroup", msg.add_community_sync_removals());
+	private final RadioButton localThreshold = new RadioButton("removalGroup", msg.add_community_remove_old_after());
 
-	private Label statusLabel = new Label();
-	private CheckBox authRequired;
-	private CheckBox confirmUpdates = new CheckBox(msg.add_community_confirm_updates_manually(), true);
+	private final Label statusLabel = new Label();
+	private final CheckBox authRequired;
+	private final CheckBox confirmUpdates = new CheckBox(msg.add_community_confirm_updates_manually(), true);
 
-	private CheckBox defaultChat = new CheckBox(msg.add_community_chat_default());
+	private final CheckBox defaultChat = new CheckBox(msg.add_community_chat_default());
 	// private CheckBox defaultLimited = new
 	// CheckBox(msg.add_community_limited_default());
-	private CheckBox skipSSL = new CheckBox(msg.add_community_skip_ssl());
+	private final CheckBox skipSSL = new CheckBox(msg.add_community_skip_ssl());
 
-	private CheckBox acceptFilterList = new CheckBox(msg.add_community_accept_filter(), false);
+	private final CheckBox acceptFilterList = new CheckBox(msg.add_community_accept_filter(), false);
 
-	private TextBox targetGroupTB = new TextBox();
+	/** Checkbox indicating whether clients should publish port / address information. */
+	private final CheckBox allowAddressResolution = new CheckBox(
+			msg.add_community_allow_address_resolution(), true);
 
-	private TextBox thresholdCountTextBox;
+	private final TextBox targetGroupTB = new TextBox();
 
-	private TextBox minimumRefreshTextBox;
+	private final TextBox thresholdCountTextBox;
+
+	private final TextBox minimumRefreshTextBox;
 
 	static final KeyboardListenerAdapter digitsOnly = new KeyboardListenerAdapter() {
+		@Override
 		public void onKeyPress(Widget sender, char keyCode, int modifiers) {
 			if ((!Character.isDigit(keyCode)) && (keyCode != (char) KEY_TAB) && (keyCode != (char) KEY_BACKSPACE) && (keyCode != (char) KEY_DELETE) && (keyCode != (char) KEY_ENTER) && (keyCode != (char) KEY_HOME) && (keyCode != (char) KEY_END) && (keyCode != (char) KEY_LEFT) && (keyCode != (char) KEY_UP) && (keyCode != (char) KEY_RIGHT) && (keyCode != (char) KEY_DOWN)) {
 				// TextBox.cancelKey() suppresses the current keyboard event.
@@ -76,14 +81,25 @@ public class CommunityServerAddPanel extends VerticalPanel {
 	public static final int WIDTH = FriendsImportCommunityServer.WIDTH;
 
 	public CommunityServerAddPanel() {
-		this(DEFAULT_COMMUNITY_SERVER, "", "", "Community contacts", false, false, false, false, DEFAULT_PRUNING_THRESHOLD, null, null, false, true, true, 0, false);
+		this(DEFAULT_COMMUNITY_SERVER, "", "", "Community contacts", false, false, false, false,
+				DEFAULT_PRUNING_THRESHOLD, null, null, false, true, true, 0, false, true);
 	}
 
 	public CommunityServerAddPanel(CommunityRecord rec) {
-		this(rec.getRealUrl(), rec.getUsername(), rec.getPw(), rec.getGroup(), rec.isAuth_required(), rec.isConfirm_updates(), rec.isSavePW(), rec.isSync_deletes(), rec.getPruning_threshold(), rec.getSupports_publish(), rec.getServer_name(), rec.isChat_default(), rec.isLimited_default(), rec.getNonssl_port() >= 0, rec.getMinimum_refresh_interval(), rec.isAcceptFilterList());
+		this(rec.getRealUrl(), rec.getUsername(), rec.getPw(), rec.getGroup(), rec
+				.isAuth_required(), rec.isConfirm_updates(), rec.isSavePW(), rec.isSync_deletes(),
+				rec.getPruning_threshold(), rec.getSupports_publish(), rec.getServer_name(), rec
+						.isChat_default(), rec.isLimited_default(), rec.getNonssl_port() >= 0, rec
+						.getMinimum_refresh_interval(), rec.isAcceptFilterList(), rec
+						.isAllowAddressResolution());
 	}
 
-	public CommunityServerAddPanel(String inURL, String username, String password, String group, boolean needs_auth, boolean manual_update, boolean savePW, boolean server_sync_deletes, int localRemoveThreshold, String supports_publish, String server_name, boolean allowChatDefault, boolean limitedDefault, boolean skipSSLDefault, int minRefreshDefault, boolean acceptFilterDefault) {
+	// TODO(piatek): Fix the disaster that is this constructor.
+	public CommunityServerAddPanel(String inURL, String username, String password, String group,
+			boolean needs_auth, boolean manual_update, boolean savePW, boolean server_sync_deletes,
+			int localRemoveThreshold, String supports_publish, String server_name,
+			boolean allowChatDefault, boolean limitedDefault, boolean skipSSLDefault,
+			int minRefreshDefault, boolean acceptFilterDefault, boolean allowAddressResolveDefault) {
 
 		this.supports_publish = supports_publish;
 		this.server_name = server_name;
@@ -103,21 +119,14 @@ public class CommunityServerAddPanel extends VerticalPanel {
 
 		HorizontalPanel checkButtonHP = new HorizontalPanel();
 		checkButtonHP.setWidth("100%");
-		// addButton.addStyleName(SaveLocationPanel.CSS_SMALL_BUTTON);
-		// urlHP.setCellVerticalAlignment(addButton,
-		// VerticalPanel.ALIGN_MIDDLE);
-		// urlHP.setCellVerticalAlignment(l, VerticalPanel.ALIGN_MIDDLE);
 
 		confirmUpdates.setValue(manual_update);
-
 		defaultChat.setValue(allowChatDefault);
 		// defaultLimited.setValue(limitedDefault);
-
 		skipSSL.setValue(skipSSLDefault);
-
 		acceptFilterList.setValue(acceptFilterDefault);
+		allowAddressResolution.setValue(allowAddressResolveDefault);
 
-		// savePWCheckbox.setValue(savePW);
 
 		l = new Label(msg.add_community_prompt());
 		l.addStyleName(OneSwarmDialogBox.CSS_DIALOG_HEADER);
@@ -162,6 +171,8 @@ public class CommunityServerAddPanel extends VerticalPanel {
 		disclosed.add(packageOption(defaultChat, null, 3));
 
 		disclosed.add(packageOption(acceptFilterList, msg.add_community_filter_help(), 3));
+
+		disclosed.add(packageOption(allowAddressResolution, msg.add_community_resolver_help(), 3));
 
 		// disclosed.add(packageOption(defaultLimited, null, 3));
 
@@ -317,6 +328,7 @@ public class CommunityServerAddPanel extends VerticalPanel {
 		localThreshold.setEnabled(false);
 		acceptFilterList.setEnabled(false);
 		defaultChat.setEnabled(false);
+		allowAddressResolution.setEnabled(true);
 	}
 
 	public boolean getSyncDeletes() {
@@ -364,5 +376,9 @@ public class CommunityServerAddPanel extends VerticalPanel {
 
 	public boolean getAcceptFilterList() {
 		return acceptFilterList.getValue();
+	}
+
+	public boolean isAllowAddressResolution() {
+		return allowAddressResolution.getValue();
 	}
 }
