@@ -18,6 +18,7 @@ public class CommunityRecord implements IsSerializable {
 	private boolean confirm_updates;
 	private boolean sync_deletes;
 	private boolean accept_filter_list;
+	private boolean allow_address_resolution;
 	private int pruning_threshold;
 	private String supports_publish;
 	private String server_name;
@@ -332,6 +333,7 @@ public class CommunityRecord implements IsSerializable {
 		return new String[] { url, username, pw, group, savePW + ";" + auth_required + ";" + confirm_updates + ";" + sync_deletes + ";" + pruning_threshold + ";" + supports_publish + ";" + server_name + ";" + community_path + ";" + splash_path + ";" + chat_default + ";" + nonssl_port + ";" + minimum_refresh_interval + ";" + accept_filter_list };
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
 		for (String s : toTokens()) {
@@ -402,6 +404,14 @@ public class CommunityRecord implements IsSerializable {
 
 	public void setAcceptFilterList(boolean acceptFilterList) {
 		accept_filter_list = acceptFilterList;
+	}
+
+	public void setAllowAddressResolution(boolean allow_address_resolution) {
+		this.allow_address_resolution = allow_address_resolution;
+	}
+
+	public boolean isAllowAddressResolution() {
+		return allow_address_resolution;
 	}
 
 }

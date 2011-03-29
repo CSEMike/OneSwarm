@@ -133,9 +133,11 @@ public class CommunityServersSettingsPanel extends SettingsPanel implements Clic
 		public AddServerDialog() {
 			VerticalPanel vp = new VerticalPanel();
 
-			final CommunityServerAddPanel p = new CommunityServerAddPanel(CommunityServerAddPanel.DEFAULT_COMMUNITY_SERVER, "", "", 
-					msg.settings_net_community_contact_default_group(), false, false, false, false, 
-					CommunityServerAddPanel.DEFAULT_PRUNING_THRESHOLD, null, null, false, true, true, 0, false);
+			final CommunityServerAddPanel p = new CommunityServerAddPanel(
+					CommunityServerAddPanel.DEFAULT_COMMUNITY_SERVER, "", "",
+					msg.settings_net_community_contact_default_group(), false, false, false, false,
+					CommunityServerAddPanel.DEFAULT_PRUNING_THRESHOLD, null, null, false, true,
+					true, 0, false, true);
 			vp.add(p);
 			this.setWidget(vp);
 			this.setText(msg.settings_net_community_server_add());
@@ -247,6 +249,7 @@ public class CommunityServersSettingsPanel extends SettingsPanel implements Clic
 		}
 	}
 
+	@Override
 	public void sync() {
 		ArrayList<String> params = new ArrayList<String>();
 		for( CommunityRecord rec : currentRecs ) {
@@ -265,6 +268,7 @@ public class CommunityServersSettingsPanel extends SettingsPanel implements Clic
 			}});
 	}
 	
+	@Override
 	String validData() {
 		return null;
 	}
