@@ -135,8 +135,10 @@ Constants
 //  public static final String AZUREUS_NAME	  = "Azureus";
   public static final String AZUREUS_NAME	  = "OneSwarm";
 //  public static final String AZUREUS_VERSION  = "3.0.5.0";  //3.0.5.1_CVS
-  public static final String AZUREUS_VERSION  = "0.7.1.0";
-  public static final byte[] VERSION_ID       = ("-" + "OS" + "0710" + "-").getBytes();  //MUST be 8 chars long!
+	public static final String AZUREUS_VERSION = "0.7.5.0";
+
+	// MUST be 8 chars long!
+	public static final byte[] VERSION_ID = ("-" + "OS" + "0750" + "-").getBytes();
 
 
   public static final String  OSName = System.getProperty("os.name");
