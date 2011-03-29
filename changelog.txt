@@ -1,4 +1,5 @@
-Version 0.7.1 (Under development)
+Version 0.7.5
+Support for address resolution via community servers
 Updated SWT to version 3.6.1 (cocoa and 64 bit on mac)
 bugfix: OneSwarm will no longer stop forwarding after running for several days under heavy traffic
 bugfix: [mac] OneSwarm is now a 64 bit application. (This is a work-around for a kernel bug introduced in snow leopard)
