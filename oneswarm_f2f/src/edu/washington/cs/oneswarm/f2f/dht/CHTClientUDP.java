@@ -8,7 +8,7 @@ import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class CHTClient {
+public class CHTClientUDP implements CHTClientInterface {
 
 	private static final int RECEIVE_TIME_OUT = 5000;
 	private final static int MAX_QUEUE_LENGTH = 200;
@@ -17,7 +17,7 @@ public class CHTClient {
 	private final Queue<CHTGetJob> jobs = new LinkedList<CHTGetJob>();
 	private Thread jobExecutorThread;
 
-	public CHTClient(String server, int serverPort) throws UnknownHostException {
+	public CHTClientUDP(String server, int serverPort) throws UnknownHostException {
 		this.server = server;
 		this.serverPort = serverPort;
 	}

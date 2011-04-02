@@ -163,7 +163,7 @@ public class PublishSwarmsThread extends Thread {
 //						public void setCredentials(AuthScope arg0, Credentials arg1) {}});
 //				}
 				
-				String theURLString = CommunityServerRequest.getCommunityBase(new URL(toServer.getUrl())) + "/" + toServer.getSupports_publish();
+				String theURLString = CommunityServerOperation.getCommunityBase(new URL(toServer.getUrl())) + "/" + toServer.getSupports_publish();
 				HttpPost httppost = new HttpPost(theURLString);
 				MultipartEntity reqEntity = new MultipartEntity();
 				
@@ -219,7 +219,7 @@ public class PublishSwarmsThread extends Thread {
 				extraHeaders.put("Content-Type", httppost.getEntity().getContentType().getValue());
 				extraHeaders.put("Content-Length", httppost.getEntity().getContentLength()+"");
 				
-				HttpURLConnection conn = CommunityServerRequest.getConnection(url, "POST", toServer.isAuth_required(), toServer, extraHeaders);
+				HttpURLConnection conn = CommunityServerOperation.getConnection(url, "POST", toServer.isAuth_required(), toServer, extraHeaders);
 				
 				
 				/**

@@ -51,6 +51,8 @@ public final class CommunityConstants {
 	public static final String SEARCH_FILTER = "searchfilter";
 	public static final String KEYWORD = "keyword";
 	
+	public static final String CHT = "cht";
+
 	/**
 	 * Categories XML
 	 */

@@ -25,7 +25,7 @@ public class CommunityServerAddPanel extends VerticalPanel {
 
 	private static OSMessages msg = OneSwarmGWT.msg;
 
-	public static final String DEFAULT_COMMUNITY_SERVER = "https://community.oneswarm.org/";
+	public static final String DEFAULT_COMMUNITY_SERVER = "https://oneswarm-tools.appspot.com/";
 	public static final int DEFAULT_PRUNING_THRESHOLD = 50;
 
 	private final TextBox urlTextBox = new TextBox();

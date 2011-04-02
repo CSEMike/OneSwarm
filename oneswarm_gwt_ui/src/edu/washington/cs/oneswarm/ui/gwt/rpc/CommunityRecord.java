@@ -24,6 +24,7 @@ public class CommunityRecord implements IsSerializable {
 	private String server_name;
 	private String community_path;
 	private String splash_path;
+	private String cht_path;
 
 	/**
 	 * the semantics of nonssl_port are clunky. -1 -> don't use nonSSL, ever. 0
@@ -214,7 +215,11 @@ public class CommunityRecord implements IsSerializable {
 		}
 	}
 
-	public CommunityRecord(String group, String pw, String username, String url, boolean auth_required, boolean savePW, boolean confirm_updates, boolean sync_deletes, int pruning_threshold, String supports_publish, String server_name, String community_path, String splash_path, boolean defaultChat, int minRefreshInterval, boolean acceptFilterList) {
+	public CommunityRecord(String group, String pw, String username, String url,
+			boolean auth_required, boolean savePW, boolean confirm_updates, boolean sync_deletes,
+			int pruning_threshold, String supports_publish, String server_name,
+			String community_path, String splash_path, boolean defaultChat, int minRefreshInterval,
+			boolean acceptFilterList) {
 		this.group = group;
 		this.pw = pw;
 		this.username = username;
@@ -305,6 +310,12 @@ public class CommunityRecord implements IsSerializable {
 		} else {
 			accept_filter_list = false;
 		}
+
+		if (extras.length > 13 && extras[13].equals("null") == false) {
+			cht_path = extras[13];
+		} else {
+			cht_path = null;
+		}
 	}
 
 	public CommunityRecord(CommunityServerAddPanel p) {
@@ -330,7 +341,16 @@ public class CommunityRecord implements IsSerializable {
 	}
 
 	public String[] toTokens() {
-		return new String[] { url, username, pw, group, savePW + ";" + auth_required + ";" + confirm_updates + ";" + sync_deletes + ";" + pruning_threshold + ";" + supports_publish + ";" + server_name + ";" + community_path + ";" + splash_path + ";" + chat_default + ";" + nonssl_port + ";" + minimum_refresh_interval + ";" + accept_filter_list };
+		return new String[] {
+				url,
+				username,
+				pw,
+				group,
+				savePW + ";" + auth_required + ";" + confirm_updates + ";" + sync_deletes + ";"
+						+ pruning_threshold + ";" + supports_publish + ";" + server_name + ";"
+						+ community_path + ";" + splash_path + ";" + chat_default + ";"
+						+ nonssl_port + ";" + minimum_refresh_interval + ";" + accept_filter_list
+						+ ";" + cht_path };
 	}
 
 	@Override
@@ -412,6 +432,14 @@ public class CommunityRecord implements IsSerializable {
 
 	public boolean isAllowAddressResolution() {
 		return allow_address_resolution;
+	}
+
+	public void setCht_path(String cht_path) {
+		this.cht_path = cht_path;
+	}
+
+	public String getCht_path() {
+		return cht_path;
 	}
 
 }

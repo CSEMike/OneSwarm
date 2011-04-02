@@ -70,7 +70,7 @@ public class DHTConnector {
 	private static final int SIGN_LENGTH = 128;
 	private final static String USE_CHT_PROXY_SETTINGS_KEY = "OSF2F.Use DHT Proxy";
 
-	private CHTClient chtClient;
+	private CHTClientUDP chtClientUDP;
 
 	private long chtLastPublishTime;
 
@@ -198,7 +198,7 @@ public class DHTConnector {
 		 */
 
 		try {
-			this.chtClient = new CHTClient("cht.oneswarm.org", 11744);
+			this.chtClientUDP = new CHTClientUDP("cht.oneswarm.org", 11744);
 		} catch (UnknownHostException e) {
 			Debug.out("unable to create CHT Client", e);
 		}
@@ -310,7 +310,7 @@ public class DHTConnector {
 		 */
 		if (friend.getDhtReadLocation() != null) {
 			byte[] key = friend.getDhtReadLocation();
-			if (chtClient != null && isChtEnabled()) {
+			if (chtClientUDP != null && isChtEnabled()) {
 				chtLookupAndConnect(friend, triedIps, key, "secret loc");
 			}
 			if (allowDht && getDht().isAvailable()) {
@@ -335,7 +335,7 @@ public class DHTConnector {
 			/*
 			 * and try the cht (centralized hash table) :-)
 			 */
-			if (chtClient != null && isChtEnabled()) {
+			if (chtClientUDP != null && isChtEnabled()) {
 				byte[] keySha1 = new SHA1Simple().calculateHash(key);
 				chtLookupAndConnect(friend, triedIps, keySha1, "pubkey loc");
 			}
@@ -505,7 +505,7 @@ public class DHTConnector {
 	private void chtLookupAndConnect(final Friend friend, final ConcurrentHashMap<String, Boolean> triedIps, byte[] key, final String locSource) {
 		logger.finer("CHT: connecting to: " + friend.getNick());
 		friend.updateConnectionLog(true, "Looking up friend location in CHT (" + locSource + ")");
-		chtClient.get(key, new CHTClient.CHTCallback() {
+		chtClientUDP.get(key, new CHTClientUDP.CHTCallback() {
 			public void errorReceived(Throwable cause) {
 				friend.updateConnectionLog(true, "CHT lookup failed: " + cause.getMessage());
 			}
@@ -586,9 +586,9 @@ public class DHTConnector {
 		byte[] keyBase = invitation.getDHTKeyBase(creatorAddress);
 
 		// then, do the cht lookup
-		if (chtClient != null && isChtEnabled()) {
+		if (chtClientUDP != null && isChtEnabled()) {
 			byte[] loc = new SHA1Simple().calculateHash(keyBase);
-			chtClient.get(loc, new CHTClient.CHTCallback() {
+			chtClientUDP.get(loc, new CHTClientUDP.CHTCallback() {
 				public void errorReceived(Throwable cause) {
 					logger.finest(cause.getMessage());
 				}
@@ -728,10 +728,10 @@ public class DHTConnector {
 		byte[] keyBase = invitation.getDHTKeyBase(invitation.isCreatedLocally());
 
 		byte[] value = shaAndXor(invitation, externalIp, tcpListeningPort);
-		if (chtClient != null && isChtEnabled()) {
+		if (chtClientUDP != null && isChtEnabled()) {
 			try {
 				byte[] loc = new SHA1Simple().calculateHash(keyBase);
-				chtClient.put(loc, value);
+				chtClientUDP.put(loc, value);
 				logger.finest("publishing invitation: key=" + Base32.encode(loc));
 				published = true;
 				logger.finest("before encrypt: " + externalIp.getHostAddress() + ":" + tcpListeningPort + " after: " + Base32.encode(value));
@@ -992,7 +992,7 @@ public class DHTConnector {
 					}, dhtKey, dhtValue);
 				}
 				if (cht) {
-					chtClient.put(key, value);
+					chtClientUDP.put(key, value);
 				}
 			}
 
@@ -1029,7 +1029,7 @@ public class DHTConnector {
 				}
 				if (cht) {
 					byte[] keySha = new SHA1Simple().calculateHash(key);
-					chtClient.put(keySha, value);
+					chtClientUDP.put(keySha, value);
 				}
 			}
 		}
@@ -1062,7 +1062,7 @@ public class DHTConnector {
 
 	private void testRead() {
 		byte[] keySha1 = new SHA1Simple().calculateHash(ownPublicKey);
-		chtClient.get(keySha1, new CHTClient.CHTCallback() {
+		chtClientUDP.get(keySha1, new CHTClientUDP.CHTCallback() {
 			public void errorReceived(Throwable cause) {
 				System.out.println("CHT lookup failed");
 			}
@@ -1132,7 +1132,7 @@ public class DHTConnector {
 			}, dhtKey, dhtValue);
 
 			byte[] keySha = new SHA1Simple().calculateHash(ownPublicKey);
-			chtClient.put(keySha, value);
+			chtClientUDP.put(keySha, value);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
