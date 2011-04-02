@@ -234,8 +234,8 @@ public final class CommunityServerManager extends Thread {
 			/**
 			 * don't actually run this as a thread when in timertask
 			 */
-			CommunityServerKeyPublish req = null;
-			req = new CommunityServerKeyPublish(server, false);
+			KeyPublishOp req = null;
+			req = new KeyPublishOp(server, false);
 			int tid = BackendTaskManager.get().createTask("Refreshing community server", new CancellationListener(){
 				public void cancelled(int inID) {}});
 			BackendTaskManager.get().getTask(tid).setSummary(server.getUrl());
@@ -570,6 +570,10 @@ public final class CommunityServerManager extends Thread {
 		}
 		out += "done\n";
 		return out;
+	}
+
+	public CommunityRecord getRecordForUrl(String url) {
+		return activeServers.get(url);
 	}
 }
 

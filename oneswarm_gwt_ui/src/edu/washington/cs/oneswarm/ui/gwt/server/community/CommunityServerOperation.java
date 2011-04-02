@@ -64,15 +64,12 @@ public abstract class CommunityServerOperation extends Thread implements Cancell
 	boolean cancelled;
 	int mTaskID;
 	BackendTask mTask;
-	private final String mOurNickname;
 
 	final CommunityRecord mRecord;
 
 	public CommunityServerOperation(CommunityRecord inRecord) {
 		mRecord = inRecord;
-
 		setDaemon(true);
-		mOurNickname = COConfigurationManager.getStringParameter("Computer Name", "OneSwarm user");
 	}
 
 	abstract void doOp();
@@ -373,20 +370,6 @@ public abstract class CommunityServerOperation extends Thread implements Cancell
 		}
 
 		COConfigurationManager.setParameter("oneswarm.community.servers", out);
-	}
-
-	private List<String[]> parseFriendList(Node kid) {
-		List<String[]> out = new ArrayList<String[]>();
-		for (int i = 0; i < kid.getChildNodes().getLength(); i++) {
-			Node entry = kid.getChildNodes().item(i);
-			String key = entry.getAttributes().getNamedItem(CommunityConstants.KEY_ATTRIB).getTextContent();
-			String nick = entry.getAttributes().getNamedItem(CommunityConstants.NICK_ATTRIB).getTextContent();
-
-			logger.finest("parsed: " + key + " / " + nick);
-
-			out.add(new String[] { key, nick });
-		}
-		return out;
 	}
 
 	void readLimitedInto(HttpURLConnection conn, int limit, ByteArrayOutputStream read)

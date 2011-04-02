@@ -49,14 +49,14 @@ import edu.washington.cs.oneswarm.ui.gwt.server.FriendInfoLiteFactory;
  * Publishes our local public key to the given community server and processes the list of keys in
  * the response.
  */
-public class CommunityServerKeyPublish extends CommunityServerOperation {
+public class KeyPublishOp extends CommunityServerOperation {
 
 	String refreshInterval;
 	private final String base64Key;
 	private final boolean polling_refresh;
 	private final String mOurNickname;
 
-	public CommunityServerKeyPublish(CommunityRecord inRecord, boolean polling_refresh) {
+	public KeyPublishOp(CommunityRecord inRecord, boolean polling_refresh) {
 		super(inRecord);
 
 		this.polling_refresh = polling_refresh;
@@ -66,7 +66,7 @@ public class CommunityServerKeyPublish extends CommunityServerOperation {
 				"\n", "");
 	}
 
-	private static Logger logger = Logger.getLogger(CommunityServerOperation.class.getName());
+	private static Logger logger = Logger.getLogger(KeyPublishOp.class.getName());
 
 	@Override
 	void doOp() {
@@ -382,7 +382,7 @@ public class CommunityServerKeyPublish extends CommunityServerOperation {
 
 		CommunityRecord rec = new CommunityRecord(null, null, null, null, false, true, false, true,
 				0, null, null, null, null, false, 0, false);
-		CommunityServerKeyPublish r = new CommunityServerKeyPublish(rec, true);
+		KeyPublishOp r = new KeyPublishOp(rec, true);
 
 		r.processCapabilitiesXML(scratch);
 

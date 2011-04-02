@@ -140,7 +140,7 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.TorrentList;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.UnknownUserException;
 import edu.washington.cs.oneswarm.ui.gwt.server.BackendTaskManager.CancellationListener;
 import edu.washington.cs.oneswarm.ui.gwt.server.StatelessSwarmFilter.SortMetric;
-import edu.washington.cs.oneswarm.ui.gwt.server.community.CommunityServerKeyPublish;
+import edu.washington.cs.oneswarm.ui.gwt.server.community.KeyPublishOp;
 import edu.washington.cs.oneswarm.ui.gwt.server.community.CommunityServerManager;
 import edu.washington.cs.oneswarm.ui.gwt.server.community.PublishSwarmsThread;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.FFMpegAsyncOperationManager;
@@ -1772,7 +1772,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 				throw new Exception("bad cookie");
 			}
 
-			CommunityServerKeyPublish pollThread = new CommunityServerKeyPublish(record, true);
+			KeyPublishOp pollThread = new KeyPublishOp(record, true);
 			// we don't prune explicit requests -- this will be added with the threshold if
 			// successful
 			int taskID = BackendTaskManager.get().createTask("Community server refresh...", pollThread);
@@ -3607,7 +3607,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		ArrayList<String> out = new ArrayList<String>();
 
 		try {
-			CommunityServerKeyPublish req = new CommunityServerKeyPublish(selected, false);
+			KeyPublishOp req = new KeyPublishOp(selected, false);
 			ArrayList<String> cats = req.getCategories();
 			return cats;
 

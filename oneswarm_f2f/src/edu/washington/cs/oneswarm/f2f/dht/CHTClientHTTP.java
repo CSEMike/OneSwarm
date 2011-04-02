@@ -10,6 +10,9 @@ import java.util.TimerTask;
 import com.google.common.collect.Lists;
 
 import edu.washington.cs.oneswarm.f2f.dht.CHTClientUDP.CHTCallback;
+import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
+import edu.washington.cs.oneswarm.ui.gwt.server.community.CHTPutOp;
+import edu.washington.cs.oneswarm.ui.gwt.server.community.CommunityServerManager;
 
 public class CHTClientHTTP implements CHTClientInterface {
 
@@ -38,6 +41,7 @@ public class CHTClientHTTP implements CHTClientInterface {
 
 	List<PutOp> pendingPuts = Collections.synchronizedList(new ArrayList<PutOp>());
 	List<GetOp> pendingGets = Collections.synchronizedList(new ArrayList<GetOp>());
+	private final CommunityRecord record;
 
 	public CHTClientHTTP(String url) {
 		this.url = url;
@@ -49,6 +53,8 @@ public class CHTClientHTTP implements CHTClientInterface {
 				flushGets();
 			}
 		}, 1000, 1000);
+
+		record = CommunityServerManager.get().getRecordForUrl(url);
 	}
 
 	public void put(byte[] key, byte[] value) throws IOException {
@@ -60,11 +66,14 @@ public class CHTClientHTTP implements CHTClientInterface {
 	}
 
 	private void flushPuts() {
-		List<PutOp> todo = Lists.newArrayList();
+		List<byte[]> keys = Lists.newArrayList();
+		List<byte[]> values = Lists.newArrayList();
 		while (!pendingPuts.isEmpty()) {
-			todo.add(pendingPuts.remove(0));
+			PutOp op = pendingPuts.remove(0);
+			keys.add(op.key);
+			values.add(op.val);
 		}
-
+		new CHTPutOp(record, keys, values).start();
 	}
 
 	private void flushGets() {
