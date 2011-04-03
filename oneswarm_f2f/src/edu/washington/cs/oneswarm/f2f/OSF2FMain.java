@@ -19,7 +19,6 @@ import org.gudy.azureus2.core3.util.ByteFormatter;
 import org.gudy.azureus2.core3.util.Debug;
 import org.gudy.azureus2.plugins.PluginInterface;
 import org.gudy.azureus2.plugins.PluginListener;
-import org.gudy.azureus2.plugins.ddb.DistributedDatabase;
 
 import com.aelitis.azureus.core.impl.AzureusCoreImpl;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
@@ -192,10 +191,9 @@ public class OSF2FMain {
 						AEThread2 t = new AEThread2("OSF2F::dhtConnect", true) {
 							@Override
 							public void run() {
-								logWithTime("loading DHT manager", Level.FINE);
-								DistributedDatabase distributedDatabase = pIf.getDistributedDatabase();
 								logWithTime("creating friend connector", Level.FINE);
-								friendConnector = new DHTConnector(distributedDatabase, friendManager, invitationManager, overlayManager);
+								friendConnector = new DHTConnector(friendManager,
+										invitationManager, overlayManager);
 								logWithTime("crating lan friend finder", Level.FINE);
 								try {
 									lanFriendFinder = new LanFriendFinder(friendConnector, friendManager, invitationManager, overlayManager.getOwnPublicKey().getEncoded());
@@ -203,7 +201,7 @@ public class OSF2FMain {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
 								}
-								logWithTime("dht dependent init completed", Level.FINE);
+								logWithTime("friendConnector dependent init completed", Level.FINE);
 							}
 						};
 						t.start();

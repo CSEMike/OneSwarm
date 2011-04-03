@@ -43,6 +43,7 @@ public class ChatTest {
 
 		// One additional remote client with which we'll chat
 		localOneSwarm = TestUtils.spawnConnectedOneSwarmInstance();
+		logger.info("OOP LocalOneSwarm started.");
 
 		selenium = new DefaultSelenium("127.0.0.1", 4444, "*firefox",
 				TestUtils.JVM_INSTANCE_WEB_UI) {
@@ -88,8 +89,8 @@ public class ChatTest {
 		}, 5000).await();
 
 		// Switch to the other instance
-		selenium.openWindow("http://127.0.0.1:3000/", "local");
-		selenium.selectWindow("local");
+		selenium.openWindow("http://127.0.0.1:3000/", "localinstance");
+		selenium.selectWindow("OneSwarm - localoneswarm-0");
 
 		// Verify notification presence -- this could take up to 10 seconds since
 		// we have a 10 seconds poll (See {@code FriendListPanel.java}).

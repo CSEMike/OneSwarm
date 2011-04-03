@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -26,11 +25,15 @@ import org.gudy.azureus2.core3.util.Debug;
 import org.gudy.azureus2.core3.util.HashWrapper;
 import org.gudy.azureus2.core3.util.SHA1Simple;
 import org.gudy.azureus2.plugins.ddb.DistributedDatabase;
+import org.gudy.azureus2.plugins.ddb.DistributedDatabaseContact;
 import org.gudy.azureus2.plugins.ddb.DistributedDatabaseEvent;
 import org.gudy.azureus2.plugins.ddb.DistributedDatabaseException;
 import org.gudy.azureus2.plugins.ddb.DistributedDatabaseKey;
 import org.gudy.azureus2.plugins.ddb.DistributedDatabaseListener;
+import org.gudy.azureus2.plugins.ddb.DistributedDatabaseTransferHandler;
+import org.gudy.azureus2.plugins.ddb.DistributedDatabaseTransferType;
 import org.gudy.azureus2.plugins.ddb.DistributedDatabaseValue;
+import org.gudy.azureus2.pluginsimpl.local.ddb.DDBaseImpl;
 
 import com.aelitis.azureus.core.dht.impl.DHTLog;
 import com.aelitis.azureus.core.impl.AzureusCoreImpl;
@@ -42,8 +45,8 @@ import com.aelitis.azureus.core.networkmanager.impl.osssl.OneSwarmSslKeyManager;
 
 import edu.washington.cs.oneswarm.f2f.Friend;
 import edu.washington.cs.oneswarm.f2f.FriendInvitation;
-import edu.washington.cs.oneswarm.f2f.OSF2FMain;
 import edu.washington.cs.oneswarm.f2f.FriendInvitation.Status;
+import edu.washington.cs.oneswarm.f2f.OSF2FMain;
 import edu.washington.cs.oneswarm.f2f.friends.FriendManager;
 import edu.washington.cs.oneswarm.f2f.friends.LanFriendFinder;
 import edu.washington.cs.oneswarm.f2f.invitations.InvitationManager;
@@ -73,7 +76,6 @@ public class DHTConnector {
 
 	private long dhtLastPublishTime;
 
-	private final DistributedDatabase dhtManager;
 	private InetAddress externalIp = null;
 	
 	/*
@@ -93,7 +95,7 @@ public class DHTConnector {
 
 	private int tcpListeningPort;
 
-	private HashMap<HashWrapper, DistributedDatabaseKey> dhtKeyCache = new HashMap<HashWrapper, DistributedDatabaseKey>();
+	private final HashMap<HashWrapper, DistributedDatabaseKey> dhtKeyCache = new HashMap<HashWrapper, DistributedDatabaseKey>();
 
 	private long queuedDHTReadRequests = 0;
 	private long completedDHTReadRequests = 0;
@@ -105,7 +107,8 @@ public class DHTConnector {
 	private final static int MAX_DHT_READ_QUEUE_LENGTH = 200;
 	private final static int MAX_DHT_WRITE_QUEUE_LENGTH = 200;
 
-	public DHTConnector(DistributedDatabase dhtManager, FriendManager friendManager, InvitationManager invitationManager, OverlayManager _overlayManager) {
+	public DHTConnector(FriendManager friendManager, InvitationManager invitationManager,
+			OverlayManager _overlayManager) {
 		logger.fine("cht enabled=" + isChtEnabled());
 		this.overlayManager = _overlayManager;
 		this.invitationManager = invitationManager;
@@ -114,7 +117,6 @@ public class DHTConnector {
 		if (k != null) {
 			ownPublicKey = k.getEncoded();
 		}
-		this.dhtManager = dhtManager;
 		// this.friendManager = friendManager;
 
 		// this.pendingConnections = new ConcurrentHashMap<Friend, Long>();
@@ -127,6 +129,7 @@ public class DHTConnector {
 			externalIp = null;
 		}
 		Thread t = (new Thread("Get external IP") {
+			@Override
 			public void run() {
 				try {
 					DHTConnector.this.externalIp = myInstance.getExternalAddress();
@@ -310,7 +313,7 @@ public class DHTConnector {
 			if (chtClient != null && isChtEnabled()) {
 				chtLookupAndConnect(friend, triedIps, key, "secret loc");
 			}
-			if (allowDht && dhtManager != null && dhtManager.isAvailable()) {
+			if (allowDht && getDht().isAvailable()) {
 				dhtLookupAndConnect(friend, triedIps, key, "secret loc");
 			} else {
 				friend.updateConnectionLog(true, "DHT not available");
@@ -340,12 +343,112 @@ public class DHTConnector {
 			/*
 			 * and try the dht
 			 */
-			if (allowDht && dhtManager != null && dhtManager.isAvailable()) {
+			if (allowDht && getDht().isAvailable()) {
 				dhtLookupAndConnect(friend, triedIps, key, "pubkey loc");
 			} else {
 				friend.updateConnectionLog(true, "DHT not available");
 			}
 		}
+	}
+
+	/*
+	 * A mock DHT that we use during startup until the real DHT exists. This simply results in all
+	 * DHT actions being deferred until the real DHT is available.
+	 */
+	DistributedDatabase currentlyAvailableDht = new DistributedDatabase() {
+		public boolean isAvailable() {
+			return false;
+		}
+
+		public boolean isExtendedUseAllowed() {
+			return false;
+		}
+
+		public DistributedDatabaseContact getLocalContact() {
+			throw new RuntimeException("Unsupported");
+		}
+
+		public DistributedDatabaseKey createKey(Object key) throws DistributedDatabaseException {
+			throw new RuntimeException("Unsupported");
+		}
+
+		public DistributedDatabaseKey createKey(Object key, String description)
+				throws DistributedDatabaseException {
+			throw new RuntimeException("Unsupported");
+		}
+
+		public DistributedDatabaseValue createValue(Object value)
+				throws DistributedDatabaseException {
+			throw new RuntimeException("Unsupported");
+		}
+
+		public DistributedDatabaseContact importContact(InetSocketAddress address)
+				throws DistributedDatabaseException {
+			throw new RuntimeException("Unsupported");
+		}
+
+		public void write(DistributedDatabaseListener listener, DistributedDatabaseKey key,
+				DistributedDatabaseValue value) throws DistributedDatabaseException {
+			throw new RuntimeException("Unsupported");
+		}
+
+		public void write(DistributedDatabaseListener listener, DistributedDatabaseKey key,
+				DistributedDatabaseValue[] values) throws DistributedDatabaseException {
+			throw new RuntimeException("Unsupported");
+		}
+
+		public void read(DistributedDatabaseListener listener, DistributedDatabaseKey key,
+				long timeout) throws DistributedDatabaseException {
+			throw new RuntimeException("Unsupported");
+		}
+
+		public void read(DistributedDatabaseListener listener, DistributedDatabaseKey key,
+				long timeout, int options) throws DistributedDatabaseException {
+			throw new RuntimeException("Unsupported");
+		}
+
+		public void readKeyStats(DistributedDatabaseListener listener, DistributedDatabaseKey key,
+				long timeout) throws DistributedDatabaseException {
+			throw new RuntimeException("Unsupported");
+		}
+
+		public void delete(DistributedDatabaseListener listener, DistributedDatabaseKey key)
+				throws DistributedDatabaseException {
+			throw new RuntimeException("Unsupported");
+		}
+
+		public void addTransferHandler(DistributedDatabaseTransferType type,
+				DistributedDatabaseTransferHandler handler) throws DistributedDatabaseException {
+			throw new RuntimeException("Unsupported");
+		}
+
+		public DistributedDatabaseTransferType getStandardTransferType(int standard_type)
+				throws DistributedDatabaseException {
+			throw new RuntimeException("Unsupported");
+		}
+
+	};
+	AtomicBoolean dhtGetCalled = new AtomicBoolean(false);
+
+	/**
+	 * Returns the real DHT if it has completed initialization, otherwise a mock object that always
+	 * indicates that the DHT is unavailable. This routine serves to prevent initialization from
+	 * blocking when the DHT is enabled, since we will be able to locate many IP-port pairs from our
+	 * cache, the CHT, or community servers.
+	 */
+	private DistributedDatabase getDht() {
+		// Only do this once.
+		if (dhtGetCalled.compareAndSet(false, true)) {
+			Thread t = new Thread("DHTConnector DHT acquirer.") {
+				@Override
+				public void run() {
+					currentlyAvailableDht = DDBaseImpl.getSingleton(AzureusCoreImpl.getSingleton());
+				}
+			};
+			t.setDaemon(true);
+			t.start();
+		}
+		return currentlyAvailableDht;
 	}
 
 	private final ConcurrentHashMap<Friend, Long> lastDhtLookupForFriend = new ConcurrentHashMap<Friend, Long>();
@@ -363,7 +466,7 @@ public class DHTConnector {
 		try {
 			final DistributedDatabaseKey dhtKey = createKey(key);
 			queuedDHTReadRequests++;
-			dhtManager.read(new DistributedDatabaseListener() {
+			getDht().read(new DistributedDatabaseListener() {
 				public void event(DistributedDatabaseEvent event) {
 					logger.finest("DHT read event:" + event.getType());
 					if (event.getType() == DistributedDatabaseEvent.ET_VALUE_READ) {
@@ -425,7 +528,7 @@ public class DHTConnector {
 		if (dhtKeyCache.containsKey(keyHash)) {
 			dhtKey = dhtKeyCache.get(keyHash);
 		} else {
-			dhtKey = dhtManager.createKey(key);
+			dhtKey = getDht().createKey(key);
 			dhtKeyCache.put(keyHash, dhtKey);
 			logger.finer("Creating dht key, size=" + dhtKeyCache.size());
 			if (dhtKeyCache.size() > 10000 && dhtKeyCache.size() % 100 == 0) {
@@ -503,11 +606,11 @@ public class DHTConnector {
 			logger.finest("locating invitation: addr=" + Base32.encode(loc));
 		}
 		// and last the dht lookup
-		if (dhtManager != null && dhtManager.isAvailable()) {
+		if (getDht().isAvailable()) {
 			try {
 				DistributedDatabaseKey dhtKey = createKey(keyBase);
 				queuedDHTReadRequests++;
-				dhtManager.read(new DistributedDatabaseListener() {
+				getDht().read(new DistributedDatabaseListener() {
 					public void event(DistributedDatabaseEvent event) {
 						logger.finest("DHT read event:" + event.getType());
 						if (event.getType() == DistributedDatabaseEvent.ET_VALUE_READ) {
@@ -576,10 +679,7 @@ public class DHTConnector {
 	}
 
 	private boolean dhtPublishAllowed(InetAddress localAddress, int localPort) {
-		if (dhtManager == null) {
-			return false;
-		}
-		if (!dhtManager.isAvailable()) {
+		if (!getDht().isAvailable()) {
 			return false;
 		}
 		if (ownPublicKey == null) {
@@ -641,13 +741,14 @@ public class DHTConnector {
 			}
 		}
 		logger.finest("cht done");
-		if (dhtManager != null && dhtManager.isAvailable()) {
+		if (getDht().isAvailable()) {
 			try {
 				DistributedDatabaseKey dhtKey = createKey(keyBase);
-				final DistributedDatabaseValue[] dhtValue = new DistributedDatabaseValue[] { dhtManager.createValue(value) };
+				final DistributedDatabaseValue[] dhtValue = new DistributedDatabaseValue[] { getDht()
+						.createValue(value) };
 				published = true;
 				queuedDHTWriteRequests++;
-				dhtManager.write(new DistributedDatabaseListener() {
+				getDht().write(new DistributedDatabaseListener() {
 					public void event(DistributedDatabaseEvent event) {
 						// Log.log("DHT write event:" + event.getType(),
 						// logToStdOut);
@@ -697,7 +798,7 @@ public class DHTConnector {
 
 		try {
 			final AtomicBoolean dhtAvailable = new AtomicBoolean(false);
-			if (dhtManager != null && dhtManager.isAvailable()) {
+			if (getDht().isAvailable()) {
 				dhtAvailable.set(true);
 			}
 			ArrayList<Friend> friendsSorted = new ArrayList<Friend>(Arrays.asList(OSF2FMain.getSingelton().getFriendManager().getFriends()));
@@ -767,7 +868,7 @@ public class DHTConnector {
 		byte[] ipPortTimeStamp = convertToIPPortTimeStamp(localAddress, localPort, System.currentTimeMillis());
 
 		boolean useDht = false;
-		if (dhtManager != null && dhtManager.isAvailable()) {
+		if (getDht().isAvailable()) {
 			useDht = true;
 		}
 
@@ -875,9 +976,10 @@ public class DHTConnector {
 				if (dht) {
 					logger.finer("putting location info into dht for friend: " + f.getNick());
 					final DistributedDatabaseKey dhtKey = createKey(key);
-					final DistributedDatabaseValue[] dhtValue = new DistributedDatabaseValue[] { dhtManager.createValue(value) };
+					final DistributedDatabaseValue[] dhtValue = new DistributedDatabaseValue[] { getDht()
+							.createValue(value) };
 					queuedDHTWriteRequests++;
-					dhtManager.write(new DistributedDatabaseListener() {
+					getDht().write(new DistributedDatabaseListener() {
 						public void event(DistributedDatabaseEvent event) {
 							if (event.getType() == DistributedDatabaseEvent.ET_OPERATION_COMPLETE) {
 								completedDHTWriteRequests++;
@@ -908,9 +1010,10 @@ public class DHTConnector {
 				 */
 				if (dht) {
 					final DistributedDatabaseKey dhtKey = createKey(key);
-					final DistributedDatabaseValue[] dhtValue = new DistributedDatabaseValue[] { dhtManager.createValue(value) };
+					final DistributedDatabaseValue[] dhtValue = new DistributedDatabaseValue[] { getDht()
+							.createValue(value) };
 					queuedDHTWriteRequests++;
-					dhtManager.write(new DistributedDatabaseListener() {
+					getDht().write(new DistributedDatabaseListener() {
 						public void event(DistributedDatabaseEvent event) {
 							if (event.getType() == DistributedDatabaseEvent.ET_OPERATION_COMPLETE || event.getType() == DistributedDatabaseEvent.ET_OPERATION_COMPLETE) {
 								if (event.getType() == DistributedDatabaseEvent.ET_OPERATION_COMPLETE) {
@@ -979,7 +1082,7 @@ public class DHTConnector {
 
 		try {
 			final DistributedDatabaseKey dhtKey = createKey(ownPublicKey);
-			dhtManager.read(new DistributedDatabaseListener() {
+			getDht().read(new DistributedDatabaseListener() {
 				public void event(DistributedDatabaseEvent event) {
 					logger.fine("DHT read event:" + event.getType());
 					if (event.getType() == DistributedDatabaseEvent.ET_VALUE_READ) {
@@ -1017,8 +1120,9 @@ public class DHTConnector {
 			value = encryptAndSign(ipPortTimeStamp, overlayManager.getOwnPublicKey());
 
 			final DistributedDatabaseKey dhtKey = createKey(ownPublicKey);
-			final DistributedDatabaseValue[] dhtValue = new DistributedDatabaseValue[] { dhtManager.createValue(value) };
-			dhtManager.write(new DistributedDatabaseListener() {
+			final DistributedDatabaseValue[] dhtValue = new DistributedDatabaseValue[] { getDht()
+					.createValue(value) };
+			getDht().write(new DistributedDatabaseListener() {
 				public void event(DistributedDatabaseEvent event) {
 					System.out.println("DHT write event:" + event.getType());
 					if (event.getType() == DistributedDatabaseEvent.ET_VALUE_WRITTEN) {
@@ -1245,8 +1349,9 @@ public class DHTConnector {
 
 	private class FriendConnectorRunnable extends TimerTask {
 		private boolean firstDhtRunCompleted = false;
-		private Logger logger = Logger.getLogger(FriendConnectorRunnable.class.getName());
+		private final Logger logger = Logger.getLogger(FriendConnectorRunnable.class.getName());
 
+		@Override
 		public void run() {
 
 			logger.fine("Running friend connector");
@@ -1266,7 +1371,7 @@ public class DHTConnector {
 
 				boolean firstDhtRun = false;
 				final AtomicBoolean dhtAvailable = new AtomicBoolean(false);
-				if (dhtManager != null && dhtManager.isAvailable()) {
+				if (getDht().isAvailable()) {
 					dhtAvailable.set(true);
 					if (!firstDhtRunCompleted) {
 						firstDhtRun = true;
@@ -1366,8 +1471,9 @@ public class DHTConnector {
 
 	private class InvitationConnectorRunnable extends TimerTask {
 		private boolean firstDhtRunCompleted = false;
-		private Logger logger = Logger.getLogger(InvitationConnectorRunnable.class.getName());
+		private final Logger logger = Logger.getLogger(InvitationConnectorRunnable.class.getName());
 
+		@Override
 		public void run() {
 
 			logger.fine("Running invitation connector");
@@ -1386,7 +1492,7 @@ public class DHTConnector {
 				logger.finest("Checking if dht is available");
 				boolean firstDhtRun = false;
 				boolean dhtAvailable = false;
-				if (dhtManager != null && dhtManager.isAvailable()) {
+				if (getDht().isAvailable()) {
 					dhtAvailable = true;
 					if (!firstDhtRunCompleted) {
 						firstDhtRun = true;

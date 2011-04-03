@@ -30,6 +30,7 @@ public class HealthChecker extends Thread {
 				"QueueLengthChecker",
 				"CommunityServer polling",
 				"torrent pruning and F2F startstop",
+				"OS Friend Connector",
 			}) {
 			EXPECTED_THREAD_NAMES.add(s);
 		}
