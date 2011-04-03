@@ -204,10 +204,7 @@
 	
 	<property name="f2f-bin.dir" value="${root.dir}/f2f-bin" />
 	<property name="f2f-src.dir" value="${root.dir}/oneswarm_f2f/src" />
-	
-	<property name="f2f-plugin.dir" value="${root.dir}/f2f-dist/" />
-	<property name="f2f-plugin.jar" value="${f2f-plugin.dir}/osf2f_plugin.jar" />
-	
+		
 	<property name="gwt.dir" value="${root.dir}/oneswarm_gwt_ui/lib/gwt" />
 	
 	<path id="libs.classpath">
@@ -227,54 +224,6 @@
 		<!-- Built by the core-jar target -->
 		<pathelement path="core-dist/OneSwarmCore.jar" />
 	</path>
-	
-	<target name="f2f-compile" description="Compiles the F2F plugin" depends="core-jar">
-		<mkdir dir="${f2f-bin.dir}" />
-
-		<javac srcdir="${f2f-src.dir}" destdir="${f2f-bin.dir}" nowarn="yes" source="1.5" target="1.5" includeAntRuntime="no" debug="true" debuglevel="lines,vars,source" fork="yes" memoryMaximumSize="256m">
-			<classpath refid="f2f.class.path" />
-		</javac>
-	</target>
-	
-	<target name="f2f-dist" depends="f2f-compile" description="Create the F2F jar.">
-				
-		<mkdir dir="${f2f-plugin.dir}" />
-		<jar destfile="${f2f-plugin.jar}" basedir="${f2f-bin.dir}" includes="**/*.class,**/*.html">
-			<fileset file="${root.dir}/oneswarm_f2f/plugin.properties" />
-			<manifest>
-				<attribute name="Main-Class" value="${MainClass}" />
-			</manifest>
-		</jar>
-		<copy todir="${f2f-plugin.dir}" file="${smack.jar}" />
-		<copy todir="${f2f-plugin.dir}" file="${publickey.jar}" />
-		<copy todir="${f2f-plugin.dir}" file="${ecs.jar}" />
-		<copy todir="${f2f-plugin.dir}" file="${apache-io.jar}" />
-		
-		<!-- Delete the bin directory tree -->
-		<delete dir="${bin.dir}" />
-	</target>
-	
-	<target name="f2f-version">
-		<!-- update the version -->
-		<propertyfile file="${root.dir}/onewarm_f2f/plugin.properties" comment="Build version info">
-			<entry key="OSF2F_MINOR_VERSION" default="0" type="int" operation="+" value="1" />
-		</propertyfile>
-		<property file="${root.dir}/oneswarm_f2f/plugin.properties" />
-		<propertyfile file="${root.dir}/oneswarm_f2f/plugin.properties" comment="Build version info">
-			<entry key="plugin.version" value="${OSF2F_MAJOR_VERSION}.${OSF2F_MINOR_VERSION}" />
-		</propertyfile>
-	</target>
-
-	<target name="f2f-deploy" depends="f2f-version,f2f-dist" description="Called from the deploy script -- updates the build version, pack the jar, and signs it.">
-		<copy file="${root.dir}/oneswarm_f2f/plugin.properties" todir="${f2f-plugin.dir}"/>
-
-		<!-- pack the file -->
-		<exec executable="pack200">
-			<arg value="--repack" />
-			<arg value="${f2f-plugin.jar}" />
-		</exec>
-
-	</target>
 	
 	<!-- =============================== GWT ==================== -->
 	
@@ -358,15 +307,20 @@
 		
 	</path>
 	
-	<target name="gwt-servlet"  depends="f2f-dist,gwt-war-init">
+	<target name="f2f-gwt-servlet"  depends="gwt-war-init,core-jar">
 		
-		<!-- compile the servlet code -->
+		<!-- compile the f2f/gwt code -->
 		<javac destdir="${root.dir}/gwt-bin/war/WEB-INF/classes" nowarn="yes" source="1.5" target="1.5" includeAntRuntime="no" debug="true" debuglevel="lines,vars,source" fork="yes" memoryMaximumSize="256m">
 			<src path="${root.dir}/oneswarm_gwt_ui/src" />
+			<src path="${f2f-src.dir}"/>
+            
+			<!-- This PlanetLab source will be stripped later using the plab.build option if required. -->
 			<src path="${root.dir}/oneswarm_gwt_ui/src_planetlab"/>
+			
 			<classpath refid="project.class.path.servlet" />
+			<classpath refid="f2f.class.path" />
 		</javac>
-
+		
 		<echo>Compiling UI code</echo>
 		
 		<!-- Sets gwt.recompile, used by the gwt-webui target. -->
@@ -374,7 +328,7 @@
 				
 	</target>
 	
-	<target name="gwt-webui" description="Java -> Javascript using the GWT compiler." if="gwt.recompile" depends="gwt-servlet,i18n-OsMessages,gwt-war-init">
+	<target name="gwt-webui" description="Java -> Javascript using the GWT compiler." if="gwt.recompile" depends="f2f-gwt-servlet,i18n-OsMessages,gwt-war-init">
 		
 		<!-- 
 		  Invoke the GWT compiler. The build can be customized during development to 
@@ -487,16 +441,21 @@
 		<copy file="${root.dir}/build/gwt-libs/commons-http/commons-logging-1.1.1.jar" todir="${gwt-deploy.dir}" />
 		<copy file="${root.dir}/build/gwt-libs/commons-http/commons-codec-1.4.jar" todir="${gwt-deploy.dir}" />
 		
+		<!-- f2f dependencies -->
+		<copy todir="${gwt-deploy.dir}" file="${smack.jar}" />
+    	<copy todir="${gwt-deploy.dir}" file="${publickey.jar}" />
+    	<copy todir="${gwt-deploy.dir}" file="${ecs.jar}" />
+    	<copy todir="${gwt-deploy.dir}" file="${apache-io.jar}" />
+    	
 	</target>
 	
 	<!-- =============================== Merge ==================== -->
-	<target name="oneswarm-all" description="Builds and packages all required components." depends="gwt-dist,f2f-dist,core-jar">
+	<target name="oneswarm-all" description="Builds and packages all required components." depends="gwt-dist,core-jar">
 		
 		<delete dir="merge-scratch/" failonerror="false"/>
 		<mkdir dir="merge-scratch"/> 
 		<unjar dest="merge-scratch/"> 
 			<fileset dir="core-dist/" includes="*.jar"/> 
-			<fileset dir="f2f-dist/" includes="*.jar"/>
 			<fileset dir="gwt-dist/" includes="*.jar"/>
 		</unjar>
 		
@@ -512,11 +471,10 @@
 		
 	</target>
 	
-	<target name="inc" description="Builds and packages GWT and F2F components, assuming a previously merged core." depends="gwt-dist,f2f-dist">
+	<target name="inc" description="Builds and packages GWT and F2F components, assuming a previously merged core." depends="gwt-dist">
 		
 		<unjar dest="merge-scratch/"> 
-			<fileset dir="f2f-dist/" includes="*.jar"/>
-			<fileset dir="gwt-dist/" includes="*.jar"/>
+			<fileset dir="gwt-dist/" includes="oneswarm_gwt_ui.jar"/>
 		</unjar>
 		
 		<!-- Remove any junk META-INF or properties that may have leaked in during the merge. -->
@@ -534,7 +492,7 @@
 	</target>
 	
 	<!-- This target will update only the GWT servlet code. -->
-	<target name="servlet-inc" depends="gwt-servlet,gwt-dist,inc"/>
+	<target name="servlet-inc" depends="f2f-gwt-servlet,gwt-dist,inc"/>
 	
 	<!-- =============================== Clean ==================== -->
 
@@ -555,7 +513,6 @@
 		
 		<!-- F2F -->
 		<delete dir="${f2f-bin.dir}" />
-		<delete dir="${f2f-plugin.dir}" />
 		
 		<!-- GWT -->
 		<delete dir="gwt-dist" />
@@ -572,7 +529,7 @@
    </target>
 
 	<!-- =============================== Test ==================== -->
-	<target name="compile-tests" depends="gwt-dist,f2f-dist,core-jar">
+	<target name="compile-tests" depends="gwt-dist,core-jar">
 		<mkdir dir="test-bin" />
 
 		<javac srcdir="javatests" destdir="test-bin" nowarn="yes" source="1.5" target="1.5" includeAntRuntime="no" debug="true" debuglevel="lines,vars,source" fork="yes" memoryMaximumSize="256m">
@@ -607,11 +564,10 @@
 			<jvmarg value="${optStartOnFirstThread}" />
 			<jvmarg value="${optWindowsLibraryPath}"/>
 			<jvmarg value="-Xmx256M" />
-			<jvmarg value="-Doneswarm.test.local.classpath=gwt-bin/war/WEB-INF/classes:f2f-dist/osf2f_plugin.jar:core-dist/OneSwarmCore.jar"/>
+			<jvmarg value="-Doneswarm.test.local.classpath=gwt-bin/war/WEB-INF/classes:core-dist/OneSwarmCore.jar"/>
 			
 			<classpath>
 				<pathelement location="test-bin" />
-				<pathelement location="f2f-dist/osf2f_plugin.jar" />
 				<pathelement location="gwt-bin/war/WEB-INF/classes" />
 				<path refid="project.class.path.servlet" />
 				<path refid="f2f.class.path" />
