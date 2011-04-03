@@ -1,11 +1,13 @@
 package edu.washington.cs.oneswarm.ant; 
 
-import org.apache.tools.ant.BuildException;
-import org.apache.tools.ant.*;
+import java.io.File;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
-import java.util.*;
-import java.io.*;
-import java.text.*;
+import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.Project;
+import org.apache.tools.ant.Task;
 
 public class GWTRecompileCheck extends Task {
 
@@ -13,7 +15,8 @@ public class GWTRecompileCheck extends Task {
 	String lastBuilt = null;
     boolean done = false;
 
-    public void execute() throws BuildException {
+    @Override
+	public void execute() throws BuildException {
 	
 		if (directory == null) {
 			throw new BuildException("Directory not specified.");
@@ -41,7 +44,7 @@ public class GWTRecompileCheck extends Task {
 		
 		log(f.getAbsolutePath(), Project.MSG_DEBUG);
 		
-		if (f.isFile() && f.getName().endsWith(".java")) {
+		if (f.isFile() && (f.getName().endsWith(".java") || f.getName().endsWith(".properties"))) {
 			if (thresh.before(new Date(f.lastModified()))) {
 				doBuild(f);
 			}
