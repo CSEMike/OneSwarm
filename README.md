@@ -1,9 +1,9 @@
 
 # OneSwarm
 
-* [WWW](http://oneswarm.org/)
+* [WWW](http://csemike.github.com/OneSwarm)
 * [Forum](http://forum.oneswarm.org/)
-* [Wiki](http://wiki.oneswarm.org/)
+* [Wiki](https://github.com/CSEMike/OneSwarm/wiki)
 
 # Building
 
