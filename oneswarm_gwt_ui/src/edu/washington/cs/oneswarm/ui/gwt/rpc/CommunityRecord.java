@@ -441,5 +441,4 @@ public class CommunityRecord implements IsSerializable {
 	public String getCht_path() {
 		return cht_path;
 	}
-
 }
