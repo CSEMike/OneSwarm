@@ -354,6 +354,19 @@ public class CommunityRecord implements IsSerializable {
 	}
 
 	@Override
+	public int hashCode() {
+		return getCommunity_path().hashCode();
+	}
+
+	@Override
+	public boolean equals(Object rhs) {
+		if (rhs instanceof CommunityRecord) {
+			return ((CommunityRecord) rhs).getCommunity_path().equals(getCommunity_path());
+		}
+		return false;
+	}
+
+	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
 		for (String s : toTokens()) {

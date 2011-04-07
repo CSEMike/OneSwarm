@@ -4,12 +4,17 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.URL;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
+
+import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestResult;
@@ -37,6 +42,8 @@ import edu.washington.cs.oneswarm.test.integration.oop.LocalOneSwarmListener;
  */
 public class TestUtils {
 
+	private static Logger logger = Logger.getLogger(TestUtils.class.getName());
+
 	/** The web interface port used by the JVM OneSwarm instance. */
 	public static final int JVM_INSTANCE_WEB_UI_PORT = 4000;
 
@@ -47,6 +54,29 @@ public class TestUtils {
 	public static final String JVM_INSTANCE_WEB_UI =
 		"http://127.0.0.1:" + JVM_INSTANCE_WEB_UI_PORT + "/";
 
+	public static final String TEST_COMMUNITY_SERVER = "localhost:8888";
+
+	/** Checks if a test instance of the community server is running locally. */
+	public static boolean isLocalCommunityServerRunning() {
+		try {
+			HttpURLConnection conn = (HttpURLConnection) new URL("http://" + TEST_COMMUNITY_SERVER
+					+ "/community")
+					.openConnection();
+
+			// Expecting BAD_REQUEST since we didn't include a key -- indicates that the server is
+			// up.
+			if (conn.getResponseCode() == HttpServletResponse.SC_BAD_REQUEST) {
+				return true;
+			}
+
+			conn.disconnect();
+		} catch (IOException e) {
+			System.err.println("Community server check failed: " + e.toString());
+			return false;
+		}
+		return false;
+	}
+
 	/** Blocks until the LocalOneSwarm {@code instance} has started. */
 	public static void awaitInstanceStart(LocalOneSwarm instance) {
 		final CountDownLatch latch = new CountDownLatch(1);
@@ -56,6 +86,7 @@ public class TestUtils {
 		 * initialization race.
 		 */
 		LocalOneSwarmListener listener = new LocalOneSwarmListener() {
+			@Override
 			public void instanceStarted(LocalOneSwarm instance) {
 				latch.countDown();
 			}
@@ -116,6 +147,7 @@ public class TestUtils {
 		final CountDownLatch latch = new CountDownLatch(1);
 
 		new ConditionWaiter(new ConditionWaiter.Predicate() {
+			@Override
 			public boolean satisfied() {
 				return AzureusCoreImpl.isCoreAvailable();
 			}
@@ -123,18 +155,25 @@ public class TestUtils {
 
 		AzureusCore core = AzureusCoreImpl.getSingleton();
 		AzureusCoreLifecycleListener l = new AzureusCoreLifecycleListener(){
+			@Override
 			public void componentCreated(AzureusCore core, AzureusCoreComponent component) {}
+			@Override
 			public void started(AzureusCore core) {
 				latch.countDown();
 			}
+			@Override
 			public void stopping(AzureusCore core) {}
+			@Override
 			public void stopped(AzureusCore core) {}
+			@Override
 			public boolean stopRequested(AzureusCore core) throws AzureusCoreException {
 				return true;
 			}
+			@Override
 			public boolean restartRequested(AzureusCore core) throws AzureusCoreException {
 				return true;
 			}
+			@Override
 			public boolean syncInvokeRequired() {
 				return false;
 			}};
@@ -222,40 +261,47 @@ public class TestUtils {
 	 * Blocks while creating a new {@code LocalOneSwarm} instance which has
 	 * the local JVM client added and connected as a friend.
 	 */
-	public static LocalOneSwarm spawnConnectedOneSwarmInstance() throws Exception {
+	public static LocalOneSwarm spawnOneSwarmInstance(boolean connectToLocalInstance)
+			throws Exception {
 		final LocalOneSwarm localOneSwarm = new LocalOneSwarm();
 		localOneSwarm.start();
 		TestUtils.awaitInstanceStart(localOneSwarm);
 
 		// Connect the two clients. First, get our key and add it to the remote instance.
-		final OSF2FMain f2fMain = OSF2FMain.getSingelton();
-		String base64Key = new String(Base64.encode(f2fMain.getOverlayManager().getOwnPublicKey()
-				.getEncoded()));
-		localOneSwarm.getCoordinator().addCommand("addkey TEST " + base64Key + " true true");
+		if (connectToLocalInstance) {
+			final OSF2FMain f2fMain = OSF2FMain.getSingelton();
+			String base64Key = new String(Base64.encode(f2fMain.getOverlayManager()
+					.getOwnPublicKey().getEncoded()));
+			localOneSwarm.getCoordinator().addCommand("addkey TEST " + base64Key + " true true");
 
-		// Wait for the friend connectors to become available (prerequisite for friend connection)
-		new ConditionWaiter(new ConditionWaiter.Predicate(){
-			public boolean satisfied() {
-				return f2fMain.getDHTConnector() != null;
-			}}, 90*1000).await();
+			// Wait for the friend connectors to become available (prerequisite for friend
+			// connection)
+			new ConditionWaiter(new ConditionWaiter.Predicate() {
+				@Override
+				public boolean satisfied() {
+					return f2fMain.getDHTConnector() != null;
+				}
+			}, 90 * 1000).await();
 
-		new ConditionWaiter(new ConditionWaiter.Predicate() {
-			public boolean satisfied() {
-				return localOneSwarm.getCoordinator().isFriendConnectorAvailable();
-			}}, 90*1000).await();
+			new ConditionWaiter(new ConditionWaiter.Predicate() {
+				@Override
+				public boolean satisfied() {
+					return localOneSwarm.getCoordinator().isFriendConnectorAvailable();
+				}
+			}, 90 * 1000).await();
 
-		// Next add remote friend's key to our instance
-		String remoteKey = localOneSwarm.getPublicKey();
-		Friend f = new Friend(true, true, new Date(), new Date(), InetAddress.getLocalHost(),
-				localOneSwarm.getCoordinator().getPort(),
-				localOneSwarm.getLabel(),
-			Base64.decode(remoteKey), "test", 0, 0, false, true);
-		f2fMain.getFriendManager().addFriend(f);
+			// Next add remote friend's key to our instance
+			String remoteKey = localOneSwarm.getPublicKey();
+			Friend f = new Friend(true, true, new Date(), new Date(), InetAddress.getLocalHost(),
+					localOneSwarm.getCoordinator().getPort(), localOneSwarm.getLabel(),
+					Base64.decode(remoteKey), "test", 0, 0, false, true);
+			f2fMain.getFriendManager().addFriend(f);
 
-		f2fMain.getDHTConnector().connectToFriend(f);
+			f2fMain.getDHTConnector().connectToFriend(f);
 
-		// Wait for the connection to be established
-		localOneSwarm.waitForOnlineFriends(1);
+			// Wait for the connection to be established
+			localOneSwarm.waitForOnlineFriends(1);
+		}
 
 		return localOneSwarm;
 	}
@@ -263,13 +309,47 @@ public class TestUtils {
 	/** Blocks until a given selenium {@code elementId} can be found. */
 	public static void awaitElement(final Selenium selenium, final String elementId) {
 		new ConditionWaiter(new ConditionWaiter.Predicate() {
+			@Override
 			public boolean satisfied() {
-				return selenium.isElementPresent(elementId);
+				boolean isPresent = selenium.isElementPresent(elementId);
+				if (isPresent) {
+					logger.info("Found: " + elementId);
+				} else {
+					logger.info("Missing: " + elementId);
+				}
+				return isPresent;
 			}
 		}, 15000).await();
 	}
 
+	/** Uses special servlet handler for test to flush all server side storage. */
+	public static void flushCommunityServerState() throws IOException {
+		sendAction("flush");
+		logger.info("Server state flushed.");
+	}
+
+	/** Sends a given {@code action} string to the local dev app server. */
+	private static void sendAction(String action) throws IOException {
+		String url = "http://" + TEST_COMMUNITY_SERVER + "/test?action=" + action;
+		HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+		if (conn.getResponseCode() != HttpServletResponse.SC_OK) {
+			throw new IOException("Bad status: " + conn.getResponseCode() + " for action: "
+					+ action);
+		}
+	}
+
+	/** Awaits the presence of an element and then sends a click event. */
+	public static void awaitAndClick(Selenium selenium, String elementXpath) {
+		awaitElement(selenium, elementXpath);
+		selenium.click(elementXpath);
+	}
+
+	/**
+	 * Start and leave a test instance of OneSwarm running -- use with the selenium IDE to develop
+	 * tests.
+	 */
 	public static void main(String[] args) throws Exception {
 		TestUtils.startOneSwarmForTest();
 	}
+
 }

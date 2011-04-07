@@ -114,6 +114,7 @@ public class CommunityServerAddPanel extends VerticalPanel {
 		targetGroupTB.setText(group);
 		urlTextBox.setText(inURL);
 		urlTextBox.setWidth("310px");
+		urlTextBox.getElement().setId("communityUrlTextBox");
 
 		VerticalPanel disclosed = new VerticalPanel();
 

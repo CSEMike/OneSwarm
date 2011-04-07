@@ -63,6 +63,7 @@ public class FriendsImportCommunityServer extends VerticalPanel implements Updat
 		add(addPanel);
 		HorizontalPanel rhs = new HorizontalPanel();
 		final Button saveButton = new Button(msg.button_subscribe());
+		saveButton.getElement().setId("communityServerSaveButton");
 		Button cancelButton = new Button(msg.button_cancel());
 		rhs.add(cancelButton);
 		rhs.add(saveButton);
@@ -114,6 +115,7 @@ public class FriendsImportCommunityServer extends VerticalPanel implements Updat
 		});
 	}
 
+	@Override
 	public void onDetach() {
 		super.onDetach();
 		OneSwarmGWT.removeFromUpdateTask(this);

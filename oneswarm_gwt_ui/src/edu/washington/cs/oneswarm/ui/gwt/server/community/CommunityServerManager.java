@@ -61,6 +61,7 @@ public final class CommunityServerManager extends Thread {
 
 	private boolean filteredSizeValid;
 	PriorityBlockingQueue<RefreshCommunityServerTask> tasks = new PriorityBlockingQueue<RefreshCommunityServerTask>(5, new Comparator<RefreshCommunityServerTask>(){
+		@Override
 		public int compare(RefreshCommunityServerTask o1, RefreshCommunityServerTask o2) {
 			if( o1.getExecutionTime() > o2.getExecutionTime() ) {
 				return 1;
@@ -90,6 +91,7 @@ public final class CommunityServerManager extends Thread {
 		 */
 		COConfigurationManager.addAndFireParameterListener("oneswarm.community.servers", new ParameterListener(){
 			boolean firstRun = true; // immediately on startup, with a delay afterwards
+			@Override
 			public void parameterChanged(String parameterName) {
 
 				Map<String, CommunityRecord> oldServers = activeServers;
@@ -223,6 +225,7 @@ public final class CommunityServerManager extends Thread {
 			return executionTime;
 		}
 
+		@Override
 		public void run() {
 
 			if( activeServers.containsKey(server.getUrl()) == false ) {
@@ -237,6 +240,7 @@ public final class CommunityServerManager extends Thread {
 			KeyPublishOp req = null;
 			req = new KeyPublishOp(server, false);
 			int tid = BackendTaskManager.get().createTask("Refreshing community server", new CancellationListener(){
+				@Override
 				public void cancelled(int inID) {}});
 			BackendTaskManager.get().getTask(tid).setSummary(server.getUrl());
 			req.setTaskID(tid);
@@ -418,6 +422,7 @@ public final class CommunityServerManager extends Thread {
 			 */
 			final long now = System.currentTimeMillis();
 			Collections.sort(existing_from_this_server, new Comparator<FriendInfoLite>(){
+				@Override
 				public int compare(FriendInfoLite o1, FriendInfoLite o2) {
 					Date lastConn1 = o1.getLastConnectedDate() != null ? o1.getLastConnectedDate() : new Date(0);
 					Date lastConn2 = o2.getLastConnectedDate() != null ? o2.getLastConnectedDate() : new Date(0);

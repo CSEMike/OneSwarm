@@ -60,7 +60,6 @@ public abstract class CommunityServerOperation extends Thread implements Cancell
 
 	private static Logger logger = Logger.getLogger(CommunityServerOperation.class.getName());
 
-
 	boolean cancelled;
 	int mTaskID;
 	BackendTask mTask;

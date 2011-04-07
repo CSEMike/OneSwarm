@@ -6,11 +6,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gwt.core.client.GWT;
-import com.google.gwt.core.client.RunAsyncCallback;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.CheckBox;
@@ -57,7 +54,7 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
 
 	private List<RadioButton> friendSrcRb;
 
-	private FriendsImportCallback friendWizardCallback = new FriendsImportCallback() {
+	private final FriendsImportCallback friendWizardCallback = new FriendsImportCallback() {
 
 		CheckBox removal = null;
 
@@ -105,6 +102,7 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
 				buttonPanel.add(cancelButton);
 			}
 			buttonPanel.add(saveButton);
+			saveButton.getElement().setId("communitySaveAfterReceiveButton");
 
 			saveButton.addClickHandler(new ClickHandler() {
 				public void onClick(ClickEvent event) {

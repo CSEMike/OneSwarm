@@ -1,60 +1,22 @@
 package edu.washington.cs.oneswarm.test.integration;
 
-import java.io.File;
 import java.util.List;
 import java.util.logging.Logger;
 
 import junit.framework.Assert;
 
 import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
-
-import com.aelitis.azureus.ui.UIFunctionsManager;
-import com.thoughtworks.selenium.DefaultSelenium;
-import com.thoughtworks.selenium.Selenium;
 
 import edu.washington.cs.oneswarm.f2f.chat.Chat;
 import edu.washington.cs.oneswarm.f2f.chat.ChatDAO;
-import edu.washington.cs.oneswarm.test.integration.oop.LocalOneSwarm;
 import edu.washington.cs.oneswarm.test.util.ConditionWaiter;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
+import edu.washington.cs.oneswarm.test.util.TwoProcessTestBase;
 
-public class ChatTest {
+public class ChatTest extends TwoProcessTestBase {
 
 	private static Logger logger = Logger.getLogger(ChatTest.class.getName());
-
-	/** The locally running selenium test server. */
-	static Process seleniumServer;
-
-	/** The selenium control interface. */
-	private static Selenium selenium;
-
-	/** The OneSwarm instance with which we will chat. */
-	private static LocalOneSwarm localOneSwarm;
-
-	@BeforeClass
-	public static void setUpClass() throws Exception {
-		seleniumServer = TestUtils.startSeleniumServer((new File(".").getAbsolutePath()));
-
-		// Start a local client in this JVM
-		TestUtils.awaitJVMOneSwarmStart();
-
-		// One additional remote client with which we'll chat
-		localOneSwarm = TestUtils.spawnConnectedOneSwarmInstance();
-		logger.info("OOP LocalOneSwarm started.");
-
-		selenium = new DefaultSelenium("127.0.0.1", 4444, "*firefox",
-				TestUtils.JVM_INSTANCE_WEB_UI) {
-			// Fix for bug: http://code.google.com/p/selenium/issues/detail?id=408
-        	@Override
-			public void open(String url) {
-        		commandProcessor.doCommand("open", new String[] {url,"true"});
-        	}
-        };
-        selenium.start();
-	}
 
 	@Test
 	public void testSendReceiveChat() throws Exception {
@@ -64,7 +26,6 @@ public class ChatTest {
 		 */
 
 		selenium.openWindow("http://127.0.0.1:4000/", "jvm");
-
 		selenium.selectWindow("jvm");
 
 		// Wait for the friends list AJAX load to complete
@@ -90,7 +51,7 @@ public class ChatTest {
 
 		// Switch to the other instance
 		selenium.openWindow("http://127.0.0.1:3000/", "localinstance");
-		selenium.selectWindow("OneSwarm - localoneswarm-0");
+		selenium.selectWindow("localinstance");
 
 		// Verify notification presence -- this could take up to 10 seconds since
 		// we have a 10 seconds poll (See {@code FriendListPanel.java}).
@@ -122,33 +83,6 @@ public class ChatTest {
 	@After
 	public void tearDownTest() throws Exception {
 		selenium.close();
-	}
-
-	@AfterClass
-	public static void tearDownClass() throws Exception {
-		logger.info("Tearing down test. Quitting JVM instance");
-		// Quit OneSwarm
-		if (UIFunctionsManager.getUIFunctions() != null) {
-			UIFunctionsManager.getUIFunctions().requestShutdown();
-		}
-		logger.info("Sending shutdown to oop instance");
-		localOneSwarm.getCoordinator().addCommand("shutdown");
-		new ConditionWaiter(new ConditionWaiter.Predicate() {
-			public boolean satisfied() {
-				return localOneSwarm.getCoordinator().getPendingCommands().size() == 0;
-			}
-		}, 10000).await();
-		localOneSwarm.stop();
-		logger.info("selenium.stop()");
-		// Quit browser
-		if (selenium != null) {
-			selenium.stop();
-		}
-		logger.info("selenium server stop");
-		// Quit RC Server
-		if (seleniumServer != null) {
-			seleniumServer.destroy();
-		}
 	}
 
 	/** Boilerplate code for running as executable. */

@@ -90,7 +90,7 @@ public class KeyPublishOp extends CommunityServerOperation {
 
 			String theURLString = mRecord.getUrl() + sep + CommunityConstants.BASE64_PUBLIC_KEY
 					+ "=" + URLEncoder.encode(base64Key, "UTF-8");
-			logger.fine("Requesting community friend update: " + theURLString);
+			logger.info("Requesting community friend update: " + theURLString);
 
 			URL url = new URL(theURLString);
 			HttpURLConnection conn = getConnection(url);

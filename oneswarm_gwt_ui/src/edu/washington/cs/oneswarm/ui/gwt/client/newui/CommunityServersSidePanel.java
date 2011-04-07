@@ -1,8 +1,6 @@
 package edu.washington.cs.oneswarm.ui.gwt.client.newui;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -40,7 +38,7 @@ public class CommunityServersSidePanel extends VerticalPanel implements Updateab
 		private boolean isSelected = false;
 		private long lastClick = 0;
 		
-		private ClickHandler clickListener = new ClickHandler() {
+		private final ClickHandler clickListener = new ClickHandler() {
 			public void onClick(ClickEvent event) {
 
 				if (!isSelected ) {
@@ -64,11 +62,11 @@ public class CommunityServersSidePanel extends VerticalPanel implements Updateab
 			} // onClick()
 		};
 		
-		private HorizontalPanel mainPanel = new HorizontalPanel();
-		private Image statusImage = new Image(ImageConstants.ICON_FRIEND_LIMITED);
+		private final HorizontalPanel mainPanel = new HorizontalPanel();
+		private final Image statusImage = new Image(ImageConstants.ICON_FRIEND_LIMITED);
 		private final HorizontalPanel imagePanel = new HorizontalPanel();
-		private AbsolutePanel labelPanel = new AbsolutePanel();
-		private Label nameLabel = new Label("");
+		private final AbsolutePanel labelPanel = new AbsolutePanel();
+		private final Label nameLabel = new Label("");
 
 		private CommunityRecord server;
 		
@@ -185,6 +183,7 @@ public class CommunityServersSidePanel extends VerticalPanel implements Updateab
 
 		addFriendItem.setStylePrimaryName("os-friendListFooterMenu");
 		footerMenu.addItem(addFriendItem);
+		addFriendItem.getElement().setId("addFriendItemLink");
 		
 		contentPanel.add(serverListVP);
 		contentPanel.add(footerMenu);
