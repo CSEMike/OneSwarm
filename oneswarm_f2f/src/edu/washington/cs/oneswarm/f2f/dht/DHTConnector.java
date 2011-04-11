@@ -144,6 +144,7 @@ public class DHTConnector {
 		this.tcpListeningPort = myInstance.getTCPListenPort();
 		logger.finer("after external IP");
 		AzureusCoreImpl.getSingleton().getInstanceManager().addListener(new AZInstanceManagerListener() {
+			@Override
 			public void instanceChanged(AZInstance instance) {
 
 				AZInstance newInstance = AzureusCoreImpl.getSingleton().getInstanceManager().getMyInstance();
@@ -184,12 +185,15 @@ public class DHTConnector {
 				}
 			}
 
+			@Override
 			public void instanceFound(AZInstance instance) {
 			}
 
+			@Override
 			public void instanceLost(AZInstance instance) {
 			}
 
+			@Override
 			public void instanceTracked(AZInstanceTracked instance) {
 			}
 		});
@@ -356,72 +360,87 @@ public class DHTConnector {
 	 * DHT actions being deferred until the real DHT is available.
 	 */
 	DistributedDatabase currentlyAvailableDht = new DistributedDatabase() {
+		@Override
 		public boolean isAvailable() {
 			return false;
 		}
 
+		@Override
 		public boolean isExtendedUseAllowed() {
 			return false;
 		}
 
+		@Override
 		public DistributedDatabaseContact getLocalContact() {
 			throw new RuntimeException("Unsupported");
 		}
 
+		@Override
 		public DistributedDatabaseKey createKey(Object key) throws DistributedDatabaseException {
 			throw new RuntimeException("Unsupported");
 		}
 
+		@Override
 		public DistributedDatabaseKey createKey(Object key, String description)
 				throws DistributedDatabaseException {
 			throw new RuntimeException("Unsupported");
 		}
 
+		@Override
 		public DistributedDatabaseValue createValue(Object value)
 				throws DistributedDatabaseException {
 			throw new RuntimeException("Unsupported");
 		}
 
+		@Override
 		public DistributedDatabaseContact importContact(InetSocketAddress address)
 				throws DistributedDatabaseException {
 			throw new RuntimeException("Unsupported");
 		}
 
+		@Override
 		public void write(DistributedDatabaseListener listener, DistributedDatabaseKey key,
 				DistributedDatabaseValue value) throws DistributedDatabaseException {
 			throw new RuntimeException("Unsupported");
 		}
 
+		@Override
 		public void write(DistributedDatabaseListener listener, DistributedDatabaseKey key,
 				DistributedDatabaseValue[] values) throws DistributedDatabaseException {
 			throw new RuntimeException("Unsupported");
 		}
 
+		@Override
 		public void read(DistributedDatabaseListener listener, DistributedDatabaseKey key,
 				long timeout) throws DistributedDatabaseException {
 			throw new RuntimeException("Unsupported");
 		}
 
+		@Override
 		public void read(DistributedDatabaseListener listener, DistributedDatabaseKey key,
 				long timeout, int options) throws DistributedDatabaseException {
 			throw new RuntimeException("Unsupported");
 		}
 
+		@Override
 		public void readKeyStats(DistributedDatabaseListener listener, DistributedDatabaseKey key,
 				long timeout) throws DistributedDatabaseException {
 			throw new RuntimeException("Unsupported");
 		}
 
+		@Override
 		public void delete(DistributedDatabaseListener listener, DistributedDatabaseKey key)
 				throws DistributedDatabaseException {
 			throw new RuntimeException("Unsupported");
 		}
 
+		@Override
 		public void addTransferHandler(DistributedDatabaseTransferType type,
 				DistributedDatabaseTransferHandler handler) throws DistributedDatabaseException {
 			throw new RuntimeException("Unsupported");
 		}
 
+		@Override
 		public DistributedDatabaseTransferType getStandardTransferType(int standard_type)
 				throws DistributedDatabaseException {
 			throw new RuntimeException("Unsupported");
@@ -467,6 +486,7 @@ public class DHTConnector {
 			final DistributedDatabaseKey dhtKey = createKey(key);
 			queuedDHTReadRequests++;
 			getDht().read(new DistributedDatabaseListener() {
+				@Override
 				public void event(DistributedDatabaseEvent event) {
 					logger.finest("DHT read event:" + event.getType());
 					if (event.getType() == DistributedDatabaseEvent.ET_VALUE_READ) {
@@ -506,11 +526,13 @@ public class DHTConnector {
 		logger.finer("CHT: connecting to: " + friend.getNick());
 		friend.updateConnectionLog(true, "Looking up friend location in CHT (" + locSource + ")");
 		chtClientUDP.get(key, new CHTClientUDP.CHTCallback() {
+			@Override
 			public void errorReceived(Throwable cause) {
 				friend.updateConnectionLog(true, "CHT lookup failed: " + cause.getMessage());
 			}
 
-			public void valueReceived(byte[] value) {
+			@Override
+			public void valueReceived(byte[] key, byte[] value) {
 				try {
 					decryptAndConnect(triedIps, friend, value, "CHT (" + locSource + ")");
 				} catch (Exception e) {
@@ -589,11 +611,13 @@ public class DHTConnector {
 		if (chtClientUDP != null && isChtEnabled()) {
 			byte[] loc = new SHA1Simple().calculateHash(keyBase);
 			chtClientUDP.get(loc, new CHTClientUDP.CHTCallback() {
+				@Override
 				public void errorReceived(Throwable cause) {
 					logger.finest(cause.getMessage());
 				}
 
-				public void valueReceived(byte[] value) {
+				@Override
+				public void valueReceived(byte[] key, byte[] value) {
 					logger.finest("got value from cht: " + Base32.encode(value));
 					try {
 						createAuthConnFromHtValue(invitation, value);
@@ -611,6 +635,7 @@ public class DHTConnector {
 				DistributedDatabaseKey dhtKey = createKey(keyBase);
 				queuedDHTReadRequests++;
 				getDht().read(new DistributedDatabaseListener() {
+					@Override
 					public void event(DistributedDatabaseEvent event) {
 						logger.finest("DHT read event:" + event.getType());
 						if (event.getType() == DistributedDatabaseEvent.ET_VALUE_READ) {
@@ -749,6 +774,7 @@ public class DHTConnector {
 				published = true;
 				queuedDHTWriteRequests++;
 				getDht().write(new DistributedDatabaseListener() {
+					@Override
 					public void event(DistributedDatabaseEvent event) {
 						// Log.log("DHT write event:" + event.getType(),
 						// logToStdOut);
@@ -803,6 +829,7 @@ public class DHTConnector {
 			}
 			ArrayList<Friend> friendsSorted = new ArrayList<Friend>(Arrays.asList(OSF2FMain.getSingelton().getFriendManager().getFriends()));
 			Collections.sort(friendsSorted, new Comparator<Friend>() {
+				@Override
 				public int compare(Friend o1, Friend o2) {
 					if (dhtAvailable.get() == false) {
 						return lastConnectCompare(o1, o2);
@@ -980,6 +1007,7 @@ public class DHTConnector {
 							.createValue(value) };
 					queuedDHTWriteRequests++;
 					getDht().write(new DistributedDatabaseListener() {
+						@Override
 						public void event(DistributedDatabaseEvent event) {
 							if (event.getType() == DistributedDatabaseEvent.ET_OPERATION_COMPLETE) {
 								completedDHTWriteRequests++;
@@ -1014,6 +1042,7 @@ public class DHTConnector {
 							.createValue(value) };
 					queuedDHTWriteRequests++;
 					getDht().write(new DistributedDatabaseListener() {
+						@Override
 						public void event(DistributedDatabaseEvent event) {
 							if (event.getType() == DistributedDatabaseEvent.ET_OPERATION_COMPLETE || event.getType() == DistributedDatabaseEvent.ET_OPERATION_COMPLETE) {
 								if (event.getType() == DistributedDatabaseEvent.ET_OPERATION_COMPLETE) {
@@ -1039,6 +1068,7 @@ public class DHTConnector {
 		DHTLog.logging_on = true;
 		DHTLog.setLogger(null);
 		Thread t = new Thread(new Runnable() {
+			@Override
 			public void run() {
 				try {
 					while (true) {
@@ -1063,11 +1093,13 @@ public class DHTConnector {
 	private void testRead() {
 		byte[] keySha1 = new SHA1Simple().calculateHash(ownPublicKey);
 		chtClientUDP.get(keySha1, new CHTClientUDP.CHTCallback() {
+			@Override
 			public void errorReceived(Throwable cause) {
 				System.out.println("CHT lookup failed");
 			}
 
-			public void valueReceived(byte[] value) {
+			@Override
+			public void valueReceived(byte[] key, byte[] value) {
 				try {
 					byte[] data = verifyAndDecrypt(value, overlayManager.getOwnPublicKey());
 					System.out.println("got cht: " + getInetAddress(data) + ":" + getPort(data) + " age=" + ((System.currentTimeMillis() - getTimeStamp(data)) / (1000)) + " s");
@@ -1083,6 +1115,7 @@ public class DHTConnector {
 		try {
 			final DistributedDatabaseKey dhtKey = createKey(ownPublicKey);
 			getDht().read(new DistributedDatabaseListener() {
+				@Override
 				public void event(DistributedDatabaseEvent event) {
 					logger.fine("DHT read event:" + event.getType());
 					if (event.getType() == DistributedDatabaseEvent.ET_VALUE_READ) {
@@ -1123,6 +1156,7 @@ public class DHTConnector {
 			final DistributedDatabaseValue[] dhtValue = new DistributedDatabaseValue[] { getDht()
 					.createValue(value) };
 			getDht().write(new DistributedDatabaseListener() {
+				@Override
 				public void event(DistributedDatabaseEvent event) {
 					System.out.println("DHT write event:" + event.getType());
 					if (event.getType() == DistributedDatabaseEvent.ET_VALUE_WRITTEN) {
@@ -1391,6 +1425,7 @@ public class DHTConnector {
 				 * else sort by last dht lookup date
 				 */
 				Collections.sort(disconnectedFriends, new Comparator<Friend>() {
+					@Override
 					public int compare(Friend o1, Friend o2) {
 						if (dhtAvailable.get() == false) {
 							return lastConnectCompare(o1, o2);

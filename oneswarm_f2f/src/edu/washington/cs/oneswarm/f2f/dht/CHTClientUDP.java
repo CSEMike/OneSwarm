@@ -22,6 +22,7 @@ public class CHTClientUDP implements CHTClientInterface {
 		this.serverPort = serverPort;
 	}
 
+	@Override
 	public void put(byte[] key, byte[] value) throws IOException {
 		if (key == null || key.length != 20) {
 			throw new RuntimeException("Key length must be 20");
@@ -37,6 +38,7 @@ public class CHTClientUDP implements CHTClientInterface {
 		s.close();
 	}
 
+	@Override
 	public void get(final byte[] key, final CHTCallback callback) {
 		if (key == null || key.length != 20) {
 			throw new RuntimeException("Key length must be 20");
@@ -51,6 +53,7 @@ public class CHTClientUDP implements CHTClientInterface {
 
 				if (jobExecutorThread == null) {
 					jobExecutorThread = new Thread(new Runnable() {
+						@Override
 						public void run() {
 							// System.out.println("starting new thread");
 							DatagramSocket s = null;
@@ -128,7 +131,7 @@ public class CHTClientUDP implements CHTClientInterface {
 			if (incomingPacket.getLength() > 0) {
 				byte[] value = new byte[incomingPacket.getLength()];
 				System.arraycopy(incomingPacket.getData(), 0, value, 0, value.length);
-				cb.valueReceived(value);
+				cb.valueReceived(key, value);
 			} else {
 				cb.errorReceived(new Exception("Key not in CHT"));
 			}
@@ -144,7 +147,7 @@ public class CHTClientUDP implements CHTClientInterface {
 	}
 
 	public static interface CHTCallback {
-		public void valueReceived(byte[] value);
+		public void valueReceived(byte[] key, byte[] value);
 
 		public void errorReceived(Throwable cause);
 	}

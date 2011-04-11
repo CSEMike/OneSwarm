@@ -15,6 +15,7 @@ import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
 
+// TODO(piatek): Add support for callbacks/error handling for puts. For now, all best-effort.
 public class CHTPutOp extends CommunityServerOperation {
 
 	private static Logger logger = Logger.getLogger(CHTPutOp.class.getName());
@@ -37,7 +38,7 @@ public class CHTPutOp extends CommunityServerOperation {
 		if (path.endsWith("/") == false) {
 			path += "/";
 		}
-		path += mRecord.getCht_path();
+		path += mRecord.getCht_path() + "?put";
 		try {
 			URL url = new URL(path);
 			HttpURLConnection conn = getConnection(url, "POST");
@@ -64,7 +65,7 @@ public class CHTPutOp extends CommunityServerOperation {
 			conn.getOutputStream().write(
 					("q=" + URLEncoder.encode(baos.toString(), "UTF-8")).getBytes());
 
-			System.out.println("response code: " + conn.getResponseCode() + " / "
+			System.out.println("CHT put response code: " + conn.getResponseCode() + " / "
 					+ conn.getResponseMessage());
 
 		} catch (Exception e) {

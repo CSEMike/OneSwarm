@@ -1,22 +1,25 @@
 package edu.washington.cs.oneswarm.f2f.dht;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Logger;
 
 import com.google.common.collect.Lists;
 
 import edu.washington.cs.oneswarm.f2f.dht.CHTClientUDP.CHTCallback;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
+import edu.washington.cs.oneswarm.ui.gwt.server.community.CHTGetOp;
 import edu.washington.cs.oneswarm.ui.gwt.server.community.CHTPutOp;
 import edu.washington.cs.oneswarm.ui.gwt.server.community.CommunityServerManager;
 
 public class CHTClientHTTP implements CHTClientInterface {
 
-	private final String url;
+	private static Logger logger = Logger.getLogger(CHTClientHTTP.class.getName());
+
 	Timer batchFlusher;
 
 	class PutOp {
@@ -39,13 +42,18 @@ public class CHTClientHTTP implements CHTClientInterface {
 		}
 	}
 
-	List<PutOp> pendingPuts = Collections.synchronizedList(new ArrayList<PutOp>());
-	List<GetOp> pendingGets = Collections.synchronizedList(new ArrayList<GetOp>());
+	List<PutOp> pendingPuts = Collections.synchronizedList(new LinkedList<PutOp>());
+	List<GetOp> pendingGets = Collections.synchronizedList(new LinkedList<GetOp>());
 	private final CommunityRecord record;
 
 	public CHTClientHTTP(String url) {
-		this.url = url;
-		batchFlusher = new Timer("Batch flusher - " + url, true);
+		this(CommunityServerManager.get().getRecordForUrl(url));
+	}
+
+	public CHTClientHTTP(CommunityRecord server) {
+		this.record = server;
+
+		batchFlusher = new Timer("Batch flusher - " + record.getCht_path(), true);
 		batchFlusher.schedule(new TimerTask() {
 			@Override
 			public void run() {
@@ -54,13 +62,14 @@ public class CHTClientHTTP implements CHTClientInterface {
 			}
 		}, 1000, 1000);
 
-		record = CommunityServerManager.get().getRecordForUrl(url);
 	}
 
+	@Override
 	public void put(byte[] key, byte[] value) throws IOException {
 		pendingPuts.add(new PutOp(key, value));
 	}
 
+	@Override
 	public void get(byte[] key, CHTCallback callback) {
 		pendingGets.add(new GetOp(key, callback));
 	}
@@ -70,13 +79,32 @@ public class CHTClientHTTP implements CHTClientInterface {
 		List<byte[]> values = Lists.newArrayList();
 		while (!pendingPuts.isEmpty()) {
 			PutOp op = pendingPuts.remove(0);
+			if (op == null) {
+				break;
+			}
 			keys.add(op.key);
 			values.add(op.val);
 		}
-		new CHTPutOp(record, keys, values).start();
+		if (keys.size() > 0) {
+			logger.info("Sending " + keys.size() + " CHT puts to " + record.getCht_path());
+			new CHTPutOp(record, keys, values).start();
+		}
 	}
 
 	private void flushGets() {
-
+		List<byte[]> keys = Lists.newArrayList();
+		List<CHTCallback> callbacks = Lists.newArrayList();
+		while (!pendingGets.isEmpty()) {
+			GetOp op = pendingGets.remove(0);
+			if (op == null) {
+				break;
+			}
+			keys.add(op.key);
+			callbacks.add(op.callback);
+		}
+		if (keys.size() > 0) {
+			logger.info("Sending " + keys.size() + " CHT gets to " + record.getCht_path());
+			new CHTGetOp(record, keys, callbacks).start();
+		}
 	}
 }

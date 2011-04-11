@@ -29,6 +29,9 @@ public class CommunityServerTest extends TwoProcessTestBase {
 	private static final String SUBSCRIBE_BUTTON = "communityServerSaveButton";
 	private static final String DISMISS_BUTTON = "communitySaveAfterReceiveButton";
 	
+	public static final String TEST_COMMUNITY_URL = "http://" + TestUtils.TEST_COMMUNITY_SERVER
+			+ "/";
+
 	// Probably shouldn't configure like this, but setupClass inheritance isn't workable.
 	// and we need this configuration to occur before setUpClass() in TwoProcessTestBase.
 	static {
@@ -56,18 +59,10 @@ public class CommunityServerTest extends TwoProcessTestBase {
 				return;
 			}
 
-			final String communityServerUrl = "http://" + TestUtils.TEST_COMMUNITY_SERVER + "/";
-
 			// Subscribe to the community server using the local JVM instance. In this case, we
 			// subscribe programatically for simplicity.
-			CommunityRecord rec = new CommunityRecord(Arrays.asList(new String[] {
-					communityServerUrl, "", "", "Exp. contacts", "true;false;false;false;" + 26 }),
-					0);
-			List<String> appended = new ArrayList<String>();
-			appended.addAll(Arrays.asList(rec.toTokens()));
-			COConfigurationManager.setParameter("oneswarm.community.servers", appended);
-			ConfigurationManager.getInstance().setDirty();
-			CommunityServerManager.get().refreshAll();
+			CommunityRecord rec = getTestCommunityRecord();
+			addServerAndRefresh(rec);
 			Thread.sleep(2000);
 
 			// In the OOP instance, using selenium to actually test adding a community server using
@@ -82,7 +77,7 @@ public class CommunityServerTest extends TwoProcessTestBase {
 			selenium.focus(COMMUNITY_URL_TEXTBOX);
 
 			selenium.type(COMMUNITY_URL_TEXTBOX, "");
-			selenium.typeKeys(COMMUNITY_URL_TEXTBOX, communityServerUrl);
+			selenium.typeKeys(COMMUNITY_URL_TEXTBOX, TEST_COMMUNITY_URL);
 
 			TestUtils.awaitAndClick(selenium, SUBSCRIBE_BUTTON);
 			Thread.sleep(500);
@@ -103,6 +98,19 @@ public class CommunityServerTest extends TwoProcessTestBase {
 		} finally {
 			logger.info("End testCommunityServerRegistration()");
 		}
+	}
+
+	private void addServerAndRefresh(CommunityRecord rec) {
+		List<String> appended = new ArrayList<String>();
+		appended.addAll(Arrays.asList(rec.toTokens()));
+		COConfigurationManager.setParameter("oneswarm.community.servers", appended);
+		ConfigurationManager.getInstance().setDirty();
+		CommunityServerManager.get().refreshAll();
+	}
+
+	public static CommunityRecord getTestCommunityRecord() {
+		return new CommunityRecord(Arrays.asList(new String[] { TEST_COMMUNITY_URL, "", "",
+				"Exp. contacts", "true;false;false;false;" + 26 }), 0);
 	}
 
 	/** Boilerplate code for running as executable. */
