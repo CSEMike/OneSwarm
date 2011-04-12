@@ -24,7 +24,6 @@ public class CHTGetOp extends CommunityServerOperation {
 
 	private static Logger logger = Logger.getLogger(CHTGetOp.class.getName());
 
-	private final CommunityRecord server;
 	private final List<CHTCallback> callbacks;
 	private final List<byte[]> keys;
 
@@ -34,7 +33,6 @@ public class CHTGetOp extends CommunityServerOperation {
 		Preconditions.checkArgument(keys.size() == callbacks.size(),
 				"Mismatch between keys and callbacks sizese.");
 
-		this.server = server;
 		this.keys = keys;
 		this.callbacks = callbacks;
 	}
