@@ -193,8 +193,9 @@
 		<fileset file="oneswarm_az_mods/OneSwarmAzMods.properties" /> 
 	  </jar>
 	
-	<copy file="build/core-libs/derby.jar" todir="core-dist" />
-	  
+	  <copy file="build/core-libs/derby.jar" todir="core-dist" />
+      <copy file="build/core-libs/guava.jar" todir="core-dist" />
+      
    </target>
 
 	<!-- =============================== F2F ==================== -->
