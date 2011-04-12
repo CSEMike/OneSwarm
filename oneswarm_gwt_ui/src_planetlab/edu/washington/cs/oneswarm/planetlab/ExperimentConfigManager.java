@@ -2,8 +2,6 @@ package edu.washington.cs.oneswarm.planetlab;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,10 +11,6 @@ import java.util.logging.Logger;
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.config.impl.ConfigurationManager;
 
-import com.aelitis.azureus.core.impl.AzureusCoreImpl;
-
-import edu.washington.cs.oneswarm.planetlab.GangliaStat.G25Metric;
-import edu.washington.cs.oneswarm.planetlab.GangliaStat.StatReporter;
 import edu.washington.cs.oneswarm.ui.gwt.CoreInterface;
 import edu.washington.cs.oneswarm.ui.gwt.RemoteAccessConfig;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
@@ -63,71 +57,76 @@ public class ExperimentConfigManager {
 	public ExperimentConfigManager() {
 		if (isEnabled()) {
 			load();
-			start_ganglia();
 		}
 	}
 
-	private void start_ganglia() {
-		GangliaStat s = new GangliaStat("jermaine.cs.washington.edu");
-
-		String hostname;
-		try {
-			hostname = InetAddress.getLocalHost().getHostName();
-		} catch (UnknownHostException e) {
-			System.err.println(e);
-			e.printStackTrace();
-			try {
-				hostname = InetAddress.getLocalHost().getHostAddress();
-			} catch (UnknownHostException e1) {
-				logger.warning("Couldn't determine hostname: " + e1.getMessage());
-				return;
-			}
-		}
-
-		s.addMetric(new StatReporter(G25Metric.METRIC_NET_UPLOAD) {
-			private long lastSessionULTime = System.currentTimeMillis();
-			private long lastSessionUL;
-
-			public double getValue() {
-				long sessionUL = AzureusCoreImpl.getSingleton().getGlobalManager().getStats().getTotalDataBytesSent() + AzureusCoreImpl.getSingleton().getGlobalManager().getStats().getTotalProtocolBytesSent();
-				long minuteUL = 0;
-				try {
-					minuteUL = (sessionUL - lastSessionUL) / ((System.currentTimeMillis() - lastSessionULTime) / 1000);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				lastSessionUL = sessionUL;
-				lastSessionULTime = System.currentTimeMillis();
-				return (double) minuteUL;
-			}
-		});
-
-		s.addMetric(new StatReporter(G25Metric.METRIC_NET_DOWNLOAD) {
-			private long lastSessionDLTime = System.currentTimeMillis();
-			private long lastSessionDL;
-
-			public double getValue() {
-				long sessionDL = AzureusCoreImpl.getSingleton().getGlobalManager().getStats().getTotalDataBytesReceived() + AzureusCoreImpl.getSingleton().getGlobalManager().getStats().getTotalProtocolBytesReceived();
-				long minuteDL = 0;
-				try {
-					minuteDL = (sessionDL - lastSessionDL) / ((System.currentTimeMillis() - lastSessionDLTime) / 1000);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				lastSessionDL = sessionDL;
-				lastSessionDLTime = System.currentTimeMillis();
-				return (double) minuteDL;
-			}
-		});
-
-		s.addMetric(new StatReporter("OnlineFriends", "Friends") {
-			public double getValue() {
-				return coreInterface.getF2FInterface().getFriends(false, false).length;
-			}
-		});
-
-		logger.info("Started Ganglia reporter.");
-	}
+	// private void start_ganglia() {
+	// GangliaStat s = new GangliaStat("jermaine.cs.washington.edu");
+	//
+	// String hostname;
+	// try {
+	// hostname = InetAddress.getLocalHost().getHostName();
+	// } catch (UnknownHostException e) {
+	// System.err.println(e);
+	// e.printStackTrace();
+	// try {
+	// hostname = InetAddress.getLocalHost().getHostAddress();
+	// } catch (UnknownHostException e1) {
+	// logger.warning("Couldn't determine hostname: " + e1.getMessage());
+	// return;
+	// }
+	// }
+	//
+	// s.addMetric(new StatReporter(G25Metric.METRIC_NET_UPLOAD) {
+	// private long lastSessionULTime = System.currentTimeMillis();
+	// private long lastSessionUL;
+	//
+	// public double getValue() {
+	// long sessionUL =
+	// AzureusCoreImpl.getSingleton().getGlobalManager().getStats().getTotalDataBytesSent() +
+	// AzureusCoreImpl.getSingleton().getGlobalManager().getStats().getTotalProtocolBytesSent();
+	// long minuteUL = 0;
+	// try {
+	// minuteUL = (sessionUL - lastSessionUL) / ((System.currentTimeMillis() - lastSessionULTime) /
+	// 1000);
+	// } catch (Exception e) {
+	// e.printStackTrace();
+	// }
+	// lastSessionUL = sessionUL;
+	// lastSessionULTime = System.currentTimeMillis();
+	// return (double) minuteUL;
+	// }
+	// });
+	//
+	// s.addMetric(new StatReporter(G25Metric.METRIC_NET_DOWNLOAD) {
+	// private long lastSessionDLTime = System.currentTimeMillis();
+	// private long lastSessionDL;
+	//
+	// public double getValue() {
+	// long sessionDL =
+	// AzureusCoreImpl.getSingleton().getGlobalManager().getStats().getTotalDataBytesReceived() +
+	// AzureusCoreImpl.getSingleton().getGlobalManager().getStats().getTotalProtocolBytesReceived();
+	// long minuteDL = 0;
+	// try {
+	// minuteDL = (sessionDL - lastSessionDL) / ((System.currentTimeMillis() - lastSessionDLTime) /
+	// 1000);
+	// } catch (Exception e) {
+	// e.printStackTrace();
+	// }
+	// lastSessionDL = sessionDL;
+	// lastSessionDLTime = System.currentTimeMillis();
+	// return (double) minuteDL;
+	// }
+	// });
+	//
+	// s.addMetric(new StatReporter("OnlineFriends", "Friends") {
+	// public double getValue() {
+	// return coreInterface.getF2FInterface().getFriends(false, false).length;
+	// }
+	// });
+	//
+	// logger.info("Started Ganglia reporter.");
+	// }
 
 	public void startHeartbeats() {
 		// double-check that we're only doing this if in experiment mode
