@@ -27,6 +27,15 @@ public class GWTRecompileCheck extends Task {
 			doBuild(null);
 			return;
 		}
+
+		// If the OSMessages.java file is missing, we definitely need to recompile.
+		File osMessages = new File(
+				"oneswarm_gwt_ui/src/edu/washington/cs/oneswarm/ui/gwt/client/i18n/OSMessages.java");
+		if (osMessages.exists() == false) {
+			log("OSMessages.java not found at: " + osMessages.getAbsolutePath() + " ... rebuilding");
+			doBuild(null);
+			return;
+		}
 	
 		File dirFile = new File(directory);
 		if (dirFile.isDirectory() == false) {

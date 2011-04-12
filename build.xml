@@ -120,6 +120,9 @@
 		<taskdef name="GWTRecompileCheck" classname="edu.washington.cs.oneswarm.ant.GWTRecompileCheck" classpath="${root.dir}/ant-custom-bin" />
 		
 		<taskdef name="DiscoverTestClasses" classname="edu.washington.cs.oneswarm.ant.DiscoverTestClasses" classpath="${root.dir}/ant-custom-bin" />
+		
+		<!-- Sets gwt.recompile, used by the gwt-webui target. -->
+		<GWTRecompileCheck directory="oneswarm_gwt_ui/src/edu/washington/cs/oneswarm/ui/gwt/client" lastBuild="${build.timestamp}" />
    </target>
    
    <target name="compile-core" depends="core-init" >
@@ -307,7 +310,7 @@
 		
 	</path>
 	
-	<target name="f2f-gwt-servlet"  depends="gwt-war-init,core-jar">
+	<target name="f2f-gwt-servlet"  depends="gwt-war-init,core-jar,i18n-OsMessages">
 		
 		<!-- compile the f2f/gwt code -->
 		<javac destdir="${root.dir}/gwt-bin/war/WEB-INF/classes" nowarn="yes" source="1.5" target="1.5" includeAntRuntime="no" debug="true" debuglevel="lines,vars,source" fork="yes" memoryMaximumSize="256m">
@@ -323,9 +326,6 @@
 		
 		<echo>Compiling UI code</echo>
 		
-		<!-- Sets gwt.recompile, used by the gwt-webui target. -->
-		<GWTRecompileCheck directory="oneswarm_gwt_ui/src/edu/washington/cs/oneswarm/ui/gwt/client" lastBuild="${build.timestamp}" />
-				
 	</target>
 	
 	<target name="gwt-webui" description="Java -> Javascript using the GWT compiler." if="gwt.recompile" depends="f2f-gwt-servlet,i18n-OsMessages,gwt-war-init">
