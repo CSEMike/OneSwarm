@@ -14,6 +14,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
+import org.apache.xerces.impl.dv.util.Base64;
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.download.DownloadManager;
 import org.gudy.azureus2.core3.stats.transfer.StatsFactory;
@@ -21,7 +22,6 @@ import org.gudy.azureus2.core3.util.Constants;
 
 import com.aelitis.azureus.core.AzureusCore;
 import com.aelitis.azureus.core.impl.AzureusCoreImpl;
-import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 import edu.washington.cs.oneswarm.f2f.OSF2FMain;
 

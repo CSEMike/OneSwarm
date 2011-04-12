@@ -209,6 +209,7 @@ public class CommunityRecord implements IsSerializable {
 			this.server_name = URL.decodeComponent(toks[7]);
 			this.community_path = URL.decodeComponent(toks[8]);
 			this.chat_default = Boolean.parseBoolean(toks[9]);
+			this.allow_address_resolution = Boolean.parseBoolean(toks[10]);
 
 		} catch (Exception e) {
 			System.err.println(e.toString());
@@ -316,6 +317,12 @@ public class CommunityRecord implements IsSerializable {
 		} else {
 			cht_path = null;
 		}
+
+		if (extras.length > 14) {
+			allow_address_resolution = Boolean.parseBoolean(extras[14]);
+		} else {
+			allow_address_resolution = true;
+		}
 	}
 
 	public CommunityRecord(CommunityServerAddPanel p) {
@@ -338,6 +345,7 @@ public class CommunityRecord implements IsSerializable {
 		}
 		minimum_refresh_interval = p.getMinimumRefreshInterval();
 		accept_filter_list = p.getAcceptFilterList();
+		allow_address_resolution = p.isAllowAddressResolution();
 	}
 
 	public String[] toTokens() {
@@ -350,7 +358,7 @@ public class CommunityRecord implements IsSerializable {
 						+ pruning_threshold + ";" + supports_publish + ";" + server_name + ";"
 						+ community_path + ";" + splash_path + ";" + chat_default + ";"
 						+ nonssl_port + ";" + minimum_refresh_interval + ";" + accept_filter_list
-						+ ";" + cht_path };
+						+ ";" + cht_path + ";" + allow_address_resolution };
 	}
 
 	@Override

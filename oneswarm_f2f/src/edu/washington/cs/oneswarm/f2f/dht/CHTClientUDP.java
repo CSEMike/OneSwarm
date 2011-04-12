@@ -10,7 +10,7 @@ import java.util.Queue;
 
 public class CHTClientUDP implements CHTClientInterface {
 
-	private static final int RECEIVE_TIME_OUT = 5000;
+	private static final int RECEIVE_TIME_OUT = 4000;
 	private final static int MAX_QUEUE_LENGTH = 200;
 	private final int serverPort;
 	private final String server;
@@ -144,11 +144,5 @@ public class CHTClientUDP implements CHTClientInterface {
 			} catch (InterruptedException e) {
 			}
 		}
-	}
-
-	public static interface CHTCallback {
-		public void valueReceived(byte[] key, byte[] value);
-
-		public void errorReceived(Throwable cause);
 	}
 }

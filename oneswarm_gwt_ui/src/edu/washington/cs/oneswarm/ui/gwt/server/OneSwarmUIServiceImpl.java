@@ -95,6 +95,7 @@ import edu.washington.cs.oneswarm.f2f.FileCollection;
 import edu.washington.cs.oneswarm.f2f.FileListFile;
 import edu.washington.cs.oneswarm.f2f.Friend;
 import edu.washington.cs.oneswarm.f2f.FriendInvitation;
+import edu.washington.cs.oneswarm.f2f.OSF2FMain;
 import edu.washington.cs.oneswarm.f2f.TextSearchResult;
 import edu.washington.cs.oneswarm.f2f.chat.Chat;
 import edu.washington.cs.oneswarm.f2f.chat.ChatDAO;
@@ -140,8 +141,8 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.TorrentList;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.UnknownUserException;
 import edu.washington.cs.oneswarm.ui.gwt.server.BackendTaskManager.CancellationListener;
 import edu.washington.cs.oneswarm.ui.gwt.server.StatelessSwarmFilter.SortMetric;
-import edu.washington.cs.oneswarm.ui.gwt.server.community.KeyPublishOp;
 import edu.washington.cs.oneswarm.ui.gwt.server.community.CommunityServerManager;
+import edu.washington.cs.oneswarm.ui.gwt.server.community.KeyPublishOp;
 import edu.washington.cs.oneswarm.ui.gwt.server.community.PublishSwarmsThread;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.FFMpegAsyncOperationManager;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.FFMpegAsyncOperationManager.DataNotAvailableException;
@@ -210,6 +211,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 			return method + " calls=" + totalCalls + " callTime=" + totalTime + " avg=" + getAvgCallTime() + " median=" + getMedianTime();
 		}
 
+		@Override
 		public int compareTo(RpcProfiling o) {
 			if (o.totalTime < totalTime) {
 				return -1;
@@ -335,6 +337,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 	Thread metaInfoPruner = null;
 	private boolean hostedMode = false;
 
+	@Override
 	public Boolean startBackend() throws OneSwarmException {
 		try {
 
@@ -408,6 +411,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return COConfigurationManager.getBooleanParameter("oneswarm.beta.updates");
 	}
 
+	@Override
 	public String getVersion(String session) {
 		try {
 			if (this.passedSessionIDCheck(session) == false) {
@@ -422,6 +426,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return "Unknown";
 	}
 
+	@Override
 	public boolean recentFriendChanges(String session) {
 		boolean result = false;
 		try {
@@ -438,6 +443,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return result;
 	}
 
+	@Override
 	public void setRecentChanges(String session, boolean value) {
 		if (this.passedSessionIDCheck(session) == false) {
 			try {
@@ -449,6 +455,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		recentchanges = value;
 	}
 
+	@Override
 	public String selectFileOrDirectory(String session, final boolean directory) {
 		try {
 			if (this.passedSessionIDCheck(session) == false) {
@@ -541,6 +548,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return null;
 	}
 
+	@Override
 	public Boolean createSwarmFromLocalFileSystemPath(final String session, final String basePath, final ArrayList<String> paths, final boolean startSeeding, final String announce, final ArrayList<PermissionsGroup> inPermittedGroups) {
 		try {
 			if (!passedSessionIDCheck(session)) {
@@ -557,6 +565,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 			final BackendTaskManager tasks = BackendTaskManager.get();
 
 			Thread creationThread = (new Thread(new Runnable() {
+				@Override
 				public void run() {
 					for (int current_index = 0; current_index < paths.size(); current_index++) {
 						System.out.println("hashing: current index: " + current_index);
@@ -581,6 +590,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 							final TOTorrentCreator currentCreator = TOTorrentFactory.createFromFileOrDirWithComputedPieceLength(file, new URL(announce), true);
 
 							task_id = tasks.createTask("Hashing " + (current_index + 1) + " of " + paths.size(), new BackendTaskManager.CancellationListener() {
+								@Override
 								public void cancelled(int inID) {
 									System.out.println("cancelled hashing: " + inID);
 									currentCreator.cancel();
@@ -590,6 +600,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 
 							final int task_id_shadow = task_id;
 							currentCreator.addListener(new TOTorrentProgressListener() {
+								@Override
 								public void reportCurrentTask(String task_description) {
 									System.out.println("creating: " + task_description);
 									if (task_description.equals("Operation cancelled")) {
@@ -613,6 +624,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 									}
 								}
 
+								@Override
 								public void reportProgress(int percent_complete) {
 									if (tasks.getTask(task_id_shadow) != null) {
 										tasks.getTask(task_id_shadow).setProgress(percent_complete + "%");
@@ -695,18 +707,23 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 							 * reached since this might be a public torrent
 							 */
 							dm.addListener(new org.gudy.azureus2.core3.download.DownloadManagerListener() {
+								@Override
 								public void completionChanged(org.gudy.azureus2.core3.download.DownloadManager manager, boolean completed) {
 								}
 
+								@Override
 								public void downloadComplete(org.gudy.azureus2.core3.download.DownloadManager manager) {
 								}
 
+								@Override
 								public void filePriorityChanged(org.gudy.azureus2.core3.download.DownloadManager download, org.gudy.azureus2.core3.disk.DiskManagerFileInfo file) {
 								}
 
+								@Override
 								public void positionChanged(org.gudy.azureus2.core3.download.DownloadManager download, int oldPosition, int newPosition) {
 								}
 
+								@Override
 								public void stateChanged(org.gudy.azureus2.core3.download.DownloadManager manager, int state) {
 									if (state == org.gudy.azureus2.core3.download.DownloadManager.STATE_SEEDING) {
 										System.out.println("binding audio data for: " + dm.getDisplayName());
@@ -753,6 +770,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return st.toString();
 	}
 
+	@Override
 	public ReportableException reportError(ReportableException inError) {
 		try {
 			Socket relay = new Socket(InetAddress.getByName(OneSwarmConstants.ERROR_REPORTING_SERVER), OneSwarmConstants.ERROR_REPORTING_PORT);
@@ -773,6 +791,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return null;
 	}
 
+	@Override
 	public String ping(String session, String uiVersion) throws Exception {
 		if (!passedSessionIDCheck(session)) {
 			throw new Exception("Page reload required, session id missmatch.");
@@ -784,6 +803,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return currentVersion;
 	}
 
+	@Override
 	public TorrentList getTorrentsInfo(String session, int page) {
 
 		TorrentList torrentList = null;
@@ -827,6 +847,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return torrentList;
 	}
 
+	@Override
 	public TorrentList getTransferringInfo(String session) {
 		TorrentList torrentList = null;
 
@@ -871,6 +892,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return torrentList;
 	}
 
+	@Override
 	public HashMap<String, String> getSidebarStats(String session) {
 		HashMap<String, String> map = null;
 
@@ -943,6 +965,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return map;
 	}
 
+	@Override
 	public HashMap<String, String> getLimits(String session) {
 		try {
 			if (!passedSessionIDCheck(session)) {
@@ -954,6 +977,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return usagestats.getLimits();
 	}
 
+	@Override
 	public HashMap<String, String> getCounts(String session) {
 		try {
 			if (!passedSessionIDCheck(session)) {
@@ -965,6 +989,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return usagestats.getCounts();
 	}
 
+	@Override
 	public HashMap<String, String> getDataStats(String session) {
 		if (firstRun) {
 			usagestats.setCore(coreInterface);
@@ -990,6 +1015,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return dataMap;
 	}
 
+	@Override
 	public String[] checkIfWarning(String session) {
 		if (!passedSessionIDCheck(session)) {
 			try {
@@ -1004,6 +1030,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return null;
 	}
 
+	@Override
 	public void resetLimit(String session, String limittype) {
 		try {
 			if (!passedSessionIDCheck(session)) {
@@ -1016,6 +1043,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		usagestats.resetLimit(limittype);
 	}
 
+	@Override
 	public void setLimits(String session, String day, String week, String month, String year) {
 		try {
 			if (!passedSessionIDCheck(session)) {
@@ -1042,6 +1070,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 	private Comparator<Download> getDownloadComparator() {
 		return new Comparator<Download>() {
 
+			@Override
 			public int compare(Download d1, Download d2) {
 				if (d1.getCreationTime() > d2.getCreationTime()) {
 					return -1;
@@ -1052,6 +1081,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		};
 	}
 
+	@Override
 	public int downloadTorrent(String session, String path) {
 		System.out.println("got torrent download request: '" + path + "'");
 		if (!passedSessionIDCheck(session)) {
@@ -1062,6 +1092,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return addTorrentManager.downloadTorrent(path);
 	}
 
+	@Override
 	public void addDownloadFromLocalTorrentDefaultSaveLocation(String session, String inPathToTorrent, ArrayList<PermissionsGroup> inPermissions) throws OneSwarmException {
 		try {
 			if (!passedSessionIDCheck(session)) {
@@ -1175,6 +1206,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public int downloadTorrent(String session, int friendConnection, int channelId, String torrentId, int lengthHint) {
 		if (!passedSessionIDCheck(session)) {
 			return -1;
@@ -1183,6 +1215,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return addTorrentManager.downloadTorrent(friendConnection, channelId, torrentId, lengthHint);
 	}
 
+	@Override
 	public boolean startTorrent(String session, String[] torrentIDs) {
 		if (!passedSessionIDCheck(session)) {
 			return false;
@@ -1201,6 +1234,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return false;
 	}
 
+	@Override
 	public boolean stopTorrent(String session, String[] torrentIDs) {
 		if (!passedSessionIDCheck(session)) {
 			return false;
@@ -1218,6 +1252,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return false;
 	}
 
+	@Override
 	public Boolean addTorrent(String session, int torrentDownloadID, FileListLite[] selectedFiles, ArrayList<PermissionsGroup> inPerms, String path, boolean noStream) {
 		if (!passedSessionIDCheck(session)) {
 			return false;
@@ -1225,6 +1260,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return addTorrentManager.addTorrent(torrentDownloadID, selectedFiles, inPerms, path, noStream);
 	}
 
+	@Override
 	public FileListLite[] getTorrentFiles(String session, int torrentDownloadID) {
 		if (!passedSessionIDCheck(session)) {
 			throw new RuntimeException("Session unknown, this should never happen!");
@@ -1232,6 +1268,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return addTorrentManager.getFiles(torrentDownloadID);
 	}
 
+	@Override
 	public String getTorrentName(String session, int torrentDownloadID) {
 		if (!passedSessionIDCheck(session)) {
 			throw new RuntimeException("Session unknown, this should never happen!");
@@ -1239,6 +1276,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return addTorrentManager.getTorrentName(torrentDownloadID);
 	}
 
+	@Override
 	public Integer getTorrentDownloadProgress(String session, int torrentDownloadID) {
 		if (!passedSessionIDCheck(session)) {
 			return -1;
@@ -1246,6 +1284,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return addTorrentManager.getPercentageDone(torrentDownloadID);
 	}
 
+	@Override
 	public Boolean torrentExists(String session, String torrentID) {
 		if (!passedSessionIDCheck(session)) {
 			return false;
@@ -1254,6 +1293,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return download != null;
 	}
 
+	@Override
 	public ReportableException deleteCompletely(String session, String[] torrentID) {
 		if (!passedSessionIDCheck(session)) {
 			return new ReportableException("Bad session cookie");
@@ -1275,6 +1315,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return null;
 	}
 
+	@Override
 	public boolean deleteData(String session, String[] torrentID) {
 		if (!passedSessionIDCheck(session)) {
 			return false;
@@ -1291,6 +1332,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return true;
 	}
 
+	@Override
 	public ReportableException deleteFromShareKeepData(String session, String[] torrentID) {
 		try {
 			if (!passedSessionIDCheck(session)) {
@@ -1306,6 +1348,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public FriendList getFriends(String session, int prevListId, boolean includeDisconnected, boolean includeBlocked) {
 		if (!passedSessionIDCheck(session)) {
 			return new FriendList(new FriendInfoLite[0]);
@@ -1324,6 +1367,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return list;
 	}
 
+	@Override
 	public void addFriend(String session, FriendInfoLite friendInfoLite, boolean testOnly) throws OneSwarmException {
 		if (!passedSessionIDCheck(session)) {
 			throw new RuntimeException("Session unknown, this should never happen!");
@@ -1376,6 +1420,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public FriendInfoLite[] scanXMLForFriends(String session, String xml) throws OneSwarmException {
 		try {
 			if (!this.passedSessionIDCheck(session)) {
@@ -1401,6 +1446,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public void applySwarmPermissionChanges(String session, ArrayList<TorrentInfo> inSwarms) {
 		try {
 			if (passedSessionIDCheck(session) == false) {
@@ -1418,6 +1464,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public String getMyPublicKey(String session) {
 		if (!passedSessionIDCheck(session)) {
 			throw new RuntimeException("Session unknown, this should never happen!");
@@ -1425,6 +1472,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return coreInterface.getF2FInterface().getMyPublicKey();
 	}
 
+	@Override
 	public FileListLite[] getFileList(String session, int connectionId, String filter, int startNum, int num, long maxCacheAge) {
 		if (!passedSessionIDCheck(session)) {
 			throw new RuntimeException("Session unknown, this should never happen!");
@@ -1432,6 +1480,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return coreInterface.getF2FInterface().getFileList(connectionId, filter, startNum, num, maxCacheAge).toArray(new FileListLite[0]);
 	}
 
+	@Override
 	public Integer sendSearch(String session, String searchString) {
 		if (!passedSessionIDCheck(session)) {
 			throw new RuntimeException("Session unknown, this should never happen!");
@@ -1490,6 +1539,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public ReportableException revealSwarmInFinder(String session, TorrentInfo[] inSwarms) {
 		try {
 			if (!passedSessionIDCheck(session)) {
@@ -1523,6 +1573,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return null;
 	}
 
+	@Override
 	public ReportableException openFileDefaultApp(String session, TorrentInfo[] inSwarms) {
 		try {
 			if (!passedSessionIDCheck(session)) {
@@ -1559,6 +1610,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return null;
 	}
 
+	@Override
 	public TextSearchResultLite[] getSearchResult(String session, int searchId) {
 		if (!passedSessionIDCheck(session)) {
 			throw new RuntimeException("Session unknown, this should never happen!");
@@ -1608,6 +1660,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 			}
 		}
 		Collections.sort(r, new Comparator<TextSearchResultLite>() {
+			@Override
 			public int compare(TextSearchResultLite o1, TextSearchResultLite o2) {
 				int o1delay = 6000;
 				if (o1.getFriendDelay().length > 0) {
@@ -1636,6 +1689,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return res;
 	}
 
+	@Override
 	public FileTree getFiles(String session, String path) {
 
 		// return FileTreeFactory.createFileTree(new File(path));
@@ -1654,6 +1708,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 
 		UpdatingFileTree root = new UpdatingFileTree(f, new UpdatingFileTreeListener() {
+			@Override
 			public void broadcastChange(UpdatingFileTree path, boolean isDelete) {
 			}
 		});
@@ -1700,6 +1755,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return curr;
 	}
 
+	@Override
 	public ArrayList<HashMap<String, String>> getFriendTransferStats(String session) {
 		if (!passedSessionIDCheck(session)) {
 			System.err.println("failed session check");
@@ -1714,6 +1770,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return out;
 	}
 
+	@Override
 	public void setFriendsSettings(String session, FriendInfoLite[] updates) {
 		if (!passedSessionIDCheck(session)) {
 			System.err.println("failed session check");
@@ -1735,6 +1792,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public FriendList getPendingCommunityFriendImports(String session) throws OneSwarmException {
 		if (!passedSessionIDCheck(session)) {
 			System.err.println("failed session check on getPendingCommunityFriendImports()");
@@ -1744,6 +1802,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return CommunityServerManager.get().munch();
 	}
 
+	@Override
 	public FriendInfoLite[] getNewUsersFromXMPP(String session, String xmppNetworkName, String username, char[] password, String machineName) throws OneSwarmException {
 
 		if (!passedSessionIDCheck(session)) {
@@ -1766,6 +1825,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 
 	}
 
+	@Override
 	public int pollCommunityServer(String session, CommunityRecord record) throws OneSwarmException {
 		try {
 			if (!passedSessionIDCheck(session)) {
@@ -1792,6 +1852,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public HashMap<String, Integer> getTorrentsState(String session) {
 
 		try {
@@ -1813,6 +1874,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return null;
 	}
 
+	@Override
 	public String getComputerName(String session) {
 		if (!passedSessionIDCheck(session)) {
 			System.err.println("failed session check");
@@ -1838,6 +1900,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return "";
 	}
 
+	@Override
 	public void setComputerName(String session, String computerName) {
 		try {
 			if (!passedSessionIDCheck(session)) {
@@ -1852,6 +1915,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public TorrentInfo[] pagedTorrentStateRefresh(String session, ArrayList<String> whichOnes) {
 		try {
 			if (!passedSessionIDCheck(session)) {
@@ -1878,6 +1942,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return null;
 	}
 
+	@Override
 	public Integer getIntegerParameterValue(String session, String inParamName) {
 		if (!this.passedSessionIDCheck(session)) {
 			System.err.println("bad session: " + session);
@@ -1887,6 +1952,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public void setIntegerParameterValue(String session, String inParamName, Integer inValue) {
 		if (!this.passedSessionIDCheck(session)) {
 			System.err.println("bad session: " + session);
@@ -1896,6 +1962,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public boolean getStopped(String session) {
 		if (!passedSessionIDCheck(session)) {
 			try {
@@ -1910,6 +1977,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return false;
 	}
 
+	@Override
 	public Boolean getBooleanParameterValue(String session, String inParamName) {
 		if (!this.passedSessionIDCheck(session)) {
 			System.err.println("bad session: " + session);
@@ -1919,6 +1987,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public void setBooleanParameterValue(String session, String inParamName, Boolean inValue) {
 		if (!this.passedSessionIDCheck(session)) {
 			System.err.println("bad session: " + session);
@@ -1928,6 +1997,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public String getStringParameterValue(String session, String inParamName) {
 		if (!this.passedSessionIDCheck(session)) {
 			System.err.println("bad session: " + session);
@@ -1937,6 +2007,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public void setStringParameterValue(String session, String inParamName, String inValue) {
 		if (!this.passedSessionIDCheck(session)) {
 			System.err.println("bad session: " + session);
@@ -1946,6 +2017,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public ArrayList<String> getStringListParameterValue(String session, String inParamName) {
 		StringList toPut = COConfigurationManager.getStringListParameter(inParamName);
 		ArrayList<String> converted = new ArrayList<String>();
@@ -1955,6 +2027,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return converted;
 	}
 
+	@Override
 	public void setStringListParameterValue(String session, String inParamName, ArrayList<String> toPut) {
 		if (!passedSessionIDCheck(session)) {
 			System.err.println("bad session");
@@ -1965,6 +2038,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		ConfigurationManager.getInstance().setDirty();
 	}
 
+	@Override
 	public int getDownloadManagersCount(String session) {
 		try {
 			if (!this.passedSessionIDCheck(session)) {
@@ -1993,6 +2067,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return 0;
 	}
 
+	@Override
 	public PagedTorrentInfo getPagedAndFilteredSwarms(int inPage, int swarmsPerPage, String filter, int sort, String type, boolean includeF2F, int selectedFriendID, String inTagPath) {
 
 		FileTypeFilter typedType = FileTypeFilter.getFromName(type);
@@ -2173,6 +2248,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 	// return outInfo;
 	// }
 
+	@Override
 	public FileListLite[] getFilesForDownloadingTorrentHash(String session, String inOneSwarmHash) {
 		try {
 			if (!this.passedSessionIDCheck(session)) {
@@ -2209,6 +2285,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return null;
 	}
 
+	@Override
 	public ReportableException updateSkippedFiles(String session, FileListLite[] lites) {
 		System.out.println("updateSkippedFiles()");
 
@@ -2258,6 +2335,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return null;
 	}
 
+	@Override
 	public ArrayList<PermissionsGroup> getAllGroups(String session) {
 		if (!this.passedSessionIDCheck(session)) {
 			System.err.println("bad session: " + session);
@@ -2284,6 +2362,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return out;
 	}
 
+	@Override
 	public FriendInfoLite[] getLanOneSwarmUsers(String session) {
 		if (!this.passedSessionIDCheck(session)) {
 			System.err.println("bad session: " + session);
@@ -2293,6 +2372,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return coreInterface.getF2FInterface().getLanOneSwarmUsers();
 	}
 
+	@Override
 	public ArrayList<FriendInfoLite> getFriendsForGroup(String session, PermissionsGroup inGroup) {
 		if (!this.passedSessionIDCheck(session)) {
 			System.err.println("bad session: " + session);
@@ -2319,6 +2399,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return out;
 	}
 
+	@Override
 	public PermissionsGroup updateGroupMembership(String session, PermissionsGroup inGroup, ArrayList<FriendInfoLite> inMembers) throws OneSwarmException {
 		try {
 			if (!this.passedSessionIDCheck(session)) {
@@ -2345,6 +2426,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return inGroup;
 	}
 
+	@Override
 	public ReportableException removeGroup(String session, Long inGroupID) {
 		try {
 			if (!this.passedSessionIDCheck(session)) {
@@ -2359,6 +2441,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public ArrayList<PermissionsGroup> getGroupsForSwarm(String session, TorrentInfo inSwarm) {
 		if (!this.passedSessionIDCheck(session)) {
 			System.err.println("bad session: " + session);
@@ -2378,6 +2461,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return out;
 	}
 
+	@Override
 	public ReportableException setGroupsForSwarm(String session, TorrentInfo inSwarm, ArrayList<PermissionsGroup> inGroups) {
 		try {
 			if (!this.passedSessionIDCheck(session)) {
@@ -2398,12 +2482,14 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public void connectToFriends(String session, FriendInfoLite[] friendLites) {
 		for (FriendInfoLite friendLite : friendLites) {
 			coreInterface.getF2FInterface().connectToFriend(friendLite.getPublicKey());
 		}
 	}
 
+	@Override
 	public FriendInfoLite getUpdatedFriendInfo(String session, FriendInfoLite friendLite) {
 		Friend f = coreInterface.getF2FInterface().getFriend(friendLite.getPublicKey());
 		if (f == null) {
@@ -2422,6 +2508,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return newInfo;
 	}
 
+	@Override
 	public BackendTask[] getBackendTasks(String session) {
 		if (this.passedSessionIDCheck(session) == false) {
 			System.err.println("didn't pass session id check getbackendtasks: " + session);
@@ -2430,6 +2517,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return BackendTaskManager.get().getTasks();
 	}
 
+	@Override
 	public BackendTask getBackendTask(String session, int inID) {
 		if (this.passedSessionIDCheck(session) == false) {
 			System.err.println("didn't pass session id check getbackendtasks: " + session);
@@ -2438,6 +2526,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return BackendTaskManager.get().getTask(inID);
 	}
 
+	@Override
 	public void cancelBackendTask(String session, int inID) {
 		if (this.passedSessionIDCheck(session) == false) {
 			System.err.println("didn't pass session id check getbackendtasks: " + session);
@@ -2449,6 +2538,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 
 	StringBuffer async_debug = new StringBuffer();
 
+	@Override
 	public String debug(String session, String which) {
 		if (this.passedSessionIDCheck(session) == false) {
 			System.err.println("bad session: " + session);
@@ -2456,24 +2546,28 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 
 		final DHTPluginOperationListener dht_op_listener = new DHTPluginOperationListener() {
+			@Override
 			public void complete(byte[] key, boolean timeout_occurred) {
 				synchronized (async_debug) {
 					async_debug.append((new Date()) + ": " + Base64.encode(key) + " completed, timeout: " + Boolean.toString(timeout_occurred) + "\n");
 				}
 			}
 
+			@Override
 			public void diversified() {
 				synchronized (async_debug) {
 					async_debug.append((new Date()) + ": diversified\n");
 				}
 			}
 
+			@Override
 			public void valueRead(DHTPluginContact originator, DHTPluginValue value) {
 				synchronized (async_debug) {
 					async_debug.append((new Date()) + ": valueRead: " + Base64.encode(value.getValue()) + " / str: " + (new String(value.getValue())) + " from: " + originator.getAddress().getAddress().getHostAddress() + "\n");
 				}
 			}
 
+			@Override
 			public void valueWritten(DHTPluginContact target, DHTPluginValue value) {
 				synchronized (async_debug) {
 					async_debug.append((new Date()) + ": valueWritten at: " + target.getAddress().getAddress().getHostAddress() + "\n");
@@ -2494,6 +2588,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 				} else {
 					File out = dm.getSaveLocation();
 					UpdatingFileTree tree = new UpdatingFileTree(out, new UpdatingFileTreeListener() {
+						@Override
 						public void broadcastChange(UpdatingFileTree path, boolean isDelete) {
 						}
 					});
@@ -2762,6 +2857,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 			return b.toString();
 		} else if (which.equals("backendtask")) {
 			final int taskID = BackendTaskManager.get().createTask("test", new CancellationListener() {
+				@Override
 				public void cancelled(int inID) {
 				}
 			});
@@ -2799,6 +2895,9 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 			}
 
 			return "reloaded";
+		} else if (which.equals("republish_location")) {
+			final OSF2FMain f2fMain = OSF2FMain.getSingelton();
+			return f2fMain.getDHTConnector().forceRepublish() + "";
 		}
 
 		return "don't know what to do with '" + which + "'";
@@ -2836,6 +2935,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public String getRemoteAccessUserName(String session) {
 		if (!passedSessionIDCheck(session)) {
 			throw new RuntimeException("bad session cookie");
@@ -2844,6 +2944,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return RemoteAccessConfig.getRemoteAccessUserName();
 	}
 
+	@Override
 	public String saveRemoteAccessCredentials(String session, String username, String password) {
 
 		if (!passedSessionIDCheck(session)) {
@@ -2881,6 +2982,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 	 * @param session
 	 * @return addresses
 	 */
+	@Override
 	public String[] getListenAddresses(String session) {
 		if (this.passedSessionIDCheck(session) == false) {
 			System.err.println("bad session: " + session);
@@ -2901,6 +3003,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return new String[] { "", "" };
 	}
 
+	@Override
 	public HashMap<String, Integer> getNewFriendsCountsFromAutoCheck(String session) {
 		if (this.passedSessionIDCheck(session) == false) {
 			System.err.println("bad session: " + session);
@@ -2916,6 +3019,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return out;
 	}
 
+	@Override
 	public HashMap<String, String> getDeniedIncomingConnections(String session) {
 		if (this.passedSessionIDCheck(session) == false) {
 			System.err.println("bad session: " + session);
@@ -2924,6 +3028,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return coreInterface.getF2FInterface().getDeniedIncomingConnections();
 	}
 
+	@Override
 	public String getPlatform(String session) {
 		if (this.passedSessionIDCheck(session) == false) {
 			System.err.println("failed session (getPlatform): " + session);
@@ -2954,6 +3059,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 	// coreInterface.getF2FInterface().deleteFriend(friend);
 	// }
 
+	@Override
 	public void deleteFriends(String session, FriendInfoLite[] friends) {
 		try {
 			if (this.passedSessionIDCheck(session) == false) {
@@ -2968,6 +3074,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public void addToIgnoreRequestList(String session, FriendInfoLite friend) {
 		if (this.passedSessionIDCheck(session) == false) {
 			throw new RuntimeException("Bad cookie");
@@ -2975,6 +3082,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		coreInterface.getF2FInterface().addToIgnoreRequestList(friend);
 	}
 
+	@Override
 	public String getGtalkStatus(String session) {
 		if (this.passedSessionIDCheck(session) == false) {
 			throw new RuntimeException("Bad cookie");
@@ -2982,6 +3090,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return coreInterface.getF2FInterface().getGtalkStatus();
 	}
 
+	@Override
 	public FileTree getAllTags(String session) {
 		try {
 			return StatelessSwarmFilter.getTagsFromSwarms(AzureusCoreImpl.getSingleton().getGlobalManager().getDownloadManagers());
@@ -2991,6 +3100,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return null;
 	}
 
+	@Override
 	public FileTree getTags(String session, String inOneSwarmHash) throws OneSwarmException {
 		if (this.passedSessionIDCheck(session) == false) {
 			throw new OneSwarmException("bad cookie");
@@ -3012,6 +3122,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		// }
 	}
 
+	@Override
 	public void setTags(String session, String inOneSwarmHash, String[] path) {
 		try {
 			if (!this.passedSessionIDCheck(session)) {
@@ -3035,6 +3146,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public FriendInfoLite getSelf(String session) {
 		if (this.passedSessionIDCheck(session) == false) {
 			throw new RuntimeException("Bad cookie");
@@ -3063,6 +3175,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return f;
 	}
 
+	@Override
 	public HashMap<String, String[]> getUsersWithMessages(String session) {
 		try {
 			if (!this.passedSessionIDCheck(session)) {
@@ -3093,6 +3206,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return null;
 	}
 
+	@Override
 	public HashMap<String, Integer> getUnreadMessageCounts(String session) {
 		try {
 			if (!this.passedSessionIDCheck(session)) {
@@ -3105,6 +3219,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return null;
 	}
 
+	@Override
 	public SerialChatMessage[] getMessagesForUser(String session, String base64PublicKey, boolean include_read, int limit) {
 		try {
 			if (!this.passedSessionIDCheck(session)) {
@@ -3136,6 +3251,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return null;
 	}
 
+	@Override
 	public boolean sendChatMessage(String session, String base64PublicKey, SerialChatMessage message) throws OneSwarmException {
 		try {
 			if (!this.passedSessionIDCheck(session)) {
@@ -3168,6 +3284,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public int clearChatLog(String session, String base64PublicKey) {
 		try {
 			if (!this.passedSessionIDCheck(session)) {
@@ -3182,6 +3299,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return 0;
 	}
 
+	@Override
 	public void updateRemoteAccessIpFilter(String session, String selectedFilterType, String filterString) throws OneSwarmException {
 		if (!this.passedSessionIDCheck(session)) {
 			throw new OneSwarmException("bad cookie");
@@ -3201,6 +3319,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public String getDebugMessageLog(String session, String friendPublicKey) {
 		if (!this.passedSessionIDCheck(session)) {
 			throw new RuntimeException("bad cookie");
@@ -3209,6 +3328,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return coreInterface.getF2FInterface().getDebugMessageLog(friendPublicKey);
 	}
 
+	@Override
 	public ArrayList<BackendErrorReport> getBackendErrors(String session) {
 		if (!this.passedSessionIDCheck(session)) {
 			System.err.println("bad session: getBackenedErrors");
@@ -3222,6 +3342,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return serialized;
 	}
 
+	@Override
 	public String[] getBase64HashesForOneSwarmHashes(String session, String[] inOneSwarmHashes) {
 		if (!this.passedSessionIDCheck(session)) {
 			System.err.println("bad session: getBase64HashesForOneSwarmHashes / " + session);
@@ -3239,6 +3360,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public String[] getBase64HashesForBase32s(String session, String[] inBase32s) throws OneSwarmException {
 		try {
 			if (!this.passedSessionIDCheck(session)) {
@@ -3265,6 +3387,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public FriendInvitationLite createInvitation(String session, String name, boolean canSeeFileList, long maxAge, SecurityLevel securityLevel) {
 		if (this.passedSessionIDCheck(session) == false) {
 			throw new RuntimeException("Bad cookie");
@@ -3272,6 +3395,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return FriendInvitationLiteFactory.createFriendInvitationLite(coreInterface.getF2FInterface().createInvitation(name, canSeeFileList, maxAge, securityLevel.getLevel()));
 	}
 
+	@Override
 	public void redeemInvitation(String session, FriendInvitationLite invitation, boolean testOnly) throws OneSwarmException {
 		if (this.passedSessionIDCheck(session) == false) {
 			throw new RuntimeException("Bad cookie");
@@ -3288,6 +3412,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public ArrayList<FriendInvitationLite> getSentFriendInvitations(String session) {
 		if (this.passedSessionIDCheck(session) == false) {
 			throw new RuntimeException("Bad cookie");
@@ -3301,6 +3426,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return il;
 	}
 
+	@Override
 	public ArrayList<FriendInvitationLite> getRedeemedFriendInvitations(String session) {
 		if (this.passedSessionIDCheck(session) == false) {
 			throw new RuntimeException("Bad cookie");
@@ -3314,6 +3440,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return il;
 	}
 
+	@Override
 	public void updateFriendInvitations(String session, FriendInvitationLite invitation) {
 		if (this.passedSessionIDCheck(session) == false) {
 			throw new RuntimeException("Bad cookie");
@@ -3325,6 +3452,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public void deleteFriendInvitations(String session, ArrayList<FriendInvitationLite> invitations) {
 		if (this.passedSessionIDCheck(session) == false) {
 			throw new RuntimeException("Bad cookie");
@@ -3338,6 +3466,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public String copyTorrentInfoToMagnetLink(String session, String[] torrentIDs) throws OneSwarmException {
 		try {
 			if (this.passedSessionIDCheck(session) == false) {
@@ -3368,6 +3497,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public void refreshFileAssociations(String session) throws OneSwarmException {
 		if (!this.passedSessionIDCheck(session)) {
 			System.err.println("bad cookie: refreshFileAssociations()");
@@ -3384,6 +3514,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public LocaleLite[] getLocales(String session) {
 		if (!this.passedSessionIDCheck(session)) {
 			throw new RuntimeException("bad cookie: getLocales()");
@@ -3404,6 +3535,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public HashMap<String, String> getFileInfo(String session, FileListLite file, boolean getFFmpegData) throws OneSwarmException {
 		HashMap<String, String> v = new HashMap<String, String>();
 		byte[] hash = Base64.decode(file.getCollectionId());
@@ -3471,6 +3603,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return v;
 	}
 
+	@Override
 	public void applyDefaultSettings(String session) {
 		if (!this.passedSessionIDCheck(session)) {
 			System.err.println("Bad session: " + session);
@@ -3502,6 +3635,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		performSpeedCheck(session, 0.85);
 	}
 
+	@Override
 	public int getNumberFriendsCount(String session) {
 		if (this.passedSessionIDCheck(session) == false) {
 			System.err.println("Bad session: " + session);
@@ -3511,6 +3645,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return coreInterface.getF2FInterface().getFriends().length;
 	}
 
+	@Override
 	public int getNumberOnlineFriends(String session) {
 		if (this.passedSessionIDCheck(session) == false) {
 			System.err.println("Bad session: " + session);
@@ -3520,6 +3655,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return coreInterface.getF2FInterface().getFriends(false, false).length;
 	}
 
+	@Override
 	public BackendTask performSpeedCheck(final String session, final double setWithFraction) {
 		if (!passedSessionIDCheck(session)) {
 			throw new RuntimeException("invalid cookie");
@@ -3527,12 +3663,14 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 
 		final int speedCheckId = coreInterface.getF2FInterface().performSpeedCheck();
 		final int taskId = BackendTaskManager.get().createTask("Speed check", new CancellationListener() {
+			@Override
 			public void cancelled(int inID) {
 				coreInterface.getF2FInterface().cancelSpeedCheck(speedCheckId);
 			}
 		});
 
 		Thread t = new Thread(new Runnable() {
+			@Override
 			public void run() {
 				try {
 					boolean quit = false;
@@ -3577,6 +3715,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return BackendTaskManager.get().getTask(taskId);
 	}
 
+	@Override
 	public BackendTask publishSwarms(String session, TorrentInfo[] infos, String[] previewPaths, String[] comments, String[] categories, CommunityRecord toServer) {
 		if (!passedSessionIDCheck(session)) {
 			throw new RuntimeException("invalid cookie");
@@ -3585,6 +3724,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		final PublishSwarmsThread pubThread = new PublishSwarmsThread(coreInterface, infos, previewPaths, comments, categories, toServer);
 
 		final int taskId = BackendTaskManager.get().createTask("Publishing " + infos.length + " swarms", new CancellationListener() {
+			@Override
 			public void cancelled(int inID) {
 				pubThread.cancel();
 			}
@@ -3598,6 +3738,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return task;
 	}
 
+	@Override
 	public ArrayList<String> getCategoriesForCommunityServer(String sessionID, CommunityRecord selected) {
 		if (!passedSessionIDCheck(sessionID)) {
 			System.err.println("invalid cookie");
@@ -3617,6 +3758,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public void triggerNatCheck(String sessionID) {
 		if (!passedSessionIDCheck(sessionID)) {
 			System.err.println("invalid cookie");
@@ -3625,6 +3767,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		coreInterface.getF2FInterface().triggerNATCheck();
 	}
 
+	@Override
 	public HashMap<String, String> getNatCheckResult(String sessionID) {
 		if (!passedSessionIDCheck(sessionID)) {
 			System.err.println("invalid cookie");
@@ -3633,6 +3776,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return coreInterface.getF2FInterface().getNatCheckResult();
 	}
 
+	@Override
 	public void fixPermissions(String session, TorrentInfo torrent, boolean fixAll) throws OneSwarmException {
 		if (!passedSessionIDCheck(session)) {
 			System.err.println("invalid cookie");
@@ -3649,6 +3793,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		}
 	}
 
+	@Override
 	public Boolean isStreamingDownload(String session, String torrentID) {
 		if (!passedSessionIDCheck(session)) {
 			throw new RuntimeException("invalid cookie");
@@ -3669,6 +3814,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		return false;
 	}
 
+	@Override
 	public void setStreamingDownload(String session, String torrentID, boolean streaming) {
 		if (!passedSessionIDCheck(session)) {
 			throw new RuntimeException("invalid cookie");
@@ -3685,6 +3831,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 		real_dl.getDownloadState().setBooleanAttribute(FileCollection.ONESWARM_STREAM_ATTRIBUTE, streaming);
 	}
 
+	@Override
 	public String getMultiTorrentSourceTemp(String session) {
 		try {
 			return Sha1DownloadManager.getMultiTorrentDownloadDir().getCanonicalPath();

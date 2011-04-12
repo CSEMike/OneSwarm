@@ -44,6 +44,7 @@ public class ChatTest extends TwoProcessTestBase {
 
 		// Verify local display of the chat message.
 		new ConditionWaiter(new ConditionWaiter.Predicate() {
+			@Override
 			public boolean satisfied() {
 				return selenium.isTextPresent(chatMessage);
 			}
@@ -56,6 +57,7 @@ public class ChatTest extends TwoProcessTestBase {
 		// Verify notification presence -- this could take up to 10 seconds since
 		// we have a 10 seconds poll (See {@code FriendListPanel.java}).
 		new ConditionWaiter(new ConditionWaiter.Predicate() {
+			@Override
 			public boolean satisfied() {
 				return selenium.isElementPresent("link=1 unread message");
 			}
@@ -66,6 +68,7 @@ public class ChatTest extends TwoProcessTestBase {
 
 		// Verify message in chat box
 		new ConditionWaiter(new ConditionWaiter.Predicate() {
+			@Override
 			public boolean satisfied() {
 				return selenium.isTextPresent("ChatMessage JVM to Local");
 			}

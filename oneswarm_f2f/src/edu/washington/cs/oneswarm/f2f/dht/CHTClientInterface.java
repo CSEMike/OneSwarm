@@ -2,7 +2,6 @@ package edu.washington.cs.oneswarm.f2f.dht;
 
 import java.io.IOException;
 
-import edu.washington.cs.oneswarm.f2f.dht.CHTClientUDP.CHTCallback;
 
 public interface CHTClientInterface {
 

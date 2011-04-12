@@ -7,32 +7,32 @@ import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.util.logging.Logger;
 
+import org.apache.xerces.impl.dv.util.Base64;
 import org.gudy.azureus2.core3.logging.LogEvent;
 import org.gudy.azureus2.core3.util.Debug;
 import org.gudy.azureus2.core3.util.HashWrapper;
 
 import com.aelitis.azureus.core.networkmanager.ConnectionEndpoint;
-import com.aelitis.azureus.core.networkmanager.NetworkConnection;
-import com.aelitis.azureus.core.networkmanager.NetworkManager;
 import com.aelitis.azureus.core.networkmanager.IncomingMessageQueue.MessageQueueListener;
+import com.aelitis.azureus.core.networkmanager.NetworkConnection;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
+import com.aelitis.azureus.core.networkmanager.NetworkManager;
 import com.aelitis.azureus.core.networkmanager.impl.osssl.OneSwarmSslTransportHelperFilterStream;
 import com.aelitis.azureus.core.networkmanager.impl.tcp.ProtocolEndpointTCP;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
-import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 import edu.washington.cs.oneswarm.f2f.FriendInvitation;
-import edu.washington.cs.oneswarm.f2f.Log;
 import edu.washington.cs.oneswarm.f2f.FriendInvitation.Status;
+import edu.washington.cs.oneswarm.f2f.Log;
 import edu.washington.cs.oneswarm.f2f.invitations.InvitationManager.AuthCallback;
 import edu.washington.cs.oneswarm.f2f.messaging.invitation.OSF2FAuthHandshake;
 import edu.washington.cs.oneswarm.f2f.messaging.invitation.OSF2FAuthMessage;
 import edu.washington.cs.oneswarm.f2f.messaging.invitation.OSF2FAuthMessageDecoder;
 import edu.washington.cs.oneswarm.f2f.messaging.invitation.OSF2FAuthMessageEncoder;
 import edu.washington.cs.oneswarm.f2f.messaging.invitation.OSF2FAuthRequest;
+import edu.washington.cs.oneswarm.f2f.messaging.invitation.OSF2FAuthRequest.AuthType;
 import edu.washington.cs.oneswarm.f2f.messaging.invitation.OSF2FAuthResponse;
 import edu.washington.cs.oneswarm.f2f.messaging.invitation.OSF2FAuthStatus;
-import edu.washington.cs.oneswarm.f2f.messaging.invitation.OSF2FAuthRequest.AuthType;
 
 public class InvitationConnection {
 	/**
@@ -146,7 +146,7 @@ public class InvitationConnection {
 	// the invitation corresponding to this
 	private FriendInvitation invitation;
 
-	private boolean remoteSideAuthenticated = false;
+	private final boolean remoteSideAuthenticated = false;
 
 	private enum ConnectionType {
 		UNKNOWN, INVITING_INCOMING, INVITING_OUTGOING, REDEEMING_INCOMING, REDEEMING_OUTGOING;
@@ -194,14 +194,17 @@ public class InvitationConnection {
 		// this.hash = getHashOf(remoteFriend.getPublicKey(),
 		// this.getRemoteIp(), this.getRemotePort());
 		this.connection.connect(null, false, new ConnectionListener() {
+			@Override
 			public void connectFailure(Throwable failure_msg) {
 				logger.fine(connection + " : connect error: " + failure_msg.getMessage());
 				close();
 			}
 
+			@Override
 			public void connectStarted() {
 			}
 
+			@Override
 			public void connectSuccess(ByteBuffer remaining_initial_data) {
 
 				remoteKey = sharedSecret[1];
@@ -234,10 +237,12 @@ public class InvitationConnection {
 				logger.fine("made connection to: " + Base64.encode(remoteKey));
 			}
 
+			@Override
 			public void exceptionThrown(Throwable error) {
 				connectionException(error);
 			}
 
+			@Override
 			public String getDescription() {
 				return "connection listener: OSF2F session, outgoing";
 			}
@@ -292,15 +297,18 @@ public class InvitationConnection {
 		connection.getIncomingMessageQueue().registerQueueListener(new IncomingQueueListener());
 
 		connection.connect(true, new ConnectionListener() {
+			@Override
 			public void connectFailure(Throwable failure_msg) {
 				logger.fine(connection + " : connect error: " + failure_msg.getMessage());
 				close();
 			}
 
+			@Override
 			public void connectStarted() {
 				// nop
 			}
 
+			@Override
 			public void connectSuccess(ByteBuffer remaining_initial_data) {
 				logger.fine("incoming auth connection from: " + getRemoteIp().getHostAddress());
 				logger.fine("remote key:" + Base64.encode(InvitationConnection.this.remoteKey));
@@ -330,6 +338,7 @@ public class InvitationConnection {
 				sendHandshake();
 			}
 
+			@Override
 			public void exceptionThrown(Throwable error) {
 				// ok, something strange happened,
 				// notify connection and manager
@@ -337,6 +346,7 @@ public class InvitationConnection {
 				close("got error: " + error.getMessage());
 			}
 
+			@Override
 			public String getDescription() {
 				return "connection listener: OSF2F session, incoming";
 			}
@@ -564,11 +574,13 @@ public class InvitationConnection {
 	private class IncomingQueueListener implements MessageQueueListener {
 		private long packetNum = 0;
 
+		@Override
 		public void dataBytesReceived(int byte_count) {
 			lastMessageRecvTime = System.currentTimeMillis();
 
 		}
 
+		@Override
 		public boolean messageReceived(Message message) {
 			packetNum++;
 			lastMessageRecvTime = System.currentTimeMillis();
@@ -590,6 +602,7 @@ public class InvitationConnection {
 			return (true);
 		}
 
+		@Override
 		public void protocolBytesReceived(int byte_count) {
 			// TODO Auto-generated method stub
 

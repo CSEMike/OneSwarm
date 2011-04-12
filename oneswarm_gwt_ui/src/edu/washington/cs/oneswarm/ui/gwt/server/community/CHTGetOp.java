@@ -17,7 +17,7 @@ import org.json.JSONWriter;
 import com.google.common.base.Preconditions;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
-import edu.washington.cs.oneswarm.f2f.dht.CHTClientUDP.CHTCallback;
+import edu.washington.cs.oneswarm.f2f.dht.CHTCallback;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
 
 public class CHTGetOp extends CommunityServerOperation {

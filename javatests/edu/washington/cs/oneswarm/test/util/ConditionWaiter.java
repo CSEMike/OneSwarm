@@ -33,7 +33,7 @@ public class ConditionWaiter {
 				Thread.sleep(100);
 
 				if (started + maxDelay < System.currentTimeMillis()) {
-					Assert.fail();
+					Assert.fail("ConditionWaiter timed out.");
 				}
 			}
 		} catch (InterruptedException e) {

@@ -20,8 +20,8 @@ import org.testng.Assert;
 
 import com.aelitis.azureus.ui.UIFunctionsManager;
 
+import edu.washington.cs.oneswarm.f2f.dht.CHTCallback;
 import edu.washington.cs.oneswarm.f2f.dht.CHTClientHTTP;
-import edu.washington.cs.oneswarm.f2f.dht.CHTClientUDP.CHTCallback;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
 

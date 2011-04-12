@@ -10,7 +10,6 @@ import java.util.logging.Logger;
 
 import com.google.common.collect.Lists;
 
-import edu.washington.cs.oneswarm.f2f.dht.CHTClientUDP.CHTCallback;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
 import edu.washington.cs.oneswarm.ui.gwt.server.community.CHTGetOp;
 import edu.washington.cs.oneswarm.ui.gwt.server.community.CHTPutOp;
@@ -53,7 +52,7 @@ public class CHTClientHTTP implements CHTClientInterface {
 	public CHTClientHTTP(CommunityRecord server) {
 		this.record = server;
 
-		batchFlusher = new Timer("Batch flusher - " + record.getCht_path(), true);
+		batchFlusher = new Timer("Batch GET/PUT flusher - " + record.getCht_path(), true);
 		batchFlusher.schedule(new TimerTask() {
 			@Override
 			public void run() {
@@ -64,14 +63,24 @@ public class CHTClientHTTP implements CHTClientInterface {
 
 	}
 
+	public CommunityRecord getServerRecord() {
+		return record;
+	}
+
 	@Override
 	public void put(byte[] key, byte[] value) throws IOException {
 		pendingPuts.add(new PutOp(key, value));
+		logger.fine("CHT put queue length: " + pendingPuts.size());
 	}
 
 	@Override
 	public void get(byte[] key, CHTCallback callback) {
 		pendingGets.add(new GetOp(key, callback));
+	}
+
+	public void shutdown() {
+		logger.fine("Shutting down CHTClientHTTP: " + record);
+		batchFlusher.cancel();
 	}
 
 	private void flushPuts() {

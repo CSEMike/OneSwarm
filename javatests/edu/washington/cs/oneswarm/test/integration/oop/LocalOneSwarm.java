@@ -13,6 +13,8 @@ import java.util.logging.Logger;
 import org.gudy.azureus2.core3.util.Constants;
 import org.junit.Assert;
 
+import com.google.common.io.Files;
+
 import edu.washington.cs.oneswarm.test.util.ConditionWaiter;
 import edu.washington.cs.oneswarm.test.util.ProcessLogConsumer;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
@@ -210,6 +212,7 @@ public class LocalOneSwarm {
 			CORE + "log4j.jar",
 			CORE + "junit.jar",
 			CORE + "commons-cli.jar",
+ CORE + "guava.jar",
 		};
 
 		for (String dep : deps) {
@@ -312,7 +315,16 @@ public class LocalOneSwarm {
 
 		// Kick-off: merge stderr and stdout, set the working directory, and start.
 		pb.redirectErrorStream(true);
-		pb.directory(new File(scratchPaths.get("workingDir")));
+		File workingDirFile = new File(scratchPaths.get("workingDir"));
+		pb.directory(workingDirFile);
+
+		// If there's a local logging.properties here, copy it to the workingDir.
+		File localLoggingProperties = new File("logging.properties");
+		if (localLoggingProperties.exists()) {
+			Files.copy(localLoggingProperties, new File(workingDirFile, "logging.properties"));
+			logger.info("Copied local logging.properties to OOP instace.");
+		}
+
 		process = pb.start();
 
 		logger.info("Forked OneSwarm instance: " + config.label);
@@ -334,6 +346,7 @@ public class LocalOneSwarm {
 	/** Blocks until {@count} friends are online. */
 	public void waitForOnlineFriends(final int count) {
 		new ConditionWaiter(new ConditionWaiter.Predicate(){
+			@Override
 			public boolean satisfied() {
 				return getCoordinator().onlineFriendCount >= count;
 			}}, 20*1000).await();
@@ -342,6 +355,7 @@ public class LocalOneSwarm {
 	/** Blocks until the instance's public key is available and returns it. */
 	public String getPublicKey() {
 		new ConditionWaiter(new ConditionWaiter.Predicate() {
+			@Override
 			public boolean satisfied() {
 				return getCoordinator().encodedPublicKey != null;
 			}

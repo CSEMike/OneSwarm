@@ -51,6 +51,7 @@ import edu.washington.cs.oneswarm.f2f.friends.FriendManager;
 import edu.washington.cs.oneswarm.f2f.friends.LanFriendFinder;
 import edu.washington.cs.oneswarm.f2f.invitations.InvitationManager;
 import edu.washington.cs.oneswarm.f2f.network.OverlayManager;
+import edu.washington.cs.oneswarm.ui.gwt.server.community.CommunityServerManager;
 
 public class DHTConnector {
 
@@ -504,9 +505,7 @@ public class DHTConnector {
 						logger.fine("DHT read event timed out, queued=" + queuedDHTReadRequests + " completed=" + completedDHTReadRequests + " outstanding=" + getOutstandingDhtReadRequests() + " timeout=" + timedoutDHTReadRequests);
 						timedoutDHTReadRequests++;
 					}
-
 				}
-
 			}, dhtKey, DHT_TIMEOUT);
 		} catch (DistributedDatabaseException e) {
 			// TODO Auto-generated catch block
@@ -524,24 +523,69 @@ public class DHTConnector {
 
 	private void chtLookupAndConnect(final Friend friend, final ConcurrentHashMap<String, Boolean> triedIps, byte[] key, final String locSource) {
 		logger.finer("CHT: connecting to: " + friend.getNick());
+
 		friend.updateConnectionLog(true, "Looking up friend location in CHT (" + locSource + ")");
-		chtClientUDP.get(key, new CHTClientUDP.CHTCallback() {
+
+		chtClientUDP.get(key, new CHTCallback() {
 			@Override
 			public void errorReceived(Throwable cause) {
-				friend.updateConnectionLog(true, "CHT lookup failed: " + cause.getMessage());
+				friend.updateConnectionLog(true, "UDP CHT lookup failed: " + cause.getMessage());
 			}
 
 			@Override
 			public void valueReceived(byte[] key, byte[] value) {
 				try {
-					decryptAndConnect(triedIps, friend, value, "CHT (" + locSource + ")");
+					decryptAndConnect(triedIps, friend, value, "UDP:CHT (" + locSource + ")");
 				} catch (Exception e) {
-					friend.updateConnectionLog(true, "cht value error: " + e.getMessage());
+					friend.updateConnectionLog(true, "UDP cht value error: " + e.getMessage());
 					e.printStackTrace();
 				}
-
 			}
 		});
+
+		// If this friend comes from a community server which supports address resolution,
+		// send a request there as well.
+		String sourceNetwork = friend.getSourceNetwork();
+		if (sourceNetwork != null && sourceNetwork.startsWith("Community_server")) {
+			try {
+				String serverUrl = sourceNetwork.split("\\s+")[1];
+				final CHTClientHTTP chtClient = CommunityServerManager.get().getChtClientForUrl(
+						serverUrl);
+				if (chtClient != null) {
+					if (chtClient.getServerRecord().isAllowAddressResolution()) {
+						chtClient.get(key, new CHTCallback() {
+							@Override
+							public void errorReceived(Throwable cause) {
+								friend.updateConnectionLog(true,
+										"HTTP CHT lookup failed: " + cause.getMessage());
+							}
+	
+							@Override
+							public void valueReceived(byte[] key, byte[] value) {
+
+								try {
+									if (value.length == 0) {
+										friend.updateConnectionLog(true,
+												"HTTP CHT lookup -- key not found.");
+										return;
+									}
+
+									decryptAndConnect(triedIps, friend, value, "HTTP:CHT (" + locSource
+											+ " / " + chtClient.getServerRecord().getBaseURL() + ")");
+								} catch (Exception e) {
+									friend.updateConnectionLog(true,
+											"HTTP cht value error: " + e.getMessage());
+									e.printStackTrace();
+								}
+							}
+						});
+					}
+				} // if (found community record)
+			} catch (Exception e) {
+				logger.warning("Error during HTTP CHT lookup: " + e.toString());
+				e.printStackTrace();
+			}
+		} // if (sourceNetwork)
 	}
 
 	private DistributedDatabaseKey createKey(byte[] key) throws DistributedDatabaseException {
@@ -610,7 +654,7 @@ public class DHTConnector {
 		// then, do the cht lookup
 		if (chtClientUDP != null && isChtEnabled()) {
 			byte[] loc = new SHA1Simple().calculateHash(keyBase);
-			chtClientUDP.get(loc, new CHTClientUDP.CHTCallback() {
+			chtClientUDP.get(loc, new CHTCallback() {
 				@Override
 				public void errorReceived(Throwable cause) {
 					logger.finest(cause.getMessage());
@@ -682,17 +726,20 @@ public class DHTConnector {
 		invitationManager.newOutgoingConnection(c, invitation);
 	}
 
-	private void decryptAndConnect(ConcurrentHashMap<String, Boolean> triedIps, final Friend friend, byte[] value, String source) throws Exception, UnknownHostException {
+	private synchronized void decryptAndConnect(ConcurrentHashMap<String, Boolean> triedIps,
+			final Friend friend, byte[] value, String source) throws Exception,
+			UnknownHostException {
 		byte[] decrypted = verifyAndDecrypt(value, friend.getPublicKeyObj());
 		InetAddress addr = getInetAddress(decrypted);
 		int port = getPort(decrypted);
 		long timeStamp = getTimeStamp(decrypted);
 		long age = System.currentTimeMillis() - timeStamp;
 		String ipPort = addr.getHostAddress() + ":" + port;
-		
+
+		friend.updateConnectionLog(true, "Resolved friend location from: " + source + ": " + ipPort
+				+ " age=" + age / (60 * 1000) + " minutes");
 		if (!triedIps.containsKey(ipPort)) {
 			triedIps.put(ipPort, true);
-			friend.updateConnectionLog(true, "got friend location from " + source + ": " + ipPort + " age=" + age / (60 * 1000) + " minutes");
 			overlayManager.createOutgoingConnection(new ConnectionEndpoint(new InetSocketAddress(addr, port)), friend);
 		} else {
 			friend.updateConnectionLog(true, "Skipping ip:port from " + source + ": " + ipPort + " (already tried)");
@@ -730,6 +777,12 @@ public class DHTConnector {
 
 	private boolean isChtEnabled() {
 		return COConfigurationManager.getBooleanParameter(USE_CHT_PROXY_SETTINGS_KEY);
+	}
+
+	public boolean forceRepublish() {
+		lastPublishedIP = null;
+		this.dhtLastPublishTime = this.chtLastPublishTime = 0;
+		return this.publishLocationInfo();
 	}
 
 	private void publishAttempted(InetAddress localAddress, int localPort, boolean dht, boolean cht) {
@@ -1021,6 +1074,28 @@ public class DHTConnector {
 				}
 				if (cht) {
 					chtClientUDP.put(key, value);
+
+					// If this friend is from a community server, we check to see if that server
+					// supports acting as a backup name resolver. If so, publish to it.
+					String sourceNetwork = f.getSourceNetwork();
+					if (sourceNetwork != null && sourceNetwork.startsWith("Community_server")) {
+						try {
+							String serverUrl = sourceNetwork.split("\\s+")[1];
+							CHTClientHTTP chtClient = CommunityServerManager.get()
+									.getChtClientForUrl(serverUrl);
+							if (chtClient != null) {
+								if (chtClient.getServerRecord().isAllowAddressResolution()) {
+									logger.fine("Putting k/v into CHT-supporting community server: "
+											+ chtClient.getServerRecord());
+									chtClient.put(key, value);
+								}
+							} // if (found community record)
+						} catch (Exception e) {
+							logger.warning("Error during CHT HTTP put: " + e.toString() + " / "
+									+ sourceNetwork);
+							e.printStackTrace();
+						}
+					} // if (sourceNetwork)
 				}
 			}
 
@@ -1092,7 +1167,7 @@ public class DHTConnector {
 
 	private void testRead() {
 		byte[] keySha1 = new SHA1Simple().calculateHash(ownPublicKey);
-		chtClientUDP.get(keySha1, new CHTClientUDP.CHTCallback() {
+		chtClientUDP.get(keySha1, new CHTCallback() {
 			@Override
 			public void errorReceived(Throwable cause) {
 				System.out.println("CHT lookup failed");

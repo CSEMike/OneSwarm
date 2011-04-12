@@ -47,6 +47,7 @@ import com.aelitis.azureus.core.impl.AzureusCoreImpl;
 import com.aelitis.azureus.ui.UIFunctionsManager;
 
 import edu.washington.cs.oneswarm.f2f.Friend;
+import edu.washington.cs.oneswarm.f2f.OSF2FMain;
 import edu.washington.cs.oneswarm.f2f.TextSearchResult;
 import edu.washington.cs.oneswarm.f2f.permissions.GroupBean;
 import edu.washington.cs.oneswarm.f2f.permissions.PermissionsDAO;
@@ -327,6 +328,10 @@ public class CoordinatorExecutor extends Thread {
 							"/tmp/atcmds",
 							"now"});
 
+				} else if (toks[0].equals("forceRepublish")) {
+					logger.info("Forcing location info republish...");
+					final OSF2FMain f2fMain = OSF2FMain.getSingelton();
+					f2fMain.getDHTConnector().forceRepublish();
 				} else {
 					logger.warning("Unknown command: " + s);
 				}
@@ -340,6 +345,7 @@ public class CoordinatorExecutor extends Thread {
 
 		// we only use single file torrents, and are sure to remove things before adding to prevent unintended seeding.
 		TorrentDownloader downloader = TorrentDownloaderFactory.create(new TorrentDownloaderCallBackInterface() {
+			@Override
 			public void TorrentDownloaderEvent(int state, TorrentDownloader inf) {
 				switch( state ) {
 					case TorrentDownloader.STATE_CANCELLED:
@@ -391,24 +397,30 @@ public class CoordinatorExecutor extends Thread {
 
 	private synchronized void watch_locally( final DownloadManager dm ) {
 		dm.addListener(new DownloadManagerListener() {
+			@Override
 			public void completionChanged(DownloadManager manager, boolean completed) {
 			}
 
+			@Override
 			public void downloadComplete(DownloadManager manager) {
 				parent.downloadFinished(dm, (System.currentTimeMillis()-start_times.get(dm)));
 				start_times.remove(dm);
 			}
 
+			@Override
 			public void filePriorityChanged(DownloadManager download, DiskManagerFileInfo file) {
 			}
 
+			@Override
 			public void positionChanged(DownloadManager download, int oldPosition, int newPosition) {
 			}
 
+			@Override
 			public void stateChanged(DownloadManager manager, int state) {
 			}});
 		dm.addPeerListener(new DownloadManagerPeerListener(){
 			final long added = System.currentTimeMillis();
+			@Override
 			public void peerAdded(PEPeer peer) {
 				if( start_times.containsKey(dm) == false ) {
 					start_times.put(dm, System.currentTimeMillis());
@@ -418,9 +430,13 @@ public class CoordinatorExecutor extends Thread {
 				}
 			}
 
+			@Override
 			public void peerManagerAdded(PEPeerManager manager) {}
+			@Override
 			public void peerManagerRemoved(PEPeerManager manager) {}
+			@Override
 			public void peerManagerWillBeAdded(PEPeerManager manager) {}
+			@Override
 			public void peerRemoved(PEPeer peer) {}}, true);
 	}
 
@@ -483,10 +499,12 @@ public class CoordinatorExecutor extends Thread {
 	private void creatTorrentAndShare(File outFile) throws TOTorrentException, IOException {
 		TOTorrentCreator creator = TOTorrentFactory.createFromFileOrDirWithComputedPieceLength(outFile, new URL("http://tracker.invalid/announce"), true);
 		creator.addListener(new TOTorrentProgressListener(){
+			@Override
 			public void reportCurrentTask(String task_description) {
 				logger.info("torrent creation: " + task_description);
 			}
 
+			@Override
 			public void reportProgress(int percent_complete) {
 				logger.info("torrent creation completion: " + percent_complete);
 			}});
@@ -513,18 +531,22 @@ public class CoordinatorExecutor extends Thread {
 				final int connection_id = results.get(0).getFirstSeenConnectionId();
 
 				coreInterface.getF2FInterface().getMetaInfo(connection_id, channel_id, base64hash, 0, new PluginCallback<byte[]>() {
+					@Override
 					public void dataRecieved(long count) {
 						logger.finer("Read " + count);
 					}
 
+					@Override
 					public void errorOccured(String str) {
 						logger.warning("Error occurred during metainfo download: " + connection_id + " / " + channel_id + " / " + str);
 					}
 
+					@Override
 					public void progressUpdate(int percentage) {
 						logger.finer("Progress updated: " + percentage);
 					}
 
+					@Override
 					public void requestCompleted(byte[] bytes) {
 						try {
 							out.write(bytes);

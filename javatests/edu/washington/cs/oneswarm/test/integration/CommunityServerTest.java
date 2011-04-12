@@ -13,7 +13,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.testng.Assert;
 
+import edu.washington.cs.oneswarm.f2f.Friend;
 import edu.washington.cs.oneswarm.f2f.OSF2FMain;
+import edu.washington.cs.oneswarm.test.util.ConditionWaiter;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 import edu.washington.cs.oneswarm.test.util.TwoProcessTestBase;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
@@ -100,6 +102,53 @@ public class CommunityServerTest extends TwoProcessTestBase {
 		}
 	}
 
+	@Test
+	public void testCommunityServerCHTEndToEnd() throws Exception {
+		// Test plan: Finish the registration test above, then disable the DHT and LAN peer
+		// discovery. Disconnect all friends, and then reconnect to all friends, and verify that a
+		// CHT lookup success status message appears in the friend logs.
+		try {
+			logger.info("Start testCommunityServerRegistration()");
+
+			testCommunityServerRegistration();
+
+			// Disable other methods of performing address resolution
+			COConfigurationManager.setParameter("dht.enabled", false);
+			COConfigurationManager.setParameter("OSF2F.LanFriendFinder", false);
+
+			// Remove the last connected IP cache for the test friend
+			final OSF2FMain f2fMain = OSF2FMain.getSingelton();
+			final Friend friend = f2fMain.getFriendManager().getFriends()[0];
+			friend.setLastConnectIP(null);
+			friend.setLastConnectPort(0);
+
+			// Disconnect
+			f2fMain.getOverlayManager().closeAllConnections();
+
+			// Force the remote host to republish location information -- we'll then force
+			// a reconnect locally. This is necessary to avoid a once per hour rate limit on
+			// CHT publishing.
+			localOneSwarm.getCoordinator().addCommand("forceRepublish");
+			Thread.sleep(3 * 1000);
+
+			// Connect to the friend and await the expected resolve message to appear in the friend
+			// log.
+			f2fMain.getDHTConnector().connectToFriend(friend);
+
+			logger.info("Awaiting resolve message in friend connect log...");
+			new ConditionWaiter(new ConditionWaiter.Predicate() {
+				@Override
+				public boolean satisfied() {
+					String connectionLog = friend.getConnectionLog();
+					return connectionLog.contains("Resolved friend location from: HTTP:CHT");
+				}
+			}, 5000).await();
+
+		} finally {
+			logger.info("End testCommunityServerCHTEndToEnd()");
+		}
+	}
+
 	private void addServerAndRefresh(CommunityRecord rec) {
 		List<String> appended = new ArrayList<String>();
 		appended.addAll(Arrays.asList(rec.toTokens()));
@@ -109,8 +158,10 @@ public class CommunityServerTest extends TwoProcessTestBase {
 	}
 
 	public static CommunityRecord getTestCommunityRecord() {
-		return new CommunityRecord(Arrays.asList(new String[] { TEST_COMMUNITY_URL, "", "",
-				"Exp. contacts", "true;false;false;false;" + 26 }), 0);
+		CommunityRecord rec = new CommunityRecord(Arrays.asList(new String[] { TEST_COMMUNITY_URL,
+				"", "", "Exp. contacts", "true;false;false;false;" + 26 }), 0);
+		rec.setAllowAddressResolution(true);
+		return rec;
 	}
 
 	/** Boilerplate code for running as executable. */

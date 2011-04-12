@@ -10,12 +10,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.logging.Logger;
 
@@ -27,6 +28,7 @@ import org.gudy.azureus2.core3.util.SystemProperties;
 import com.aelitis.azureus.core.impl.AzureusCoreImpl;
 
 import edu.washington.cs.oneswarm.f2f.Friend;
+import edu.washington.cs.oneswarm.f2f.dht.CHTClientHTTP;
 import edu.washington.cs.oneswarm.ui.gwt.F2FInterface;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.friends.wizard.FriendsImportCommunityServer;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
@@ -52,7 +54,8 @@ public final class CommunityServerManager extends Thread {
 
 	Set<String> filtered = new HashSet<String>();
 	Set<FriendInfoLite> unmunched = new HashSet<FriendInfoLite>();
-	Map<String, CommunityRecord> activeServers = new HashMap<String, CommunityRecord>();
+	ConcurrentMap<String, CommunityRecord> activeServers = new ConcurrentHashMap<String, CommunityRecord>();
+	ConcurrentMap<CommunityRecord, CHTClientHTTP> addressResolvers = new ConcurrentHashMap<CommunityRecord, CHTClientHTTP>();
 
 	F2FInterface f2f = null;
 	int filteredSize = 0;
@@ -95,7 +98,12 @@ public final class CommunityServerManager extends Thread {
 			public void parameterChanged(String parameterName) {
 
 				Map<String, CommunityRecord> oldServers = activeServers;
-				activeServers = new HashMap<String, CommunityRecord>();
+						activeServers = new ConcurrentHashMap<String, CommunityRecord>();
+
+				for (CHTClientHTTP client : addressResolvers.values()) {
+							client.shutdown();
+						}
+				addressResolvers = new ConcurrentHashMap<CommunityRecord, CHTClientHTTP>();
 
 				StringList servers = COConfigurationManager.getStringListParameter("oneswarm.community.servers");
 				List<String> converted = new ArrayList<String>();
@@ -127,6 +135,7 @@ public final class CommunityServerManager extends Thread {
 						logger.fine("Skipped duplicate add task for known community server: " + server.getUrl());
 					}
 					activeServers.put(server.getUrl(), server);
+							addressResolvers.put(server, new CHTClientHTTP(server));
 				}
 				firstRun = false;
 			}});
@@ -579,6 +588,14 @@ public final class CommunityServerManager extends Thread {
 
 	public CommunityRecord getRecordForUrl(String url) {
 		return activeServers.get(url);
+	}
+
+	public CHTClientHTTP getChtClientForUrl(String url) {
+		CommunityRecord server = activeServers.get(url);
+		if (server != null) {
+			return addressResolvers.get(server);
+		}
+		return null;
 	}
 }
 
