@@ -17,6 +17,9 @@ gwt-bin
 gwt-dist
 merge-scratch
 build.properties
+build.txt
+error.log
+.gwt/
 
 # Run output
 plugins/

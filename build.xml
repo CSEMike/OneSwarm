@@ -459,6 +459,9 @@
 			<fileset dir="gwt-dist/" includes="*.jar"/>
 		</unjar>
 		
+		<buildnumber file="build.txt"/>
+		<copy todir="merge-scratch/" file="build.txt" />
+		
 		<!-- Remove any junk META-INF or properties that may have leaked in during the merge. -->
 		<delete dir="merge-scratch/META-INF"/>
 		<delete file="merge-scratch/plugin.properties"/> 
@@ -481,7 +484,8 @@
 		<delete dir="merge-scratch/META-INF"/>
 		<delete file="merge-scratch/plugin.properties"/> 
 		
-		<buildnumber file="merge-scratch/build.txt"/>
+		<buildnumber file="build.txt"/>
+		<copy todir="merge-scratch/" file="build.txt" />
 		
 		<jar destfile="OneSwarm.jar" basedir="merge-scratch">
 			<manifest>
