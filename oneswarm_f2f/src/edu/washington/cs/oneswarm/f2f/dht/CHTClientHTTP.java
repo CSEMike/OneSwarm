@@ -95,7 +95,7 @@ public class CHTClientHTTP implements CHTClientInterface {
 			values.add(op.val);
 		}
 		if (keys.size() > 0) {
-			logger.info("Sending " + keys.size() + " CHT puts to " + record.getCht_path());
+			logger.info("Sending " + keys.size() + " CHT puts to " + record.getRealUrl());
 			new CHTPutOp(record, keys, values).start();
 		}
 	}
