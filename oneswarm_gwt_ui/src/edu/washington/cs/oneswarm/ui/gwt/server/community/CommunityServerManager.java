@@ -134,8 +134,14 @@ public final class CommunityServerManager extends Thread {
 					} else {
 						logger.fine("Skipped duplicate add task for known community server: " + server.getUrl());
 					}
-					activeServers.put(server.getUrl(), server);
-							addressResolvers.put(server, new CHTClientHTTP(server));
+							try {
+								activeServers.put(server.getUrl(), server);
+								addressResolvers.put(server, new CHTClientHTTP(server));
+							} catch (Exception e) {
+								logger.warning("Error during processing of community server: "
+										+ e.toString());
+								e.printStackTrace();
+							}
 				}
 				firstRun = false;
 			}});

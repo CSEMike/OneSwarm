@@ -363,7 +363,7 @@ public class CommunityRecord implements IsSerializable {
 
 	@Override
 	public int hashCode() {
-		return getCommunity_path().hashCode();
+		return getRealUrl().hashCode();
 	}
 
 	@Override
