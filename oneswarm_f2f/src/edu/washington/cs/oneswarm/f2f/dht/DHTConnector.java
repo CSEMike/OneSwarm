@@ -552,7 +552,8 @@ public class DHTConnector {
 				final CHTClientHTTP chtClient = CommunityServerManager.get().getChtClientForUrl(
 						serverUrl);
 				if (chtClient != null) {
-					if (chtClient.getServerRecord().isAllowAddressResolution()) {
+					if (chtClient.getServerRecord().isAllowAddressResolution()
+							&& chtClient.getServerRecord().getCht_path() != null) {
 						chtClient.get(key, new CHTCallback() {
 							@Override
 							public void errorReceived(Throwable cause) {
@@ -1084,7 +1085,8 @@ public class DHTConnector {
 							CHTClientHTTP chtClient = CommunityServerManager.get()
 									.getChtClientForUrl(serverUrl);
 							if (chtClient != null) {
-								if (chtClient.getServerRecord().isAllowAddressResolution()) {
+								if (chtClient.getServerRecord().isAllowAddressResolution()
+										&& chtClient.getServerRecord().getCht_path() != null) {
 									logger.fine("Putting k/v into CHT-supporting community server: "
 											+ chtClient.getServerRecord());
 									chtClient.put(key, value);

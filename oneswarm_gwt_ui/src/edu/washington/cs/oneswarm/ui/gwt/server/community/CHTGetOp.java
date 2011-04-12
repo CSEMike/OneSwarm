@@ -42,6 +42,9 @@ public class CHTGetOp extends CommunityServerOperation {
 		Preconditions.checkState(mRecord.isAllowAddressResolution(),
 				"Attempting CHTGet on server without perms: " + mRecord.getBaseURL());
 
+		Preconditions.checkState(mRecord.getCht_path() != null,
+				"Attempting CHTGet on server without a valid CHT path! " + mRecord.getBaseURL());
+
 		String path = mRecord.getBaseURL();
 		if (path.endsWith("/") == false) {
 			path += "/";
