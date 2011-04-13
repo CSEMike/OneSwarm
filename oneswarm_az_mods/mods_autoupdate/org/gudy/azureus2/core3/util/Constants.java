@@ -81,8 +81,8 @@ Constants
   }
 
 
-  public static final String  VERSION_SERVER_V4 	= "ti.cs.washington.edu:8888";
-  public static final String  VERSION_SERVER_V6 	= "update.oneswarm.org";
+  public static final String  VERSION_SERVER_V4 	= "update-ae.oneswarm.org";
+  public static final String  VERSION_SERVER_V6 	= "update-ae.oneswarm.org";
 
   public static final String DHT_SEED_ADDRESS_V4	= "dht.aelitis.com";
   //public static final String DHT_SEED_ADDRESS_V6	= "dht6.azureusplatform.com"; // does not resolve
