@@ -61,7 +61,7 @@ SFPluginDetailsLoaderImpl
 	 */
 	//private static final String	site_prefix = "http://azureus.sourceforge.net/";
 	//private static final String	site_prefix = "http://update.oneswarm.org/";
-	private static final String	site_prefix = "http://" + Constants.getVERSION_SERVER_V4() + "/";
+	private static final String	site_prefix = "http://" + Constants.VERSION_SERVER_V4 + "/";
 	//***********************************************************************
 	private static String	base_url_params;
 	
@@ -155,7 +155,7 @@ SFPluginDetailsLoaderImpl
 	{
 		try{			
 			ResourceDownloader dl = rd_factory.create( new URL(page_url));
-			
+
 			dl = rd_factory.getRetryDownloader( dl, 5 );
 			
 			dl.addListener( this );

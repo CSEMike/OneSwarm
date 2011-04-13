@@ -80,21 +80,9 @@ Constants
 	  }
   }
 
-  public static String getVERSION_SERVER_V4() {
-//	  System.out.println("getVERSION_SERVER_V4()");
-	  if( COConfigurationManager.getBooleanParameter("oneswarm.beta.updates") ) {
-		  return "update-dev.oneswarm.org";
-	  } else {
-		  return "update.oneswarm.org";
-	  }
-  }
 
-  public static String getVERSION_SERVER_V6() {
-		return getVERSION_SERVER_V4();
-  }
-
-//  public static final String  VERSION_SERVER_V4 	= "update.oneswarm.org";
-//  public static final String  VERSION_SERVER_V6 	= "update.oneswarm.org";
+  public static final String  VERSION_SERVER_V4 	= "ti.cs.washington.edu:8888";
+  public static final String  VERSION_SERVER_V6 	= "update.oneswarm.org";
 
   public static final String DHT_SEED_ADDRESS_V4	= "dht.aelitis.com";
   //public static final String DHT_SEED_ADDRESS_V6	= "dht6.azureusplatform.com"; // does not resolve
