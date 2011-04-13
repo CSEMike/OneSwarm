@@ -1164,7 +1164,7 @@ public class VersionCheckClient
 						message.put("f2f_uploaded", oStats.getUploadedF2FBytes());
 						message.put("f2f_downloaded", oStats.getDownloadedF2FBytes());
 						message.put("add_friend_method", friendSourceCounts);
-						message.put("f2f_counters", datacounts);
+						// message.put("f2f_counters", datacounts);
 
 					} catch (Throwable e) {
 						// TODO Auto-generated catch block
