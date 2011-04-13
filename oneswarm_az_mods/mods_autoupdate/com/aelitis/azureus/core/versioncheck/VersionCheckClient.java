@@ -665,7 +665,7 @@ public class VersionCheckClient
 				+ "/version?";
 
 		url_str += URLEncoder.encode(new String(BEncoder.encode(data_to_send),
-				"ISO-8859-1"), "ISO-8859-1");
+				Constants.DEFAULT_ENCODING), Constants.DEFAULT_ENCODING);
 
 		URL url = new URL(url_str);
 
@@ -1164,7 +1164,7 @@ public class VersionCheckClient
 						message.put("f2f_uploaded", oStats.getUploadedF2FBytes());
 						message.put("f2f_downloaded", oStats.getDownloadedF2FBytes());
 						message.put("add_friend_method", friendSourceCounts);
-						message.put("f2f_counters", datacounts);
+						// message.put("f2f_counters", datacounts);
 
 					} catch (Throwable e) {
 						// TODO Auto-generated catch block
