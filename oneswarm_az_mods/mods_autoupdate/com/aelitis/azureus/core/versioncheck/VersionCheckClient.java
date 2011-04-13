@@ -108,8 +108,7 @@ public class VersionCheckClient
 
 	public static final String				REASON_SECONDARY_CHECK			 = "sc";
 
-	//private static final String			 AZ_MSG_SERVER_ADDRESS_V4		 = Constants.VERSION_SERVER_V4;
-	private static final String			 AZ_MSG_SERVER_ADDRESS_V4		 = Constants.getVERSION_SERVER_V4();
+	private static final String			 AZ_MSG_SERVER_ADDRESS_V4		 = Constants.VERSION_SERVER_V4;
 
 	private static final int					AZ_MSG_SERVER_PORT					 = 27001;
 
@@ -127,8 +126,7 @@ public class VersionCheckClient
 
 	public static final int					 UDP_SERVER_PORT							= 2080;
 
-//	public static final String				AZ_MSG_SERVER_ADDRESS_V6		 = Constants.VERSION_SERVER_V6;
-	public static final String				AZ_MSG_SERVER_ADDRESS_V6		 = Constants.getVERSION_SERVER_V6();
+	public static final String				AZ_MSG_SERVER_ADDRESS_V6		 = Constants.VERSION_SERVER_V6;
 
 	public static final String				HTTP_SERVER_ADDRESS_V6			 = AZ_MSG_SERVER_ADDRESS_V6;
 
@@ -242,7 +240,7 @@ public class VersionCheckClient
 					}
 					try {
 						last_check_data_v6 = performVersionCheck(
-								constructVersionCheckMessage(reason), true, true, true);
+								constructVersionCheckMessage(reason), false, true, true);
 
 						if (last_check_data_v6 != null && last_check_data_v6.size() > 0) {
 
@@ -291,7 +289,7 @@ public class VersionCheckClient
 					}
 					try {
 						last_check_data_v4 = performVersionCheck(
-								constructVersionCheckMessage(reason), true, true, false);
+								constructVersionCheckMessage(reason), false, true, false);
 
 						if (last_check_data_v4 != null && last_check_data_v4.size() > 0) {
 
@@ -581,26 +579,22 @@ public class VersionCheckClient
 			}
 		}
 		
-		/**
-		 * PIAMOD
-		 * This will never work with our update server anyway. 
-		 */
-//		if (reply == null && use_http) {
-//
-//			try {
-//				reply = executeHTTP(data_to_send, v6);
-//
-//				reply.put("protocol_used", "HTTP");
-//
-//				error = null;
-//			} catch (IOException e) {
-//				error = e;
-//			} catch (Exception e) {
-//				Debug.printStackTrace(e);
-//				error = e;
-//
-//			}
-//		}
+		if (reply == null && use_http) {
+
+			try {
+				reply = executeHTTP(data_to_send, v6);
+
+				reply.put("protocol_used", "HTTP");
+
+				error = null;
+			} catch (IOException e) {
+				error = e;
+			} catch (Exception e) {
+				Debug.printStackTrace(e);
+				error = e;
+
+			}
+		}
 		if (error != null) {
 
 			throw (error);
@@ -1032,6 +1026,17 @@ public class VersionCheckClient
 		if (speedTest > 0) {
 			message.put("speed_test", speedTest);
 		}
+		
+		/*
+		 * Check which update group we are in, currently: default, beta, planetlab
+		 */
+		String group = "default";
+		if (System.getProperty("oneswarm.experimental.config.file") != null){
+			group = "planetlab";
+		} else if (COConfigurationManager.getBooleanParameter("oneswarm.beta.updates")){
+			group = "beta";
+		}
+		message.put("update_group", group);
 		//***********************************************************
 		message.put("appid", SystemProperties.getApplicationIdentifier());
 		message.put("version", Constants.AZUREUS_VERSION);
