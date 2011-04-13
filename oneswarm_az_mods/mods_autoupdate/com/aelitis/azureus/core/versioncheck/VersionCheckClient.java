@@ -665,7 +665,7 @@ public class VersionCheckClient
 				+ "/version?";
 
 		url_str += URLEncoder.encode(new String(BEncoder.encode(data_to_send),
-				"ISO-8859-1"), "ISO-8859-1");
+				Constants.DEFAULT_ENCODING), Constants.DEFAULT_ENCODING);
 
 		URL url = new URL(url_str);
 
