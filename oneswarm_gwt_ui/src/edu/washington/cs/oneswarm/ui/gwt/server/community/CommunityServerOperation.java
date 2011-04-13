@@ -3,6 +3,8 @@ package edu.washington.cs.oneswarm.ui.gwt.server.community;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -10,9 +12,16 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertPath;
+import java.security.cert.CertPathValidator;
+import java.security.cert.CertPathValidatorException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.PKIXCertPathValidatorResult;
+import java.security.cert.PKIXParameters;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,6 +53,8 @@ import org.gudy.azureus2.core3.util.Constants;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
+import sun.security.provider.certpath.X509CertPath;
 
 import com.aelitis.azureus.core.networkmanager.impl.osssl.OneSwarmSslKeyManager;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
@@ -87,6 +98,7 @@ public abstract class CommunityServerOperation extends Thread implements Cancell
 		 * with the case of removing and adding again.
 		 */
 		COConfigurationManager.addParameterListener("oneswarm.community.servers", new ParameterListener() {
+			@Override
 			public void parameterChanged(String parameterName) {
 				sCheckedCommunityServers.clear();
 			}
@@ -451,6 +463,36 @@ public abstract class CommunityServerOperation extends Thread implements Cancell
 
 			conn.connect();
 
+			/*
+			 * Before we do anything fancy (i.e., storing and/or checking our locally stored
+			 * certificates), we first attempt to verify this certificate using the system trust
+			 * policy. If the server provided a valid certificate according to the system policy, we
+			 * accept immediately without further processing.
+			 */
+			Certificate[] serverProvidedCertificates = ((HttpsURLConnection) conn)
+					.getServerCertificates();
+			try {
+				CertPath cp = new X509CertPath(Arrays.asList(serverProvidedCertificates));
+				KeyStore ks = KeyStore.getInstance("JKS");
+				ks.load(new FileInputStream(new File(System.getProperty("java.home"),
+						"lib/security/cacerts")), null);
+				PKIXParameters cpp = new PKIXParameters(ks);
+				cpp.setRevocationEnabled(false);
+				CertPathValidator cpv = CertPathValidator.getInstance("PKIX");
+				PKIXCertPathValidatorResult res = (PKIXCertPathValidatorResult) cpv.validate(cp,
+						cpp);
+
+				// If the above validation did not throw an exception, this is a valid certificate
+				// according to the system.
+				return conn;
+			} catch (CertPathValidatorException e1) {
+				logger.warning("Certificate chain did not validate: " + e1.toString()
+						+ " / falling back to custom handling...");
+			} catch (Exception e1) {
+				logger.warning("Unexpected error during certificate processing: " + e1.toString()
+						+ " / falling back to custom handling...");
+			}
+
 			MessageDigest digest = null;
 			try {
 				digest = MessageDigest.getInstance("SHA-1");
@@ -479,7 +521,7 @@ public abstract class CommunityServerOperation extends Thread implements Cancell
 
 			if (expectedCertHash != null) {
 				try {
-					digest.update(((HttpsURLConnection) conn).getServerCertificates()[0].getEncoded());
+					digest.update(serverProvidedCertificates[0].getEncoded());
 				} catch (CertificateEncodingException e) {
 					throw new IOException(e.getMessage());
 				}
@@ -494,7 +536,7 @@ public abstract class CommunityServerOperation extends Thread implements Cancell
 				 * provided hash for future use
 				 */
 				try {
-					digest.update(((HttpsURLConnection) conn).getServerCertificates()[0].getEncoded());
+					digest.update(serverProvidedCertificates[0].getEncoded());
 					byte[] hash = digest.digest();
 					CommunityServerManager.get().trustCommunityServerCertificateHash(urlStr, Base64.encode(hash));
 					logger.info("Added community server hash: " + Base64.encode(hash) + " for " + urlStr);
@@ -535,8 +577,7 @@ public abstract class CommunityServerOperation extends Thread implements Cancell
 		return conn.getInputStream();
 	}
 
-
-
+	@Override
 	public void cancelled(int inID) {
 		cancelled = true;
 	}
@@ -595,5 +636,26 @@ public abstract class CommunityServerOperation extends Thread implements Cancell
 			e.printStackTrace();
 			throw new IOException(e.toString());
 		}
+	}
+
+	// A simple driver program that we use to exercise certificate verification code.
+	public static final void main(String... args) throws Exception {
+		CommunityRecord rec = new CommunityRecord();
+		final String urlStr = "https://community.oneswarm.org/";
+		rec.setUrl(urlStr);
+		CommunityServerOperation op = new CommunityServerOperation(rec) {
+			@Override
+			void doOp() {
+				try {
+					HttpURLConnection conn = getConnection(new URL(urlStr));
+					System.out.println("Response to get: " + conn.getResponseCode());
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		};
+		op.start();
+
+		Thread.sleep(3000 * 1000);
 	}
 }
