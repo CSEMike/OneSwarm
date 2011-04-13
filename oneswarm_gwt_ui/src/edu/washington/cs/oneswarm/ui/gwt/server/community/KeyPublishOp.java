@@ -6,7 +6,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -362,30 +361,6 @@ public class KeyPublishOp extends CommunityServerOperation {
 
 	public String getRefreshInterval() {
 		return refreshInterval;
-	}
-
-	/**
-	 * Test parse of a capabilities file.
-	 */
-	public static final void main(String[] args) throws Exception {
-
-		ByteArrayOutputStream scratch = new ByteArrayOutputStream();
-		RandomAccessFile fr = new RandomAccessFile("capabilities.xml", "r");
-
-		byte[] b = new byte[(int) fr.length()];
-		fr.read(b);
-
-		scratch.write(b);
-
-		System.out.println("read: ");
-		System.out.println(scratch.toString("UTF8"));
-
-		CommunityRecord rec = new CommunityRecord(null, null, null, null, false, true, false, true,
-				0, null, null, null, null, false, 0, false);
-		KeyPublishOp r = new KeyPublishOp(rec, true);
-
-		r.processCapabilitiesXML(scratch);
-
 	}
 
 	private List<String[]> parseFriendList(Node kid) {

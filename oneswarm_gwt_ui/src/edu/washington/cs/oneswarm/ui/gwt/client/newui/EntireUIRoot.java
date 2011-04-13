@@ -9,8 +9,6 @@ import com.allen_sauer.gwt.dnd.client.DragStartEvent;
 import com.allen_sauer.gwt.dnd.client.PickupDragController;
 import com.allen_sauer.gwt.dnd.client.VetoDragException;
 import com.allen_sauer.gwt.dnd.client.drop.DropController;
-import com.google.gwt.core.client.GWT;
-import com.google.gwt.core.client.RunAsyncCallback;
 import com.google.gwt.event.dom.client.KeyPressEvent;
 import com.google.gwt.event.dom.client.KeyPressHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
@@ -18,7 +16,6 @@ import com.google.gwt.event.logical.shared.ResizeHandler;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.http.client.URL;
-import com.google.gwt.user.client.Cookies;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.History;
 import com.google.gwt.user.client.Timer;
@@ -41,7 +38,6 @@ import com.google.gwt.user.client.ui.Widget;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmDialogBox;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmGWT;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmRPCClient;
-import edu.washington.cs.oneswarm.ui.gwt.client.i18n.OSMessages;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.TagEditorDialog.TreeItemDropController;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.friends.wizard.FriendsImportCallback;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.friends.wizard.FriendsImportWizard;
@@ -79,6 +75,7 @@ public class EntireUIRoot extends DockPanel {
 	private String uiVersion = null;
 
 	ValueChangeHandler<String> historyChangeListener = new ValueChangeHandler<String>() {
+		@Override
 		public void onValueChange(ValueChangeEvent<String> event) {
 
 			// String historyToken = event.getValue();
@@ -89,26 +86,6 @@ public class EntireUIRoot extends DockPanel {
 			String historyToken = getHistoryToken();
 
 			OneSwarmGWT.log("History value changed: " + historyToken);
-
-			// if (historyToken.equals("addfriends")) {
-			// OneSwarmDialogBox dlg = new FriendsImportWizard(new
-			// HashMap<String, Integer>());
-			// dlg.show();
-			// dlg.setVisible(false);
-			// dlg.center();
-			// dlg.setVisible(true);
-			// History.newItem("#");
-			// } else if (historyToken.startsWith(SEARCH_HISTORY_TOKEN)) {
-			// String searchString =
-			// historyToken.substring(SEARCH_HISTORY_TOKEN.length());
-			// displaySearch(URL.decode(searchString));
-			// } else if
-			// (historyToken.startsWith(OneSwarmConstants.FRIEND_INVITE_PREFIX))
-			// {
-			// handleInviteParameters(URL.decode(historyToken));
-			// } else if( historyToken.startsWith(ADD_COMMUNITY_SERVER_TOKEN)) {
-			// handleCommunityServerAdd(historyToken);
-			// }
 
 			if (historyToken.startsWith("cserver") == false && swarmFileBrowser.isAttached() == false) {
 				keyboardRecorder.clear();
@@ -177,6 +154,7 @@ public class EntireUIRoot extends DockPanel {
 					frame.setHeight((Window.getClientHeight() - off) + "px");
 
 					Window.addResizeHandler(new ResizeHandler() {
+						@Override
 						public void onResize(ResizeEvent event) {
 							frame.setHeight((Window.getClientHeight() - off) + "px");
 						}
@@ -197,6 +175,15 @@ public class EntireUIRoot extends DockPanel {
 				}
 
 				recognized = true;
+			}
+
+			if (historyToken.equals("addfriends")) {
+				OneSwarmDialogBox dlg = new FriendsImportWizard(new HashMap<String, Integer>());
+				dlg.show();
+				dlg.setVisible(false);
+				dlg.center();
+				dlg.setPopupPosition(dlg.getPopupLeft(), Math.max(40, dlg.getPopupTop() - 200));
+				dlg.setVisible(true);
 			}
 
 			if (historyToken.startsWith(OneSwarmConstants.FRIEND_INVITE_PREFIX)) {
@@ -265,9 +252,11 @@ public class EntireUIRoot extends DockPanel {
 		dragController.setBehaviorDragProxy(true);
 		dragController.addDragHandler(new DragHandler() {
 
+			@Override
 			public void onPreviewDragStart(DragStartEvent event) throws VetoDragException {
 			}
 
+			@Override
 			public void onPreviewDragEnd(DragEndEvent event) throws VetoDragException {
 				DropController dropController = event.getContext().dropController;
 				if (dropController == null || !(dropController instanceof TreeItemDropController)) {
@@ -275,9 +264,11 @@ public class EntireUIRoot extends DockPanel {
 				}
 			}
 
+			@Override
 			public void onDragStart(DragStartEvent event) {
 			}
 
+			@Override
 			public void onDragEnd(DragEndEvent event) {
 			}
 		});
@@ -287,18 +278,22 @@ public class EntireUIRoot extends DockPanel {
 
 		if (OneSwarmGWT.isRemoteAccess()) {
 			OneSwarmRPCClient.getService().getComputerName(OneSwarmRPCClient.getSessionID(), new AsyncCallback<String>() {
+				@Override
 				public void onFailure(Throwable caught) {
 				}
 
+				@Override
 				public void onSuccess(String result) {
 					Window.setTitle("OneSwarm - " + result + " (remote access)");
 				}
 			});
 		} else {
 			OneSwarmRPCClient.getService().getComputerName(OneSwarmRPCClient.getSessionID(), new AsyncCallback<String>() {
+				@Override
 				public void onFailure(Throwable caught) {
 				}
 
+				@Override
 				public void onSuccess(String result) {
 					Window.setTitle("OneSwarm - " + result);
 				}
@@ -344,6 +339,7 @@ public class EntireUIRoot extends DockPanel {
 
 			keyboardRecorder = new FocusPanel();
 			((FocusPanel) keyboardRecorder).addKeyPressHandler(new KeyPressHandler() {
+				@Override
 				public void onKeyPress(KeyPressEvent event) {
 
 					// for instance, when showing a community server
@@ -356,17 +352,17 @@ public class EntireUIRoot extends DockPanel {
 
 					System.out.println("key press: " + event.getCharCode() + " shift?: " + hasShift);
 
-					if (Character.toLowerCase((char) event.getCharCode()) == 'j') {
+					if (Character.toLowerCase(event.getCharCode()) == 'j') {
 						hasShift = false;
 						swarmFileBrowser.selectPreviousSwarm();
-					} else if (Character.toLowerCase((char) event.getCharCode()) == 'k') {
+					} else if (Character.toLowerCase(event.getCharCode()) == 'k') {
 						hasShift = false;
 						swarmFileBrowser.selectNextSwarm();
-					} else if (Character.toLowerCase((char) event.getCharCode()) == 'n') {
+					} else if (Character.toLowerCase(event.getCharCode()) == 'n') {
 						swarmFileBrowser.nextPage();
-					} else if (Character.toLowerCase((char) event.getCharCode()) == 'p') {
+					} else if (Character.toLowerCase(event.getCharCode()) == 'p') {
 						swarmFileBrowser.previousPage();
-					} else if (Character.toLowerCase((char) event.getCharCode()) == 'd') {
+					} else if (Character.toLowerCase(event.getCharCode()) == 'd') {
 						swarmFileBrowser.dispatchSwarmAction(Strings.SWARM_DELETE, swarmFileBrowser.getSelectedSwarms());
 					} else if (event.getCharCode() == 13) { // enter
 						swarmFileBrowser.doubleClick();
@@ -393,6 +389,7 @@ public class EntireUIRoot extends DockPanel {
 		 * refreshing (if nothing is playing)
 		 */
 		(new Timer() {
+			@Override
 			public void run() {
 				long now = (new Date()).getTime();
 				if (getPlayingVideo() == false && (mLastAction + 60 * 1000) < now) {
@@ -408,8 +405,10 @@ public class EntireUIRoot extends DockPanel {
 		}).scheduleRepeating(120 * 60 * 1000);
 
 		(new Timer() {
+			@Override
 			public void run() {
 				OneSwarmRPCClient.getService().ping(OneSwarmRPCClient.getSessionID(), uiVersion, new AsyncCallback<String>() {
+					@Override
 					public void onFailure(Throwable caught) {
 						if ("OneSwarm updated".equals(caught.getMessage())) {
 							reload();
@@ -418,6 +417,7 @@ public class EntireUIRoot extends DockPanel {
 						}
 					}
 
+					@Override
 					public void onSuccess(String result) {
 						uiVersion = result;
 						clearWarning();
@@ -472,14 +472,17 @@ public class EntireUIRoot extends DockPanel {
 		}
 		final OneSwarmDialogBox dlg = new OneSwarmDialogBox();
 		dlg.setWidget(new InvitationRedeemPanel(new FriendsImportCallback() {
+			@Override
 			public void back() {
 				dlg.hide();
 			}
 
+			@Override
 			public void cancel() {
 				dlg.hide();
 			}
 
+			@Override
 			public void connectSuccesful(FriendInfoLite[] changes, boolean showSkip) {
 				dlg.hide();
 			}
@@ -633,8 +636,9 @@ public class EntireUIRoot extends DockPanel {
 
 	public static EntireUIRoot getRoot(Widget inWidget) {
 		while (inWidget != null) {
-			if (inWidget instanceof EntireUIRoot)
+			if (inWidget instanceof EntireUIRoot) {
 				return (EntireUIRoot) inWidget;
+			}
 			inWidget = inWidget.getParent();
 		}
 		return null;
@@ -701,7 +705,7 @@ public class EntireUIRoot extends DockPanel {
 	}
 
 	DecoratedTabPanel searchTabs = null;
-	private String CSS_SEARCH_RESULTS_PANEL = "os-search_results_panel";
+	private final String CSS_SEARCH_RESULTS_PANEL = "os-search_results_panel";
 
 	public void displaySearch(final String keywords) {
 		// swarmFileBrowser.newSearch(text);
@@ -748,6 +752,7 @@ public class EntireUIRoot extends DockPanel {
 		searchTabs.selectTab(searchTabs.getWidgetIndex(resultsWidget));
 
 		closeImg.addClickListener(new ClickListener() {
+			@Override
 			public void onClick(Widget sender) {
 				if (searchTabs.getTabBar().getSelectedTab() == searchTabs.getWidgetIndex(resultsWidget)) {
 					searchTabs.selectTab(searchTabs.getTabBar().getSelectedTab() - 1);
@@ -776,12 +781,14 @@ public class EntireUIRoot extends DockPanel {
 		OneSwarmUIServiceAsync service = OneSwarmRPCClient.getService();
 
 		AsyncCallback<Integer> callback = new AsyncCallback<Integer>() {
+			@Override
 			public void onSuccess(Integer result) {
 				OneSwarmGWT.log("sending search, id=" + result);
 				// resultsWidget.clear();
 				resultsWidget.insert(new F2FSearchQueryWithResults(keywords, EntireUIRoot.this, result, resultsCount, new F2FSearchQueryWithResults.ResultsCallback() {
 					int oldCount = 0;
 
+					@Override
 					public void updateCount(int count) {
 						if (count != oldCount) {
 							searchLabel.setText(StringTools.truncate(keywords, 15, true) + " (" + count + ")");
@@ -791,6 +798,7 @@ public class EntireUIRoot extends DockPanel {
 				}), 0);
 			}
 
+			@Override
 			public void onFailure(Throwable caught) {
 				// well, do nothing...
 				OneSwarmGWT.log("error " + caught.getMessage());

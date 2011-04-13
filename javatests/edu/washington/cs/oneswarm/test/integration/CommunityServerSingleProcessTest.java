@@ -25,7 +25,7 @@ import edu.washington.cs.oneswarm.f2f.dht.CHTClientHTTP;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
 
-public class CommunityServerCHTTest {
+public class CommunityServerSingleProcessTest {
 
 	private static Logger logger = Logger.getLogger(CommunityServerTest.class.getName());
 
@@ -130,6 +130,6 @@ public class CommunityServerCHTTest {
 
 	/** Boilerplate code for running as executable. */
 	public static void main(String[] args) throws Exception {
-		TestUtils.swtCompatibleTestRunner(CommunityServerCHTTest.class);
+		TestUtils.swtCompatibleTestRunner(CommunityServerSingleProcessTest.class);
 	}
 }
