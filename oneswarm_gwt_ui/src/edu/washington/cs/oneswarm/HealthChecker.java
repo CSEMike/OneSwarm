@@ -53,7 +53,9 @@ public class HealthChecker extends Thread {
 
 				Set<String> currentNames = new HashSet<String>();
 				for (Thread t : threads) {
-					currentNames.add(t.getName());
+					if (t != null) {
+						currentNames.add(t.getName());
+					}
 				}
 
 				// If a thread has died, remove it from the expected set after logging
