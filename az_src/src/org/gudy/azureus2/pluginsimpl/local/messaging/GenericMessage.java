@@ -37,7 +37,7 @@ GenericMessage
 	private final String	desc;
 	private final boolean	already_encoded;
 	
-	protected
+	public
 	GenericMessage(
 		String				_id,
 		String				_desc,

@@ -1041,7 +1041,7 @@ public class FriendConnection {
                     "Search spam detected, closing connection, friend banned for 10 min");
             remoteFriend.setFriendBannedUntil("search spam",
                     System.currentTimeMillis() + 10 * 60 * 1000);
-            this.updateFriendConnectionLog(true, "Search spam detected");
+            this.updateFriendConnectionLog(true, "Search spam detected", Level.WARNING);
             close();
             return;
         }
