@@ -36,7 +36,7 @@ public class GWTRecompileCheck extends Task {
 			doBuild(null);
 			return;
 		}
-	
+
 		File dirFile = new File(directory);
 		if (dirFile.isDirectory() == false) {
 			throw new BuildException("Provided GWT source root is not a directory!");
@@ -46,6 +46,8 @@ public class GWTRecompileCheck extends Task {
 		
 		Date last = new SimpleDateFormat("MM/dd/yyyy HH:mm").parse(lastBuilt, new ParsePosition(0));
 		
+		recursiveScan(new File(
+				"oneswarm_gwt_ui/src/edu/washington/cs/oneswarm/ui/gwt/OneSwarmGWT.gwt.xml"), last);
 		recursiveScan(dirFile, last);
     }
 
@@ -53,7 +55,9 @@ public class GWTRecompileCheck extends Task {
 		
 		log(f.getAbsolutePath(), Project.MSG_DEBUG);
 		
-		if (f.isFile() && (f.getName().endsWith(".java") || f.getName().endsWith(".properties"))) {
+		if (f.isFile()
+				&& (f.getName().endsWith(".java") || f.getName().endsWith(".properties") || f
+						.getName().endsWith(".xml"))) {
 			if (thresh.before(new Date(f.lastModified()))) {
 				doBuild(f);
 			}

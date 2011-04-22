@@ -22,6 +22,7 @@ public class TranslationTools {
 
 	static {
 		COConfigurationManager.addParameterListener("locale", new ParameterListener() {
+			@Override
 			public void parameterChanged(String parameterName) {
 				String locale = COConfigurationManager.getStringParameter("locale");
 				String[] split = locale.split("_");
@@ -38,7 +39,8 @@ public class TranslationTools {
 		File file = new File(SystemProperties.getApplicationPath() + File.separator + "OneSwarmAzMods.jar");
 		logger.fine("loading translations from: '" + file + "'");
 		if(!file.isFile()){
-			Debug.out("unable to find OneSwarmAzMods.jar, sending out EN_US only");
+			Debug.out("unable to find OneSwarmAzMods.jar at: " + file.getAbsolutePath()
+					+ " - sending out EN_US only");
 			return locales;
 		}
 		JarFile jarFile = new JarFile(file);
