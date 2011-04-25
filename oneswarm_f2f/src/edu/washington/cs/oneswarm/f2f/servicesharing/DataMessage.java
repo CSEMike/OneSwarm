@@ -15,16 +15,26 @@ import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 import com.aelitis.azureus.core.peermanager.messaging.MessageStreamDecoder;
 import com.aelitis.azureus.core.peermanager.messaging.MessageStreamEncoder;
 
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 
-class DataMessage implements Message {
+public class DataMessage extends OSF2FChannelDataMsg {
+    private static final byte SS = DirectByteBuffer.SS_MSG;
 
     private DirectByteBuffer buffer = null;
     private static String ID = "RAW_MESSAGE";
-    private final String DESC = "Raw message";
+    private final String desc;
+    private final int size;
 
     public DataMessage(DirectByteBuffer _buffer) {
-        buffer = _buffer;
+        super(OSF2FMessage.CURRENT_VERSION, 1, _buffer);
+        size = _buffer.remaining(SS);
+        desc = "Raw message: " + size + " bytes";
+    }
+
+    @Override
+    public int getMessageSize() {
+        return size;
     }
 
     public String getID() {
@@ -48,7 +58,7 @@ class DataMessage implements Message {
     }
 
     public String getDescription() {
-        return DESC;
+        return desc;
     }
 
     public byte getVersion() {
@@ -64,11 +74,26 @@ class DataMessage implements Message {
     }
 
     public Message deserialize(DirectByteBuffer data, byte version) throws MessageException {
-        throw (new MessageException("not imp"));
+        throw (new MessageException("not implemented"));
     }
 
     public void destroy() {
-        buffer.returnToPool();
+        if (buffer != null) {
+            buffer.returnToPool();
+        }
+    }
+
+    /**
+     * Retrieve the payload from this message for transfer into a new message.
+     * 
+     * The new message is responsible for returning the buffer on destroy.
+     * 
+     * @return
+     */
+    public DirectByteBuffer transferPayload() {
+        DirectByteBuffer data = buffer;
+        buffer = null;
+        return data;
     }
 
     static class RawMessageEncoder implements MessageStreamEncoder {
@@ -81,7 +106,6 @@ class DataMessage implements Message {
     }
 
     static class RawMessageDecoder implements MessageStreamDecoder {
-        private static final byte SS = DirectByteBuffer.SS_MSG;
 
         private static int MAX_PAYLOAD = OSF2FMessage.MAX_PAYLOAD_SIZE;
         DirectByteBuffer payload_buffer;
@@ -111,6 +135,9 @@ class DataMessage implements Message {
                 if (payload_buffer == null) {
                     payload_buffer = DirectByteBufferPool.getBuffer(SS, MAX_PAYLOAD);
                 }
+                if (paused) {
+                    break;
+                }
                 long read = transport.read(new ByteBuffer[] { payload_buffer.getBuffer(SS) }, 0,
                         bytes_left);
                 bytes_left -= read;
@@ -119,11 +146,12 @@ class DataMessage implements Message {
                 // * transport has no more data
                 if (payload_buffer.remaining(SS) == 0 || read == 0) {
                     if (payload_buffer.position(SS) > 0) {
+                        payload_buffer.position(SS, 0);
                         Message msg = new DataMessage(payload_buffer);
                         messages_last_read.add(msg);
                         payload_buffer = null;
                     }
-                    // If transport has no more data, break
+                    // If we read all from transport, break
                     if (read == 0) {
                         break;
                     }
@@ -169,5 +197,4 @@ class DataMessage implements Message {
             return ByteBuffer.allocate(0);
         }
     }
-
 }

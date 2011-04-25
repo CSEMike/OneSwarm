@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import java.util.TimerTask;
 import java.util.logging.Logger;
 
 import org.bouncycastle.util.encoders.Base64;
@@ -20,7 +19,6 @@ import org.gudy.azureus2.core3.peer.impl.PEPeerControl;
 import org.gudy.azureus2.core3.peer.impl.PEPeerTransport;
 import org.gudy.azureus2.core3.peer.impl.PEPeerTransportFactory;
 import org.gudy.azureus2.core3.util.AENetworkClassifier;
-import org.gudy.azureus2.core3.util.Average;
 import org.gudy.azureus2.core3.util.Debug;
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 import org.gudy.azureus2.core3.util.DirectByteBufferPool;
@@ -30,7 +28,6 @@ import com.aelitis.azureus.core.impl.AzureusCoreImpl;
 import com.aelitis.azureus.core.networkmanager.ConnectionEndpoint;
 import com.aelitis.azureus.core.networkmanager.EventWaiter;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
-import com.aelitis.azureus.core.networkmanager.NetworkManager;
 import com.aelitis.azureus.core.networkmanager.ProtocolEndpoint;
 import com.aelitis.azureus.core.networkmanager.Transport;
 import com.aelitis.azureus.core.networkmanager.TransportEndpoint;
@@ -38,211 +35,63 @@ import com.aelitis.azureus.core.networkmanager.impl.NetworkConnectionImpl;
 import com.aelitis.azureus.core.peermanager.messaging.bittorrent.BTMessageDecoder;
 import com.aelitis.azureus.core.peermanager.messaging.bittorrent.BTMessageEncoder;
 
-import edu.washington.cs.oneswarm.f2f.Friend;
 import edu.washington.cs.oneswarm.f2f.OSF2FAzSwtUi;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
-import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelReset;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
-import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExecutor;
 import edu.washington.cs.oneswarm.f2f.share.DownloadManagerStarter;
 import edu.washington.cs.oneswarm.f2f.share.DownloadManagerStarter.DownloadManagerStartListener;
 
-public class OverlayTransport implements Transport {
+public class OverlayTransport extends OverlayEndpoint implements Transport {
 
-    private final static Logger logger = Logger.getLogger(OverlayTransport.class.getName());
+    static final String chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-    class OverlayProtocolEndpoint implements ProtocolEndpoint {
-        private ConnectionEndpoint connectionEndpoint;
-
-        public OverlayProtocolEndpoint() {
-            connectionEndpoint = new ConnectionEndpoint(getRandomAddr());
-        }
-
-        public Transport connectOutbound(boolean connect_with_crypto, boolean allow_fallback,
-                byte[][] shared_secrets, ByteBuffer initial_data, boolean high_priority,
-                ConnectListener listener) {
-            Debug.out("tried to create outgoing OverlayTransport, this should never happen!!!");
-            throw new RuntimeException("not implemented");
-        }
-
-        public Transport connectOutbound(boolean connect_with_crypto, boolean allow_fallback,
-                byte[][] shared_secrets, ByteBuffer initial_data, ConnectListener listener) {
-            Debug.out("tried to create outgoing OverlayTransport, this should never happen!!!");
-            throw new RuntimeException("not implemented");
-        }
-
-        public ConnectionEndpoint getConnectionEndpoint() {
-            return connectionEndpoint;
-        }
-
-        public String getDescription() {
-            return "PROTOCOL_TCP";
-        }
-
-        public int getType() {
-            return PROTOCOL_TCP;
-        }
-
-        public void setConnectionEndpoint(ConnectionEndpoint ce) {
-            this.connectionEndpoint = ce;
-        }
-    }
-
-    interface WriteQueueWaiter {
-        public void readyForWrite();
-    }
-
-    /*
-     * max number of ms that a message can be delivered earlier than
-     * overlayDelayMs if that avoids a call to Thread.sleep()
-     */
-    private final static int INCOMING_MESSAGE_DELAY_SLACK = 10;
-
-    public final static byte[] ID_BYTES = new String("-OS-F2F-").getBytes();
-    private final static int HANDSHAKE_RESERVED_BITS_START_POS = 20;
-    private final static int HANDSHAKE_RESERVED_BITS_END_POS = 28;
-    private final static int HANDSHAKE_INFO_HASH_START_POS = 28;
     private final static int HANDSHAKE_INFO_HASH_END_POS = 48;
+    private final static int HANDSHAKE_INFO_HASH_START_POS = 28;
     private final static int HANDSHAKE_PEER_ID_POS = 48;
-    private static final int HANDSHAKE_END_POS = HANDSHAKE_PEER_ID_POS + 20;
+    private final static int HANDSHAKE_RESERVED_BITS_END_POS = 28;
+    private final static int HANDSHAKE_RESERVED_BITS_START_POS = 20;
+    public final static byte[] ID_BYTES = new String("-OS-F2F-").getBytes();
     private final static int HANDSHAKE_PEER_ID_KEEP = ID_BYTES.length;
+    private static final int HANDSHAKE_END_POS = HANDSHAKE_PEER_ID_POS + 20;
     private static final int HANDSHAKE_PEER_ID_START_MOD_POS = HANDSHAKE_PEER_ID_POS
             + HANDSHAKE_PEER_ID_KEEP;
 
-    public static InetSocketAddress getRandomAddr() {
-        byte[] randomAddr = new byte[16];
-        randomAddr[0] = (byte) 0xfc;
-        randomAddr[1] = 0;
-        Random r = new Random();
-        byte[] rand = new byte[randomAddr.length - 2];
-        r.nextBytes(rand);
-        System.arraycopy(rand, 0, randomAddr, 2, rand.length);
-        InetAddress addr;
-        try {
-            addr = InetAddress.getByAddress(randomAddr);
-            InetSocketAddress remoteFakeAddr = new InetSocketAddress(addr, 1);
-            return remoteFakeAddr;
-        } catch (UnknownHostException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return null;
-    }
+    private final static Logger logger = Logger.getLogger(OverlayTransport.class.getName());
 
-    private ByteBuffer data_already_read = null;
-
-    protected boolean closed = false;
-    private String closeReason = "";
-    private boolean sentReset = false;
-    private final int TIMEOUT = 2 * 60 * 1000;
-    private long lastMsgTime;
-
-    private final byte[] infoHash;
-    private final long startTime;
-    private boolean started = false;
-    private final int channelId;
-
-    private final int pathID;
     // all operations on this object must be in a synchronized block
     private final LinkedList<OSF2FChannelDataMsg> bufferedMessages;
 
-    protected final FriendConnection connection;
+    private final byte[] channelPeerId;
+    private ByteBuffer data_already_read = null;
+
+    private final byte[] infoHash;
+
+    private volatile boolean outgoing;
+    private int posInHandshake = 0;
 
     private List<EventWaiter> readWaiter = new LinkedList<EventWaiter>();
-    private List<EventWaiter> writeWaiter = new LinkedList<EventWaiter>();
+
+    private byte[] remoteHandshakeInfoHashBytes = new byte[20];
+
+    private volatile boolean remoteHandshakeRecieved;
 
     private int transport_mode;
 
-    private int posInHandshake = 0;
-
-    private byte[] remoteHandshakeInfoHashBytes = new byte[20];
-    private volatile boolean remoteHandshakeRecieved;
-    private volatile boolean outgoing;
-
-    private final byte[] channelPeerId;
-
-    private long bytesIn = 0;
-    private long bytesOut = 0;
-    private Average uploadRateAverage = Average.getInstance(1000, 10);
-    private Average downloadRateAverage = Average.getInstance(1000, 10);
-
-    private final long overlayDelayMs;
-
-    private final DelayedExecutor delayedOverlayMessageTimer;
+    private List<EventWaiter> writeWaiter = new LinkedList<EventWaiter>();
 
     public OverlayTransport(FriendConnection connection, int channelId, byte[] infohash,
             int pathID, boolean outgoing, long overlayDelayMs) {
-        this.lastMsgTime = System.currentTimeMillis();
-        this.overlayDelayMs = overlayDelayMs;
+        super(connection, channelId, pathID, overlayDelayMs);
         this.infoHash = infohash;
         this.bufferedMessages = new LinkedList<OSF2FChannelDataMsg>();
-        this.connection = connection;
-        this.channelId = channelId;
         logger.fine(getDescription() + ": Creating overlay transport");
         this.channelPeerId = generatePeerId();
-        this.pathID = pathID;
         this.outgoing = outgoing;
-        this.startTime = System.currentTimeMillis();
-        delayedOverlayMessageTimer = DelayedExecutorService.getInstance().getFixedDelayExecutor(
-                overlayDelayMs);
     }
 
-    /**
-     * This method is called "from above", when the peer connection is
-     * terminated, send a reset to other side
-     */
-    public void close(String reason) {
-        if (!closed) {
-            closeReason = "peer - " + reason;
-            logger.fine(getDescription() + ": OverlayTransport closed, reason:" + closeReason);
-
-            closed = true;
-            this.sendReset();
-        }
-        // we don't expect anyone to read whatever we have left in the buffer
-        synchronized (bufferedMessages) {
-            while (bufferedMessages.size() > 0) {
-                bufferedMessages.removeFirst().destroy();
-            }
-        }
-        // and remove it from the friend connection
-        connection.deregisterOverlayTransport(this);
-
-    }
-
-    /**
-     * this method is called from below when a reset is received
-     * 
-     * @param reason
-     */
-    public void closeChannelReset() {
-
-        if (sentReset) {
-            // ok, this is the response to our previous close
-            connection.deregisterOverlayTransport(this);
-        } else {
-            if (!closed) {
-                closeReason = "remote host closed overlay channel";
-                logger.fine(getDescription() + ": OverlayTransport closed, reason:" + closeReason);
-                // this is the remote side saying that the connection is closed
-                // send a reset back to confirm
-                sendReset();
-                closed = true;
-            }
-        }
-    }
-
-    /**
-     * this method is called from below if the friend connection dies
-     * 
-     * @param reason
-     */
-    public void closeConnectionClosed(String reason) {
-        closeReason = reason;
-        logger.fine(getDescription() + ": OverlayTransport closed, reason:" + closeReason);
-
-        closed = true;
-        connection.deregisterOverlayTransport(this);
+    @Override
+    protected void cleanup() {
+        // not used.
     }
 
     public void connectedInbound() {
@@ -258,7 +107,43 @@ public class OverlayTransport implements Transport {
         throw new RuntimeException("not implemented");
     }
 
-    static final String chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private void createPeerTransport(DownloadManager downloadManager) {
+        // final check, we only allow this if the osf2f network is enabled, and
+        // osf2f friend search is a valid peer source
+        boolean allowed = checkOSF2FAllowed(downloadManager.getDownloadState().getPeerSources(),
+                downloadManager.getDownloadState().getNetworks());
+
+        if (!allowed) {
+            Debug.out("denied request to create a peer");
+            this.closeConnectionClosed("access denied when creating overlay");
+            return;
+        }
+
+        PEPeerManager manager = downloadManager.getPeerManager();
+
+        PEPeerControl control = (PEPeerControl) manager;
+        // set it up the same way as an incoming connection
+        final NetworkConnection overlayConn = new NetworkConnectionImpl(this,
+                new BTMessageEncoder(), new BTMessageDecoder());
+        PEPeerTransport pt = PEPeerTransportFactory.createTransport(control, PEPeerSource.PS_OSF2F,
+                overlayConn, null);
+
+        // start it
+        pt.start();
+        // and add it to the control
+        control.addPeerTransport(pt);
+
+        // add the friend
+        pt.setData(OSF2FAzSwtUi.KEY_OVERLAY_TRANSPORT, this);
+    }
+
+    protected void destroyBufferedMessages() {
+        synchronized (bufferedMessages) {
+            while (bufferedMessages.size() > 0) {
+                bufferedMessages.removeFirst().destroy();
+            }
+        }
+    }
 
     public byte[] generatePeerId() {
         byte[] peerId = new byte[20];
@@ -272,30 +157,12 @@ public class OverlayTransport implements Transport {
         return peerId;
     }
 
-    public int getChannelId() {
-        return channelId;
-    }
-
-    private String desc = null;
-
-    public String getDescription() {
-        if (desc == null) {
-            desc = NetworkManager.OSF2F_TRANSPORT_PREFIX + ": "
-                    + connection.getRemoteFriend().getNick() + ":" + Integer.toHexString(channelId);
-        }
-        return desc;
-    }
-
     public String getEncryption() {
         return ("FriendToFriend over SSL");
     }
 
     public int getMssSize() {
         return OSF2FMessage.MAX_MESSAGE_SIZE;
-    }
-
-    public int getPathID() {
-        return pathID;
     }
 
     public TransportEndpoint getTransportEndpoint() {
@@ -315,21 +182,7 @@ public class OverlayTransport implements Transport {
         return transport_mode;
     }
 
-    public void incomingOverlayMsg(final OSF2FChannelDataMsg msg) {
-        lastMsgTime = System.currentTimeMillis();
-        if (closed) {
-            return;
-        }
-        delayedOverlayMessageTimer.queue(overlayDelayMs, INCOMING_MESSAGE_DELAY_SLACK,
-                new TimerTask() {
-                    @Override
-                    public void run() {
-                        handleDelayedOverlayMessage(msg);
-                    }
-                });
-    }
-
-    private void handleDelayedOverlayMessage(final OSF2FChannelDataMsg msg) {
+    protected void handleDelayedOverlayMessage(final OSF2FChannelDataMsg msg) {
         synchronized (bufferedMessages) {
             bufferedMessages.add(msg);
 
@@ -381,7 +234,7 @@ public class OverlayTransport implements Transport {
         if (closed) {
             return false;
         }
-        if (!connection.isReadyForWrite(new WriteQueueWaiter() {
+        if (!friendConnection.isReadyForWrite(new WriteQueueWaiter() {
             public void readyForWrite() {
                 if (waiter != null) {
                     logger.finest(getDescription() + ": connection ready, notifying waiter");
@@ -396,16 +249,8 @@ public class OverlayTransport implements Transport {
         return true;
     }
 
-    public boolean isStarted() {
-        return started;
-    }
-
     public boolean isTCP() {
         return true;
-    }
-
-    public boolean isTimedOut() {
-        return System.currentTimeMillis() - lastMsgTime > TIMEOUT;
     }
 
     private byte modifyIncomingHandShake(byte b) {
@@ -428,7 +273,7 @@ public class OverlayTransport implements Transport {
                 if (!Arrays.equals(infoHash, remoteHandshakeInfoHashBytes)) {
                     logger.warning(getDescription()
                             + ": WARNING in "
-                            + connection
+                            + friendConnection
                             + " :: remote host different infohash "
                             + "than what we expected ,expected:\n "
                             + new String(Base64.encode(infoHash) + " got\n"
@@ -584,12 +429,6 @@ public class OverlayTransport implements Transport {
         return totalRead;
     }
 
-    public void sendReset() {
-        sentReset = true;
-        connection.sendChannelRst(new OSF2FChannelReset(OSF2FChannelReset.CURRENT_VERSION,
-                channelId));
-    }
-
     public void setAlreadyRead(ByteBuffer bytes_already_read) {
         if (data_already_read != null) {
             Debug.out("push back already performed");
@@ -631,38 +470,31 @@ public class OverlayTransport implements Transport {
         });
     }
 
-    public long getArtificialDelay() {
-        return overlayDelayMs;
-    }
-
-    private void createPeerTransport(DownloadManager downloadManager) {
-        // final check, we only allow this if the osf2f network is enabled, and
-        // osf2f friend search is a valid peer source
-        boolean allowed = checkOSF2FAllowed(downloadManager.getDownloadState().getPeerSources(),
-                downloadManager.getDownloadState().getNetworks());
-
-        if (!allowed) {
-            Debug.out("denied request to create a peer");
-            this.closeConnectionClosed("access denied when creating overlay");
-            return;
+    public long write(ByteBuffer[] buffers, int array_offset, int length) throws IOException {
+        if (closed) {
+            // when closed just ignore the write requests
+            // hopefully the peertransport will read everything in the buffer
+            // and get the exception there when done
+            return 0;
         }
-
-        PEPeerManager manager = downloadManager.getPeerManager();
-
-        PEPeerControl control = (PEPeerControl) manager;
-        // set it up the same way as an incoming connection
-        final NetworkConnection overlayConn = new NetworkConnectionImpl(this,
-                new BTMessageEncoder(), new BTMessageDecoder());
-        PEPeerTransport pt = PEPeerTransportFactory.createTransport(control, PEPeerSource.PS_OSF2F,
-                overlayConn, null);
-
-        // start it
-        pt.start();
-        // and add it to the control
-        control.addPeerTransport(pt);
-
-        // add the friend
-        pt.setData(OSF2FAzSwtUi.KEY_OVERLAY_TRANSPORT, this);
+        int totalToWrite = 0;
+        int totalWritten = 0;
+        for (int i = array_offset; i < array_offset + length; i++) {
+            totalToWrite += buffers[i].remaining();
+        }
+        logger.finest(getDescription() + "got write request for: " + totalToWrite);
+        // only write one packet at the time
+        if (isReadyForWrite(null)) {
+            DirectByteBuffer msgBuffer = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG,
+                    Math.min(totalToWrite, OSF2FMessage.MAX_PAYLOAD_SIZE));
+            this.putInBuffer(buffers, array_offset, length, msgBuffer);
+            msgBuffer.flip(DirectByteBuffer.SS_MSG);
+            totalWritten += writeMessageToFriendConnection(msgBuffer);
+        }
+        logger.finest("wrote " + totalWritten + " to overlay channel " + channelId);
+        bytesOut += totalWritten;
+        uploadRateAverage.addValue(totalWritten);
+        return totalWritten;
     }
 
     /**
@@ -697,76 +529,64 @@ public class OverlayTransport implements Transport {
         return allowed;
     }
 
-    public long write(ByteBuffer[] buffers, int array_offset, int length) throws IOException {
-        if (closed) {
-            // when closed just ignore the write requests
-            // hopefully the peertransport will read everything in the buffer
-            // and get the exception there when done
-            return 0;
+    public static InetSocketAddress getRandomAddr() {
+        byte[] randomAddr = new byte[16];
+        randomAddr[0] = (byte) 0xfc;
+        randomAddr[1] = 0;
+        Random r = new Random();
+        byte[] rand = new byte[randomAddr.length - 2];
+        r.nextBytes(rand);
+        System.arraycopy(rand, 0, randomAddr, 2, rand.length);
+        InetAddress addr;
+        try {
+            addr = InetAddress.getByAddress(randomAddr);
+            InetSocketAddress remoteFakeAddr = new InetSocketAddress(addr, 1);
+            return remoteFakeAddr;
+        } catch (UnknownHostException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
-        int totalToWrite = 0;
-        int totalWritten = 0;
-        for (int i = array_offset; i < array_offset + length; i++) {
-            totalToWrite += buffers[i].remaining();
+        return null;
+    }
+
+    private static class OverlayProtocolEndpoint implements ProtocolEndpoint {
+        private ConnectionEndpoint connectionEndpoint;
+
+        public OverlayProtocolEndpoint() {
+            connectionEndpoint = new ConnectionEndpoint(getRandomAddr());
         }
-        logger.finest(getDescription() + "got write request for: " + totalToWrite);
-        // only write one packet at the time
-        if (isReadyForWrite(null)) {
-            DirectByteBuffer msgBuffer = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG,
-                    Math.min(totalToWrite, OSF2FMessage.MAX_PAYLOAD_SIZE));
-            this.putInBuffer(buffers, array_offset, length, msgBuffer);
-            msgBuffer.flip(DirectByteBuffer.SS_MSG);
-            totalWritten += writeMessage(msgBuffer);
+
+        public Transport connectOutbound(boolean connect_with_crypto, boolean allow_fallback,
+                byte[][] shared_secrets, ByteBuffer initial_data, boolean high_priority,
+                ConnectListener listener) {
+            Debug.out("tried to create outgoing OverlayTransport, this should never happen!!!");
+            throw new RuntimeException("not implemented");
         }
-        logger.finest("wrote " + totalWritten + " to overlay channel " + channelId);
-        bytesOut += totalWritten;
-        uploadRateAverage.addValue(totalWritten);
-        return totalWritten;
+
+        public Transport connectOutbound(boolean connect_with_crypto, boolean allow_fallback,
+                byte[][] shared_secrets, ByteBuffer initial_data, ConnectListener listener) {
+            Debug.out("tried to create outgoing OverlayTransport, this should never happen!!!");
+            throw new RuntimeException("not implemented");
+        }
+
+        public ConnectionEndpoint getConnectionEndpoint() {
+            return connectionEndpoint;
+        }
+
+        public String getDescription() {
+            return "PROTOCOL_TCP";
+        }
+
+        public int getType() {
+            return PROTOCOL_TCP;
+        }
+
+        public void setConnectionEndpoint(ConnectionEndpoint ce) {
+            this.connectionEndpoint = ce;
+        }
     }
 
-    protected long writeMessage(DirectByteBuffer msgBuffer) {
-        OSF2FChannelDataMsg msg = new OSF2FChannelDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,
-                msgBuffer);
-        long totalWritten = msgBuffer.remaining(DirectByteBuffer.SS_MSG);
-        msg.setForward(false);
-        connection.sendChannelMsg(msg, true);
-        return totalWritten;
+    interface WriteQueueWaiter {
+        public void readyForWrite();
     }
-
-    public String getRemoteIP() {
-        return connection.getRemoteIp().getHostAddress();
-    }
-
-    public Friend getRemoteFriend() {
-        return connection.getRemoteFriend();
-    }
-
-    public long getAge() {
-        return System.currentTimeMillis() - startTime;
-    }
-
-    public long getLastMsgTime() {
-        return System.currentTimeMillis() - lastMsgTime;
-    }
-
-    public long getBytesIn() {
-        return bytesIn;
-    }
-
-    public long getBytesOut() {
-        return bytesOut;
-    }
-
-    public int getUploadRate() {
-        return (int) uploadRateAverage.getAverage();
-    }
-
-    public int getDownloadRate() {
-        return (int) downloadRateAverage.getAverage();
-    }
-
-    public boolean isLANLocal() {
-        return connection.getNetworkConnection().isLANLocal();
-    }
-
 }

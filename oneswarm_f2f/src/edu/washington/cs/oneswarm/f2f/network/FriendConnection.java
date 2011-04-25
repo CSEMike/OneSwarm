@@ -154,7 +154,7 @@ public class FriendConnection {
 
     private final ConcurrentHashMap<Integer, Boolean> overlayTransportPathsId = new ConcurrentHashMap<Integer, Boolean>();
 
-    private final ConcurrentHashMap<Integer, OverlayTransport> overlayTransports = new ConcurrentHashMap<Integer, OverlayTransport>();
+    private final ConcurrentHashMap<Integer, OverlayEndpoint> overlayTransports = new ConcurrentHashMap<Integer, OverlayEndpoint>();
 
     /*
      * map to keep track of received searches to avoid sending the search back
@@ -447,9 +447,9 @@ public class FriendConnection {
         }
 
         // we need to terminate all overlay transports
-        List<OverlayTransport> transports = new LinkedList<OverlayTransport>(
+        List<OverlayEndpoint> transports = new LinkedList<OverlayEndpoint>(
                 overlayTransports.values());
-        for (OverlayTransport overlayTransport : transports) {
+        for (OverlayEndpoint overlayTransport : transports) {
             overlayTransport.closeConnectionClosed("friend closed connection");
         }
 
@@ -539,12 +539,12 @@ public class FriendConnection {
 
     }
 
-    void deregisterOverlayTransport(OverlayTransport transport) {
+    void deregisterOverlayTransport(OverlayEndpoint transport) {
         lock.lock();
         try {
             int channelId = transport.getChannelId();
 
-            OverlayTransport exists = overlayTransports.remove(channelId);
+            OverlayEndpoint exists = overlayTransports.remove(channelId);
             recentlyClosedChannels.put(channelId, System.currentTimeMillis());
             int pathID = transport.getPathID();
             overlayTransportPathsId.remove(pathID);
@@ -643,7 +643,7 @@ public class FriendConnection {
         return overlayForwards;
     }
 
-    public Map<Integer, OverlayTransport> getOverlayTransports() {
+    public Map<Integer, OverlayEndpoint> getOverlayTransports() {
         return overlayTransports;
     }
 
@@ -685,7 +685,7 @@ public class FriendConnection {
 
             if (overlayTransports.containsKey(channelId)) {
                 // ok, this is a msg to us
-                OverlayTransport t = overlayTransports.get(channelId);
+                OverlayEndpoint t = overlayTransports.get(channelId);
                 msg.setForward(false);
                 // this might we the first message we get in this channel
                 // means that the other side responded to our channel setup
@@ -1235,7 +1235,7 @@ public class FriendConnection {
         }
     }
 
-    void registerOverlayTransport(OverlayTransport transport) throws OverlayRegistrationError {
+    void registerOverlayTransport(OverlayEndpoint transport) throws OverlayRegistrationError {
         lock.lock();
         try {
             int channelId = transport.getChannelId();

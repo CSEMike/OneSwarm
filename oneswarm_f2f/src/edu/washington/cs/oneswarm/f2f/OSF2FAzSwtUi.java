@@ -31,8 +31,9 @@ import org.gudy.azureus2.ui.swt.plugins.UISWTViewEvent;
 import org.gudy.azureus2.ui.swt.plugins.UISWTViewEventListener;
 
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
-import edu.washington.cs.oneswarm.f2f.network.OverlayTransport;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayForward;
+import edu.washington.cs.oneswarm.f2f.network.OverlayEndpoint;
+import edu.washington.cs.oneswarm.f2f.network.OverlayTransport;
 
 public class OSF2FAzSwtUi {
 	public static final String KEY_OVERLAY_TRANSPORT = "key_peer_transport";
@@ -220,7 +221,7 @@ public class OSF2FAzSwtUi {
 					cell.setText("");
 					return;
 				}
-				OverlayTransport tr = (OverlayTransport) peer.getPEPeer().getData(KEY_OVERLAY_TRANSPORT);
+				OverlayEndpoint tr = (OverlayEndpoint) peer.getPEPeer().getData(KEY_OVERLAY_TRANSPORT);
 				if (tr == null) {
 					cell.setText("");
 					return;
@@ -550,9 +551,9 @@ public class OSF2FAzSwtUi {
 				item.setText(new String[] { "forward", f.getChannelId() + "", sel.getRemoteFriend().getNick(), sel.getRemoteIp().getHostAddress() + ":" + sel.getRemotePort(), f.getRemoteFriend().getNick(), f.getRemoteIpPort(), formatter.formatTimeFromSeconds(f.getAge() / 1000), formatter.formatTimeFromSeconds(f.getLastMsgTime() / 1000), formatter.formatByteCountToKiBEtc(f.getBytesForwarded()), formatter.formatByteCountToKiBEtc(f.getBytesForwarded()), f.getSourceMessage().getDescription() });
 			}
 
-			Map<Integer, OverlayTransport> transports = sel.getOverlayTransports();
+			Map<Integer, OverlayEndpoint> transports = sel.getOverlayTransports();
 			for (Integer id : transports.keySet()) {
-				OverlayTransport f = transports.get(id);
+			    OverlayEndpoint f = transports.get(id);
 				TableItem item = new TableItem(overlayConnectionTable, SWT.NONE);
 				item.setText(new String[] { "transport", f.getPathID() + "", "Me", "N/A", sel.getRemoteFriend().getNick(), sel.getRemoteIp().getHostAddress() + ":" + sel.getRemotePort(), formatter.formatTimeFromSeconds(f.getAge() / 1000), formatter.formatTimeFromSeconds(f.getLastMsgTime() / 1000), formatter.formatByteCountToKiBEtc(f.getBytesIn()), formatter.formatByteCountToKiBEtc(f.getBytesOut()) });
 			}
