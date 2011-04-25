@@ -302,6 +302,12 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 			//String	bundle_path = System.getProperty("user.dir") +SystemProperties.SEP+ SystemProperties.getApplicationName() + ".app";
 			String bundle_path = SystemProperties.getApplicationPath();
 			int macSpecificStart = bundle_path.indexOf("/Contents/Resources/Java");
+
+			// For legacy clients that used the old installer.
+			if (macSpecificStart == -1) {
+				macSpecificStart = bundle_path.indexOf("/Contents/Resources/app");
+			}
+
 			if( macSpecificStart != -1 )
 			{
 				bundle_path = bundle_path.substring(0,macSpecificStart);
