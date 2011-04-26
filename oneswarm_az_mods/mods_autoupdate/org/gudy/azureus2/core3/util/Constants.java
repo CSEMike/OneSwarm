@@ -24,6 +24,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
 import java.nio.charset.Charset;
 import java.util.Properties;
 import java.util.StringTokenizer;
@@ -136,7 +138,6 @@ Constants
   public static final boolean isSolaris			= OSName.equalsIgnoreCase("SunOS");
   public static final boolean isFreeBSD			= OSName.equalsIgnoreCase("FreeBSD");
   public static final boolean isWindowsXP		= OSName.equalsIgnoreCase("Windows XP");
-  public static final boolean isWindowsVista 	= OSName.equalsIgnoreCase("Windows Vista");
   public static final boolean isWindows95		= OSName.equalsIgnoreCase("Windows 95");
   public static final boolean isWindows98		= OSName.equalsIgnoreCase("Windows 98");
   public static final boolean isWindowsME		= OSName.equalsIgnoreCase("Windows ME");
@@ -146,10 +147,13 @@ Constants
   // If it isn't windows or osx, it's most likely an unix flavor
   public static final boolean isUnix = !isWindows && !isOSX;
 
-
+	public static final boolean isWindowsVista;
   public static final boolean isWindowsVistaOrHigher;
+	public static final boolean isWindowsVistaSP2OrHigher;
+	public static final boolean isWindows7OrHigher;
 
   static{
+
 	  if ( isWindows ){
 
 		  Float ver = null;
@@ -160,11 +164,72 @@ Constants
 		  }catch (Throwable e){
 		  }
 
-		  isWindowsVistaOrHigher = ver != null && ver.floatValue() >= 6;
+			boolean vista_sp2_or_higher = false;
 
+		  if (ver == null) {
+
+				isWindowsVista = false;
+				isWindowsVistaOrHigher = false;
+				isWindows7OrHigher = false;
+
+			} else {
+				float f_ver = ver.floatValue();
+
+				isWindowsVista = f_ver == 6;
+				isWindowsVistaOrHigher = f_ver >= 6;
+				isWindows7OrHigher = f_ver >= 6.1f;
+
+				if (isWindowsVista) {
+
+					LineNumberReader lnr = null;
+
+					try {
+						Process p = Runtime.getRuntime().exec(
+								new String[] { "reg", "query",
+										"HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
+										"/v", "CSDVersion" });
+
+						lnr = new LineNumberReader(new InputStreamReader(p.getInputStream()));
+
+						while (true) {
+
+							String line = lnr.readLine();
+
+							if (line == null) {
+
+								break;
+							}
+
+							if (line.matches(".*CSDVersion.*")) {
+
+								vista_sp2_or_higher = line.matches(".*Service Pack [2-9]");
+
+								break;
+							}
+						}
+					} catch (Throwable e) {
+
+					} finally {
+
+						if (lnr != null) {
+
+							try {
+								lnr.close();
+
+							} catch (Throwable e) {
+							}
+						}
+					}
+				}
+			}
+
+			isWindowsVistaSP2OrHigher = vista_sp2_or_higher;
 	  }else{
 
-		  isWindowsVistaOrHigher = false;
+			isWindowsVista = false;
+			isWindowsVistaSP2OrHigher = false;
+			isWindowsVistaOrHigher = false;
+			isWindows7OrHigher = false;
 	  }
   }
 
