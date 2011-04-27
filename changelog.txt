@@ -4,6 +4,7 @@ Updated SWT to version 3.6.1 (cocoa and 64 bit on mac)
 bugfix: OneSwarm will no longer stop forwarding after running for several days under heavy traffic
 bugfix: [mac] OneSwarm is now a 64 bit application.
 bugfix: OneSwarm no longer uses a default save directory in the application directory (windows) or Application Support directory (mac)
+bugfix: Work-around for OS X 10.6 select() bug
 
 Version 0.7 (August 17, 2010)
 Recognizing identical files in distinct swarms for faster downloads
