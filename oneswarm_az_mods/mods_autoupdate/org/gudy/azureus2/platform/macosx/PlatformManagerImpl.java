@@ -140,10 +140,11 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     	throws IOException
     {
 
-    	/**
-    	 * Bugfix: on OSX, install4j sets the working directory to the app subdir, so we need to back out a bit to get
-    	 * the proper directory. e.g., user.dir is: /Applications/OneSwarm.app/Contents/Resources/app
-    	 */
+		/**
+		 * Bugfix: Even though we're not using install4j on mac anymore, the DMG builder sets
+		 * user.dir at /Applications/OneSwarm.app/Contesnts/Resources/Java, so we retain the
+		 * getParentFile().getParentFile()
+		 */
 
     	// the default construction
 //		String	plist =
@@ -153,7 +154,9 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     	// revised
     	String plist = null;
     	try {
-    		plist = (new File(System.getProperty("user.dir"))).getParentFile().getParentFile().getAbsolutePath() + "/Info.plist";
+			plist = (new File(System.getProperty("user.dir"))).getParentFile().getParentFile()
+					.getAbsolutePath()
+					+ "/Info.plist";
     	} catch( Exception e ) {
     		throw new IOException(e.getMessage());
     	}
@@ -205,7 +208,8 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    public int getPlatformType()
+    @Override
+	public int getPlatformType()
     {
         return PT_MACOSX;
     }
@@ -213,7 +217,8 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    public String getVersion() throws PlatformManagerException
+    @Override
+	public String getVersion() throws PlatformManagerException
     {
     	if (!OSXAccess.isLoaded()) {
         throw new PlatformManagerException("Unsupported capability called on platform manager");
@@ -226,7 +231,8 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
      * {@inheritDoc}
      * @see org.gudy.azureus2.core3.util.SystemProperties#getUserPath()
      */
-    public String getUserDataDirectory() throws PlatformManagerException
+    @Override
+	public String getUserDataDirectory() throws PlatformManagerException
     {
     	// Special-case: we're running a LocalOneSwarm test instance and we
     	// don't want to pollute the system-wide settings directory.
@@ -240,6 +246,7 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     			+ SystemProperties.SEP;
     }
 
+	@Override
 	public File
 	getLocation(
 		long	location_id )
@@ -273,12 +280,14 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * Not implemented; returns True
      */
-    public boolean isApplicationRegistered() throws PlatformManagerException
+    @Override
+	public boolean isApplicationRegistered() throws PlatformManagerException
     {
         return true;
     }
 
 
+	@Override
 	public String
 	getApplicationCommandLine()
 		throws PlatformManagerException
@@ -292,7 +301,13 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 			 */
 			//String	bundle_path = System.getProperty("user.dir") +SystemProperties.SEP+ SystemProperties.getApplicationName() + ".app";
 			String bundle_path = SystemProperties.getApplicationPath();
-			int macSpecificStart = bundle_path.indexOf("/Contents/Resources/app");
+			int macSpecificStart = bundle_path.indexOf("/Contents/Resources/Java");
+
+			// For legacy clients that used the old installer.
+			if (macSpecificStart == -1) {
+				macSpecificStart = bundle_path.indexOf("/Contents/Resources/app");
+			}
+
 			if( macSpecificStart != -1 )
 			{
 				bundle_path = bundle_path.substring(0,macSpecificStart);
@@ -303,8 +318,9 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 			if( !osx_app_bundle.exists() ) {
 				String msg = "OSX app bundle not found: [" +osx_app_bundle.toString()+ "]";
 				System.out.println( msg );
-				if (Logger.isEnabled())
+				if (Logger.isEnabled()) {
 					Logger.log(new LogEvent(LOGID, msg));
+				}
 				throw new PlatformManagerException( msg );
 			}
 
@@ -319,6 +335,7 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 	}
 
 
+	@Override
 	public boolean
 	isAdditionalFileTypeRegistered(
 		String		name,				// e.g. "BitTorrent"
@@ -329,6 +346,7 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 	    throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
 
+	@Override
 	public void
 	unregisterAdditionalFileType(
 		String		name,				// e.g. "BitTorrent"
@@ -339,6 +357,7 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 		throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
 
+	@Override
 	public void
 	registerAdditionalFileType(
 		String		name,				// e.g. "BitTorrent"
@@ -354,7 +373,8 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * Not implemented; does nothing
      */
-    public void registerApplication() throws PlatformManagerException
+    @Override
+	public void registerApplication() throws PlatformManagerException
     {
         // handled by LaunchServices and/0r user interaction
     }
@@ -362,7 +382,8 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    public void createProcess(String cmd, boolean inheritsHandles) throws PlatformManagerException
+    @Override
+	public void createProcess(String cmd, boolean inheritsHandles) throws PlatformManagerException
     {
         try
         {
@@ -377,14 +398,16 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    public void performRecoverableFileDelete(String path) throws PlatformManagerException
+    @Override
+	public void performRecoverableFileDelete(String path) throws PlatformManagerException
     {
         File file = new File(path);
         if(!file.exists())
         {
-	        	if (Logger.isEnabled())
-							Logger.log(new LogEvent(LOGID, LogEvent.LT_WARNING, "Cannot find "
-									+ file.getName()));
+	        	if (Logger.isEnabled()) {
+					Logger.log(new LogEvent(LOGID, LogEvent.LT_WARNING, "Cannot find "
+							+ file.getName()));
+				}
             return;
         }
 
@@ -413,7 +436,8 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    public boolean hasCapability(PlatformManagerCapabilities capability)
+    @Override
+	public boolean hasCapability(PlatformManagerCapabilities capability)
     {
         return capabilitySet.contains(capability);
     }
@@ -421,7 +445,8 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    public void dispose()
+    @Override
+	public void dispose()
     {
         NativeInvocationBridge.sharedInstance().dispose();
     }
@@ -429,11 +454,13 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    public void setTCPTOSEnabled(boolean enabled) throws PlatformManagerException
+    @Override
+	public void setTCPTOSEnabled(boolean enabled) throws PlatformManagerException
     {
         throw new PlatformManagerException("Unsupported capability called on platform manager");
     }
 
+	@Override
 	public void
     copyFilePermissions(
 		String	from_file_name,
@@ -447,14 +474,16 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    public void showFile(String path) throws PlatformManagerException
+    @Override
+	public void showFile(String path) throws PlatformManagerException
     {
         File file = new File(path);
         if(!file.exists())
         {
-        	if (Logger.isEnabled())
-        		Logger.log(new LogEvent(LOGID, LogEvent.LT_WARNING, "Cannot find "
+        	if (Logger.isEnabled()) {
+				Logger.log(new LogEvent(LOGID, LogEvent.LT_WARNING, "Cannot find "
         				+ file.getName()));
+			}
             throw new PlatformManagerException("File not found");
         }
 
@@ -474,9 +503,10 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
         }
         catch (IOException e)
         {
-        	if (Logger.isEnabled())
-        		Logger.log(new LogEvent(LOGID, LogEvent.LT_WARNING,
+        	if (Logger.isEnabled()) {
+				Logger.log(new LogEvent(LOGID, LogEvent.LT_WARNING,
 						"Cannot play system alert"));
+			}
         	Logger.log(new LogEvent(LOGID, "", e));
         }
     }
@@ -551,9 +581,10 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
         }
         else
         {
-        	if (Logger.isEnabled())
-        		Logger.log(new LogEvent(LOGID, LogEvent.LT_WARNING, "Cannot find "
+        	if (Logger.isEnabled()) {
+				Logger.log(new LogEvent(LOGID, LogEvent.LT_WARNING, "Cannot find "
         				+ path.getName()));
+			}
         }
     }
 
@@ -746,6 +777,7 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     	return fileBrowserName;
     }
 
+	@Override
 	public boolean
 	testNativeAvailability(
 		String	name )
@@ -755,6 +787,7 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 	    throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
 
+	@Override
 	public void
 	traceRoute(
 		InetAddress							interface_address,
@@ -766,6 +799,7 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 	    throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
 
+	@Override
 	public void
 	ping(
 		InetAddress							interface_address,
@@ -777,19 +811,22 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 	    throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
 
-    public void
+    @Override
+	public void
     addListener(
     	PlatformManagerListener		listener )
     {
     }
 
-    public void
+    @Override
+	public void
     removeListener(
     	PlatformManagerListener		listener )
     {
     }
 
 		// @see org.gudy.azureus2.core3.util.AEDiagnosticsEvidenceGenerator#generate(org.gudy.azureus2.core3.util.IndentWriter)
+		@Override
 		public void generate(IndentWriter writer) {
 			writer.println("PlatformManager: MacOSX");
 			try {
@@ -811,6 +848,7 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 		}
 
 	// @see org.gudy.azureus2.platform.PlatformManager#getAzComputerID()
+	@Override
 	public String getAzComputerID() throws PlatformManagerException {
 		throw new PlatformManagerException(
 				"Unsupported capability called on platform manager");

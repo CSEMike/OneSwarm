@@ -21,12 +21,13 @@
  
 package org.gudy.azureus2.core3.config;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.io.IOException;
 
-import org.gudy.azureus2.core3.config.impl.*;
+import org.gudy.azureus2.core3.config.impl.ConfigurationDefaults;
+import org.gudy.azureus2.core3.config.impl.ConfigurationManager;
 import org.gudy.azureus2.core3.util.Constants;
 import org.gudy.azureus2.core3.util.SystemProperties;
 
@@ -45,8 +46,13 @@ COConfigurationManager
 	    long mb_1			= 1*1024*1024;
 	    long mb_32			= 32*mb_1;
 	    int size = (int)(( max_mem_bytes - mb_32 )/mb_1);	    
-	    if( size > 1024 )  size = 1024;  //safety check
-      if( size < 1 )  size = 1;
+	    if( size > 1024 )
+		 {
+			size = 1024;  //safety check
+		}
+      if( size < 1 ) {
+		size = 1;
+	}
 	    CONFIG_CACHE_SIZE_MAX_MB = size;
 	}
 	
@@ -85,15 +91,9 @@ COConfigurationManager
 			  	System.setProperty( "sun.net.client.defaultConnectTimeout", "120000" );	
 			  	System.setProperty(	"sun.net.client.defaultReadTimeout", "60000" ); 
 			  			
-			      //see http://developer.apple.com/releasenotes/Java/Java142RN/ResolvedIssues/chapter_3_section_7.html
-			      //fixes the osx kernel panic bug caused by Apple's faulty kqueue implementation (as of 10.3.6)
-			  	/*
-			  	 * causes write selects to fail on 10.6, lets use the more performant kqueue and hope for no kernel crashes
-			  	 */
-			    if( Constants.isOSX  
-			    		&& !(System.getProperty("os.version").startsWith("10.6") || System.getProperty("os.version").startsWith("10.5")))  {
-			        System.setProperty( "java.nio.preferSelect", "true" );
-			    }
+				if (Constants.isOSX) {
+					System.setProperty("java.nio.preferSelect", "true");
+				}
 			    
 			    SystemProperties.determineApplicationName();
 			    
@@ -166,6 +166,7 @@ COConfigurationManager
 	/**
 	 * @deprecated You should set ConfigurationDefaults, and use {@link #getBooleanParameter(String)} 
 	 */
+	@Deprecated
 	public static boolean
 	getBooleanParameter(
 		String		_name,

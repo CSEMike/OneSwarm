@@ -25,7 +25,7 @@ public class CommunityServerAddPanel extends VerticalPanel {
 
 	private static OSMessages msg = OneSwarmGWT.msg;
 
-	public static final String DEFAULT_COMMUNITY_SERVER = "https://oneswarm-tools.appspot.com/";
+	public static final String DEFAULT_COMMUNITY_SERVER = "https://oneswarm-support.appspot.com/";
 	public static final int DEFAULT_PRUNING_THRESHOLD = 50;
 
 	private final TextBox urlTextBox = new TextBox();
@@ -155,6 +155,7 @@ public class CommunityServerAddPanel extends VerticalPanel {
 		checkButtonHP.setSpacing(3);
 		disclosed.add(checkButtonHP);
 		authRequired.addClickHandler(new ClickHandler() {
+			@Override
 			public void onClick(ClickEvent event) {
 				if (((CheckBox) event.getSource()).getValue()) {
 					grid.setVisible(true);
