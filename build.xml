@@ -347,7 +347,7 @@
 			<jvmarg value="-Xmx512M" />
 			
 			<arg value="-localWorkers" />
-			<arg value="2" />
+			<arg value="4" />
 			
 			<arg value="-war" />
 			<arg value="../gwt-bin/war" />
