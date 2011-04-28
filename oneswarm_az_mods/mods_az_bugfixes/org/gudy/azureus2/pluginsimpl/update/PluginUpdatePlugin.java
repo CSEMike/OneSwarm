@@ -596,12 +596,8 @@ PluginUpdatePlugin
 							// sf_plugin_download will be something like ../plugins/safepeer_2.4.zip
 							//     torrent is safepeer_2.4.zip.torrent
 						
-						/**
-						 * PIAMOD -- beta update server support
-						 */
-						//String	torrent_download = Constants.AELITIS_TORRENTS;
-						String torrent_download = Constants.getAELITIS_TORRENTS();
-						/**/
+
+						String	torrent_download = Constants.AELITIS_TORRENTS;
 						
 						int	slash_pos = sf_plugin_download.lastIndexOf("/");
 						

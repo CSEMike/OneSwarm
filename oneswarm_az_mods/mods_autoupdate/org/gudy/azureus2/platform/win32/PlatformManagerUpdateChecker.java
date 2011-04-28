@@ -177,7 +177,7 @@ PlatformManagerUpdateChecker
 				
 				ResourceDownloader direct_rdl = rdf.create( new URL( target_download ));
 			
-				String	torrent_download = Constants.getAELITIS_TORRENTS();
+				String	torrent_download = Constants.AELITIS_TORRENTS;
 				
 				int	slash_pos = target_download.lastIndexOf("/");
 				

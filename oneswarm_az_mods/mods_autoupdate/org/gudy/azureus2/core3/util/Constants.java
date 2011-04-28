@@ -30,7 +30,6 @@ import java.nio.charset.Charset;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
-import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.plugins.PluginInterface;
 
 import com.aelitis.azureus.core.impl.AzureusCoreImpl;
@@ -57,31 +56,10 @@ Constants
 
 	public final static String ONESWARM_ENTRY_URL = "http://127.0.0.1:" + LOCAL_WEB_SERVER_PORT + "/";
 
-//  public static final String AELITIS_TORRENTS		= "http://update.oneswarm.org/autoupdate/";
-//  public static final String AELITIS_TORRENTS		= getAELITIS_TORRENTS();
-//  public static final String AELITIS_FILES			= "http://update.oneswarm.org/files/";
-//  public static final String AELITIS_FILES			= getAELITIS_FILES();
+  public static final String AELITIS_TORRENTS		= "http://update.oneswarm.org/autoupdate/";
+  public static final String AELITIS_FILES			= "http://update.oneswarm.org/files/";
 
   public static final String AZUREUS_WIKI 			= "http://wiki.oneswarm.org/index.php/";
-
-  public static String getAELITIS_TORRENTS() {
-//	  System.out.println("getAELITIS_TORRENTS()");
-	  if( COConfigurationManager.getBooleanParameter("oneswarm.beta.updates") ) {
-		  return "http://update-dev.oneswarm.org/autoupdate/";
-	  } else {
-		  return "http://update.oneswarm.org/autoupdate/";
-	  }
-  }
-
-  public static String getAELITIS_FILES() {
-//	  System.out.println("getAELITIS_FILES()");
-	  if( COConfigurationManager.getBooleanParameter("oneswarm.beta.updates") ) {
-		  return "http://update-dev.oneswarm.org/files/";
-	  } else {
-		  return "http://update.oneswarm.org/files/";
-	  }
-  }
-
 
   public static final String  VERSION_SERVER_V4 	= "update-ae.oneswarm.org";
   public static final String  VERSION_SERVER_V6 	= "update-ae.oneswarm.org";
