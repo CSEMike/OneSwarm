@@ -565,7 +565,10 @@ public class SearchManager {
 					}
 
 				};
-				delayedExecutor.queue(overlayDelay, task);
+				// get the search delay.
+				int searchDelay = overlayManager.getSearchDelayForInfohash(source.getRemoteFriend(), infohash);
+				
+				delayedExecutor.queue(searchDelay + overlayDelay, task);
 
 				// we are still forwarding if there are files in the torrent
 				// that we chose not to download
@@ -910,8 +913,10 @@ public class SearchManager {
 					byte[] encoded = FileListManager.encode_basic(new FileList(list), false);
 
 					final OSF2FTextSearchResp resp = new OSF2FTextSearchResp(OSF2FMessage.CURRENT_VERSION, OSF2FMessage.FILE_LIST_TYPE_PARTIAL, msg.getSearchID(), channelId, encoded);
-					int delay = overlayManager.getSearchDelayForInfohash(source.getRemoteFriend(), c.getUniqueIdBytes());
-					delayedExecutionTasks.add(new DelayedExecutionEntry(time + delay, 0, new TimerTask() {
+					int searchDelay = overlayManager.getSearchDelayForInfohash(source.getRemoteFriend(), c.getUniqueIdBytes());
+					int overlayDelay = overlayManager.getLatencyDelayForInfohash(source.getRemoteFriend(), c.getUniqueIdBytes());
+
+					delayedExecutionTasks.add(new DelayedExecutionEntry(time + searchDelay + overlayDelay, 0, new TimerTask() {
 						@Override
 						public void run() {
 							/*
