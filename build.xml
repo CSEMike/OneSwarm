@@ -412,6 +412,7 @@
 			<fileset dir="gwt-bin/war/WEB-INF/classes">
 				<include name="**/*.class" />
 				<exclude name="**/planetlab/**.class" unless="plab.build" />
+				<exclude name="**/dmurph/**.class" unless="plab.build" />
 			</fileset>
 			
 			<!-- Language files -->
