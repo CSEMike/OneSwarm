@@ -34,7 +34,6 @@ import org.gudy.azureus2.core3.peer.PEPeer;
 import org.gudy.azureus2.core3.peer.PEPeerManager;
 import org.gudy.azureus2.core3.torrent.TOTorrent;
 import org.gudy.azureus2.core3.torrent.TOTorrentException;
-import org.gudy.azureus2.core3.torrent.TOTorrentFile;
 import org.gudy.azureus2.core3.torrent.impl.TOTorrentImpl;
 import org.gudy.azureus2.core3.util.ByteFormatter;
 import org.gudy.azureus2.core3.util.Debug;
@@ -57,11 +56,11 @@ public class FileListManager {
 	public static final int MAX_SEARCH_HITS = 30;
 	private static final int MAX_SEND_FILE_LIST_RATE = 30 * 1000;
 
-	private ConcurrentHashMap<Long, byte[]> hashhashToInfoHashMapping = new ConcurrentHashMap<Long, byte[]>();
+	private final ConcurrentHashMap<Long, byte[]> hashhashToInfoHashMapping = new ConcurrentHashMap<Long, byte[]>();
 
 	private final ConcurrentHashMap<Long, String> hashhashToTorrentName = new ConcurrentHashMap<Long, String>();
 	private final ConcurrentHashMap<Friend, FileList> incomingFileLists = new ConcurrentHashMap<Friend, FileList>();
-	private Semaphore initialFileListSemaphore = new Semaphore(0);
+	private final Semaphore initialFileListSemaphore = new Semaphore(0);
 	private volatile long lastTimeFileListSentToFriends = 0;
 	private final MetaInfoManager metaInfoManager;
 	private volatile FileList ownF2FFileList;
@@ -103,16 +102,20 @@ public class FileListManager {
 				}
 			}
 
+			@Override
 			public void destroyed() {
 			}
 
+			@Override
 			public void destroyInitiated() {
 			}
 
+			@Override
 			public void downloadManagerAdded(final DownloadManager dm) {
 				scheduleFileListRefresh();
 
 				dm.addListener(new DownloadManagerListener() {
+					@Override
 					public void stateChanged(DownloadManager manager, int state) {
 						if (manager.getState() == DownloadManager.STATE_ERROR) {
 							manager.getDownloadState().setBooleanAttribute(FILE_MISSING_CHECK_NEEDED, true);
@@ -122,17 +125,21 @@ public class FileListManager {
 						checkIfRefreshNeeded(dm);
 					}
 
+					@Override
 					public void positionChanged(DownloadManager download, int oldPosition, int newPosition) {
 					}
 
+					@Override
 					public void filePriorityChanged(DownloadManager download, DiskManagerFileInfo file) {
 					}
 
+					@Override
 					public void downloadComplete(DownloadManager manager) {
 						logger.fine("download completed, refresh might be needed");
 						checkIfRefreshNeeded(dm);
 					}
 
+					@Override
 					public void completionChanged(DownloadManager manager, boolean bCompleted) {
 						logger.fine("download completion changed, refresh might be needed");
 						checkIfRefreshNeeded(dm);
@@ -140,19 +147,24 @@ public class FileListManager {
 				});
 
 				dm.addPeerListener(new DownloadManagerPeerListener() {
+					@Override
 					public void peerRemoved(PEPeer peer) {
 						checkIfRefreshNeeded(dm);
 					}
 
+					@Override
 					public void peerManagerWillBeAdded(PEPeerManager manager) {
 					}
 
+					@Override
 					public void peerManagerRemoved(PEPeerManager manager) {
 					}
 
+					@Override
 					public void peerManagerAdded(PEPeerManager manager) {
 					}
 
+					@Override
 					public void peerAdded(PEPeer peer) {
 						logger.fine("peer added, refresh might be needed");
 						checkIfRefreshNeeded(dm);
@@ -161,10 +173,12 @@ public class FileListManager {
 
 			}
 
+			@Override
 			public void downloadManagerRemoved(DownloadManager dm) {
 				scheduleFileListRefresh();
 			}
 
+			@Override
 			public void seedingStatusChanged(boolean seeding_only_mode) {
 			}
 		});
@@ -420,11 +434,11 @@ public class FileListManager {
 
 	private long searchesTotal = 0;
 
-	long getSearchesTotal() {
+	public long getSearchesTotal() {
 		return searchesTotal;
 	}
 
-	long getSearchCacheHits() {
+	public long getSearchCacheHits() {
 		return searchCacheHits;
 	}
 
@@ -1026,6 +1040,7 @@ public class FileListManager {
 			lastRefreshRequested = System.currentTimeMillis();
 		}
 
+		@Override
 		public void run() {
 			try {
 				while (true) {
@@ -1066,6 +1081,7 @@ public class FileListManager {
 			super(MAX_SIZE, 0.75f, true);
 		}
 
+		@Override
 		protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) {
 			return size() > MAX_SIZE;
 		}
