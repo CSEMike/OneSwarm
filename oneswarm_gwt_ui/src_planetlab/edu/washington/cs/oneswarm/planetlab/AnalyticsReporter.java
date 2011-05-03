@@ -69,15 +69,15 @@ public class AnalyticsReporter extends Thread {
 					+ " (This is expected in integration tests.)");
 		}
 
+		Rate<Long> searchRate = new Rate<Long>();
+		Rate<Long> cacheHitRate = new Rate<Long>();
+
+		Rate<Long> uploadRate = new Rate<Long>();
+		Rate<Long> downloadRate = new Rate<Long>();
+
 		// Collect the stats, report, wait an hour, repeat.
 		while (true) {
 			
-			Rate<Long> searchRate = new Rate<Long>();
-			Rate<Long> cacheHitRate = new Rate<Long>();
-			
-			Rate<Long> uploadRate = new Rate<Long>();
-			Rate<Long> downloadRate = new Rate<Long>();
-
 			try {
 				
 				FileListManager filelistManager = f2f.getOverlayManager().getFilelistManager();

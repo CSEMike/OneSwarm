@@ -16,12 +16,14 @@ public class Rate<T extends Number> {
 	 */
 	public double updateAndGetRate(T latestValue) {
 
+		long now = System.currentTimeMillis();
+
 		if (eldestValue == null) {
 			eldestValue = latestValue;
+			eldestValueMs = now;
 			return 0;
 		}
 
-		long now = System.currentTimeMillis();
 		if (eldestValueMs == now) {
 			return 0;
 		}
@@ -33,5 +35,16 @@ public class Rate<T extends Number> {
 		eldestValueMs = now;
 
 		return out;
+	}
+
+	/** Small 2 QPS test app. */
+	public static final void main(String... args) throws Exception {
+
+		Rate<Long> r = new Rate<Long>();
+
+		for (long i = 0; i < 10; i++) {
+			System.out.println(r.updateAndGetRate(i));
+			Thread.sleep(500);
+		}
 	}
 }
