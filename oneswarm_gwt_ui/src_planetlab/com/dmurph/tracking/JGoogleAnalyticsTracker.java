@@ -467,7 +467,7 @@ public class JGoogleAnalyticsTracker {
 				logger.warning("JGoogleAnalyticsTracker: Error requesting url '" + argURL
 						+ "', received response code " + responseCode);
             } else {
-				logger.fine("JGoogleAnalyticsTracker: Tracking success for url '" + argURL + "'");
+				logger.info("JGoogleAnalyticsTracker: Tracking success for url '" + argURL + "'");
             }
         } catch (Exception e) {
 			logger.warning("Error making tracking request: " + e);

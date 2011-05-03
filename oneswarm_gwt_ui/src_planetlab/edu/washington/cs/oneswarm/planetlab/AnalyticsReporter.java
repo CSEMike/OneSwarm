@@ -33,6 +33,8 @@ public class AnalyticsReporter extends Thread {
 			return;
 		}
 
+		logger.info("Got tracking code: " + trackingCode);
+
 		AnalyticsConfigData analyticsConfig = new AnalyticsConfigData(trackingCode);
 		JGoogleAnalyticsTracker analyticsTracker = new JGoogleAnalyticsTracker(analyticsConfig,
 				GoogleAnalyticsVersion.V_4_7_2, DispatchMode.SYNCHRONOUS);
@@ -52,12 +54,14 @@ public class AnalyticsReporter extends Thread {
 				double cacheHitRateInst = cacheHitRate.updateAndGetRate(filelistManager
 						.getSearchCacheHits());
 
-				analyticsTracker.trackEvent("stats", "report", "searchHitRate",
-						(int) searchRateInst);
+				analyticsTracker
+						.trackEvent("stats", "rates", "searchHitRate", (int) searchRateInst);
 				
-				analyticsTracker.trackEvent("stats", "report", "searchCacheHitRate",
+				analyticsTracker.trackEvent("stats", "rates", "searchCacheHitRate",
 						(int) cacheHitRateInst);
 				
+				logger.info("Reported analytics stats events...");
+
 			} catch (Exception e) {
 				logger.warning("Error during analytics reporting: " + e.toString());
 			}
@@ -74,12 +78,23 @@ public class AnalyticsReporter extends Thread {
 	/** Test driver for the analytics code. */
 	public static final void main(String[] args) throws Exception {
 		String trackingCode = System.getProperty(EXPERIMENTAL_TRACKING_PROPERTY);
+		System.out.println("Got tracking code: " + trackingCode);
 		AnalyticsConfigData analyticsConfig = new AnalyticsConfigData(trackingCode);
 		JGoogleAnalyticsTracker analyticsTracker = new JGoogleAnalyticsTracker(analyticsConfig,
 				GoogleAnalyticsVersion.V_4_7_2, DispatchMode.SYNCHRONOUS);
 
+		System.out.println("tracking events...");
+
+		analyticsTracker.trackPageView("/pagewitheverything.java", "page with everything",
+				"www.dmurph.com");
+		analyticsTracker.trackEvent("Greetings", "Hello");
 		analyticsTracker.trackEvent("test", "report", "someAction", 5);
 		analyticsTracker.trackPageView("foobear.html", "test page", "somehostname");
+
+		System.out.println("Done with tracking events.");
+
+		Thread.sleep(1000);
+
 	}
 
 }
