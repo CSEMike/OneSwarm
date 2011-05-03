@@ -1,16 +1,13 @@
 package edu.washington.cs.oneswarm.planetlab;
 
-import org.apache.commons.lang.time.StopWatch;
-
 /** A class which accepts cumulative values and differences. */
 public class Rate<T extends Number> {
 
 	T eldestValue = null;
-	StopWatch watch = new StopWatch();
+	long eldestValueMs = 0;
 
 	public Rate() {
 		eldestValue = null;
-		watch.start();
 	}
 
 	/**
@@ -24,14 +21,17 @@ public class Rate<T extends Number> {
 			return 0;
 		}
 
-		if (watch.getTime() == 0) {
+		long now = System.currentTimeMillis();
+		if (eldestValueMs == now) {
 			return 0;
 		}
 
 		double out = (latestValue.doubleValue() - eldestValue.doubleValue())
-				/ (watch.getTime() / 1000.0);
-		watch.start();
+				/ ((now - eldestValueMs) / 1000.0);
+
 		eldestValue = latestValue;
+		eldestValueMs = now;
+
 		return out;
 	}
 }

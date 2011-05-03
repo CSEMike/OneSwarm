@@ -1,7 +1,14 @@
 package edu.washington.cs.oneswarm.planetlab;
 
+import java.io.InputStream;
+import java.net.InetAddress;
+import java.util.Properties;
 import java.util.logging.Logger;
 
+import org.gudy.azureus2.core3.util.Constants;
+
+import com.aelitis.azureus.core.AzureusCore;
+import com.aelitis.azureus.core.impl.AzureusCoreImpl;
 import com.dmurph.tracking.AnalyticsConfigData;
 import com.dmurph.tracking.JGoogleAnalyticsTracker;
 import com.dmurph.tracking.JGoogleAnalyticsTracker.DispatchMode;
@@ -35,9 +42,32 @@ public class AnalyticsReporter extends Thread {
 
 		logger.info("Got tracking code: " + trackingCode);
 
+		String hostname = "localhost";
+		try {
+			hostname = InetAddress.getLocalHost().getCanonicalHostName();
+		} catch (Exception e) {
+			logger.warning("Error during hostname retrieval: " + e.toString());
+		}
+
+		logger.info("Using hostname: " + hostname);
+
 		AnalyticsConfigData analyticsConfig = new AnalyticsConfigData(trackingCode);
 		JGoogleAnalyticsTracker analyticsTracker = new JGoogleAnalyticsTracker(analyticsConfig,
 				GoogleAnalyticsVersion.V_4_7_2, DispatchMode.SYNCHRONOUS);
+
+		AzureusCore core = AzureusCoreImpl.getSingleton();
+
+		String versionString = "Unknown";
+		try {
+			versionString = Constants.getOneSwarmAzureusModsVersion();
+			InputStream buildInfo = getClass().getClassLoader().getResourceAsStream("build.txt");
+			Properties info = new Properties();
+			info.load(buildInfo);
+			versionString = info.getProperty("build.number");
+		} catch (Exception e) {
+			logger.warning("Error loading build info: " + e.toString()
+					+ " (This is expected in integration tests.)");
+		}
 
 		// Collect the stats, report, wait an hour, repeat.
 		while (true) {
@@ -45,6 +75,9 @@ public class AnalyticsReporter extends Thread {
 			Rate<Long> searchRate = new Rate<Long>();
 			Rate<Long> cacheHitRate = new Rate<Long>();
 			
+			Rate<Long> uploadRate = new Rate<Long>();
+			Rate<Long> downloadRate = new Rate<Long>();
+
 			try {
 				
 				FileListManager filelistManager = f2f.getOverlayManager().getFilelistManager();
@@ -54,16 +87,36 @@ public class AnalyticsReporter extends Thread {
 				double cacheHitRateInst = cacheHitRate.updateAndGetRate(filelistManager
 						.getSearchCacheHits());
 
-				analyticsTracker
-						.trackEvent("stats", "rates", "searchHitRate", (int) searchRateInst);
+				long sessionUL = core.getGlobalManager().getStats().getTotalDataBytesSent()
+						+ core.getGlobalManager().getStats().getTotalProtocolBytesSent();
+				long sessionDL = core.getGlobalManager().getStats().getTotalDataBytesReceived()
+						+ core.getGlobalManager().getStats().getTotalProtocolBytesReceived();
+
+				// Heartbeat
+				analyticsTracker.trackPageView("/running.plab", versionString, hostname);
 				
-				analyticsTracker.trackEvent("stats", "rates", "searchCacheHitRate",
+				// Update rates
+				analyticsTracker.trackEvent("Stats", "Rates", "searchRate", (int) searchRateInst);
+				analyticsTracker.trackEvent("Stats", "Rates", "searchCacheHitRate",
 						(int) cacheHitRateInst);
+				analyticsTracker.trackEvent("Stats", "Rates", "upload",
+						(int) uploadRate.updateAndGetRate(sessionUL));
+				analyticsTracker.trackEvent("Stats", "Rates", "download",
+						(int) downloadRate.updateAndGetRate(sessionDL));
 				
+				// Update scalars
+				analyticsTracker.trackEvent("Stats", "Scalars", "friendConnections", f2f
+						.getOverlayManager().getConnectCount());
+
+				System.gc();
+				analyticsTracker.trackEvent("Stats", "Scalars", "mem", (int) Runtime.getRuntime()
+						.totalMemory());
+
 				logger.info("Reported analytics stats events...");
 
 			} catch (Exception e) {
 				logger.warning("Error during analytics reporting: " + e.toString());
+				e.printStackTrace();
 			}
 
 			// 1 hour between stat reporting
