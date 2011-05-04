@@ -944,14 +944,14 @@ public class FriendConnection {
 					&& asSearch.getSearchString().startsWith("ed2k;") == false) {
 				possiblePrune = false;
 			} else {
-				// Just always skip sha;, ed2k; searches for now.
+				// Just always skip sha1;, ed2k; searches for now.
 				// TODO(piatek): remove this when some more principled thing is figured out.
 				return;
 			}
+		} else {
+			// For now, just disable early drops
+			possiblePrune = false;
 		}
-		// else {
-		// possiblePrune = false;
-		// }
 
 		if (possiblePrune) {
 			// Early drop if we have it in the bloom filter
