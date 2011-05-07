@@ -39,6 +39,5 @@
 5.  Install [ant-contrib](http://ant-contrib.sourceforge.net/) (put the ant-contrib-1.0b3.jar in `%ANT_HOME%\lib`)
 
 6.  `git clone git@github.com:CSEMike/OneSwarm.git`
-7.  `set ANT_OPTS="-Xmx256m"`
-8.  `ant`
-9.  `ant run`
+7.  `ant`
+8.  `ant run`
