@@ -231,15 +231,17 @@ public class FriendConnection {
 					close();
 					return;
 				}
-				updateFriendConnectionLog(true, "connected to: " + getRemoteIp().getHostAddress() + ":" + getRemotePort());
+				updateFriendConnectionLog(true, "Connected to: " + getRemoteIp().getHostAddress()
+						+ ":" + getRemotePort());
 
 				boolean registered = listener.connectSuccess(FriendConnection.this);
 				if (!registered || !connection.isConnected()) {
-					updateFriendConnectionLog(true, "parallel connection closed");
+					updateFriendConnectionLog(true, "Parallel connection closed");
 					close();
 					return;
 				}
 				addQueueListener();
+				updateFriendConnectionLog(true, "Added queue listener");
 
 				if (debugMessageLog != null) {
 					connection.getOutgoingMessageQueue().registerQueueListener(new OutgoingQueueListener());
@@ -248,6 +250,8 @@ public class FriendConnection {
 				NetworkManager.getSingleton().startTransferProcessing(connection);
 				sendHandshake();
 				enableFastMessageProcessing(true);
+
+				updateFriendConnectionLog(true, "Sent handshake...");
 			}
 
 			@Override
