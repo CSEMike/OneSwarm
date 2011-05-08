@@ -41,3 +41,10 @@
 6.  `git clone git@github.com:CSEMike/OneSwarm.git`
 7.  `ant`
 8.  `ant run`
+
+
+# Testing
+
+Before running the full suite, ensure that the appengine community server is running. (The community server / CHT tests require this.)
+
+`ant test`
