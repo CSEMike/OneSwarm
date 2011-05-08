@@ -26,6 +26,8 @@ public class ChatTest extends TwoProcessTestBase {
 		 */
 
 		selenium.openWindow("http://127.0.0.1:4000/", "jvm");
+		selenium.openWindow("http://127.0.0.1:3000/", "local");
+
 		selenium.selectWindow("jvm");
 
 		// Wait for the friends list AJAX load to complete
@@ -51,8 +53,7 @@ public class ChatTest extends TwoProcessTestBase {
 		}, 5000).await();
 
 		// Switch to the other instance
-		selenium.openWindow("http://127.0.0.1:3000/", "localinstance");
-		selenium.selectWindow("localinstance");
+		selenium.selectWindow("local");
 
 		// Verify notification presence -- this could take up to 10 seconds since
 		// we have a 10 seconds poll (See {@code FriendListPanel.java}).
