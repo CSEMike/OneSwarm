@@ -557,7 +557,7 @@
       we can't use the JUnit ant task directly. Due to OSX SWT issues, we need
  	  to run each test as an individual java execution.
 	-->
-	<target name="run-tests" depends="compile-tests" >
+	<target name="test" depends="compile-tests" >
 		<!-- Sets oneswarm.test.cases -->
 		<DiscoverTestClasses />
 		<foreach target="run-single-test" list="${oneswarm.test.cases}" param="testClass" />	
