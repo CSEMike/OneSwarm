@@ -33,7 +33,7 @@ import java.nio.DoubleBuffer;
 import java.nio.MappedByteBuffer;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class FileReader {
@@ -49,140 +49,150 @@ public class FileReader {
         debug = false;
     }
 
-    public void skip(int len){
+    public void skip(int len) {
 
-        try{
+        try {
 
-            if(!stream.isOpen()){
+            if (!stream.isOpen()) {
                 stream.open();
             }
 
             stream.skip(len);
 
-        }catch(Exception e){
+        } catch (Exception e) {
 
             System.out.println("Error - unable to skip specified bytes");
-            if(debug){e.printStackTrace();}
+            if (debug) {
+                e.printStackTrace();
+            }
 
-        }//catch()
+        }// catch()
 
-    }//skip()
+    }// skip()
 
-    public byte[] readByteArray(int len){
+    public byte[] readByteArray(int len) {
 
         mbb = null;
 
-        try{
+        try {
 
-            if(!stream.isOpen()){
+            if (!stream.isOpen()) {
                 stream.open();
             }
 
             mbb = stream.read(len);
 
-        }catch(EoflvException eolex){
+        } catch (EoflvException eolex) {
 
-            //do nothing -- this is an expected exception when eof is reached
+            // do nothing -- this is an expected exception when eof is reached
 
-        }catch(Exception e){
+        } catch (Exception e) {
 
             System.out.println("Error - unable to read byte array at specified position");
-            if(debug){e.printStackTrace();}
+            if (debug) {
+                e.printStackTrace();
+            }
             mbb = null;
 
-        }//catch()
+        }// catch()
 
         return mbb;
 
-    }//readByteBuffer()
+    }// readByteBuffer()
 
-    public String readString(int len){
+    public String readString(int len) {
 
         String str = null;
 
-        try{
+        try {
 
-            if(!stream.isOpen()){
+            if (!stream.isOpen()) {
                 stream.open();
             }
 
             mbb = stream.read(len);
             str = new String(mbb);
 
-        }catch(Exception e){
+        } catch (Exception e) {
 
             System.out.println("Error - unable to read string at specified position");
-            if(debug){e.printStackTrace();}
+            if (debug) {
+                e.printStackTrace();
+            }
             str = "";
 
-        }//catch()
+        }// catch()
 
         return str;
 
-    }//readString()
+    }// readString()
 
-    public int readUint(int len){
+    public int readUint(int len) {
 
         int uint = 0;
 
-        try{
+        try {
 
-            if(!stream.isOpen()){
+            if (!stream.isOpen()) {
                 stream.open();
             }
 
             mbb = stream.read(len);
-            for(int i=0;i<len;i++){
-                uint += (mbb[i] & 0xFF) << ((len -i -1) * 8);
+            for (int i = 0; i < len; i++) {
+                uint += (mbb[i] & 0xFF) << ((len - i - 1) * 8);
             }
 
-        }catch(Exception e){
+        } catch (Exception e) {
 
             System.out.println("Error - unable to read unsigned integer at specified position");
-            if(debug){e.printStackTrace();}
+            if (debug) {
+                e.printStackTrace();
+            }
             uint = 0;
 
-        }//catch()
+        }// catch()
 
         return uint;
 
-    }//readUint()
+    }// readUint()
 
-    public int readInt(int len){
+    public int readInt(int len) {
 
         int uint = 0;
 
-        try{
+        try {
 
-            if(!stream.isOpen()){
+            if (!stream.isOpen()) {
                 stream.open();
             }
 
             mbb = stream.read(len);
-            for(int i=0;i<len;i++){
+            for (int i = 0; i < len; i++) {
                 uint += mbb[i];
             }
 
-        }catch(Exception e){
+        } catch (Exception e) {
 
             System.out.println("Error - unable to read signed integer at specified position");
-            if(debug){e.printStackTrace();}
+            if (debug) {
+                e.printStackTrace();
+            }
             uint = 0;
 
-        }//catch()
+        }// catch()
 
         return uint;
 
-    }//readUint()
+    }// readUint()
 
-    public double readDouble(int len){
+    public double readDouble(int len) {
 
         ByteBuffer bbuf = ByteBuffer.allocate(len);
         double db = 0;
 
-        try{
+        try {
 
-            if(!stream.isOpen()){
+            if (!stream.isOpen()) {
                 stream.open();
             }
 
@@ -191,19 +201,19 @@ public class FileReader {
             db = bbuf.getDouble();
             bbuf = null;
 
-        }catch(Exception e){
+        } catch (Exception e) {
 
             System.out.println("Error - unable to read doubler at specified position");
-            if(debug){e.printStackTrace();}
+            if (debug) {
+                e.printStackTrace();
+            }
             db = 0;
 
-        }//catch()
+        }// catch()
 
         return db;
 
-    }//readDouble()
-
-
+    }// readDouble()
 
     public StreamReader getStream() {
         return stream;
@@ -213,7 +223,7 @@ public class FileReader {
         this.stream = stream;
     }
 
-    public long getPos(){
+    public long getPos() {
         return stream.getPos();
     }
 
@@ -225,4 +235,4 @@ public class FileReader {
         this.debug = debug;
     }
 
-}//FileReader
+}// FileReader

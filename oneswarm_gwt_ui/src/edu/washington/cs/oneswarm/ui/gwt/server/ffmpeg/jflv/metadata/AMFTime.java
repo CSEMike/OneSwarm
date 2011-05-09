@@ -31,7 +31,7 @@ package edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.metadata;
 import java.util.Calendar;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class AMFTime {
@@ -50,13 +50,13 @@ public class AMFTime {
         utcTime = calcUTCTime(cal);
     }
 
-    private long calcUTCTime(Calendar cal){
+    private long calcUTCTime(Calendar cal) {
         gmtOffset = cal.get(Calendar.DST_OFFSET) - cal.get(Calendar.ZONE_OFFSET);
         cal.add(Calendar.MILLISECOND, -gmtOffset);
         return cal.getTime().getTime();
     }
 
-    //set last time edited in milliseconds
+    // set last time edited in milliseconds
     public AMFTime(long utcTime, int gmtOffset) {
 
         this.utcTime = utcTime;
@@ -68,45 +68,43 @@ public class AMFTime {
 
         this.localTime = cal.getTime().getTime();
 
-    }//AMFTime()
+    }// AMFTime()
 
     public long getTime() {
         return localTime;
     }
 
-    public String getTimeString(){
+    public String getTimeString() {
 
         StringBuffer calStr = new StringBuffer();
 
         cal = Calendar.getInstance();
         cal.setTimeInMillis(localTime);
 
-        calStr.append((cal.get(Calendar.MONTH) +1) + "/");
+        calStr.append((cal.get(Calendar.MONTH) + 1) + "/");
         calStr.append(cal.get(Calendar.DAY_OF_MONTH) + "/");
         calStr.append(cal.get(Calendar.YEAR) + " ");
         calStr.append(cal.get(Calendar.HOUR) + ":");
         calStr.append(cal.get(Calendar.MINUTE) + ":");
         calStr.append(cal.get(Calendar.SECOND) + " ");
-        if(cal.get(Calendar.AM_PM) == 0){
+        if (cal.get(Calendar.AM_PM) == 0) {
             calStr.append("AM  ");
-        }else{
+        } else {
             calStr.append("PM  ");
         }
 
-
         return calStr.toString();
 
-    }//getTimeString()
+    }// getTimeString()
 
-    //amf time is written as a double
-    public double getUTCTime(){
-        return (double)utcTime;
+    // amf time is written as a double
+    public double getUTCTime() {
+        return (double) utcTime;
     }
 
-    //gmt offset is written as signed int
-    public int getGMTOffset(){
+    // gmt offset is written as signed int
+    public int getGMTOffset() {
         return gmtOffset;
     }
 
-
-}//AMFTime
+}// AMFTime

@@ -37,7 +37,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class StreamWriter {
@@ -62,7 +62,7 @@ public class StreamWriter {
 
     }
 
-    public StreamWriter(File srcFile){
+    public StreamWriter(File srcFile) {
 
         pos = 0;
         chan = null;
@@ -80,67 +80,71 @@ public class StreamWriter {
         isOpened = true;
     }
 
-    public boolean isOpen(){
+    public boolean isOpen() {
         return this.isOpened;
     }
 
-    public void close(){
+    public void close() {
 
-        try{
+        try {
 
             chan.close();
             raf.close();
 
-        }catch(Exception e){
+        } catch (Exception e) {
 
-            if(debug){
+            if (debug) {
                 System.out.println("Error - unable to close stream");
                 e.printStackTrace();
             }
 
-        }finally{
+        } finally {
 
             chan = null;
             raf = null;
             isOpened = false;
 
-        }//finally()
+        }// finally()
 
-    }//close()
+    }// close()
 
-    public int write(ByteBuffer bbuf){
+    public int write(ByteBuffer bbuf) {
 
         int lenWritten = 0;
 
-        try{
+        try {
 
             lenWritten = chan.write(bbuf);
             pos += lenWritten;
 
-        }catch(IOException ex){
+        } catch (IOException ex) {
 
             System.out.println("Error - unable to write specified bytes");
-            if(debug){ex.printStackTrace();}
+            if (debug) {
+                ex.printStackTrace();
+            }
 
-        }//catch()
+        }// catch()
 
         return lenWritten;
 
-    }//write()
+    }// write()
 
-    public long writeDirect(long startOff, long len){
+    public long writeDirect(long startOff, long len) {
 
         long lenWritten = 0;
 
-        try{
+        try {
 
-            lenWritten = inStream.getChan().transferTo(startOff,len,chan);
+            lenWritten = inStream.getChan().transferTo(startOff, len, chan);
             pos += lenWritten;
 
-        }catch(IOException ex){
+        } catch (IOException ex) {
 
             System.out.println("Error - unable to transfer specified bytes from srcfile");
-            if(debug){ex.printStackTrace();}
+            if (debug) {
+                ex.printStackTrace();
+            }
 
         }
 
@@ -164,11 +168,11 @@ public class StreamWriter {
         this.chan = chan;
     }
 
-    public void setInputStream(StreamReader inStream){
+    public void setInputStream(StreamReader inStream) {
         this.inStream = inStream;
     }
 
-    public StreamReader getInputStream(){
+    public StreamReader getInputStream() {
         return inStream;
     }
 
@@ -180,4 +184,4 @@ public class StreamWriter {
         this.debug = debug;
     }
 
-}//StreamWriter
+}// StreamWriter

@@ -40,135 +40,135 @@ import java.text.DecimalFormat;
  */
 public class EmbeddedData {
 
-	private static DecimalFormat decf = new DecimalFormat("#####0.00###");
-	private HashMap<String, Object> metadata;
+    private static DecimalFormat decf = new DecimalFormat("#####0.00###");
+    private HashMap<String, Object> metadata;
 
-	/** Creates a new instance of EmbeddedData */
-	public EmbeddedData() {
-		metadata = new HashMap<String, Object>();
+    /** Creates a new instance of EmbeddedData */
+    public EmbeddedData() {
+        metadata = new HashMap<String, Object>();
 
-	}
+    }
 
-	public void addData(String key, Object value) {
-		metadata.put(key, value);
-	}
+    public void addData(String key, Object value) {
+        metadata.put(key, value);
+    }
 
-	public void removeData(String key) {
+    public void removeData(String key) {
 
-		try {
-			metadata.remove(key);
-		} catch (Exception e) {
-			// do nothing
-		}
+        try {
+            metadata.remove(key);
+        } catch (Exception e) {
+            // do nothing
+        }
 
-	}// removeData()
+    }// removeData()
 
-	public HashMap<String, Object> getData() {
-		return metadata;
-	}
+    public HashMap<String, Object> getData() {
+        return metadata;
+    }
 
-	public void setData(HashMap<String, Object> metadata) {
-		this.metadata = metadata;
-	}
+    public void setData(HashMap<String, Object> metadata) {
+        this.metadata = metadata;
+    }
 
-	public String printMetaData() {
-		return prettyPrintData(metadata);
-	}
+    public String printMetaData() {
+        return prettyPrintData(metadata);
+    }
 
-	public static String prettyPrintData(Object obj) {
+    public static String prettyPrintData(Object obj) {
 
-		String objClass = obj.getClass().getName();
-		StringBuffer metaprint = new StringBuffer();
+        String objClass = obj.getClass().getName();
+        StringBuffer metaprint = new StringBuffer();
 
-		if (objClass.endsWith("String")) {
-			metaprint.append((String) obj);
-		} else if (objClass.endsWith("Double")) {
-			metaprint.append(decf.format(((Double) obj).doubleValue()) + "");
-		} else if (objClass.endsWith("Boolean")) {
-			metaprint.append(((Boolean) obj).toString());
-		} else if (objClass.endsWith("HashMap")) {
-			metaprint.append(printMixedData((HashMap<String, Object>) obj));
-		} else if (objClass.endsWith("ArrayList")) {
-			metaprint.append(printArrayData((ArrayList<Object>) obj));
-		} else if (objClass.endsWith("AMFTime")) {
-			metaprint.append(((AMFTime) obj).getTimeString());
-		} else if (objClass.endsWith("AMFObject")) {
-			metaprint.append(printObjectData((AMFObject) obj));
-		}
+        if (objClass.endsWith("String")) {
+            metaprint.append((String) obj);
+        } else if (objClass.endsWith("Double")) {
+            metaprint.append(decf.format(((Double) obj).doubleValue()) + "");
+        } else if (objClass.endsWith("Boolean")) {
+            metaprint.append(((Boolean) obj).toString());
+        } else if (objClass.endsWith("HashMap")) {
+            metaprint.append(printMixedData((HashMap<String, Object>) obj));
+        } else if (objClass.endsWith("ArrayList")) {
+            metaprint.append(printArrayData((ArrayList<Object>) obj));
+        } else if (objClass.endsWith("AMFTime")) {
+            metaprint.append(((AMFTime) obj).getTimeString());
+        } else if (objClass.endsWith("AMFObject")) {
+            metaprint.append(printObjectData((AMFObject) obj));
+        }
 
-		objClass = null;
+        objClass = null;
 
-		return metaprint.toString();
+        return metaprint.toString();
 
-	}// prettyPrintData()
+    }// prettyPrintData()
 
-	private static String printObjectData(AMFObject amfObj) {
+    private static String printObjectData(AMFObject amfObj) {
 
-		String varname = null;
-		Object var = null;
-		StringBuffer mixprint = new StringBuffer();
+        String varname = null;
+        Object var = null;
+        StringBuffer mixprint = new StringBuffer();
 
-		Iterator it = amfObj.entrySet().iterator();
+        Iterator it = amfObj.entrySet().iterator();
 
-		while (it.hasNext()) {
+        while (it.hasNext()) {
 
-			Map.Entry entry = (Map.Entry) it.next();
-			varname = (String) entry.getKey();
-			var = (Object) entry.getValue();
+            Map.Entry entry = (Map.Entry) it.next();
+            varname = (String) entry.getKey();
+            var = (Object) entry.getValue();
 
-			if (varname != null && varname.length() > 0 && var != null) {
-				mixprint.append(varname + " : " + prettyPrintData(var) + "\n");
-			}
+            if (varname != null && varname.length() > 0 && var != null) {
+                mixprint.append(varname + " : " + prettyPrintData(var) + "\n");
+            }
 
-		}// while
+        }// while
 
-		varname = null;
-		var = null;
-		it = null;
+        varname = null;
+        var = null;
+        it = null;
 
-		return mixprint.toString();
+        return mixprint.toString();
 
-	}// printTimeData()
+    }// printTimeData()
 
-	private static String printArrayData(ArrayList<Object> arrObj) {
+    private static String printArrayData(ArrayList<Object> arrObj) {
 
-		StringBuffer arrprint = new StringBuffer();
+        StringBuffer arrprint = new StringBuffer();
 
-		for (Object obj : arrObj) {
-			arrprint.append("\n\t" + prettyPrintData(obj));
-		}
+        for (Object obj : arrObj) {
+            arrprint.append("\n\t" + prettyPrintData(obj));
+        }
 
-		arrprint.append("\n");
-		return arrprint.toString();
+        arrprint.append("\n");
+        return arrprint.toString();
 
-	}// printArrayData()
+    }// printArrayData()
 
-	private static String printMixedData(HashMap<String, Object> mapObj) {
+    private static String printMixedData(HashMap<String, Object> mapObj) {
 
-		String varname = null;
-		Object var = null;
-		StringBuffer mixprint = new StringBuffer();
+        String varname = null;
+        Object var = null;
+        StringBuffer mixprint = new StringBuffer();
 
-		Iterator it = mapObj.entrySet().iterator();
+        Iterator it = mapObj.entrySet().iterator();
 
-		while (it.hasNext()) {
+        while (it.hasNext()) {
 
-			Map.Entry entry = (Map.Entry) it.next();
-			varname = (String) entry.getKey();
-			var = (Object) entry.getValue();
+            Map.Entry entry = (Map.Entry) it.next();
+            varname = (String) entry.getKey();
+            var = (Object) entry.getValue();
 
-			if (varname != null && varname.length() > 0 && var != null) {
-				mixprint.append(varname + " : " + prettyPrintData(var) + "\n");
-			}
+            if (varname != null && varname.length() > 0 && var != null) {
+                mixprint.append(varname + " : " + prettyPrintData(var) + "\n");
+            }
 
-		}// while
+        }// while
 
-		varname = null;
-		var = null;
-		it = null;
+        varname = null;
+        var = null;
+        it = null;
 
-		return mixprint.toString();
+        return mixprint.toString();
 
-	}// printMixedData()
+    }// printMixedData()
 
 }// EmbeddedData

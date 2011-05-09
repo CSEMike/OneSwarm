@@ -29,7 +29,7 @@
 package edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.metadata;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class TagStor {
@@ -49,7 +49,7 @@ public class TagStor {
         isNewTag = false;
     }
 
-    public TagStor(int type, int dataSize, long timestamp, Object tag){
+    public TagStor(int type, int dataSize, long timestamp, Object tag) {
 
         this.type = type;
         this.dataSize = dataSize;
@@ -99,4 +99,4 @@ public class TagStor {
         this.isNewTag = isNewTag;
     }
 
-}//TagStor
+}// TagStor

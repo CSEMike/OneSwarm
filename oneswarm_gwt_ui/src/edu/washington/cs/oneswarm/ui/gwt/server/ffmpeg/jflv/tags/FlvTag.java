@@ -33,7 +33,7 @@ import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.io.FileReader;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.io.IOHelper;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class FlvTag {
@@ -52,7 +52,7 @@ public class FlvTag {
     private byte[] mbb;
 
     /** Creates a new instance of FlvTag */
-    public FlvTag(){
+    public FlvTag() {
         fh = null;
         bh = null;
         dataSize = 0;
@@ -75,14 +75,14 @@ public class FlvTag {
         startingOffset = fh.getPos();
         mbb = fh.readByteArray(dataSize);
 
-    }//FlvTag()
+    }// FlvTag()
 
-    public void clearData(){
+    public void clearData() {
         this.mbb = null;
     }
 
     public int getDataSize() {
-        //11 bytes for header plus 4 skipped bytes
+        // 11 bytes for header plus 4 skipped bytes
         return dataSize + 15;
     }
 
@@ -114,4 +114,4 @@ public class FlvTag {
         this.startingOffset = startingOffset;
     }
 
-}//FlvTag
+}// FlvTag

@@ -32,7 +32,7 @@ import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.io.BufferHelper;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.io.IOHelper;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class VideoTag extends FlvTag {
@@ -56,7 +56,7 @@ public class VideoTag extends FlvTag {
     private int codecId;
 
     /** Creates a new instance of VideoTag */
-    public VideoTag(){
+    public VideoTag() {
 
         bh = new BufferHelper();
         pos = 0;
@@ -87,116 +87,115 @@ public class VideoTag extends FlvTag {
         super.clearData();
         pos += 9;
 
-        if(codecId == H263VIDEOPACKET){
+        if (codecId == H263VIDEOPACKET) {
 
-            int hwCheck = bh.bit2uint(bits.substring(30,33).toCharArray());
+            int hwCheck = bh.bit2uint(bits.substring(30, 33).toCharArray());
             width = findWidth(hwCheck);
             height = findHeight(hwCheck);
 
-        }else if(codecId == SCREENVIDEOPACKET){
+        } else if (codecId == SCREENVIDEOPACKET) {
 
-            width = bh.bit2uint(bits.substring(4,16).toCharArray());
-            height = bh.bit2uint(bits.substring(16,28).toCharArray());
+            width = bh.bit2uint(bits.substring(4, 16).toCharArray());
+            height = bh.bit2uint(bits.substring(16, 28).toCharArray());
 
         }
 
-    }//VideoTag()
+    }// VideoTag()
 
-    private String padBitSequence(String bitSrc){
+    private String padBitSequence(String bitSrc) {
 
         String bitSeq = bitSrc;
         int pad = 72 - bitSeq.length();
 
-        if(pad > 0){
-            for(int i=0;i<pad;i++){
+        if (pad > 0) {
+            for (int i = 0; i < pad; i++) {
                 bitSeq = "0" + bitSeq;
             }
         }
 
         return bitSeq;
 
-    }//padBitSequence()
+    }// padBitSequence()
 
-    private int findWidth(int hwCheck){
+    private int findWidth(int hwCheck) {
 
         int width = 0;
 
-        switch(hwCheck){
+        switch (hwCheck) {
 
-            case 0:
-                width = bh.bit2uint(bits.substring(33,41).toCharArray());
-                break;
+        case 0:
+            width = bh.bit2uint(bits.substring(33, 41).toCharArray());
+            break;
 
-            case 1:
-                width = bh.bit2uint(bits.substring(33,49).toCharArray());
-                break;
+        case 1:
+            width = bh.bit2uint(bits.substring(33, 49).toCharArray());
+            break;
 
-            case 2:
-                width = 352;
-                break;
+        case 2:
+            width = 352;
+            break;
 
-            case 3:
-                width = 176;
-                break;
+        case 3:
+            width = 176;
+            break;
 
-            case 4:
-                width = 128;
-                break;
+        case 4:
+            width = 128;
+            break;
 
-            case 5:
-                width = 320;
-                break;
+        case 5:
+            width = 320;
+            break;
 
-            case 6:
-                width = 160;
-                break;
+        case 6:
+            width = 160;
+            break;
 
         }
 
         return width;
 
-    }//getWidth()
+    }// getWidth()
 
-
-     private int findHeight(int hwCheck){
+    private int findHeight(int hwCheck) {
 
         int height = 0;
 
-        switch(hwCheck){
+        switch (hwCheck) {
 
-            case 0:
-                height = bh.bit2uint(bits.substring(41,49).toCharArray());
-                break;
+        case 0:
+            height = bh.bit2uint(bits.substring(41, 49).toCharArray());
+            break;
 
-            case 1:
-                height = bh.bit2uint(bits.substring(49,65).toCharArray());
-                break;
+        case 1:
+            height = bh.bit2uint(bits.substring(49, 65).toCharArray());
+            break;
 
-            case 2:
-                height = 288;
-                break;
+        case 2:
+            height = 288;
+            break;
 
-            case 3:
-                height = 144;
-                break;
+        case 3:
+            height = 144;
+            break;
 
-            case 4:
-                height = 96;
-                break;
+        case 4:
+            height = 96;
+            break;
 
-            case 5:
-                height = 240;
-                break;
+        case 5:
+            height = 240;
+            break;
 
-            case 6:
-                height = 120;
-                break;
+        case 6:
+            height = 120;
+            break;
 
         }
 
         return height;
 
-    }//findHeight()
+    }// findHeight()
 
     public int getWidth() {
         return width;
@@ -222,7 +221,7 @@ public class VideoTag extends FlvTag {
         return byteOffset;
     }
 
-    public void setByteOffset(long byteOffset){
+    public void setByteOffset(long byteOffset) {
         this.byteOffset = byteOffset;
     }
 
@@ -246,4 +245,4 @@ public class VideoTag extends FlvTag {
         this.codecId = codecId;
     }
 
-}//VideoTag
+}// VideoTag

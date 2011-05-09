@@ -6,291 +6,294 @@ import com.google.gwt.user.client.rpc.IsSerializable;
 
 public class FriendInfoLite implements IsSerializable, Comparable<FriendInfoLite> {
 
-	public final static int STATUS_OFFLINE = 0;
+    public final static int STATUS_OFFLINE = 0;
 
-	public final static int STATUS_CONNECTING = 1;
+    public final static int STATUS_CONNECTING = 1;
 
-	public final static int STATUS_HANDSHAKING = 2;
+    public final static int STATUS_HANDSHAKING = 2;
 
-	public final static int STATUS_ONLINE = 3;
-	
-	public final static int STATUS_TO_BE_DELETED = -1;
+    public final static int STATUS_ONLINE = 3;
 
-	private boolean blocked;
-	private boolean canSeeFileList;
-	private boolean requestFileList;
-	public boolean isRequestFileList() {
-		return requestFileList;
-	}
+    public final static int STATUS_TO_BE_DELETED = -1;
 
-	public void setRequestFileList(boolean requestFileList) {
-		this.requestFileList = requestFileList;
-	}
+    private boolean blocked;
+    private boolean canSeeFileList;
+    private boolean requestFileList;
 
-	private boolean allowChat;
-	private int connectionId;
-	private int id;
-	private String name;
-	private String publicKey;
-	private String source;
-	private int status;
-	private long downloadedTotal;
-	private long downloadedSession;
-	private long uploadedTotal;
-	private long uploadedSession;
-	private String connectLog;
-	private Date lastConnectedDate;
-	private String lastConnectIp;
-	private int lastConnectPort;
-	private boolean supportsChat;
-	private boolean supportsExtendedFileLists;
-	private Date dateAdded;
-	
-	private String group;
+    public boolean isRequestFileList() {
+        return requestFileList;
+    }
 
-	public String getGroup() {
-		return group;
-	}
+    public void setRequestFileList(boolean requestFileList) {
+        this.requestFileList = requestFileList;
+    }
 
-	public void setGroup(String group) {
-		this.group = group;
-	}
+    private boolean allowChat;
+    private int connectionId;
+    private int id;
+    private String name;
+    private String publicKey;
+    private String source;
+    private int status;
+    private long downloadedTotal;
+    private long downloadedSession;
+    private long uploadedTotal;
+    private long uploadedSession;
+    private String connectLog;
+    private Date lastConnectedDate;
+    private String lastConnectIp;
+    private int lastConnectPort;
+    private boolean supportsChat;
+    private boolean supportsExtendedFileLists;
+    private Date dateAdded;
 
-	public Date getDateAdded() {
-		return dateAdded;
-	}
-	
-	public void setDateAdded(Date value) {
-		dateAdded = value;
-	}
-	
-	public Date getLastConnectedDate() {
-		return lastConnectedDate;
-	}
+    private String group;
 
-//	public boolean getselectedintable() {
-//		return selectedinfriendtable;
-//	}
-//	
-//	public void setselectedintable(boolean value) {
-//		selectedinfriendtable = value;
-//	}
+    public String getGroup() {
+        return group;
+    }
 
-	public void setLastConnectedDate(Date lastConnectedDate) {
-		this.lastConnectedDate = lastConnectedDate;
-	}
+    public void setGroup(String group) {
+        this.group = group;
+    }
 
-	public String getLastConnectIp() {
-		return lastConnectIp;
-	}
+    public Date getDateAdded() {
+        return dateAdded;
+    }
 
-	public void setLastConnectIp(String lastConnectIp) {
-		this.lastConnectIp = lastConnectIp;
-	}
+    public void setDateAdded(Date value) {
+        dateAdded = value;
+    }
 
-	public int getLastConnectPort() {
-		return lastConnectPort;
-	}
+    public Date getLastConnectedDate() {
+        return lastConnectedDate;
+    }
 
-	public void setLastConnectPort(int lastConnectPort) {
-		this.lastConnectPort = lastConnectPort;
-	}
+    // public boolean getselectedintable() {
+    // return selectedinfriendtable;
+    // }
+    //
+    // public void setselectedintable(boolean value) {
+    // selectedinfriendtable = value;
+    // }
 
-	public FriendInfoLite() {
+    public void setLastConnectedDate(Date lastConnectedDate) {
+        this.lastConnectedDate = lastConnectedDate;
+    }
 
-	}
+    public String getLastConnectIp() {
+        return lastConnectIp;
+    }
 
-	private int hashOfStateFields = 0;
+    public void setLastConnectIp(String lastConnectIp) {
+        this.lastConnectIp = lastConnectIp;
+    }
 
-	public int getHashOfStateFields() {
-		if (hashOfStateFields == 0) {
-			String stringToHash = "" + blocked + connectionId + id + name + publicKey + status;
-			hashOfStateFields = stringToHash.hashCode();
-		}
-		return hashOfStateFields;
-	}
+    public int getLastConnectPort() {
+        return lastConnectPort;
+    }
 
-	public FriendInfoLite(String publicKey, int connected, int id, String name, String source, int status, boolean blocked, boolean canSeeFileList, boolean allowChat, boolean requestFileList) {
-		super();
-		this.connectionId = connected;
-		this.id = id;
-		this.name = name;
-		this.source = source;
-		this.status = status;
-		this.blocked = blocked;
-		this.canSeeFileList = canSeeFileList;
-		this.allowChat = allowChat;
-		this.publicKey = publicKey;
-		this.requestFileList = requestFileList;
-	}
+    public void setLastConnectPort(int lastConnectPort) {
+        this.lastConnectPort = lastConnectPort;
+    }
 
-	public String getConnectionLog() {
-		return connectLog;
-	}
+    public FriendInfoLite() {
 
-	public void setConnectionLog(String connectLog) {
-		this.connectLog = connectLog;
-	}
+    }
 
-	public long getDownloadedTotal() {
-		return downloadedTotal;
-	}
+    private int hashOfStateFields = 0;
 
-	public void setDownloadedTotal(long downloadedTotal) {
-		this.downloadedTotal = downloadedTotal;
-	}
+    public int getHashOfStateFields() {
+        if (hashOfStateFields == 0) {
+            String stringToHash = "" + blocked + connectionId + id + name + publicKey + status;
+            hashOfStateFields = stringToHash.hashCode();
+        }
+        return hashOfStateFields;
+    }
 
-	public long getDownloadedSession() {
-		return downloadedSession;
-	}
+    public FriendInfoLite(String publicKey, int connected, int id, String name, String source,
+            int status, boolean blocked, boolean canSeeFileList, boolean allowChat,
+            boolean requestFileList) {
+        super();
+        this.connectionId = connected;
+        this.id = id;
+        this.name = name;
+        this.source = source;
+        this.status = status;
+        this.blocked = blocked;
+        this.canSeeFileList = canSeeFileList;
+        this.allowChat = allowChat;
+        this.publicKey = publicKey;
+        this.requestFileList = requestFileList;
+    }
 
-	public void setDownloadedSession(long downloadedSession) {
-		this.downloadedSession = downloadedSession;
-	}
+    public String getConnectionLog() {
+        return connectLog;
+    }
 
-	public long getUploadedTotal() {
-		return uploadedTotal;
-	}
+    public void setConnectionLog(String connectLog) {
+        this.connectLog = connectLog;
+    }
 
-	public void setUploadedTotal(long uploadedTotal) {
-		this.uploadedTotal = uploadedTotal;
-	}
+    public long getDownloadedTotal() {
+        return downloadedTotal;
+    }
 
-	public long getUploadedSession() {
-		return uploadedSession;
-	}
+    public void setDownloadedTotal(long downloadedTotal) {
+        this.downloadedTotal = downloadedTotal;
+    }
 
-	public void setUploadedSession(long uploadedSession) {
-		this.uploadedSession = uploadedSession;
-	}
+    public long getDownloadedSession() {
+        return downloadedSession;
+    }
 
-	public int compareTo(FriendInfoLite o) {
-		if (o != null) {
-			if (o.getStatus() == STATUS_ONLINE && getStatus() == STATUS_ONLINE) {
-				String n = o.getName();
+    public void setDownloadedSession(long downloadedSession) {
+        this.downloadedSession = downloadedSession;
+    }
 
-				if (n != null && name != null) {
-					return name.toLowerCase().compareTo(n.toLowerCase());
-				}
-			} else if (getStatus() == STATUS_ONLINE) {
-				return -1;
-			} else if (o.getStatus() == STATUS_ONLINE) {
-				return 1;
-			} else {
-				String n = o.getName();
-				if (n != null && name != null) {
-					return name.toLowerCase().compareTo(n.toLowerCase());
-				}
-			}
+    public long getUploadedTotal() {
+        return uploadedTotal;
+    }
 
-		}
-		return 1;
-	}
+    public void setUploadedTotal(long uploadedTotal) {
+        this.uploadedTotal = uploadedTotal;
+    }
 
-	public int getConnectionId() {
-		return connectionId;
-	}
+    public long getUploadedSession() {
+        return uploadedSession;
+    }
 
-	public int getId() {
-		return id;
-	}
+    public void setUploadedSession(long uploadedSession) {
+        this.uploadedSession = uploadedSession;
+    }
 
-	public String getName() {
-		return name;
-	}
+    public int compareTo(FriendInfoLite o) {
+        if (o != null) {
+            if (o.getStatus() == STATUS_ONLINE && getStatus() == STATUS_ONLINE) {
+                String n = o.getName();
 
-	public String getPublicKey() {
-		return publicKey;
-	}
+                if (n != null && name != null) {
+                    return name.toLowerCase().compareTo(n.toLowerCase());
+                }
+            } else if (getStatus() == STATUS_ONLINE) {
+                return -1;
+            } else if (o.getStatus() == STATUS_ONLINE) {
+                return 1;
+            } else {
+                String n = o.getName();
+                if (n != null && name != null) {
+                    return name.toLowerCase().compareTo(n.toLowerCase());
+                }
+            }
 
-	public String getSource() {
-		return source;
-	}
+        }
+        return 1;
+    }
 
-	public int getStatus() {
-		return status;
-	}
+    public int getConnectionId() {
+        return connectionId;
+    }
 
-	public boolean isBlocked() {
-		return blocked;
-	}
+    public int getId() {
+        return id;
+    }
 
-	public boolean isCanSeeFileList() {
-		return canSeeFileList;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setBlocked(boolean blocked) {
-		this.blocked = blocked;
-	}
+    public String getPublicKey() {
+        return publicKey;
+    }
 
-	public void setCanSeeFileList(boolean canSeeFileList) {
-		this.canSeeFileList = canSeeFileList;
-	}
+    public String getSource() {
+        return source;
+    }
 
-	public void setConnectionId(int connectionId) {
-		this.connectionId = connectionId;
-	}
+    public int getStatus() {
+        return status;
+    }
 
-	public void setId(int id) {
-		this.id = id;
-	}
+    public boolean isBlocked() {
+        return blocked;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public boolean isCanSeeFileList() {
+        return canSeeFileList;
+    }
 
-	public void setPublicKey(String publicKey) {
-		this.publicKey = publicKey;
-	}
+    public void setBlocked(boolean blocked) {
+        this.blocked = blocked;
+    }
 
-	public void setSource(String source) {
-		this.source = source;
-	}
+    public void setCanSeeFileList(boolean canSeeFileList) {
+        this.canSeeFileList = canSeeFileList;
+    }
 
-	public void setStatus(int status) {
-		this.status = status;
-	}
+    public void setConnectionId(int connectionId) {
+        this.connectionId = connectionId;
+    }
 
-	public boolean equals(Object rhs) {
-		if (rhs instanceof FriendInfoLite) {
-			return ((FriendInfoLite) rhs).getPublicKey().equals(this.getPublicKey());
-		}
-		return false;
-	}
+    public void setId(int id) {
+        this.id = id;
+    }
 
-	public int hashCode() {
-		return this.getPublicKey().hashCode();
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public String toString() {
-		return getName();
-	}
+    public void setPublicKey(String publicKey) {
+        this.publicKey = publicKey;
+    }
 
-	public boolean isSupportsChat() {
-		return supportsChat;
-	}
+    public void setSource(String source) {
+        this.source = source;
+    }
 
-	public void setSupportsChat(boolean supportsChat) {
-		this.supportsChat = supportsChat;
-	}
+    public void setStatus(int status) {
+        this.status = status;
+    }
 
-	public boolean isSupportsExtendedFileLists() {
-		return supportsExtendedFileLists;
-	}
+    public boolean equals(Object rhs) {
+        if (rhs instanceof FriendInfoLite) {
+            return ((FriendInfoLite) rhs).getPublicKey().equals(this.getPublicKey());
+        }
+        return false;
+    }
 
-	public void setSupportsExtendedFileLists(boolean supportsExtendedFileLists) {
-		this.supportsExtendedFileLists = supportsExtendedFileLists;
-	}
+    public int hashCode() {
+        return this.getPublicKey().hashCode();
+    }
 
-	public boolean isAllowChat() {
-		return allowChat;
-	}
+    public String toString() {
+        return getName();
+    }
 
-	public void setAllowChat(boolean allowChat) {
-		this.allowChat = allowChat;
-	}
+    public boolean isSupportsChat() {
+        return supportsChat;
+    }
 
-	public boolean isConnected() {
-		return getStatus() == STATUS_ONLINE;
-	}
+    public void setSupportsChat(boolean supportsChat) {
+        this.supportsChat = supportsChat;
+    }
+
+    public boolean isSupportsExtendedFileLists() {
+        return supportsExtendedFileLists;
+    }
+
+    public void setSupportsExtendedFileLists(boolean supportsExtendedFileLists) {
+        this.supportsExtendedFileLists = supportsExtendedFileLists;
+    }
+
+    public boolean isAllowChat() {
+        return allowChat;
+    }
+
+    public void setAllowChat(boolean allowChat) {
+        this.allowChat = allowChat;
+    }
+
+    public boolean isConnected() {
+        return getStatus() == STATUS_ONLINE;
+    }
 }

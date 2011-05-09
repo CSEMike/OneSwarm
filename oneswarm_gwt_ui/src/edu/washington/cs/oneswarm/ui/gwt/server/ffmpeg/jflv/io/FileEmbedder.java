@@ -34,7 +34,7 @@ import java.io.FileReader;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.metadata.EmbeddedData;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class FileEmbedder {
@@ -43,56 +43,59 @@ public class FileEmbedder {
     private EmbeddedData emb;
 
     /** Creates a new instance of FileEmbedder */
-    public FileEmbedder(EmbeddedData emb){
+    public FileEmbedder(EmbeddedData emb) {
         this.debug = false;
         this.emb = emb;
     }
 
-    public void embedFile(String varname, String filepath){
+    public void embedFile(String varname, String filepath) {
 
         StringBuffer filecontents = new StringBuffer();
 
-        try{
+        try {
 
             BufferedReader in = new BufferedReader(new FileReader(filepath));
             String str = null;
 
-            while((str = in.readLine()) != null){
+            while ((str = in.readLine()) != null) {
                 filecontents.append(str);
             }
 
             in.close();
 
-        }catch(Exception e){
+        } catch (Exception e) {
 
             System.out.println("Error - could not read external metatdata file");
-            if(debug){e.printStackTrace();}
+            if (debug) {
+                e.printStackTrace();
+            }
 
-        }//catch()
+        }// catch()
 
-        emb.addData(varname,filecontents.toString());
+        emb.addData(varname, filecontents.toString());
 
-    }//embedFile()
+    }// embedFile()
 
-    public void embedVars(String[] vars){
+    public void embedVars(String[] vars) {
 
         int index = 0;
 
-        for(String str : vars){
+        for (String str : vars) {
 
-            try{
+            try {
                 index = str.indexOf("=");
-                embedVar(str.substring(0,index), str.substring(index+1));
-            }catch(Exception e){
-                System.out.println("Error parsing embed vars ... skipping malformed pair '" + str + "'");
+                embedVar(str.substring(0, index), str.substring(index + 1));
+            } catch (Exception e) {
+                System.out.println("Error parsing embed vars ... skipping malformed pair '" + str
+                        + "'");
             }
 
-        }//for
+        }// for
 
-    }//embedVars()
+    }// embedVars()
 
-    public void embedVar(String varname, String value){
-        emb.addData(varname,value);
+    public void embedVar(String varname, String value) {
+        emb.addData(varname, value);
     }
 
     public boolean isDebug() {
@@ -103,4 +106,4 @@ public class FileEmbedder {
         this.debug = debug;
     }
 
-}//FileEmbedder
+}// FileEmbedder

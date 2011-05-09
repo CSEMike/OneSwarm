@@ -33,61 +33,61 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class FrameSequence {
 
-    private HashMap<Integer,Integer> sequenceCount;
+    private HashMap<Integer, Integer> sequenceCount;
     private int tmp;
 
     /** Creates a new instance of FrameSequence */
     public FrameSequence() {
-        sequenceCount = new HashMap<Integer,Integer>();
+        sequenceCount = new HashMap<Integer, Integer>();
         tmp = 0;
     }
 
-    public double getFrameRate(){
+    public double getFrameRate() {
 
         tmp = 0;
         int lastCount = 0;
         int framerate = 0;
         Iterator keyValuePairs = sequenceCount.entrySet().iterator();
 
-	for(int i=0;i<sequenceCount.size();i++){
+        for (int i = 0; i < sequenceCount.size(); i++) {
 
-	    Map.Entry entry = (Map.Entry)keyValuePairs.next();
-	    tmp = ((Integer)entry.getValue()).intValue();
+            Map.Entry entry = (Map.Entry) keyValuePairs.next();
+            tmp = ((Integer) entry.getValue()).intValue();
 
-            if(tmp > lastCount){
-                framerate = ((Integer)entry.getKey()).intValue();
+            if (tmp > lastCount) {
+                framerate = ((Integer) entry.getKey()).intValue();
                 lastCount = tmp;
             }
 
-        }//for
+        }// for
 
         keyValuePairs = null;
 
         return (1000d / framerate);
 
-    }//getFrameRate()
+    }// getFrameRate()
 
-    public void addSequence(int seq){
+    public void addSequence(int seq) {
 
-        if(seq > 0){
+        if (seq > 0) {
 
             Integer sequenceVal = new Integer(seq);
 
-            if(sequenceCount.containsKey(sequenceVal)){
+            if (sequenceCount.containsKey(sequenceVal)) {
                 tmp = sequenceCount.get(sequenceVal).intValue() + 1;
                 sequenceCount.remove(sequenceVal);
                 sequenceCount.put(sequenceVal, new Integer(tmp));
-            }else{
+            } else {
                 sequenceCount.put(sequenceVal, new Integer(1));
             }
 
-        }//if
+        }// if
 
-    }//addSequence()
+    }// addSequence()
 
-}//FrameSequence
+}// FrameSequence

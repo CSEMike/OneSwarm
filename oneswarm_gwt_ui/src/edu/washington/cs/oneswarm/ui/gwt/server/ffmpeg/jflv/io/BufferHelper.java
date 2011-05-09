@@ -37,7 +37,7 @@ import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.metadata.AMFObject;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.metadata.AMFTime;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class BufferHelper {
@@ -57,14 +57,14 @@ public class BufferHelper {
         buf = null;
     }
 
-    public void reset(){
+    public void reset() {
         mbb = null;
         pos = 0;
         str = null;
         buf = null;
     }
 
-    public ByteBuffer byte2buffer(byte[] bytes){
+    public ByteBuffer byte2buffer(byte[] bytes) {
 
         ByteBuffer bbuf = ByteBuffer.allocate(bytes.length);
         bbuf.put(bytes);
@@ -72,182 +72,184 @@ public class BufferHelper {
 
         return bbuf;
 
-    }//byte2buffer()
+    }// byte2buffer()
 
-    public int bit2uint(char[] bits){
+    public int bit2uint(char[] bits) {
 
         int uint = 0;
 
-        for(int i=0;i<bits.length;i++){
-            if(bits[i] == '1'){
-                uint += Math.pow(2, (bits.length -i -1));
+        for (int i = 0; i < bits.length; i++) {
+            if (bits[i] == '1') {
+                uint += Math.pow(2, (bits.length - i - 1));
             }
         }
 
         return uint;
 
-    }//bit2uint
+    }// bit2uint
 
     // read uint from existing byte[]
-    public int readUint(byte[] mpb, int start, int len){
+    public int readUint(byte[] mpb, int start, int len) {
 
         int uint = 0;
 
-        for(int i=0;i<len;i++){
-            uint += (mpb[i+start] & 0xFF) << ((len -i -1)*8);
+        for (int i = 0; i < len; i++) {
+            uint += (mpb[i + start] & 0xFF) << ((len - i - 1) * 8);
         }
 
         return uint;
 
-    }//readUint()
+    }// readUint()
 
     // read int from existing byte[]
-    public int readInt(byte[] mpb, int start, int len){
+    public int readInt(byte[] mpb, int start, int len) {
 
         int uint = 0;
 
-        for(int i=0;i<len;i++){
-            uint += mpb[i+start];
+        for (int i = 0; i < len; i++) {
+            uint += mpb[i + start];
         }
 
         return uint;
 
-    }//readUint()
+    }// readUint()
 
     // read binary string from existing byte[]
-    public String readBinaryString(byte[] mpb, int start, int len){
+    public String readBinaryString(byte[] mpb, int start, int len) {
 
         buf = new byte[len];
-        System.arraycopy(mpb,start,buf,0,len);
+        System.arraycopy(mpb, start, buf, 0, len);
 
         return new BigInteger(buf).toString(2);
 
-    } //readBinaryString()
+    } // readBinaryString()
 
     // read String from existing byte[]
-    public String readString(byte[] mpb, int start, int len){
+    public String readString(byte[] mpb, int start, int len) {
 
         buf = new byte[len];
         str = null;
 
-        try{
+        try {
 
-            System.arraycopy(mpb,start,buf,0,len);
+            System.arraycopy(mpb, start, buf, 0, len);
             str = new String(buf);
             buf = null;
 
-        }catch(Exception e){
+        } catch (Exception e) {
 
             System.out.println("Error - could not read string from given bytes");
-            if(debug){e.printStackTrace();}
+            if (debug) {
+                e.printStackTrace();
+            }
             str = "";
 
         }
 
         return str;
 
-    }//readString()
+    }// readString()
 
     // read uint from existing byte[]
-    public double readDouble(byte[] mpb, int start, int len){
+    public double readDouble(byte[] mpb, int start, int len) {
 
         ByteBuffer bbuf = ByteBuffer.allocate(len);
         buf = new byte[len];
-        System.arraycopy(mpb,start,buf,0,len);
+        System.arraycopy(mpb, start, buf, 0, len);
         bbuf.put(buf);
         bbuf.rewind();
         buf = null;
 
-        return  bbuf.getDouble();
+        return bbuf.getDouble();
 
-    }//readDouble()
+    }// readDouble()
 
-    public void reverseByteArray(byte[] b){
+    public void reverseByteArray(byte[] b) {
 
-        int left  = 0;
-        int right = b.length-1;
+        int left = 0;
+        int right = b.length - 1;
 
         while (left < right) {
 
             byte temp = b[left];
-            b[left]  = b[right];
+            b[left] = b[right];
             b[right] = temp;
 
             left++;
             right--;
 
-        }//while
+        }// while
 
-    }//reverse
+    }// reverse
 
-    public Object getAMFData(){
+    public Object getAMFData() {
 
         int amfSwtch = readUint(mbb, pos, 1);
         pos += 1;
 
         return getAMFData(amfSwtch);
 
-    }//getAMFData()
+    }// getAMFData()
 
-    public Object getAMFData(int amfSwtch){
+    public Object getAMFData(int amfSwtch) {
 
         Object amfData = null;
 
-        switch(amfSwtch){
+        switch (amfSwtch) {
 
-            case 0:
-                amfData = getAMFDouble();
-                break;
+        case 0:
+            amfData = getAMFDouble();
+            break;
 
-            case 1:
-                amfData = getAMFBoolean();
-                break;
+        case 1:
+            amfData = getAMFBoolean();
+            break;
 
-            case 2:
-                amfData = getAMFString();
-                break;
+        case 2:
+            amfData = getAMFString();
+            break;
 
-            case 3:
-                amfData = getAMFObject();
-                break;
+        case 3:
+            amfData = getAMFObject();
+            break;
 
-            case 8:
-                amfData = getAMFMixedArray();
-                break;
+        case 8:
+            amfData = getAMFMixedArray();
+            break;
 
-            case 10:
-                amfData = getAMFArray();
-                break;
+        case 10:
+            amfData = getAMFArray();
+            break;
 
-            case 11:
-                amfData = getAMFTime();
-                break;
+        case 11:
+            amfData = getAMFTime();
+            break;
 
         }
 
         return amfData;
 
-    }//getAMFData()
+    }// getAMFData()
 
-    public Double getAMFDouble(){
+    public Double getAMFDouble() {
 
         double dbl = readDouble(mbb, pos, 8);
         pos += 8;
 
         return new Double(dbl);
 
-    }//getAMFDouble()
+    }// getAMFDouble()
 
-    public Boolean getAMFBoolean(){
+    public Boolean getAMFBoolean() {
 
         int val = readUint(mbb, pos, 1);
         pos += 1;
 
         return new Boolean((val == 1));
 
-    }//getAMFBoolean()
+    }// getAMFBoolean()
 
-    public String getAMFString(){
+    public String getAMFString() {
 
         int bytes2read = readUint(mbb, pos, 2);
         pos += 2;
@@ -257,18 +259,18 @@ public class BufferHelper {
 
         return str;
 
-    }//getAMFString()
+    }// getAMFString()
 
-    public AMFObject getAMFObject(){
+    public AMFObject getAMFObject() {
 
         AMFObject amfObj = new AMFObject();
 
         String key = "";
         int type = 0;
 
-        do{
+        do {
 
-            if(pos >= mbb.length){
+            if (pos >= mbb.length) {
                 break;
             }
 
@@ -276,27 +278,27 @@ public class BufferHelper {
             type = readUint(mbb, pos, 1);
             pos += 1;
 
-            amfObj.put(key,getAMFData(type));
+            amfObj.put(key, getAMFData(type));
 
-        }while(!(key.length() < 1 && type == 9));
+        } while (!(key.length() < 1 && type == 9));
 
         return amfObj;
 
-    }//getAMFObject()
+    }// getAMFObject()
 
-    public HashMap<String,Object> getAMFMixedArray(){
+    public HashMap<String, Object> getAMFMixedArray() {
 
-        //just skip 4 bytes
+        // just skip 4 bytes
         pos += 4;
 
-        HashMap<String,Object> amfMap = new HashMap<String,Object>();
+        HashMap<String, Object> amfMap = new HashMap<String, Object>();
 
         String key = "";
         int type = 0;
 
-        do{
+        do {
 
-            if(pos >= mbb.length){
+            if (pos >= mbb.length) {
                 break;
             }
 
@@ -304,54 +306,53 @@ public class BufferHelper {
             type = readUint(mbb, pos, 1);
             pos += 1;
 
-            amfMap.put(key,getAMFData(type));
+            amfMap.put(key, getAMFData(type));
 
-        }while(!(key.length() < 1 && type == 9));
+        } while (!(key.length() < 1 && type == 9));
 
         return amfMap;
 
-    }//getAMFMixedArray()
+    }// getAMFMixedArray()
 
-    public ArrayList<Object> getAMFArray(){
+    public ArrayList<Object> getAMFArray() {
 
         int size = readUint(mbb, pos, 4);
         pos += 4;
 
         ArrayList<Object> afmArray = new ArrayList<Object>();
 
-        for(int i=0;i<size;i++){
+        for (int i = 0; i < size; i++) {
             afmArray.add(getAMFData());
         }
 
         return afmArray;
 
-    }//getAMFArray()
+    }// getAMFArray()
 
-    public AMFTime getAMFTime(){
+    public AMFTime getAMFTime() {
 
-        //get time in milliseconds
-        long time = (long)getAMFDouble().doubleValue();
+        // get time in milliseconds
+        long time = (long) getAMFDouble().doubleValue();
 
         byte[] buf = new byte[2];
-        System.arraycopy(mbb,pos,buf,0,2);
+        System.arraycopy(mbb, pos, buf, 0, 2);
         pos += 2;
 
         reverseByteArray(buf);
 
-        //get gmt offset in milliseconds
+        // get gmt offset in milliseconds
         int gmtOff = 0;
-        for(int i=0;i<2;i++){
-            gmtOff += (buf[i] & 0xFF) << ((1 -i)*8);
+        for (int i = 0; i < 2; i++) {
+            gmtOff += (buf[i] & 0xFF) << ((1 - i) * 8);
         }
         buf = null;
         int gmt = gmtOff * 60 * 1000;
 
         return new AMFTime(time, gmt);
 
-    }//getAMFTime()
+    }// getAMFTime()
 
-
-    public void clearData(){
+    public void clearData() {
         this.mbb = null;
     }
 
@@ -371,4 +372,4 @@ public class BufferHelper {
         this.debug = debug;
     }
 
-}//BufferHelper
+}// BufferHelper

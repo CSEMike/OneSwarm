@@ -4,17 +4,17 @@ import com.google.gwt.user.client.ui.Label;
 
 public class SortableInt extends Label implements Comparable {
 
-	int val = 0;
+    int val = 0;
 
-	public SortableInt(int val) {
-		super(Integer.toString(val));
-		this.val = val;
-	}
+    public SortableInt(int val) {
+        super(Integer.toString(val));
+        this.val = val;
+    }
 
-	public int compareTo(Object o) {
-		if (o instanceof SortableInt) {
-			return val - ((SortableInt)o).val;
-		}
-		return -1;
-	}
+    public int compareTo(Object o) {
+        if (o instanceof SortableInt) {
+            return val - ((SortableInt) o).val;
+        }
+        return -1;
+    }
 }

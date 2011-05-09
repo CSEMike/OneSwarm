@@ -32,10 +32,10 @@ import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.io.BufferHelper;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.io.IOHelper;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
-public class AudioTag extends FlvTag{
+public class AudioTag extends FlvTag {
 
     public static final int UNCOMPRESSED = 0;
     public static final int ADPCM = 1;
@@ -53,7 +53,7 @@ public class AudioTag extends FlvTag{
     private int soundType;
 
     /** Creates a new instance of AudioTag */
-    public AudioTag(){
+    public AudioTag() {
         bh = new BufferHelper();
         soundFormat = 0;
         soundRate = 0;
@@ -69,61 +69,61 @@ public class AudioTag extends FlvTag{
         String bits = padBitSequence(bh.readUint(super.getData(), 0, 1));
         super.clearData();
 
-        soundFormat = bh.bit2uint(bits.substring(0,4).toCharArray());
-        soundSampleSize = ((bh.bit2uint(bits.substring(6,7).toCharArray())) * 8) + 8;
+        soundFormat = bh.bit2uint(bits.substring(0, 4).toCharArray());
+        soundSampleSize = ((bh.bit2uint(bits.substring(6, 7).toCharArray())) * 8) + 8;
 
-        if(soundFormat == NELLYMOSER8KHZMONO){
+        if (soundFormat == NELLYMOSER8KHZMONO) {
             soundRate = 8000;
             soundType = MONO;
-        }else{
-            soundRate = findSoundRate(bh.bit2uint(bits.substring(4,6).toCharArray()));
-            soundType = bh.bit2uint(bits.substring(7,8).toCharArray());
-            //System.out.println("sound type : " + soundType);
+        } else {
+            soundRate = findSoundRate(bh.bit2uint(bits.substring(4, 6).toCharArray()));
+            soundType = bh.bit2uint(bits.substring(7, 8).toCharArray());
+            // System.out.println("sound type : " + soundType);
         }
 
-    }//AudioTag()
+    }// AudioTag()
 
-    private String padBitSequence(int bitSrc){
+    private String padBitSequence(int bitSrc) {
 
         String bitSeq = Integer.toBinaryString(bitSrc);
         int pad = 8 - bitSeq.length();
 
-        if(pad > 0){
-            for(int i=0;i<pad;i++){
+        if (pad > 0) {
+            for (int i = 0; i < pad; i++) {
                 bitSeq = "0" + bitSeq;
             }
         }
 
         return bitSeq;
 
-    }//padBitSequence()
+    }// padBitSequence()
 
-    private int findSoundRate(int rateSwtch){
+    private int findSoundRate(int rateSwtch) {
 
         int realRate = 0;
 
-        switch(rateSwtch){
+        switch (rateSwtch) {
 
-            case 0:
-                realRate = 5500;
-                break;
+        case 0:
+            realRate = 5500;
+            break;
 
-            case 1:
-                realRate = 11000;
-                break;
+        case 1:
+            realRate = 11000;
+            break;
 
-            case 2:
-                realRate = 22000;
-                break;
+        case 2:
+            realRate = 22000;
+            break;
 
-            case 3:
-                realRate = 44000;
-                break;
+        case 3:
+            realRate = 44000;
+            break;
         }
 
         return realRate;
 
-    }//findSoundRate()
+    }// findSoundRate()
 
     public int getSoundFormat() {
         return soundFormat;
@@ -157,4 +157,4 @@ public class AudioTag extends FlvTag{
         this.soundType = soundType;
     }
 
-}//AudioTag
+}// AudioTag

@@ -5,135 +5,135 @@ import com.google.gwt.user.client.rpc.IsSerializable;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants.SecurityLevel;
 
 public class FriendInvitationLite implements IsSerializable {
-	
-	private boolean canSeeFileList;
-	private long createdDate;
 
-	private boolean createdLocally;
+    private boolean canSeeFileList;
+    private long createdDate;
 
-	private boolean hasChanged = false;
+    private boolean createdLocally;
 
-	private String key;
+    private boolean hasChanged = false;
 
-	private long lastConnectDate;
+    private String key;
 
-	private String lastConnectIp;
+    private long lastConnectDate;
 
-	private int lastConnectPort = 0;
+    private String lastConnectIp;
 
-	private long maxAge;
+    private int lastConnectPort = 0;
 
-	private String name;
+    private long maxAge;
 
-	private String remotePublicKey;
+    private String name;
 
-	private SecurityLevel securityLevel;
+    private String remotePublicKey;
 
-	private String statusText;
+    private SecurityLevel securityLevel;
 
-	public long getCreatedDate() {
-		return createdDate;
-	}
+    private String statusText;
 
-	public String getKey() {
-		return key;
-	}
+    public long getCreatedDate() {
+        return createdDate;
+    }
 
-	public long getLastConnectDate() {
-		return lastConnectDate;
-	}
+    public String getKey() {
+        return key;
+    }
 
-	public String getLastConnectIp() {
-		return lastConnectIp;
-	}
+    public long getLastConnectDate() {
+        return lastConnectDate;
+    }
 
-	public int getLastConnectPort() {
-		return lastConnectPort;
-	}
+    public String getLastConnectIp() {
+        return lastConnectIp;
+    }
 
-	public long getMaxAge() {
-		return maxAge;
-	}
+    public int getLastConnectPort() {
+        return lastConnectPort;
+    }
 
-	public String getName() {
-		return name;
-	}
+    public long getMaxAge() {
+        return maxAge;
+    }
 
-	public String getRemotePublicKey() {
-		return remotePublicKey;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public SecurityLevel getSecurityLevel() {
-		return securityLevel;
-	}
+    public String getRemotePublicKey() {
+        return remotePublicKey;
+    }
 
-	public String getStatusText() {
+    public SecurityLevel getSecurityLevel() {
+        return securityLevel;
+    }
 
-		return statusText;
-	}
+    public String getStatusText() {
 
-	public boolean isCanSeeFileList() {
-		return canSeeFileList;
-	}
+        return statusText;
+    }
 
-	public boolean isCreatedLocally() {
-		return createdLocally;
-	}
+    public boolean isCanSeeFileList() {
+        return canSeeFileList;
+    }
 
-	public boolean isHasChanged() {
-		return hasChanged;
-	}
+    public boolean isCreatedLocally() {
+        return createdLocally;
+    }
 
-	public void setCanSeeFileList(boolean canSeeFileList) {
-		this.canSeeFileList = canSeeFileList;
-	}
+    public boolean isHasChanged() {
+        return hasChanged;
+    }
 
-	public void setCreatedDate(long date) {
-		this.createdDate = date;
-	}
+    public void setCanSeeFileList(boolean canSeeFileList) {
+        this.canSeeFileList = canSeeFileList;
+    }
 
-	public void setCreatedLocally(boolean createdLocally) {
-		this.createdLocally = createdLocally;
-	}
+    public void setCreatedDate(long date) {
+        this.createdDate = date;
+    }
 
-	public void setHasChanged(boolean hasChanged) {
-		this.hasChanged = hasChanged;
-	}
+    public void setCreatedLocally(boolean createdLocally) {
+        this.createdLocally = createdLocally;
+    }
 
-	public void setKey(String key) {
-		this.key = key;
-	}
+    public void setHasChanged(boolean hasChanged) {
+        this.hasChanged = hasChanged;
+    }
 
-	public void setLastConnectDate(long lastConnectDate) {
-		this.lastConnectDate = lastConnectDate;
-	}
+    public void setKey(String key) {
+        this.key = key;
+    }
 
-	public void setLastConnectIp(String lastConnectIp) {
-		this.lastConnectIp = lastConnectIp;
-	}
+    public void setLastConnectDate(long lastConnectDate) {
+        this.lastConnectDate = lastConnectDate;
+    }
 
-	public void setLastConnectPort(int lastConnectPort) {
-		this.lastConnectPort = lastConnectPort;
-	}
+    public void setLastConnectIp(String lastConnectIp) {
+        this.lastConnectIp = lastConnectIp;
+    }
 
-	public void setMaxAge(long maxAge) {
-		this.maxAge = maxAge;
-	}
+    public void setLastConnectPort(int lastConnectPort) {
+        this.lastConnectPort = lastConnectPort;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public void setMaxAge(long maxAge) {
+        this.maxAge = maxAge;
+    }
 
-	public void setRemotePublicKey(String remotePublicKey) {
-		this.remotePublicKey = remotePublicKey;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public void setSecurityLevel(SecurityLevel securityLevel) {
-		this.securityLevel = securityLevel;
-	}
+    public void setRemotePublicKey(String remotePublicKey) {
+        this.remotePublicKey = remotePublicKey;
+    }
 
-	public void setStatusText(String text) {
-		this.statusText = text;
-	}
+    public void setSecurityLevel(SecurityLevel securityLevel) {
+        this.securityLevel = securityLevel;
+    }
+
+    public void setStatusText(String text) {
+        this.statusText = text;
+    }
 
 }

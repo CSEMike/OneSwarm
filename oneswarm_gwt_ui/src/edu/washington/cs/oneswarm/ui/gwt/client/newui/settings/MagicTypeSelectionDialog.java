@@ -10,66 +10,67 @@ import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmDialogBox;
 
 public class MagicTypeSelectionDialog extends OneSwarmDialogBox {
 
-	private static final int WIDTH = 400;
-	private static final int HEIGHT = 300;
+    private static final int WIDTH = 400;
+    private static final int HEIGHT = 300;
 
-	interface Callback {
-		public void done(boolean cancelled, MagicWatchType which);
-	};
+    interface Callback {
+        public void done(boolean cancelled, MagicWatchType which);
+    };
 
-	Button okButton = new Button("Save");
-	Button cancelButton = new Button("Cancel");
+    Button okButton = new Button("Save");
+    Button cancelButton = new Button("Cancel");
 
-	RadioButton magic = new RadioButton("magicType", "Grouped media files only");
-	RadioButton everything = new RadioButton("magicType", "Everything");
+    RadioButton magic = new RadioButton("magicType", "Grouped media files only");
+    RadioButton everything = new RadioButton("magicType", "Everything");
 
-	Callback callback = null;
+    Callback callback = null;
 
-	public MagicTypeSelectionDialog(MagicWatchType initial, Callback callback) {
-		super(false, true, false);
+    public MagicTypeSelectionDialog(MagicWatchType initial, Callback callback) {
+        super(false, true, false);
 
-		setText("Watch directory type");
+        setText("Watch directory type");
 
-		this.callback = callback;
+        this.callback = callback;
 
-		VerticalPanel panel = new VerticalPanel();
+        VerticalPanel panel = new VerticalPanel();
 
-		panel.setWidth(WIDTH + "px");
-		panel.setWidth(HEIGHT + "px");
+        panel.setWidth(WIDTH + "px");
+        panel.setWidth(HEIGHT + "px");
 
-		panel.add(everything);
-		panel.add(magic);
+        panel.add(everything);
+        panel.add(magic);
 
-		if (initial.equals(MagicWatchType.Everything)) {
-			everything.setValue(true);
-		} else {
-			magic.setValue(true);
-		}
+        if (initial.equals(MagicWatchType.Everything)) {
+            everything.setValue(true);
+        } else {
+            magic.setValue(true);
+        }
 
-		HorizontalPanel buttons = new HorizontalPanel();
-		buttons.add(cancelButton);
-		buttons.add(okButton);
-		buttons.setSpacing(3);
+        HorizontalPanel buttons = new HorizontalPanel();
+        buttons.add(cancelButton);
+        buttons.add(okButton);
+        buttons.setSpacing(3);
 
-		okButton.addClickHandler(this);
-		cancelButton.addClickHandler(this);
+        okButton.addClickHandler(this);
+        cancelButton.addClickHandler(this);
 
-		panel.add(buttons);
+        panel.add(buttons);
 
-		panel.setCellHorizontalAlignment(buttons, HorizontalPanel.ALIGN_RIGHT);
+        panel.setCellHorizontalAlignment(buttons, HorizontalPanel.ALIGN_RIGHT);
 
-		this.setWidget(panel);
-	}
+        this.setWidget(panel);
+    }
 
-	public void onClick(ClickEvent event) {
-		if (event.getSource().equals(okButton)) {
-			callback.done(false, everything.getValue() ? MagicWatchType.Everything : MagicWatchType.Magic);
-			hide();
-		} else if (event.getSource().equals(cancelButton)) {
-			callback.done(true, null);
-			hide();
-		} else {
-			super.onClick(event);
-		}
-	}
+    public void onClick(ClickEvent event) {
+        if (event.getSource().equals(okButton)) {
+            callback.done(false, everything.getValue() ? MagicWatchType.Everything
+                    : MagicWatchType.Magic);
+            hide();
+        } else if (event.getSource().equals(cancelButton)) {
+            callback.done(true, null);
+            hide();
+        } else {
+            super.onClick(event);
+        }
+    }
 }

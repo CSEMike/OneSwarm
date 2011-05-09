@@ -5,36 +5,36 @@ import com.google.gwt.user.client.ui.Label;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.StringTools;
 
 public class FormattedSize extends Label implements Comparable {
-	long mBytes;
-	String mSuffix;
-	
-	public FormattedSize(long inBytes)
-	{
-		this(inBytes, "");
-	}
+    long mBytes;
+    String mSuffix;
 
-	public FormattedSize(long inBytes, String inSuffix) {
-		super();
+    public FormattedSize(long inBytes) {
+        this(inBytes, "");
+    }
 
-		mBytes = inBytes;
-		mSuffix = inSuffix;
+    public FormattedSize(long inBytes, String inSuffix) {
+        super();
 
-		setText(StringTools.formatRate(inBytes) + mSuffix);
-	}
-	
-	public void update( long inBytes )
-	{
-		mBytes = inBytes;
-		setText(StringTools.formatRate(inBytes) + mSuffix);
-	}
-	
-	public long getBytes() { return mBytes; }
+        mBytes = inBytes;
+        mSuffix = inSuffix;
 
-	public int compareTo(Object o) {
-		if (o instanceof FormattedSize) {
-			return (int) (mBytes - ((FormattedSize) o).mBytes);
-		} else {
-			return -1;
-		}
-	}
+        setText(StringTools.formatRate(inBytes) + mSuffix);
+    }
+
+    public void update(long inBytes) {
+        mBytes = inBytes;
+        setText(StringTools.formatRate(inBytes) + mSuffix);
+    }
+
+    public long getBytes() {
+        return mBytes;
+    }
+
+    public int compareTo(Object o) {
+        if (o instanceof FormattedSize) {
+            return (int) (mBytes - ((FormattedSize) o).mBytes);
+        } else {
+            return -1;
+        }
+    }
 }

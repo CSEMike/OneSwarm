@@ -42,379 +42,388 @@ import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.tags.*;
  */
 public class TagBroker {
 
-	private double frameRate;
-	private int startingByteOffset;
-	private TagStor stor;
-	private IOHelper ioh;
-	private FlvHeader flvh;
+    private double frameRate;
+    private int startingByteOffset;
+    private TagStor stor;
+    private IOHelper ioh;
+    private FlvHeader flvh;
 
-	private ArrayList<TagStor> tags;
-	private TagParser tp;
+    private ArrayList<TagStor> tags;
+    private TagParser tp;
 
-	/**
-	 * Creates a new instance of TagBroker
-	 */
-	public TagBroker(IOHelper ioh, FlvHeader flvh) {
-		frameRate = 0;
-		stor = null;
-		this.startingByteOffset = flvh.getDataOffset() + 4;
-		tp = new TagParser(ioh);
-		tp.setTotalByteOffset(startingByteOffset);
-		tp.readTags();
-		tags = tp.getTags();
-		this.ioh = ioh;
-		this.flvh = flvh;
-	}
+    /**
+     * Creates a new instance of TagBroker
+     */
+    public TagBroker(IOHelper ioh, FlvHeader flvh) {
+        frameRate = 0;
+        stor = null;
+        this.startingByteOffset = flvh.getDataOffset() + 4;
+        tp = new TagParser(ioh);
+        tp.setTotalByteOffset(startingByteOffset);
+        tp.readTags();
+        tags = tp.getTags();
+        this.ioh = ioh;
+        this.flvh = flvh;
+    }
 
-	public long getDuration() {
+    public long getDuration() {
 
-		long dur = 0;
+        long dur = 0;
 
-		if (flvh.hasVideo()) {
-			dur = tags.get(tp.getLastVideoTag()).getTimestamp();
-		} else if (flvh.hasAudio()) {
-			dur = tags.get(tp.getLastAudioTag()).getTimestamp();
-		} else {
-			dur = tags.get(tags.size() - 1).getTimestamp();
-		}
+        if (flvh.hasVideo()) {
+            dur = tags.get(tp.getLastVideoTag()).getTimestamp();
+        } else if (flvh.hasAudio()) {
+            dur = tags.get(tp.getLastAudioTag()).getTimestamp();
+        } else {
+            dur = tags.get(tags.size() - 1).getTimestamp();
+        }
 
-		return dur;
+        return dur;
 
-	}// getDuration()
+    }// getDuration()
 
-	public long getLastTabReadAttemptPos() {
-		return tp.getLastTabReadAttemptPos();
-	}
+    public long getLastTabReadAttemptPos() {
+        return tp.getLastTabReadAttemptPos();
+    }
 
-	public void writeTags() {
-		FileWriter fw = ioh.getFileWriter(flvh);
-		fw.setDebug(ioh.isDebug());
-		fw.setTags(tags);
-		fw.setInStream(ioh.getFileReader().getStream());
-		flvh.setHasAudio((tp.getLastAudioTag() != -1));
-		flvh.setHasVideo((tp.getLastVideoTag() != -1));
-		fw.writeTags();
-	}
+    public void writeTags() {
+        FileWriter fw = ioh.getFileWriter(flvh);
+        fw.setDebug(ioh.isDebug());
+        fw.setTags(tags);
+        fw.setInStream(ioh.getFileReader().getStream());
+        flvh.setHasAudio((tp.getLastAudioTag() != -1));
+        flvh.setHasVideo((tp.getLastVideoTag() != -1));
+        fw.writeTags();
+    }
 
-	public void recalcKeyFrameTagOffsets() {
+    public void recalcKeyFrameTagOffsets() {
 
-		ArrayList<Double> keyFrameTagOffsets = new ArrayList<Double>();
-		long totalByteOffset = startingByteOffset;
-		int totMetaBytes = 0;
+        ArrayList<Double> keyFrameTagOffsets = new ArrayList<Double>();
+        long totalByteOffset = startingByteOffset;
+        int totMetaBytes = 0;
 
-		for (TagStor ts : tags) {
+        for (TagStor ts : tags) {
 
-			if (ts.getType() == FlvTag.VIDEO) {
+            if (ts.getType() == FlvTag.VIDEO) {
 
-				if (((VideoTag) ts.getTag()).getFrameType() == VideoTag.KEYFRAME) {
-					keyFrameTagOffsets.add(new Double(totalByteOffset));
-				}
+                if (((VideoTag) ts.getTag()).getFrameType() == VideoTag.KEYFRAME) {
+                    keyFrameTagOffsets.add(new Double(totalByteOffset));
+                }
 
-			} else if (ts.getType() == FlvTag.META) {
+            } else if (ts.getType() == FlvTag.META) {
 
-				if (ts.isNew()) {
-					totMetaBytes += ts.getDataSize() + 15;
-				} else {
-					totMetaBytes += ts.getDataSize();
-				}
+                if (ts.isNew()) {
+                    totMetaBytes += ts.getDataSize() + 15;
+                } else {
+                    totMetaBytes += ts.getDataSize();
+                }
 
-			}// else
+            }// else
 
-			totalByteOffset += ts.getDataSize() + 15;
+            totalByteOffset += ts.getDataSize() + 15;
 
-		}// for
+        }// for
 
-		tp.setKeyFrameTagOffsets(keyFrameTagOffsets);
-		tp.setTotalByteOffset(totalByteOffset);
-		tp.setTotalMetaSize(totMetaBytes);
+        tp.setKeyFrameTagOffsets(keyFrameTagOffsets);
+        tp.setTotalByteOffset(totalByteOffset);
+        tp.setTotalMetaSize(totMetaBytes);
 
-	}// recalcTagOffsets()
+    }// recalcTagOffsets()
 
-	public void addTags(ArrayList<TagStor> tags2add, boolean keepFrameRate, boolean overwrite) {
+    public void addTags(ArrayList<TagStor> tags2add, boolean keepFrameRate, boolean overwrite) {
 
-		frameRate = tp.getFrameseq().getFrameRate();
+        frameRate = tp.getFrameseq().getFrameRate();
 
-		if (keepFrameRate && frameRate == 0) {
+        if (keepFrameRate && frameRate == 0) {
 
-			System.out.println("Error adding new tags: current tag doesn't fit into existing framerate");
-			return;
+            System.out
+                    .println("Error adding new tags: current tag doesn't fit into existing framerate");
+            return;
 
-		} else if (keepFrameRate) {
+        } else if (keepFrameRate) {
 
-			for (TagStor ts : tags2add) {
+            for (TagStor ts : tags2add) {
 
-				if (ts.getTimestamp() % (1000 / frameRate) != 0) {
-					System.out.println("Error adding new tags: current tag doesn't fit into existing framerate");
-					return;
-				}
+                if (ts.getTimestamp() % (1000 / frameRate) != 0) {
+                    System.out
+                            .println("Error adding new tags: current tag doesn't fit into existing framerate");
+                    return;
+                }
 
-			}// for
+            }// for
 
-		}// else
+        }// else
 
-		int pos = 0;
+        int pos = 0;
 
-		for (TagStor ts : tags2add) {
+        for (TagStor ts : tags2add) {
 
-			TagStor nextTag = findNextTag(ts.getTimestamp());
+            TagStor nextTag = findNextTag(ts.getTimestamp());
 
-			if (nextTag == null) {
-				tags.add(ts);
-				// System.out.println("added new tag to end");
-				continue;
-			}
+            if (nextTag == null) {
+                tags.add(ts);
+                // System.out.println("added new tag to end");
+                continue;
+            }
 
-			pos = tags.indexOf(nextTag);
+            pos = tags.indexOf(nextTag);
 
-			if (ts.getTimestamp() == nextTag.getTimestamp() && ts.getType() == nextTag.getType()) {
+            if (ts.getTimestamp() == nextTag.getTimestamp() && ts.getType() == nextTag.getType()) {
 
-				// IF type = meta AND (the new.meta.event != next.meta.event OR
-				// can overwrite)
-				if (ts.getType() == FlvTag.META && (!((MetaTag) ts.getTag()).getEvent().equals(((MetaTag) nextTag.getTag()).getEvent()) || !overwrite)) {
+                // IF type = meta AND (the new.meta.event != next.meta.event OR
+                // can overwrite)
+                if (ts.getType() == FlvTag.META
+                        && (!((MetaTag) ts.getTag()).getEvent().equals(
+                                ((MetaTag) nextTag.getTag()).getEvent()) || !overwrite)) {
 
-					tags.add(pos, ts);
-					// System.out.println("inserted tag at : " + pos);
-					tp.setTags(tags);
-					pushTags(pos);
+                    tags.add(pos, ts);
+                    // System.out.println("inserted tag at : " + pos);
+                    tp.setTags(tags);
+                    pushTags(pos);
 
-				} else {
+                } else {
 
-					// System.out.println("replaced tag at : " + pos);
-					tags.remove(pos);
-					tags.add(pos, ts);
-					tp.setTags(tags);
+                    // System.out.println("replaced tag at : " + pos);
+                    tags.remove(pos);
+                    tags.add(pos, ts);
+                    tp.setTags(tags);
 
-				}// else
+                }// else
 
-			} else {
+            } else {
 
-				tags.add(pos, ts);
-				// System.out.println("inserted tag at : " + pos);
-				tp.setTags(tags);
-				pushTags(pos);
+                tags.add(pos, ts);
+                // System.out.println("inserted tag at : " + pos);
+                tp.setTags(tags);
+                pushTags(pos);
 
-			}// else
+            }// else
 
-		}// for
+        }// for
 
-	}// addTags()
+    }// addTags()
 
-	private void pushTags(int pos) {
+    private void pushTags(int pos) {
 
-		if (pos <= tp.getLastAudioTag()) {
-			tp.setLastAudioTag(tp.getLastAudioTag() + 1);
-		}
-		if (pos <= tp.getLastVideoTag()) {
-			tp.setLastVideoTag(tp.getLastVideoTag() + 1);
-		}
-		if (pos <= tp.getFirstVideoTag()) {
-			tp.setFirstVideoTag(tp.getFirstVideoTag() + 1);
-		}
-		if (pos <= tp.getFirstAudioTag()) {
-			tp.setFirstAudioTag(tp.getFirstAudioTag() + 1);
-		}
-		if (pos <= tp.getOnMetaTag()) {
-			tp.setOnMetaTag(tp.getOnMetaTag() + 1);
-		}
+        if (pos <= tp.getLastAudioTag()) {
+            tp.setLastAudioTag(tp.getLastAudioTag() + 1);
+        }
+        if (pos <= tp.getLastVideoTag()) {
+            tp.setLastVideoTag(tp.getLastVideoTag() + 1);
+        }
+        if (pos <= tp.getFirstVideoTag()) {
+            tp.setFirstVideoTag(tp.getFirstVideoTag() + 1);
+        }
+        if (pos <= tp.getFirstAudioTag()) {
+            tp.setFirstAudioTag(tp.getFirstAudioTag() + 1);
+        }
+        if (pos <= tp.getOnMetaTag()) {
+            tp.setOnMetaTag(tp.getOnMetaTag() + 1);
+        }
 
-	}// pushTags()
+    }// pushTags()
 
-	private TagStor findNextTag(long timestamp) {
+    private TagStor findNextTag(long timestamp) {
 
-		TagStor nextTag = null;
+        TagStor nextTag = null;
 
-		for (int i = 0; i < tags.size(); i++) {
+        for (int i = 0; i < tags.size(); i++) {
 
-			if (tags.get(i).getTimestamp() >= timestamp) {
-				nextTag = tags.get(i);
-				break;
-			}
+            if (tags.get(i).getTimestamp() >= timestamp) {
+                nextTag = tags.get(i);
+                break;
+            }
 
-		}// for
+        }// for
 
-		return nextTag;
+        return nextTag;
 
-	}// findNextTag()
+    }// findNextTag()
 
-	public int getVideoWidth() {
+    public int getVideoWidth() {
 
-		int vwidth = 0;
-		if (tp.getFirstVideoTag() != -1) {
-			if (((VideoTag) tags.get(tp.getFirstVideoTag()).getTag()).getWidth() == 0 && tp.getOnMetaTag() != -1) {
+        int vwidth = 0;
+        if (tp.getFirstVideoTag() != -1) {
+            if (((VideoTag) tags.get(tp.getFirstVideoTag()).getTag()).getWidth() == 0
+                    && tp.getOnMetaTag() != -1) {
 
-				try {
-					HashMap<String, Object> mdata = (HashMap<String, Object>) (((MetaTag) tags.get(tp.getOnMetaTag()).getTag()).getMetaData());
-					vwidth = ((Double) mdata.get("width")).intValue();
-				} catch (Exception e) {
-					// do nothing
-				}
+                try {
+                    HashMap<String, Object> mdata = (HashMap<String, Object>) (((MetaTag) tags.get(
+                            tp.getOnMetaTag()).getTag()).getMetaData());
+                    vwidth = ((Double) mdata.get("width")).intValue();
+                } catch (Exception e) {
+                    // do nothing
+                }
 
-			} else {
+            } else {
 
-				vwidth = ((VideoTag) tags.get(tp.getFirstVideoTag()).getTag()).getWidth();
+                vwidth = ((VideoTag) tags.get(tp.getFirstVideoTag()).getTag()).getWidth();
 
-			}// else
-		}
-		return vwidth;
+            }// else
+        }
+        return vwidth;
 
-	}// getVideoWidth()
+    }// getVideoWidth()
 
-	public int getVideoHeight() {
+    public int getVideoHeight() {
 
-		int vheight = 0;
-		if (tp.getFirstVideoTag() != -1) {
-			if (((VideoTag) tags.get(tp.getFirstVideoTag()).getTag()).getHeight() == 0 && tp.getOnMetaTag() != -1) {
+        int vheight = 0;
+        if (tp.getFirstVideoTag() != -1) {
+            if (((VideoTag) tags.get(tp.getFirstVideoTag()).getTag()).getHeight() == 0
+                    && tp.getOnMetaTag() != -1) {
 
-				try {
-					HashMap<String, Object> mdata = (HashMap<String, Object>) (((MetaTag) tags.get(tp.getOnMetaTag()).getTag()).getMetaData());
-					vheight = ((Double) mdata.get("height")).intValue();
-				} catch (Exception e) {
-					// do nothing
-				}
+                try {
+                    HashMap<String, Object> mdata = (HashMap<String, Object>) (((MetaTag) tags.get(
+                            tp.getOnMetaTag()).getTag()).getMetaData());
+                    vheight = ((Double) mdata.get("height")).intValue();
+                } catch (Exception e) {
+                    // do nothing
+                }
 
-			} else {
+            } else {
 
-				vheight = ((VideoTag) tags.get(tp.getFirstVideoTag()).getTag()).getHeight();
+                vheight = ((VideoTag) tags.get(tp.getFirstVideoTag()).getTag()).getHeight();
 
-			}// else
-		}
+            }// else
+        }
 
-		return vheight;
+        return vheight;
 
-	}// getVideoHeight()
+    }// getVideoHeight()
 
-	public long getTotalDataSize() {
-		return (tp.getTotalVideoSize() + tp.getTotalAudioSize() + tp.getTotalMetaSize());
-	}
+    public long getTotalDataSize() {
+        return (tp.getTotalVideoSize() + tp.getTotalAudioSize() + tp.getTotalMetaSize());
+    }
 
-	public float getVideoDataRate(float duration) {
+    public float getVideoDataRate(float duration) {
 
-		float videoDataRate = 0;
+        float videoDataRate = 0;
 
-		if (tp.getTotalVideoSize() != 0) {
-			videoDataRate = tp.getVideoDataSize() / duration * 8 / 1000;
-		}
+        if (tp.getTotalVideoSize() != 0) {
+            videoDataRate = tp.getVideoDataSize() / duration * 8 / 1000;
+        }
 
-		return videoDataRate;
+        return videoDataRate;
 
-	}// getVideoDataRate()
+    }// getVideoDataRate()
 
-	public float getAudioDataRate(float duration) {
+    public float getAudioDataRate(float duration) {
 
-		float audioDataRate = 0;
+        float audioDataRate = 0;
 
-		if (tp.getTotalAudioSize() != 0) {
-			audioDataRate = tp.getAudioDataSize() / duration * 8 / 1000;
-		}
+        if (tp.getTotalAudioSize() != 0) {
+            audioDataRate = tp.getAudioDataSize() / duration * 8 / 1000;
+        }
 
-		return audioDataRate;
+        return audioDataRate;
 
-	}// getAudioDataRate()
+    }// getAudioDataRate()
 
-	public double getLastKeyFrameTimeStamp() {
+    public double getLastKeyFrameTimeStamp() {
 
-		double lkfts = 0;
-		double lkfTime = (tp.getKeyFrameTagTimes().get(tp.getKeyFrameTagTimes().size() - 1)).doubleValue();
+        double lkfts = 0;
+        double lkfTime = (tp.getKeyFrameTagTimes().get(tp.getKeyFrameTagTimes().size() - 1))
+                .doubleValue();
 
-		if (lkfTime != 0) {
-			lkfts = lkfTime;
-		}
+        if (lkfTime != 0) {
+            lkfts = lkfTime;
+        }
 
-		return lkfts;
+        return lkfts;
 
-	}// getLastKeyFrameTimeStamp()
+    }// getLastKeyFrameTimeStamp()
 
-	public int getAudioCodecId() {
-		return ((AudioTag) tags.get(tp.getFirstAudioTag()).getTag()).getSoundFormat();
-	}
+    public int getAudioCodecId() {
+        return ((AudioTag) tags.get(tp.getFirstAudioTag()).getTag()).getSoundFormat();
+    }
 
-	public int getFirstVideoTag() {
-		return tp.getFirstVideoTag();
-	}
+    public int getFirstVideoTag() {
+        return tp.getFirstVideoTag();
+    }
 
-	public int getVideoCcodecId() {
-		int firstVideoTag = tp.getFirstVideoTag();
-		if (firstVideoTag > 0) {
-			return ((VideoTag) tags.get(firstVideoTag).getTag()).getCodecId();
-		} else {
-			return 0;
-		}
-	}
+    public int getVideoCcodecId() {
+        int firstVideoTag = tp.getFirstVideoTag();
+        if (firstVideoTag > 0) {
+            return ((VideoTag) tags.get(firstVideoTag).getTag()).getCodecId();
+        } else {
+            return 0;
+        }
+    }
 
-	public long getAudioDelay() {
+    public long getAudioDelay() {
 
-		long audioDelay = 0;
-		if (tp.getFirstVideoTag() != -1) {
-			audioDelay = tags.get(tp.getFirstVideoTag()).getTimestamp() / 1000;
-		}
+        long audioDelay = 0;
+        if (tp.getFirstVideoTag() != -1) {
+            audioDelay = tags.get(tp.getFirstVideoTag()).getTimestamp() / 1000;
+        }
 
-		return audioDelay;
+        return audioDelay;
 
-	}// getAudioDelay()
+    }// getAudioDelay()
 
-	public boolean canSeekToEnd() {
-		return (((VideoTag) tags.get(tp.getLastVideoTag()).getTag()).getFrameType() == VideoTag.KEYFRAME);
-	}
+    public boolean canSeekToEnd() {
+        return (((VideoTag) tags.get(tp.getLastVideoTag()).getTag()).getFrameType() == VideoTag.KEYFRAME);
+    }
 
-	public boolean isStero() {
-		return (((AudioTag) tags.get(tp.getFirstAudioTag()).getTag()).getSoundType() == AudioTag.STEREO);
-	}
+    public boolean isStero() {
+        return (((AudioTag) tags.get(tp.getFirstAudioTag()).getTag()).getSoundType() == AudioTag.STEREO);
+    }
 
-	public int getAudioSampleRate() {
-		return ((AudioTag) tags.get(tp.getFirstAudioTag()).getTag()).getSoundRate();
-	}
+    public int getAudioSampleRate() {
+        return ((AudioTag) tags.get(tp.getFirstAudioTag()).getTag()).getSoundRate();
+    }
 
-	public int getAudioSampleSize() {
-		return ((AudioTag) tags.get(tp.getFirstAudioTag()).getTag()).getSoundSampleSize();
-	}
+    public int getAudioSampleSize() {
+        return ((AudioTag) tags.get(tp.getFirstAudioTag()).getTag()).getSoundSampleSize();
+    }
 
-	public ArrayList<TagStor> getTags() {
-		return tags;
-	}
+    public ArrayList<TagStor> getTags() {
+        return tags;
+    }
 
-	public double getFrameRate() {
-		return this.frameRate;
-	}
+    public double getFrameRate() {
+        return this.frameRate;
+    }
 
-	public long getTotalAudioSize() {
-		return tp.getTotalAudioSize();
-	}
+    public long getTotalAudioSize() {
+        return tp.getTotalAudioSize();
+    }
 
-	public long getTotalVideoSize() {
-		return tp.getTotalVideoSize();
-	}
+    public long getTotalVideoSize() {
+        return tp.getTotalVideoSize();
+    }
 
-	public long getTotalMetaSize() {
-		return tp.getTotalMetaSize();
-	}
+    public long getTotalMetaSize() {
+        return tp.getTotalMetaSize();
+    }
 
-	public long getTotalByteOffset() {
-		return tp.getTotalByteOffset();
-	}
+    public long getTotalByteOffset() {
+        return tp.getTotalByteOffset();
+    }
 
-	public AMFObject getKeyFrameTags() {
+    public AMFObject getKeyFrameTags() {
 
-		AMFObject keyFrameTags = new AMFObject();
-		keyFrameTags.put("times", tp.getKeyFrameTagTimes());
-		keyFrameTags.put("filepositions", tp.getKeyFrameTagOffsets());
-		return keyFrameTags;
+        AMFObject keyFrameTags = new AMFObject();
+        keyFrameTags.put("times", tp.getKeyFrameTagTimes());
+        keyFrameTags.put("filepositions", tp.getKeyFrameTagOffsets());
+        return keyFrameTags;
 
-	}// getKeyFrameTags()
+    }// getKeyFrameTags()
 
-	public ArrayList<Object> getCuePointTags() {
-		return tp.getCuePointTags();
-	}
+    public ArrayList<Object> getCuePointTags() {
+        return tp.getCuePointTags();
+    }
 
-	public int getLastAudioTag() {
-		return tp.getLastAudioTag();
-	}
+    public int getLastAudioTag() {
+        return tp.getLastAudioTag();
+    }
 
-	public int getLastVideoTag() {
-		return tp.getLastVideoTag();
-	}
+    public int getLastVideoTag() {
+        return tp.getLastVideoTag();
+    }
 
-	public int getFirstAudioTag() {
-		return tp.getFirstAudioTag();
-	}
+    public int getFirstAudioTag() {
+        return tp.getFirstAudioTag();
+    }
 
 }// TagBroker

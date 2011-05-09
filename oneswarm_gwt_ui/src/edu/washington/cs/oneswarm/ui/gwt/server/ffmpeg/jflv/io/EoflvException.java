@@ -29,7 +29,7 @@
 package edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.io;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class EoflvException extends Exception {
@@ -39,4 +39,4 @@ public class EoflvException extends Exception {
         super();
     }
 
-}//EoflvException
+}// EoflvException

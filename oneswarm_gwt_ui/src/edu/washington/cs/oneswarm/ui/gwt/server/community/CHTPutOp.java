@@ -18,64 +18,64 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
 // TODO(piatek): Add support for callbacks/error handling for puts. For now, all best-effort.
 public class CHTPutOp extends CommunityServerOperation {
 
-	private static Logger logger = Logger.getLogger(CHTPutOp.class.getName());
+    private static Logger logger = Logger.getLogger(CHTPutOp.class.getName());
 
-	private final List<byte[]> values;
-	private final List<byte[]> keys;
+    private final List<byte[]> values;
+    private final List<byte[]> keys;
 
-	public CHTPutOp(CommunityRecord record, List<byte[]> keys, List<byte[]> values) {
-		super(record);
-		this.keys = keys;
-		this.values = values;
-	}
+    public CHTPutOp(CommunityRecord record, List<byte[]> keys, List<byte[]> values) {
+        super(record);
+        this.keys = keys;
+        this.values = values;
+    }
 
-	@Override
-	void doOp() {
-		Preconditions.checkState(mRecord.isAllowAddressResolution(),
-				"Attempting CHTPut on server without perms: " + mRecord.getBaseURL());
-		
-		Preconditions.checkState(mRecord.getCht_path() != null,
-				"Attempting CHTPut on server without a valid CHT path! " + mRecord.getBaseURL());
+    @Override
+    void doOp() {
+        Preconditions.checkState(mRecord.isAllowAddressResolution(),
+                "Attempting CHTPut on server without perms: " + mRecord.getBaseURL());
 
-		String path = mRecord.getBaseURL();
-		if (path.endsWith("/") == false) {
-			path += "/";
-		}
-		path += mRecord.getCht_path() + "?put";
-		try {
-			URL url = new URL(path);
-			HttpURLConnection conn = getConnection(url, "POST");
+        Preconditions.checkState(mRecord.getCht_path() != null,
+                "Attempting CHTPut on server without a valid CHT path! " + mRecord.getBaseURL());
 
-			// JSON array of key, value pairs.
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			OutputStreamWriter outputStreamWriter = new OutputStreamWriter(baos);
-			JSONWriter writer = new JSONWriter(outputStreamWriter);
+        String path = mRecord.getBaseURL();
+        if (path.endsWith("/") == false) {
+            path += "/";
+        }
+        path += mRecord.getCht_path() + "?put";
+        try {
+            URL url = new URL(path);
+            HttpURLConnection conn = getConnection(url, "POST");
 
-			writer.array();
-			for (int i = 0; i < keys.size(); i++) {
-				writer.array();
-				String encodedKey = Base64.encode(keys.get(i));
-				writer.value(encodedKey);
-				String encodedValue = Base64.encode(values.get(i));
-				writer.value(encodedValue);
-				writer.endArray();
-			}
-			writer.endArray();
-			outputStreamWriter.flush();
+            // JSON array of key, value pairs.
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(baos);
+            JSONWriter writer = new JSONWriter(outputStreamWriter);
 
-			System.out.println(baos.toString() + "\n");
+            writer.array();
+            for (int i = 0; i < keys.size(); i++) {
+                writer.array();
+                String encodedKey = Base64.encode(keys.get(i));
+                writer.value(encodedKey);
+                String encodedValue = Base64.encode(values.get(i));
+                writer.value(encodedValue);
+                writer.endArray();
+            }
+            writer.endArray();
+            outputStreamWriter.flush();
 
-			conn.getOutputStream().write(
-					("q=" + URLEncoder.encode(baos.toString(), "UTF-8")).getBytes());
+            System.out.println(baos.toString() + "\n");
 
-			System.out.println("CHT put response code: " + conn.getResponseCode() + " / "
-					+ conn.getResponseMessage());
+            conn.getOutputStream().write(
+                    ("q=" + URLEncoder.encode(baos.toString(), "UTF-8")).getBytes());
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			logger.warning("Error during CHT Put on server: " + mRecord.getBaseURL() + " / "
-					+ e.toString());
-		}
-	}
+            System.out.println("CHT put response code: " + conn.getResponseCode() + " / "
+                    + conn.getResponseMessage());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.warning("Error during CHT Put on server: " + mRecord.getBaseURL() + " / "
+                    + e.toString());
+        }
+    }
 
 }
