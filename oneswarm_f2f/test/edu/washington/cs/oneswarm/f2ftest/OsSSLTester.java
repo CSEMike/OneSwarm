@@ -46,310 +46,292 @@ import com.aelitis.azureus.core.networkmanager.impl.tcp.TCPTransportHelper;
 
 public class OsSSLTester {
 
-	private final VirtualChannelSelector connect_selector = new VirtualChannelSelector(
-			"PHETester", VirtualChannelSelector.OP_CONNECT, true);
-
-	private byte[] TEST_HEADER = "TestHeader".getBytes();
-
-	private static boolean OUTGOING_PLAIN = false;
-
-	private static byte[] shared_secret = "sdsjdksjdkj".getBytes();
-
-	public OsSSLTester() {
-		ProtocolDecoder.addSecrets(new byte[][] { shared_secret });
-
-		// VirtualServerChannelSelector accept_server =
-		// VirtualServerChannelSelectorFactory
-		// .createNonBlocking(new InetSocketAddress(8765), 0,
-		// new VirtualServerChannelSelector.SelectListener() {
-		// public void newConnectionAccepted(
-		// ServerSocketChannel server,
-		// SocketChannel channel) {
-		// incoming(channel);
-		// }
-		// });
-		//
-		// accept_server.start();
-		//
-		// new Thread() {
-		// public void run() {
-		// while (true) {
-		// try {
-		// connect_selector.select(100);
-		// } catch (Throwable t) {
-		// Debug.out("connnectSelectLoop() EXCEPTION: ", t);
-		//					}
-		//				}
-		//			}
-		//		}.start();
+    private final VirtualChannelSelector connect_selector = new VirtualChannelSelector("PHETester",
+            VirtualChannelSelector.OP_CONNECT, true);
+
+    private byte[] TEST_HEADER = "TestHeader".getBytes();
+
+    private static boolean OUTGOING_PLAIN = false;
+
+    private static byte[] shared_secret = "sdsjdksjdkj".getBytes();
+
+    public OsSSLTester() {
+        ProtocolDecoder.addSecrets(new byte[][] { shared_secret });
 
-		outgoings();
-	}
+        // VirtualServerChannelSelector accept_server =
+        // VirtualServerChannelSelectorFactory
+        // .createNonBlocking(new InetSocketAddress(8765), 0,
+        // new VirtualServerChannelSelector.SelectListener() {
+        // public void newConnectionAccepted(
+        // ServerSocketChannel server,
+        // SocketChannel channel) {
+        // incoming(channel);
+        // }
+        // });
+        //
+        // accept_server.start();
+        //
+        // new Thread() {
+        // public void run() {
+        // while (true) {
+        // try {
+        // connect_selector.select(100);
+        // } catch (Throwable t) {
+        // Debug.out("connnectSelectLoop() EXCEPTION: ", t);
+        // }
+        // }
+        // }
+        // }.start();
 
-	protected void incoming(SocketChannel channel) {
-		try {
-			TransportHelper helper = new TCPTransportHelper(channel);
+        outgoings();
+    }
 
-			final ProtocolDecoderInitial decoder = new ProtocolDecoderInitial(
-					helper, null, false, null, new ProtocolDecoderAdapter() {
-						public void decodeComplete(ProtocolDecoder decoder,
-								ByteBuffer remaining_initial_data) {
-							System.out.println("incoming decode complete: "
-									+ decoder.getFilter().getName());
+    protected void incoming(SocketChannel channel) {
+        try {
+            TransportHelper helper = new TCPTransportHelper(channel);
 
-							readStream("incoming", decoder.getFilter());
+            final ProtocolDecoderInitial decoder = new ProtocolDecoderInitial(helper, null, false,
+                    null, new ProtocolDecoderAdapter() {
+                        public void decodeComplete(ProtocolDecoder decoder,
+                                ByteBuffer remaining_initial_data) {
+                            System.out.println("incoming decode complete: "
+                                    + decoder.getFilter().getName());
 
-							writeStream("ten fat monkies", decoder.getFilter());
-						}
+                            readStream("incoming", decoder.getFilter());
 
-						public void decodeFailed(ProtocolDecoder decoder,
-								Throwable cause) {
-							System.out.println("incoming decode failed: "
-									+ Debug.getNestedExceptionMessage(cause));
-						}
+                            writeStream("ten fat monkies", decoder.getFilter());
+                        }
 
-						public void gotSecret(byte[] session_secret) {
-						}
+                        public void decodeFailed(ProtocolDecoder decoder, Throwable cause) {
+                            System.out.println("incoming decode failed: "
+                                    + Debug.getNestedExceptionMessage(cause));
+                        }
 
-						public int getMaximumPlainHeaderLength() {
-							return (TEST_HEADER.length );
-						}
+                        public void gotSecret(byte[] session_secret) {
+                        }
 
-						public int matchPlainHeader(ByteBuffer buffer) {
-							int pos = buffer.position();
-							int lim = buffer.limit();
+                        public int getMaximumPlainHeaderLength() {
+                            return (TEST_HEADER.length);
+                        }
 
-							buffer.flip();
+                        public int matchPlainHeader(ByteBuffer buffer) {
+                            int pos = buffer.position();
+                            int lim = buffer.limit();
 
-							boolean match = buffer.compareTo(ByteBuffer
-									.wrap(TEST_HEADER)) == 0;
+                            buffer.flip();
 
-							buffer.position(pos);
-							buffer.limit(lim);
+                            boolean match = buffer.compareTo(ByteBuffer.wrap(TEST_HEADER)) == 0;
 
-							System.out.println("Match - " + match);
+                            buffer.position(pos);
+                            buffer.limit(lim);
 
-							return (match ? ProtocolDecoderAdapter.MATCH_CRYPTO_NO_AUTO_FALLBACK
-									: ProtocolDecoderAdapter.MATCH_NONE);
-						}
-					});
-		} catch (Throwable e) {
+                            System.out.println("Match - " + match);
 
-			e.printStackTrace();
-		}
-	}
+                            return (match ? ProtocolDecoderAdapter.MATCH_CRYPTO_NO_AUTO_FALLBACK
+                                    : ProtocolDecoderAdapter.MATCH_NONE);
+                        }
+                    });
+        } catch (Throwable e) {
 
-	protected void outgoings() {
-		while (true) {
+            e.printStackTrace();
+        }
+    }
 
-			outgoing();
+    protected void outgoings() {
+        while (true) {
 
-			try {
-				Thread.sleep(1000000);
+            outgoing();
 
-			} catch (Throwable e) {
+            try {
+                Thread.sleep(1000000);
 
-			}
-		}
-	}
+            } catch (Throwable e) {
 
-	protected void outgoing() {
-		try {
-			final SocketChannel channel = SocketChannel.open();
+            }
+        }
+    }
 
-			channel.configureBlocking(false);
+    protected void outgoing() {
+        try {
+            final SocketChannel channel = SocketChannel.open();
 
-			if (channel.connect(new InetSocketAddress("localhost", 57836))) {
+            channel.configureBlocking(false);
 
-				outgoing(channel);
+            if (channel.connect(new InetSocketAddress("localhost", 57836))) {
 
-			} else {
+                outgoing(channel);
 
-				connect_selector.register(channel,
-						new VirtualSelectorListener() {
-							public boolean selectSuccess(
-									VirtualChannelSelector selector,
-									SocketChannel sc, Object attachment) {
-								try {
-									if (channel.finishConnect()) {
+            } else {
 
-										outgoing(channel);
+                connect_selector.register(channel, new VirtualSelectorListener() {
+                    public boolean selectSuccess(VirtualChannelSelector selector, SocketChannel sc,
+                            Object attachment) {
+                        try {
+                            if (channel.finishConnect()) {
 
-										return (true);
-									} else {
+                                outgoing(channel);
 
-										throw (new IOException(
-												"finishConnect failed"));
-									}
-								} catch (Throwable e) {
+                                return (true);
+                            } else {
 
-									e.printStackTrace();
+                                throw (new IOException("finishConnect failed"));
+                            }
+                        } catch (Throwable e) {
 
-									return (false);
-								}
-							}
+                            e.printStackTrace();
 
-							public void selectFailure(
-									VirtualChannelSelector selector,
-									SocketChannel sc, Object attachment,
-									Throwable msg) {
-								msg.printStackTrace();
-							}
+                            return (false);
+                        }
+                    }
 
-						}, null);
-			}
-		} catch (Throwable e) {
+                    public void selectFailure(VirtualChannelSelector selector, SocketChannel sc,
+                            Object attachment, Throwable msg) {
+                        msg.printStackTrace();
+                    }
 
-			e.printStackTrace();
-		}
-	}
+                }, null);
+            }
+        } catch (Throwable e) {
 
-	protected void outgoing(SocketChannel channel) {
-		try {
+            e.printStackTrace();
+        }
+    }
 
-			if (OUTGOING_PLAIN) {
+    protected void outgoing(SocketChannel channel) {
+        try {
 
-				writeStream(TEST_HEADER, channel);
+            if (OUTGOING_PLAIN) {
 
-				writeStream("two jolly porkers".getBytes(), channel);
+                writeStream(TEST_HEADER, channel);
 
-			} else {
-				TransportHelper helper = new TCPTransportHelper(channel);
+                writeStream("two jolly porkers".getBytes(), channel);
 
-				final ProtocolDecoderInitial decoder = new ProtocolDecoderInitial(
-						helper, new byte[][] { shared_secret }, true, null,
-						new ProtocolDecoderAdapter() {
-							public void decodeComplete(ProtocolDecoder decoder,
-									ByteBuffer remaining_initial_data) {
-								System.out.println("outgoing decode complete: "
-										+ decoder.getFilter().getName());
+            } else {
+                TransportHelper helper = new TCPTransportHelper(channel);
 
-								readStream("incoming", decoder.getFilter());
+                final ProtocolDecoderInitial decoder = new ProtocolDecoderInitial(helper,
+                        new byte[][] { shared_secret }, true, null, new ProtocolDecoderAdapter() {
+                            public void decodeComplete(ProtocolDecoder decoder,
+                                    ByteBuffer remaining_initial_data) {
+                                System.out.println("outgoing decode complete: "
+                                        + decoder.getFilter().getName());
 
-								writeStream(TEST_HEADER, decoder.getFilter());
+                                readStream("incoming", decoder.getFilter());
 
-								writeStream("two jolly porkers", decoder
-										.getFilter());
-							}
+                                writeStream(TEST_HEADER, decoder.getFilter());
 
-							public void decodeFailed(ProtocolDecoder decoder,
-									Throwable cause) {
-								System.out
-										.println("outgoing decode failed: "
-												+ Debug
-														.getNestedExceptionMessage(cause));
+                                writeStream("two jolly porkers", decoder.getFilter());
+                            }
 
-							}
+                            public void decodeFailed(ProtocolDecoder decoder, Throwable cause) {
+                                System.out.println("outgoing decode failed: "
+                                        + Debug.getNestedExceptionMessage(cause));
 
-							public void gotSecret(byte[] session_secret) {
-							}
+                            }
 
-							public int getMaximumPlainHeaderLength() {
-								throw (new RuntimeException());
-							}
+                            public void gotSecret(byte[] session_secret) {
+                            }
 
-							public int matchPlainHeader(ByteBuffer buffer) {
-								throw (new RuntimeException());
-							}
-						});
-			}
-		} catch (Throwable e) {
+                            public int getMaximumPlainHeaderLength() {
+                                throw (new RuntimeException());
+                            }
 
-			e.printStackTrace();
-		}
-	}
+                            public int matchPlainHeader(ByteBuffer buffer) {
+                                throw (new RuntimeException());
+                            }
+                        });
+            }
+        } catch (Throwable e) {
 
-	protected void readStream(final String str,
-			final TransportHelperFilter filter) {
-		try {
-			TCPNetworkManager.getSingleton().getReadSelector().register(
-					((TCPTransportHelper) filter.getHelper())
-							.getSocketChannel(), new VirtualSelectorListener() {
-						public boolean selectSuccess(
-								VirtualChannelSelector selector,
-								SocketChannel sc, Object attachment) {
-							ByteBuffer buffer = ByteBuffer.allocate(1024);
+            e.printStackTrace();
+        }
+    }
 
-							try {
-								long len = filter.read(
-										new ByteBuffer[] { buffer }, 0, 1);
+    protected void readStream(final String str, final TransportHelperFilter filter) {
+        try {
+            TCPNetworkManager
+                    .getSingleton()
+                    .getReadSelector()
+                    .register(((TCPTransportHelper) filter.getHelper()).getSocketChannel(),
+                            new VirtualSelectorListener() {
+                                public boolean selectSuccess(VirtualChannelSelector selector,
+                                        SocketChannel sc, Object attachment) {
+                                    ByteBuffer buffer = ByteBuffer.allocate(1024);
 
-								byte[] data = new byte[buffer.position()];
+                                    try {
+                                        long len = filter.read(new ByteBuffer[] { buffer }, 0, 1);
 
-								buffer.flip();
+                                        byte[] data = new byte[buffer.position()];
 
-								buffer.get(data);
+                                        buffer.flip();
 
-								System.out.println(str + ": "
-										+ new String(data));
+                                        buffer.get(data);
 
-								return (len > 0);
+                                        System.out.println(str + ": " + new String(data));
 
-							} catch (Throwable e) {
+                                        return (len > 0);
 
-								e.printStackTrace();
+                                    } catch (Throwable e) {
 
-								return (false);
-							}
-						}
+                                        e.printStackTrace();
 
-						public void selectFailure(
-								VirtualChannelSelector selector,
-								SocketChannel sc, Object attachment,
-								Throwable msg) {
-							msg.printStackTrace();
-						}
-					}, null);
+                                        return (false);
+                                    }
+                                }
 
-		} catch (Throwable e) {
+                                public void selectFailure(VirtualChannelSelector selector,
+                                        SocketChannel sc, Object attachment, Throwable msg) {
+                                    msg.printStackTrace();
+                                }
+                            }, null);
 
-			e.printStackTrace();
-		}
-	}
+        } catch (Throwable e) {
 
-	protected void writeStream(String str, TransportHelperFilter filter) {
-		writeStream(str.getBytes(), filter);
-	}
+            e.printStackTrace();
+        }
+    }
 
-	protected void writeStream(byte[] data, TransportHelperFilter filter) {
-		try {
-			filter.write(new ByteBuffer[] { ByteBuffer.wrap(data) }, 0, 1);
+    protected void writeStream(String str, TransportHelperFilter filter) {
+        writeStream(str.getBytes(), filter);
+    }
 
-		} catch (Throwable e) {
+    protected void writeStream(byte[] data, TransportHelperFilter filter) {
+        try {
+            filter.write(new ByteBuffer[] { ByteBuffer.wrap(data) }, 0, 1);
 
-			e.printStackTrace();
-		}
-	}
+        } catch (Throwable e) {
 
-	protected void writeStream(byte[] data, SocketChannel channel) {
-		try {
-			channel.write(new ByteBuffer[] { ByteBuffer.wrap(data) }, 0, 1);
+            e.printStackTrace();
+        }
+    }
 
-		} catch (Throwable e) {
+    protected void writeStream(byte[] data, SocketChannel channel) {
+        try {
+            channel.write(new ByteBuffer[] { ByteBuffer.wrap(data) }, 0, 1);
 
-			e.printStackTrace();
-		}
-	}
+        } catch (Throwable e) {
 
-	public static void main(String[] args) {
-		// String[] encrProto = { "Plain", "XOR", "RC4", "AES", "SSL" };
-		AEDiagnostics.startup();
+            e.printStackTrace();
+        }
+    }
 
-		// OUTGOING_PLAIN = true;
+    public static void main(String[] args) {
+        // String[] encrProto = { "Plain", "XOR", "RC4", "AES", "SSL" };
+        AEDiagnostics.startup();
 
-		COConfigurationManager.setParameter(
-				"network.transport.encrypted.require", true);
-		COConfigurationManager.setParameter(
-				"network.transport.encrypted.min_level", "SSL");
+        // OUTGOING_PLAIN = true;
 
-		new OsSSLTester();
+        COConfigurationManager.setParameter("network.transport.encrypted.require", true);
+        COConfigurationManager.setParameter("network.transport.encrypted.min_level", "SSL");
 
-		try {
-			Thread.sleep(10 * 1000);
+        new OsSSLTester();
 
-		} catch (Throwable e) {
+        try {
+            Thread.sleep(10 * 1000);
 
-		}
+        } catch (Throwable e) {
 
-	}
+        }
+
+    }
 }

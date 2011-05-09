@@ -23,149 +23,162 @@ import edu.washington.cs.oneswarm.ui.gwt.server.community.CommunityServerManager
 
 public class CommunityServerTest extends TwoProcessTestBase {
 
-	private static Logger logger = Logger.getLogger(CommunityServerTest.class.getName());
-	
-	// XPath for relevant items.
-	private static final String ADD_COMMUNITY_SERVER_LINK = "addFriendItemLink";
-	private static final String COMMUNITY_URL_TEXTBOX = "communityUrlTextBox";
-	private static final String SUBSCRIBE_BUTTON = "communityServerSaveButton";
-	private static final String DISMISS_BUTTON = "communitySaveAfterReceiveButton";
-	
-	public static final String TEST_COMMUNITY_URL = "http://" + TestUtils.TEST_COMMUNITY_SERVER
-			+ "/";
+    private static Logger logger = Logger.getLogger(CommunityServerTest.class.getName());
 
-	// Probably shouldn't configure like this, but setupClass inheritance isn't workable.
-	// and we need this configuration to occur before setUpClass() in TwoProcessTestBase.
-	static {
-		connectPeers = false;
-	}
+    // XPath for relevant items.
+    private static final String ADD_COMMUNITY_SERVER_LINK = "addFriendItemLink";
+    private static final String COMMUNITY_URL_TEXTBOX = "communityUrlTextBox";
+    private static final String SUBSCRIBE_BUTTON = "communityServerSaveButton";
+    private static final String DISMISS_BUTTON = "communitySaveAfterReceiveButton";
 
-	@Before
-	public void setupTest() throws IOException {
-		TestUtils.flushCommunityServerState();
-	}
+    public static final String TEST_COMMUNITY_URL = "http://" + TestUtils.TEST_COMMUNITY_SERVER
+            + "/";
 
-	@Test
-	public void testCommunityServerRegistration() throws InterruptedException {
-		try {
-			// Test plan: Register for community server using the web UI in both clients. We
-			// register in the OOP instance first and the local instance second. After the local
-			// registration completes, verify that we've added a friend with a key and nick that
-			// matches the OOP instance.
+    // Probably shouldn't configure like this, but setupClass inheritance isn't
+    // workable.
+    // and we need this configuration to occur before setUpClass() in
+    // TwoProcessTestBase.
+    static {
+        connectPeers = false;
+    }
 
-			logger.info("Start testCommunityServerRegistration()");
+    @Before
+    public void setupTest() throws IOException {
+        TestUtils.flushCommunityServerState();
+    }
 
-			if (TestUtils.isLocalCommunityServerRunning() == false) {
-				logger.warning("No local community server running at "
-						+ TestUtils.TEST_COMMUNITY_SERVER + " -- skipping community server test.");
-				return;
-			}
+    @Test
+    public void testCommunityServerRegistration() throws InterruptedException {
+        try {
+            // Test plan: Register for community server using the web UI in both
+            // clients. We
+            // register in the OOP instance first and the local instance second.
+            // After the local
+            // registration completes, verify that we've added a friend with a
+            // key and nick that
+            // matches the OOP instance.
 
-			// Subscribe to the community server using the local JVM instance. In this case, we
-			// subscribe programatically for simplicity.
-			CommunityRecord rec = getTestCommunityRecord();
-			addServerAndRefresh(rec);
-			Thread.sleep(2000);
+            logger.info("Start testCommunityServerRegistration()");
 
-			// In the OOP instance, using selenium to actually test adding a community server using
-			// the web UI.
-			selenium.openWindow("http://127.0.0.1:3000/", "localinstance");
-			selenium.selectWindow("localinstance");
+            if (TestUtils.isLocalCommunityServerRunning() == false) {
+                logger.warning("No local community server running at "
+                        + TestUtils.TEST_COMMUNITY_SERVER + " -- skipping community server test.");
+                return;
+            }
 
-			Thread.sleep(5000);
-			TestUtils.awaitAndClick(selenium, ADD_COMMUNITY_SERVER_LINK);
-			Thread.sleep(5000);
-			TestUtils.awaitAndClick(selenium, COMMUNITY_URL_TEXTBOX);
-			selenium.focus(COMMUNITY_URL_TEXTBOX);
+            // Subscribe to the community server using the local JVM instance.
+            // In this case, we
+            // subscribe programatically for simplicity.
+            CommunityRecord rec = getTestCommunityRecord();
+            addServerAndRefresh(rec);
+            Thread.sleep(2000);
 
-			selenium.type(COMMUNITY_URL_TEXTBOX, "");
-			selenium.typeKeys(COMMUNITY_URL_TEXTBOX, TEST_COMMUNITY_URL);
+            // In the OOP instance, using selenium to actually test adding a
+            // community server using
+            // the web UI.
+            selenium.openWindow("http://127.0.0.1:3000/", "localinstance");
+            selenium.selectWindow("localinstance");
 
-			TestUtils.awaitAndClick(selenium, SUBSCRIBE_BUTTON);
-			Thread.sleep(500);
-			TestUtils.awaitAndClick(selenium, DISMISS_BUTTON);
+            Thread.sleep(5000);
+            TestUtils.awaitAndClick(selenium, ADD_COMMUNITY_SERVER_LINK);
+            Thread.sleep(5000);
+            TestUtils.awaitAndClick(selenium, COMMUNITY_URL_TEXTBOX);
+            selenium.focus(COMMUNITY_URL_TEXTBOX);
 
-			// After subscribing on the OOP instance, refresh the server and verify that we received
-			// the remote key.
-			CommunityServerManager.get().refreshAll();
-			Thread.sleep(2000);
-			localOneSwarm.waitForOnlineFriends(1);
-			
-			final String remoteKey = localOneSwarm.getPublicKey();
-			final OSF2FMain f2fMain = OSF2FMain.getSingelton();
-			final String localKey = Base64.encode(f2fMain.getFriendManager().getFriends()[0]
-					.getPublicKey());
-			Assert.assertEquals(remoteKey, localKey);
+            selenium.type(COMMUNITY_URL_TEXTBOX, "");
+            selenium.typeKeys(COMMUNITY_URL_TEXTBOX, TEST_COMMUNITY_URL);
 
-		} finally {
-			logger.info("End testCommunityServerRegistration()");
-		}
-	}
+            TestUtils.awaitAndClick(selenium, SUBSCRIBE_BUTTON);
+            Thread.sleep(500);
+            TestUtils.awaitAndClick(selenium, DISMISS_BUTTON);
 
-	@Test
-	public void testCommunityServerCHTEndToEnd() throws Exception {
-		// Test plan: Finish the registration test above, then disable the DHT and LAN peer
-		// discovery. Disconnect all friends, and then reconnect to all friends, and verify that a
-		// CHT lookup success status message appears in the friend logs.
-		try {
-			logger.info("Start testCommunityServerRegistration()");
+            // After subscribing on the OOP instance, refresh the server and
+            // verify that we received
+            // the remote key.
+            CommunityServerManager.get().refreshAll();
+            Thread.sleep(2000);
+            localOneSwarm.waitForOnlineFriends(1);
 
-			testCommunityServerRegistration();
+            final String remoteKey = localOneSwarm.getPublicKey();
+            final OSF2FMain f2fMain = OSF2FMain.getSingelton();
+            final String localKey = Base64.encode(f2fMain.getFriendManager().getFriends()[0]
+                    .getPublicKey());
+            Assert.assertEquals(remoteKey, localKey);
 
-			// Disable other methods of performing address resolution
-			COConfigurationManager.setParameter("dht.enabled", false);
-			COConfigurationManager.setParameter("OSF2F.LanFriendFinder", false);
+        } finally {
+            logger.info("End testCommunityServerRegistration()");
+        }
+    }
 
-			// Remove the last connected IP cache for the test friend
-			final OSF2FMain f2fMain = OSF2FMain.getSingelton();
-			final Friend friend = f2fMain.getFriendManager().getFriends()[0];
-			friend.setLastConnectIP(null);
-			friend.setLastConnectPort(0);
+    @Test
+    public void testCommunityServerCHTEndToEnd() throws Exception {
+        // Test plan: Finish the registration test above, then disable the DHT
+        // and LAN peer
+        // discovery. Disconnect all friends, and then reconnect to all friends,
+        // and verify that a
+        // CHT lookup success status message appears in the friend logs.
+        try {
+            logger.info("Start testCommunityServerRegistration()");
 
-			// Disconnect
-			f2fMain.getOverlayManager().closeAllConnections();
+            testCommunityServerRegistration();
 
-			// Force the remote host to republish location information -- we'll then force
-			// a reconnect locally. This is necessary to avoid a once per hour rate limit on
-			// CHT publishing.
-			localOneSwarm.getCoordinator().addCommand("forceRepublish");
-			Thread.sleep(3 * 1000);
+            // Disable other methods of performing address resolution
+            COConfigurationManager.setParameter("dht.enabled", false);
+            COConfigurationManager.setParameter("OSF2F.LanFriendFinder", false);
 
-			// Connect to the friend and await the expected resolve message to appear in the friend
-			// log.
-			f2fMain.getDHTConnector().connectToFriend(friend);
+            // Remove the last connected IP cache for the test friend
+            final OSF2FMain f2fMain = OSF2FMain.getSingelton();
+            final Friend friend = f2fMain.getFriendManager().getFriends()[0];
+            friend.setLastConnectIP(null);
+            friend.setLastConnectPort(0);
 
-			logger.info("Awaiting resolve message in friend connect log...");
-			new ConditionWaiter(new ConditionWaiter.Predicate() {
-				@Override
-				public boolean satisfied() {
-					String connectionLog = friend.getConnectionLog();
-					return connectionLog.contains("Resolved friend location from: HTTP:CHT");
-				}
-			}, 5000).await();
+            // Disconnect
+            f2fMain.getOverlayManager().closeAllConnections();
 
-		} finally {
-			logger.info("End testCommunityServerCHTEndToEnd()");
-		}
-	}
+            // Force the remote host to republish location information -- we'll
+            // then force
+            // a reconnect locally. This is necessary to avoid a once per hour
+            // rate limit on
+            // CHT publishing.
+            localOneSwarm.getCoordinator().addCommand("forceRepublish");
+            Thread.sleep(3 * 1000);
 
-	private void addServerAndRefresh(CommunityRecord rec) {
-		List<String> appended = new ArrayList<String>();
-		appended.addAll(Arrays.asList(rec.toTokens()));
-		COConfigurationManager.setParameter("oneswarm.community.servers", appended);
-		ConfigurationManager.getInstance().setDirty();
-		CommunityServerManager.get().refreshAll();
-	}
+            // Connect to the friend and await the expected resolve message to
+            // appear in the friend
+            // log.
+            f2fMain.getDHTConnector().connectToFriend(friend);
 
-	public static CommunityRecord getTestCommunityRecord() {
-		CommunityRecord rec = new CommunityRecord(Arrays.asList(new String[] { TEST_COMMUNITY_URL,
-				"", "", "Exp. contacts", "true;false;false;false;" + 26 }), 0);
-		rec.setAllowAddressResolution(true);
-		return rec;
-	}
+            logger.info("Awaiting resolve message in friend connect log...");
+            new ConditionWaiter(new ConditionWaiter.Predicate() {
+                @Override
+                public boolean satisfied() {
+                    String connectionLog = friend.getConnectionLog();
+                    return connectionLog.contains("Resolved friend location from: HTTP:CHT");
+                }
+            }, 5000).await();
 
-	/** Boilerplate code for running as executable. */
-	public static void main(String[] args) throws Exception {
-		TestUtils.swtCompatibleTestRunner(CommunityServerTest.class);
-	}
+        } finally {
+            logger.info("End testCommunityServerCHTEndToEnd()");
+        }
+    }
+
+    private void addServerAndRefresh(CommunityRecord rec) {
+        List<String> appended = new ArrayList<String>();
+        appended.addAll(Arrays.asList(rec.toTokens()));
+        COConfigurationManager.setParameter("oneswarm.community.servers", appended);
+        ConfigurationManager.getInstance().setDirty();
+        CommunityServerManager.get().refreshAll();
+    }
+
+    public static CommunityRecord getTestCommunityRecord() {
+        CommunityRecord rec = new CommunityRecord(Arrays.asList(new String[] { TEST_COMMUNITY_URL,
+                "", "", "Exp. contacts", "true;false;false;false;" + 26 }), 0);
+        rec.setAllowAddressResolution(true);
+        return rec;
+    }
+
+    /** Boilerplate code for running as executable. */
+    public static void main(String[] args) throws Exception {
+        TestUtils.swtCompatibleTestRunner(CommunityServerTest.class);
+    }
 }

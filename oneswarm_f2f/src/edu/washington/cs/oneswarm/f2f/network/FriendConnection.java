@@ -221,6 +221,7 @@ public class FriendConnection {
         // this.getRemoteIp(), this.getRemotePort());
         this.connection.connect(null, false, new ConnectionListener() {
 
+            @Override
             public void connectFailure(Throwable failure_msg) {
                 logger.fine(getDescription() + ": " + connection + " : connect error: "
                         + failure_msg.getMessage());
@@ -229,9 +230,11 @@ public class FriendConnection {
                 close();
             }
 
+            @Override
             public void connectStarted() {
             }
 
+            @Override
             public void connectSuccess(ByteBuffer remaining_initial_data) {
                 if (!connection.getTransport().getEncryption()
                         .startsWith(OneSwarmSslTransportHelperFilterStream.SSL_NAME)) {
@@ -240,16 +243,17 @@ public class FriendConnection {
                     close();
                     return;
                 }
-                updateFriendConnectionLog(true, "connected to: " + getRemoteIp().getHostAddress()
+                updateFriendConnectionLog(true, "Connected to: " + getRemoteIp().getHostAddress()
                         + ":" + getRemotePort());
 
                 boolean registered = listener.connectSuccess(FriendConnection.this);
                 if (!registered || !connection.isConnected()) {
-                    updateFriendConnectionLog(true, "parallel connection closed");
+                    updateFriendConnectionLog(true, "Parallel connection closed");
                     close();
                     return;
                 }
                 addQueueListener();
+                updateFriendConnectionLog(true, "Added queue listener");
 
                 if (debugMessageLog != null) {
                     connection.getOutgoingMessageQueue().registerQueueListener(
@@ -260,12 +264,16 @@ public class FriendConnection {
                 NetworkManager.getSingleton().startTransferProcessing(connection);
                 sendHandshake();
                 enableFastMessageProcessing(true);
+
+                updateFriendConnectionLog(true, "Sent handshake...");
             }
 
+            @Override
             public void exceptionThrown(Throwable error) {
                 connectionException(error);
             }
 
+            @Override
             public String getDescription() {
                 return "connection listener: OSF2F session, outgoing";
             }
@@ -323,16 +331,19 @@ public class FriendConnection {
         // register our connection listener
         addQueueListener();
         connection.connect(true, new ConnectionListener() {
+            @Override
             public void connectFailure(Throwable failure_msg) {
                 logger.fine(getDescription() + ": " + connection + " : connect error: "
                         + failure_msg.getMessage());
                 close();
             }
 
+            @Override
             public void connectStarted() {
                 // nop
             }
 
+            @Override
             public void connectSuccess(ByteBuffer remaining_initial_data) {
                 updateFriendConnectionLog(false, "incoming connection from: "
                         + getRemoteIp().getHostAddress());
@@ -345,12 +356,14 @@ public class FriendConnection {
 
             }
 
+            @Override
             public void exceptionThrown(Throwable error) {
                 // ok, something strange happened,
                 // notify connection and manager
                 connectionException(error);
             }
 
+            @Override
             public String getDescription() {
                 return "connection listener: OSF2F session, incoming";
             }
@@ -566,8 +579,7 @@ public class FriendConnection {
     }
 
     public void doKeepAliveCheck() {
-        if (friendConnectionQueue != null
-                && friendConnectionQueue.getLastMessageSentTime() > KEEP_ALIVE_FREQ) {
+        if (friendConnectionQueue.getLastMessageSentTime() > KEEP_ALIVE_FREQ) {
             connection.getOutgoingMessageQueue().addMessage(
                     new BTKeepAlive(OSF2FMessage.CURRENT_VERSION), false);
         }
@@ -991,24 +1003,20 @@ public class FriendConnection {
 
         boolean possiblePrune = true;
 
-        // if (message instanceof OSF2FTextSearch) {
-        // OSF2FTextSearch asSearch = (OSF2FTextSearch)message;
-        // if (asSearch.getSearchString().startsWith("sha1;") == false &&
-        // asSearch.getSearchString().startsWith("ed2k;") == false) {
-        // possiblePrune = false;
-        // } else {
-        // // Just always skip sha;, ed2k; searches for now.
-        // // TODO(piatek): remove this when some more principled thing is
-        // figured out.
-        // return;
-        // }
-        // }
-        // else {
-        // possiblePrune = false;
-        // }
-
-        if (possiblePrune == false) {
-            logger.fine("Passing possible search: " + message.getDescription());
+        if (message instanceof OSF2FTextSearch) {
+            OSF2FTextSearch asSearch = (OSF2FTextSearch) message;
+            if (asSearch.getSearchString().startsWith("sha1;") == false
+                    && asSearch.getSearchString().startsWith("ed2k;") == false) {
+                possiblePrune = false;
+            } else {
+                // Just always skip sha1;, ed2k; searches for now.
+                // TODO(piatek): remove this when some more principled thing is
+                // figured out.
+                return;
+            }
+        } else {
+            // For now, just disable early drops
+            possiblePrune = false;
         }
 
         if (possiblePrune) {
@@ -1041,7 +1049,7 @@ public class FriendConnection {
                     "Search spam detected, closing connection, friend banned for 10 min");
             remoteFriend.setFriendBannedUntil("search spam",
                     System.currentTimeMillis() + 10 * 60 * 1000);
-            this.updateFriendConnectionLog(true, "Search spam detected", Level.WARNING);
+            this.updateFriendConnectionLog(true, "Search spam detected");
             close();
             return;
         }
@@ -1738,15 +1746,19 @@ public class FriendConnection {
                         + Base32.encode(hash));
                 sendMetaInfoRequest(OSF2FMessage.METAINFO_TYPE_THUMBNAIL, 0, hash, 0,
                         new PluginCallback<byte[]>() {
+                            @Override
                             public void dataRecieved(long bytes) {
                             }
 
+                            @Override
                             public void errorOccured(String string) {
                             }
 
+                            @Override
                             public void progressUpdate(int progress) {
                             }
 
+                            @Override
                             public void requestCompleted(byte[] data) {
                                 filelistManager.getMetaInfoManager().gotImageResponse(hash, data);
                                 sendNextImageRequest(neededThumbnails);
@@ -1759,6 +1771,7 @@ public class FriendConnection {
     private class IncomingQueueListener implements MessageQueueListener {
         private long packetNum = 0;
 
+        @Override
         public void dataBytesReceived(int byte_count) {
             if (debugMessageLog != null) {
                 debugMessageLog.bytesReceived(byte_count);
@@ -1769,6 +1782,7 @@ public class FriendConnection {
             stats.f2fBytesReceived(byte_count);
         }
 
+        @Override
         public boolean messageReceived(Message message) {
             if (debugMessageLog != null) {
                 debugMessageLog.messageReceived(message.getDescription());
@@ -1819,6 +1833,7 @@ public class FriendConnection {
             return (true);
         }
 
+        @Override
         public void protocolBytesReceived(int byte_count) {
             if (debugMessageLog != null) {
                 debugMessageLog.bytesReceived(byte_count);
@@ -2226,29 +2241,36 @@ public class FriendConnection {
      */
     class OutgoingQueueListener implements OutgoingMessageQueue.MessageQueueListener {
 
+        @Override
         public void dataBytesSent(int byte_count) {
             debugMessageLog.bytesSent(byte_count);
         }
 
+        @Override
         public void flush() {
         }
 
+        @Override
         public boolean messageAdded(Message message) {
             debugMessageLog.messageQueuedListener(message.getDescription());
             return true;
         }
 
+        @Override
         public void messageQueued(Message message) {
         }
 
+        @Override
         public void messageRemoved(Message message) {
 
         }
 
+        @Override
         public void messageSent(Message message) {
             debugMessageLog.messageSent(message.getDescription());
         }
 
+        @Override
         public void protocolBytesSent(int byte_count) {
             debugMessageLog.bytesSent(byte_count);
         }

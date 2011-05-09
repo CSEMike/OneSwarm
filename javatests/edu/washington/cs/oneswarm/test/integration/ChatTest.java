@@ -16,80 +16,82 @@ import edu.washington.cs.oneswarm.test.util.TwoProcessTestBase;
 
 public class ChatTest extends TwoProcessTestBase {
 
-	private static Logger logger = Logger.getLogger(ChatTest.class.getName());
+    private static Logger logger = Logger.getLogger(ChatTest.class.getName());
 
-	@Test
-	public void testSendReceiveChat() throws Exception {
-		/*
-		 * Test plan: Send a chat message using the Web UI and verify that it is displayed
-		 * in the web UI of the remote host.
-		 */
+    @Test
+    public void testSendReceiveChat() throws Exception {
+        /*
+         * Test plan: Send a chat message using the Web UI and verify that it is
+         * displayed in the web UI of the remote host.
+         */
 
-		selenium.openWindow("http://127.0.0.1:4000/", "jvm");
-		selenium.selectWindow("jvm");
+        selenium.openWindow("http://127.0.0.1:4000/", "jvm");
+        selenium.openWindow("http://127.0.0.1:3000/", "local");
 
-		// Wait for the friends list AJAX load to complete
-		TestUtils.awaitElement(selenium, "//td[2]/div/div");
+        selenium.selectWindow("jvm");
 
-		// Double-click the first friend in the list, opens chat.
-		selenium.click("//td[2]/div/div");
-		selenium.click("//td[2]/div/div");
+        // Wait for the friends list AJAX load to complete
+        TestUtils.awaitElement(selenium, "//td[2]/div/div");
 
-		// Send chat message
-		final String chatMessage = "ChatMessage JVM to Local";
-		TestUtils.awaitElement(selenium, "chatTextBox");
-		selenium.focus("chatTextBox");
-		selenium.typeKeys("chatTextBox", chatMessage);
-		selenium.keyPress("chatTextBox", "13");
+        // Double-click the first friend in the list, opens chat.
+        selenium.click("//td[2]/div/div");
+        selenium.click("//td[2]/div/div");
 
-		// Verify local display of the chat message.
-		new ConditionWaiter(new ConditionWaiter.Predicate() {
-			@Override
-			public boolean satisfied() {
-				return selenium.isTextPresent(chatMessage);
-			}
-		}, 5000).await();
+        // Send chat message
+        final String chatMessage = "ChatMessage JVM to Local";
+        TestUtils.awaitElement(selenium, "chatTextBox");
+        selenium.focus("chatTextBox");
+        selenium.typeKeys("chatTextBox", chatMessage);
+        selenium.keyPress("chatTextBox", "13");
 
-		// Switch to the other instance
-		selenium.openWindow("http://127.0.0.1:3000/", "localinstance");
-		selenium.selectWindow("localinstance");
+        // Verify local display of the chat message.
+        new ConditionWaiter(new ConditionWaiter.Predicate() {
+            @Override
+            public boolean satisfied() {
+                return selenium.isTextPresent(chatMessage);
+            }
+        }, 5000).await();
 
-		// Verify notification presence -- this could take up to 10 seconds since
-		// we have a 10 seconds poll (See {@code FriendListPanel.java}).
-		new ConditionWaiter(new ConditionWaiter.Predicate() {
-			@Override
-			public boolean satisfied() {
-				return selenium.isElementPresent("link=1 unread message");
-			}
-		},15000).await();
+        // Switch to the other instance
+        selenium.selectWindow("local");
 
-		// Click to bring up chat box
-		selenium.click("link=1 unread message");
+        // Verify notification presence -- this could take up to 10 seconds
+        // since
+        // we have a 10 seconds poll (See {@code FriendListPanel.java}).
+        new ConditionWaiter(new ConditionWaiter.Predicate() {
+            @Override
+            public boolean satisfied() {
+                return selenium.isElementPresent("link=1 unread message");
+            }
+        }, 15000).await();
 
-		// Verify message in chat box
-		new ConditionWaiter(new ConditionWaiter.Predicate() {
-			@Override
-			public boolean satisfied() {
-				return selenium.isTextPresent("ChatMessage JVM to Local");
-			}
-		},5000).await();
+        // Click to bring up chat box
+        selenium.click("link=1 unread message");
 
-		// Finally, verify that this message was stored in our local database
-		List<Chat> storedMessage = ChatDAO.get().getMessagesForUser(localOneSwarm.getPublicKey(),
-				true, 1);
-		Assert.assertEquals(storedMessage.get(0).getMessage(), chatMessage);
+        // Verify message in chat box
+        new ConditionWaiter(new ConditionWaiter.Predicate() {
+            @Override
+            public boolean satisfied() {
+                return selenium.isTextPresent("ChatMessage JVM to Local");
+            }
+        }, 5000).await();
 
-		selenium.close();
-	}
+        // Finally, verify that this message was stored in our local database
+        List<Chat> storedMessage = ChatDAO.get().getMessagesForUser(localOneSwarm.getPublicKey(),
+                true, 1);
+        Assert.assertEquals(storedMessage.get(0).getMessage(), chatMessage);
 
-	/** Closes the web UI */
-	@After
-	public void tearDownTest() throws Exception {
-		selenium.close();
-	}
+        selenium.close();
+    }
 
-	/** Boilerplate code for running as executable. */
-	public static void main (String [] args) throws Exception {
-		TestUtils.swtCompatibleTestRunner(ChatTest.class);
-	}
+    /** Closes the web UI */
+    @After
+    public void tearDownTest() throws Exception {
+        selenium.close();
+    }
+
+    /** Boilerplate code for running as executable. */
+    public static void main(String[] args) throws Exception {
+        TestUtils.swtCompatibleTestRunner(ChatTest.class);
+    }
 }

@@ -347,7 +347,7 @@
 			<jvmarg value="-Xmx512M" />
 			
 			<arg value="-localWorkers" />
-			<arg value="2" />
+			<arg value="4" />
 			
 			<arg value="-war" />
 			<arg value="../gwt-bin/war" />
@@ -412,6 +412,7 @@
 			<fileset dir="gwt-bin/war/WEB-INF/classes">
 				<include name="**/*.class" />
 				<exclude name="**/planetlab/**.class" unless="plab.build" />
+				<exclude name="**/dmurph/**.class" unless="plab.build" />
 			</fileset>
 			
 			<!-- Language files -->
@@ -556,7 +557,7 @@
       we can't use the JUnit ant task directly. Due to OSX SWT issues, we need
  	  to run each test as an individual java execution.
 	-->
-	<target name="run-tests" depends="compile-tests" >
+	<target name="test" depends="compile-tests" >
 		<!-- Sets oneswarm.test.cases -->
 		<DiscoverTestClasses />
 		<foreach target="run-single-test" list="${oneswarm.test.cases}" param="testClass" />	

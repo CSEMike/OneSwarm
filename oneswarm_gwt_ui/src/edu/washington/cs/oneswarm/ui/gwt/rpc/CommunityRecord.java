@@ -371,7 +371,14 @@ public class CommunityRecord implements IsSerializable {
     @Override
     public boolean equals(Object rhs) {
         if (rhs instanceof CommunityRecord) {
-            return ((CommunityRecord) rhs).getCommunity_path().equals(getCommunity_path());
+
+            // This shouldn't happen, but may if a CommunityRecord becomes
+            // corrupt.
+            if (getRealUrl() == null || ((CommunityRecord) rhs).getRealUrl() == null) {
+                return false;
+            }
+
+            return ((CommunityRecord) rhs).getRealUrl().equals(getRealUrl());
         }
         return false;
     }

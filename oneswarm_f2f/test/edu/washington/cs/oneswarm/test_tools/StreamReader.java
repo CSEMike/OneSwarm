@@ -15,57 +15,57 @@ import java.util.ArrayList;
 
 public class StreamReader implements Runnable {
 
-	private InputStream source;
+    private InputStream source;
 
-	private Thread t;
+    private Thread t;
 
-	private ArrayList<byte[]> data;
+    private ArrayList<byte[]> data;
 
-	public StreamReader(InputStream source) {
-		this.data = new ArrayList<byte[]>();
-		this.source = source;
+    public StreamReader(InputStream source) {
+        this.data = new ArrayList<byte[]>();
+        this.source = source;
 
-		t = new Thread(this);
-		t.setName("BufferReader");
-		t.setDaemon(true);
-		t.start();
-	}
+        t = new Thread(this);
+        t.setName("BufferReader");
+        t.setDaemon(true);
+        t.start();
+    }
 
-	public void run() {
-		try {
-			int read = 0;
-			byte[] buffer = new byte[1000];
-			while ((read = source.read(buffer, 0, buffer.length)) != -1) {
-				byte[] toSave = new byte[read];
-				System.arraycopy(buffer, 0, toSave, 0, toSave.length);
-				data.add(toSave);
-			}
-			source.close();
-		} catch (IOException e) {
-			System.out.println("Buffer reader stopped");
-		}
-	}
+    public void run() {
+        try {
+            int read = 0;
+            byte[] buffer = new byte[1000];
+            while ((read = source.read(buffer, 0, buffer.length)) != -1) {
+                byte[] toSave = new byte[read];
+                System.arraycopy(buffer, 0, toSave, 0, toSave.length);
+                data.add(toSave);
+            }
+            source.close();
+        } catch (IOException e) {
+            System.out.println("Buffer reader stopped");
+        }
+    }
 
-	public byte[] read() throws InterruptedException {
+    public byte[] read() throws InterruptedException {
 
-		t.join();
+        t.join();
 
-		byte[] allData = new byte[this.length()];
-		int pos = 0;
-		for (int i = 0; i < data.size(); i++) {
-			byte[] b = data.get(i);
-			System.arraycopy(b, 0, allData, pos, b.length);
-			pos += b.length;
-		}
-		return allData;
-	}
+        byte[] allData = new byte[this.length()];
+        int pos = 0;
+        for (int i = 0; i < data.size(); i++) {
+            byte[] b = data.get(i);
+            System.arraycopy(b, 0, allData, pos, b.length);
+            pos += b.length;
+        }
+        return allData;
+    }
 
-	public int length() {
-		int len = 0;
+    public int length() {
+        int len = 0;
 
-		for (byte[] element : data) {
-			len += element.length;
-		}
-		return len;
-	}
+        for (byte[] element : data) {
+            len += element.length;
+        }
+        return len;
+    }
 }
