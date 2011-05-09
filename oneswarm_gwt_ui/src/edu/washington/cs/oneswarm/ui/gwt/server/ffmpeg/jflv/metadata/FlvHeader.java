@@ -33,7 +33,7 @@ import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.io.FileReader;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.io.IOHelper;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class FlvHeader {
@@ -47,7 +47,7 @@ public class FlvHeader {
     private IOHelper ioh;
 
     /** Creates a new instance of FlvHeader */
-    public FlvHeader(){
+    public FlvHeader() {
 
         signature = null;
         version = 0;
@@ -74,41 +74,46 @@ public class FlvHeader {
 
         dataOffset = fh.readUint(4);
 
-        if((dataOffset - 9) > 0){
+        if ((dataOffset - 9) > 0) {
             extraData = fh.readString((dataOffset - 9));
-        }else{
+        } else {
             extraData = "";
         }
 
-    }//FlvHeader()
+    }// FlvHeader()
 
-    public byte[] getFlvHeaderBytes(){
+    public byte[] getFlvHeaderBytes() {
 
         int fpos = 0;
 
         int typeFlags = 0;
-        if(containsAudio){typeFlags += 4;}
-        if(containsVideo){typeFlags += 1;}
+        if (containsAudio) {
+            typeFlags += 4;
+        }
+        if (containsVideo) {
+            typeFlags += 1;
+        }
 
         ByteHelper bh = ioh.getByteHelper();
 
         byte[] flv = new String("FLV").getBytes();
         byte[] typ = bh.getUintBytes(1, 1);
         byte[] typFlag = bh.getUintBytes(typeFlags, 1);
-        byte[] extDataLen = bh.getUintBytes((9+extraData.length()),4);
+        byte[] extDataLen = bh.getUintBytes((9 + extraData.length()), 4);
         byte[] extData = extraData.getBytes();
 
-        byte[] flvhBytes = new byte[flv.length + typ.length + typFlag.length + extDataLen.length + extData.length];
+        byte[] flvhBytes = new byte[flv.length + typ.length + typFlag.length + extDataLen.length
+                + extData.length];
 
-        System.arraycopy(flv,0,flvhBytes,0,flv.length);
+        System.arraycopy(flv, 0, flvhBytes, 0, flv.length);
         fpos += flv.length;
-        System.arraycopy(typ,0,flvhBytes,fpos,typ.length);
+        System.arraycopy(typ, 0, flvhBytes, fpos, typ.length);
         fpos += typ.length;
-        System.arraycopy(typFlag,0,flvhBytes,fpos,typFlag.length);
+        System.arraycopy(typFlag, 0, flvhBytes, fpos, typFlag.length);
         fpos += typFlag.length;
-        System.arraycopy(extDataLen,0,flvhBytes,fpos,extDataLen.length);
+        System.arraycopy(extDataLen, 0, flvhBytes, fpos, extDataLen.length);
         fpos += extDataLen.length;
-        System.arraycopy(extData,0,flvhBytes,fpos,extData.length);
+        System.arraycopy(extData, 0, flvhBytes, fpos, extData.length);
 
         flv = null;
         typ = null;
@@ -118,7 +123,7 @@ public class FlvHeader {
 
         return flvhBytes;
 
-    }//writeFlvHeader()
+    }// writeFlvHeader()
 
     public String getSignature() {
         return signature;
@@ -168,4 +173,4 @@ public class FlvHeader {
         this.extraData = extraData;
     }
 
-}//FlvHeader
+}// FlvHeader

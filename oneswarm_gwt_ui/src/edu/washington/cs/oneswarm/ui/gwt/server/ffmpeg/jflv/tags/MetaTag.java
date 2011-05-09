@@ -36,7 +36,7 @@ import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.io.ByteHelper;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.io.IOHelper;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class MetaTag extends FlvTag {
@@ -49,7 +49,7 @@ public class MetaTag extends FlvTag {
     private Object metaData;
 
     /** Creates a new instance of MetaTag */
-    public MetaTag(){
+    public MetaTag() {
         mbb = null;
         bh = new ByteHelper();
         bufh = new BufferHelper();
@@ -72,45 +72,44 @@ public class MetaTag extends FlvTag {
 
         mbb = null;
 
-    }//MetaTag()
+    }// MetaTag()
 
-    private byte[] getEventBytes(){
+    private byte[] getEventBytes() {
 
-        String eventStr = (String)event;
+        String eventStr = (String) event;
 
         return bh.getAMFStringBytes(eventStr);
 
-    }//getEventBytes()
+    }// getEventBytes()
 
-    private byte[] getMetaDataBytes(){
+    private byte[] getMetaDataBytes() {
 
-        HashMap<String,Object> mixArray = (HashMap<String,Object>)metaData;
+        HashMap<String, Object> mixArray = (HashMap<String, Object>) metaData;
 
         return bh.getAMFDataBytes(mixArray);
 
-    }//getMetaDataBytes()
-
+    }// getMetaDataBytes()
 
     public int getDataSizeFromBuffer() {
         return (getDataAsBuffer().capacity() + 15);
     }
 
-    public ByteBuffer getDataAsBuffer(){
+    public ByteBuffer getDataAsBuffer() {
 
         byte[] eventBytes = getEventBytes();
         byte[] metaBytes = getMetaDataBytes();
 
         byte[] totBytes = new byte[eventBytes.length + metaBytes.length];
 
-        System.arraycopy(eventBytes,0,totBytes,0,eventBytes.length);
-        System.arraycopy(metaBytes,0,totBytes,eventBytes.length,metaBytes.length);
+        System.arraycopy(eventBytes, 0, totBytes, 0, eventBytes.length);
+        System.arraycopy(metaBytes, 0, totBytes, eventBytes.length, metaBytes.length);
 
         eventBytes = null;
         metaBytes = null;
 
         return bufh.byte2buffer(totBytes);
 
-    }//getData()
+    }// getData()
 
     public Object getEvent() {
         return event;
@@ -128,4 +127,4 @@ public class MetaTag extends FlvTag {
         this.metaData = metaData;
     }
 
-}//MetaTag
+}// MetaTag

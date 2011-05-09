@@ -27,124 +27,131 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.TorrentInfo;
 
 public class PublishSwarmInfoPanel extends VerticalPanel {
 
-	protected static OSMessages msg = OneSwarmGWT.msg;
-	
-	String mPreviewPath = null;
-	TextArea descriptionBox = new TextArea();
-	ListBox categoriesListBox = new ListBox();
-	
-	public PublishSwarmInfoPanel( TorrentInfo info ) { 
-		
-		HorizontalPanel hp = new HorizontalPanel();
-		
-		VerticalPanel lhs = new VerticalPanel();
-		
-		Button includePreview = new Button(msg.button_select_preview());
-		includePreview.addStyleName(OneSwarmCss.SMALL_BUTTON);
-		
-		final Image previewImage = new Image(GWT.getModuleBaseURL() + "image?infohash=" + info.getTorrentID());
-		
-		previewImage.addErrorHandler(new ErrorHandler(){
-			public void onError(ErrorEvent event) {
-				mPreviewPath = null;
-				previewImage.setVisible(false);
-				
-				Window.alert(msg.publish_preview_image_error());
-			}});
-		
-		includePreview.addClickHandler(new ClickHandler(){
-			public void onClick(ClickEvent event) {
-				OneSwarmRPCClient.getService().selectFileOrDirectory(OneSwarmRPCClient.getSessionID(), false, new AsyncCallback<String>(){
-					public void onFailure(Throwable caught) {
-						caught.printStackTrace();
-					}
+    protected static OSMessages msg = OneSwarmGWT.msg;
 
-					public void onSuccess(String result) {
-						if( result == null ) { 
-							return;
-						}
-						
-						mPreviewPath = result;
-						previewImage.setUrl(GWT.getModuleBaseURL() + "image?path=" + URL.encode(result) + "&scale=128");
-						previewImage.setVisible(true);
-					}});
-			}});
-		lhs.add(previewImage);
-		lhs.add(includePreview);
-		lhs.setCellHorizontalAlignment(includePreview, HorizontalPanel.ALIGN_CENTER);
-		lhs.setCellHorizontalAlignment(previewImage, ALIGN_CENTER);
-		
-		VerticalPanel rhs = new VerticalPanel();
-		
-		descriptionBox.setVisibleLines(5);
-		descriptionBox.setWidth("280px");
-		
-		HorizontalPanel categoryHP = new HorizontalPanel();
-		Label l = new Label(msg.publish_category_label() + ":");
-		categoryHP.add(l);
-		categoryHP.add(categoriesListBox);
-		categoryHP.setCellVerticalAlignment(l, HorizontalPanel.ALIGN_MIDDLE);
-		
-		categoriesListBox.setEnabled(false);
-		
-		rhs.add(categoryHP);
-		rhs.add(new Label(info.getName()));
-		rhs.add(new Label(info.getNumFiles() + " " + msg.publish_files_label()));
-		rhs.add(new Label(msg.publish_size_label() + ": " + StringTools.formatRate(info.getTotalSize(), "")));
-		
-		descriptionBox.setText(msg.publish_comment_label());
-		
-		rhs.add(descriptionBox);
-		
-		if( OneSwarmGWT.isRemoteAccess() == false ) {
-			hp.add(lhs);
-		}
-		hp.add(rhs);
-		
-		hp.setCellVerticalAlignment(rhs, ALIGN_MIDDLE);
-		
-		lhs.setSpacing(3);
-		
-		add(hp);
-	}
-	
-	public void updateCategories( List<String> categories ) {
-		categoriesListBox.clear();
-		if( categories == null ) { 
-			categoriesListBox.setEnabled(false);
-			categoriesListBox.addItem(msg.publish_no_categories());
-			return;
-		}
-		if( categories.size() == 0 ) { 
-			categoriesListBox.setEnabled(false);
-			categoriesListBox.addItem(msg.publish_no_categories());
-			return;
-		}
-		
-		for( String s : categories ) { 
-			categoriesListBox.addItem(s);
-		}
-		
-		categoriesListBox.setEnabled(true);	
-	}
-	
-	public String getDescription() { 
-		if( descriptionBox.getText().equals(msg.publish_comment_label()) ) { 
-			return "";
-		} else { 
-			return descriptionBox.getText();
-		}
-	}
+    String mPreviewPath = null;
+    TextArea descriptionBox = new TextArea();
+    ListBox categoriesListBox = new ListBox();
 
-	public String getPreviewPath() { 
-		return mPreviewPath;
-	}
+    public PublishSwarmInfoPanel(TorrentInfo info) {
 
-	public String getCategory() {
-		if( categoriesListBox.isEnabled() == false ) { 
-			return null;
-		}
-		return categoriesListBox.getItemText(categoriesListBox.getSelectedIndex());
-	}
-	
+        HorizontalPanel hp = new HorizontalPanel();
+
+        VerticalPanel lhs = new VerticalPanel();
+
+        Button includePreview = new Button(msg.button_select_preview());
+        includePreview.addStyleName(OneSwarmCss.SMALL_BUTTON);
+
+        final Image previewImage = new Image(GWT.getModuleBaseURL() + "image?infohash="
+                + info.getTorrentID());
+
+        previewImage.addErrorHandler(new ErrorHandler() {
+            public void onError(ErrorEvent event) {
+                mPreviewPath = null;
+                previewImage.setVisible(false);
+
+                Window.alert(msg.publish_preview_image_error());
+            }
+        });
+
+        includePreview.addClickHandler(new ClickHandler() {
+            public void onClick(ClickEvent event) {
+                OneSwarmRPCClient.getService().selectFileOrDirectory(
+                        OneSwarmRPCClient.getSessionID(), false, new AsyncCallback<String>() {
+                            public void onFailure(Throwable caught) {
+                                caught.printStackTrace();
+                            }
+
+                            public void onSuccess(String result) {
+                                if (result == null) {
+                                    return;
+                                }
+
+                                mPreviewPath = result;
+                                previewImage.setUrl(GWT.getModuleBaseURL() + "image?path="
+                                        + URL.encode(result) + "&scale=128");
+                                previewImage.setVisible(true);
+                            }
+                        });
+            }
+        });
+        lhs.add(previewImage);
+        lhs.add(includePreview);
+        lhs.setCellHorizontalAlignment(includePreview, HorizontalPanel.ALIGN_CENTER);
+        lhs.setCellHorizontalAlignment(previewImage, ALIGN_CENTER);
+
+        VerticalPanel rhs = new VerticalPanel();
+
+        descriptionBox.setVisibleLines(5);
+        descriptionBox.setWidth("280px");
+
+        HorizontalPanel categoryHP = new HorizontalPanel();
+        Label l = new Label(msg.publish_category_label() + ":");
+        categoryHP.add(l);
+        categoryHP.add(categoriesListBox);
+        categoryHP.setCellVerticalAlignment(l, HorizontalPanel.ALIGN_MIDDLE);
+
+        categoriesListBox.setEnabled(false);
+
+        rhs.add(categoryHP);
+        rhs.add(new Label(info.getName()));
+        rhs.add(new Label(info.getNumFiles() + " " + msg.publish_files_label()));
+        rhs.add(new Label(msg.publish_size_label() + ": "
+                + StringTools.formatRate(info.getTotalSize(), "")));
+
+        descriptionBox.setText(msg.publish_comment_label());
+
+        rhs.add(descriptionBox);
+
+        if (OneSwarmGWT.isRemoteAccess() == false) {
+            hp.add(lhs);
+        }
+        hp.add(rhs);
+
+        hp.setCellVerticalAlignment(rhs, ALIGN_MIDDLE);
+
+        lhs.setSpacing(3);
+
+        add(hp);
+    }
+
+    public void updateCategories(List<String> categories) {
+        categoriesListBox.clear();
+        if (categories == null) {
+            categoriesListBox.setEnabled(false);
+            categoriesListBox.addItem(msg.publish_no_categories());
+            return;
+        }
+        if (categories.size() == 0) {
+            categoriesListBox.setEnabled(false);
+            categoriesListBox.addItem(msg.publish_no_categories());
+            return;
+        }
+
+        for (String s : categories) {
+            categoriesListBox.addItem(s);
+        }
+
+        categoriesListBox.setEnabled(true);
+    }
+
+    public String getDescription() {
+        if (descriptionBox.getText().equals(msg.publish_comment_label())) {
+            return "";
+        } else {
+            return descriptionBox.getText();
+        }
+    }
+
+    public String getPreviewPath() {
+        return mPreviewPath;
+    }
+
+    public String getCategory() {
+        if (categoriesListBox.isEnabled() == false) {
+            return null;
+        }
+        return categoriesListBox.getItemText(categoriesListBox.getSelectedIndex());
+    }
+
 }

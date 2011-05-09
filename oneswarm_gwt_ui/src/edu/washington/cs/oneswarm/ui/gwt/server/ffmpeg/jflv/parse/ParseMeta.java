@@ -38,7 +38,7 @@ import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.tags.FlvTag;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.tags.MetaTag;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class ParseMeta {
@@ -67,70 +67,72 @@ public class ParseMeta {
     }
 
     // metadata getter
-    public HashMap<String,Object> getMetaData(){
-        return mt == null ? null : (HashMap<String,Object>)mt.getMetaData();
+    public HashMap<String, Object> getMetaData() {
+        return mt == null ? null : (HashMap<String, Object>) mt.getMetaData();
     }
 
-    public void findMetaTag(){
+    public void findMetaTag() {
 
         int tagType = 0;
 
-        while(true){
+        while (true) {
 
             byte[] mbb = fh.readByteArray(5);
 
-            if(mbb == null){
-                //System.out.println("mbb null");
+            if (mbb == null) {
+                // System.out.println("mbb null");
                 break;
             }
 
             tagType = bh.readUint(mbb, 4, 1);
 
-            if(tagType == FlvTag.META){
+            if (tagType == FlvTag.META) {
 
                 mt = new MetaTag(ioh);
 
-                if(mt.getEvent().equals("onMetaData")){
+                if (mt.getEvent().equals("onMetaData")) {
                     didFind = true;
                     break;
                 }
 
-            }else{
+            } else {
 
-                //advance file position properly
+                // advance file position properly
                 ft = new FlvTag(ioh);
                 ft = null;
 
-            }//else
+            }// else
 
-        }//while
+        }// while
 
-    }//findMetaTag()
+    }// findMetaTag()
 
-    public void printMetaData(){
+    public void printMetaData() {
 
-        if(!didFind){
+        if (!didFind) {
 
             System.out.println("no metadata has been embedded");
 
-        }else{
+        } else {
 
             EmbeddedData emb = new EmbeddedData();
 
-            try{
+            try {
 
-                emb.setData((HashMap<String,Object>)mt.getMetaData());
+                emb.setData((HashMap<String, Object>) mt.getMetaData());
                 System.out.println(emb.printMetaData());
 
-            }catch(Exception e){
+            } catch (Exception e) {
 
                 System.out.println("An error occurred while parsing metadata ... try re-embedding");
-                if(debug){e.printStackTrace();}
+                if (debug) {
+                    e.printStackTrace();
+                }
 
             }
 
-        }//else
+        }// else
 
-    }//printMetaData()
+    }// printMetaData()
 
-}//ParseMeta
+}// ParseMeta

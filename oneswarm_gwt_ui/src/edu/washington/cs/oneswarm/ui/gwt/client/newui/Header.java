@@ -9,39 +9,41 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmGWT;
 
 public class Header extends HorizontalPanel {
-	private boolean showDebug = false;
-	private NavigationFilterBar navBar;
+    private boolean showDebug = false;
+    private NavigationFilterBar navBar;
 
-	public Header(boolean useDebug, boolean focusSearchText) {
-		setWidth("100%");
+    public Header(boolean useDebug, boolean focusSearchText) {
+        setWidth("100%");
 
-		this.setVerticalAlignment(VerticalPanel.ALIGN_BOTTOM);
-		this.setHorizontalAlignment(HorizontalPanel.ALIGN_LEFT);
+        this.setVerticalAlignment(VerticalPanel.ALIGN_BOTTOM);
+        this.setHorizontalAlignment(HorizontalPanel.ALIGN_LEFT);
 
-		final Image headerImage = new Image(ImageConstants.HEADER_LOGO);
-		if( useDebug ) {
-			headerImage.addClickHandler(new ClickHandler() {
-				public void onClick(ClickEvent event) {
-					showDebug = !showDebug;
-					OneSwarmGWT.showDebug(showDebug);
-				}
-			});
-		}
-		
-		add(headerImage);
-		this.setCellVerticalAlignment(headerImage, VerticalPanel.ALIGN_BOTTOM);
+        final Image headerImage = new Image(ImageConstants.HEADER_LOGO);
+        if (useDebug) {
+            headerImage.addClickHandler(new ClickHandler() {
+                public void onClick(ClickEvent event) {
+                    showDebug = !showDebug;
+                    OneSwarmGWT.showDebug(showDebug);
+                }
+            });
+        }
 
-		this.setCellWidth(headerImage, "200px");
-		this.setCellHeight(headerImage, "45px");
+        add(headerImage);
+        this.setCellVerticalAlignment(headerImage, VerticalPanel.ALIGN_BOTTOM);
 
-		navBar = new NavigationFilterBar(focusSearchText);
-		add(navBar);
-		this.setCellVerticalAlignment(navBar, VerticalPanel.ALIGN_BOTTOM);
-	}
-	
-	public NavigationFilterBar getFilterBar() { return navBar; }
+        this.setCellWidth(headerImage, "200px");
+        this.setCellHeight(headerImage, "45px");
 
-	public void focusSearch() {
-		navBar.focusSearch();
-	}
+        navBar = new NavigationFilterBar(focusSearchText);
+        add(navBar);
+        this.setCellVerticalAlignment(navBar, VerticalPanel.ALIGN_BOTTOM);
+    }
+
+    public NavigationFilterBar getFilterBar() {
+        return navBar;
+    }
+
+    public void focusSearch() {
+        navBar.focusSearch();
+    }
 }

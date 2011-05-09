@@ -8,9 +8,9 @@ package edu.washington.cs.oneswarm.f2f.messaging;
  * 
  */
 public interface OSF2FSearchResp extends OSF2FMessage {
-	public int getSearchID();
+    public int getSearchID();
 
-	public int getChannelID();
+    public int getChannelID();
 
-	public OSF2FSearchResp clone();
+    public OSF2FSearchResp clone();
 }

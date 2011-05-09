@@ -11,127 +11,131 @@ import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 
 public class OSF2FTextSearch implements OSF2FMessage, OSF2FSearch {
 
-	private final byte version;
-	private final int searchID;
-	private final byte type;
+    private final byte version;
+    private final int searchID;
+    private final byte type;
 
-	private final String searchString;
-	private byte[] searchStringBytes;
+    private final String searchString;
+    private byte[] searchStringBytes;
 
-	private String description;
-	private DirectByteBuffer buffer;
-	private final static int BASE_MESSAGE_LENGTH = 5;
-	private final static int MAX_MESSAGE_LENGTH = 109;
+    private String description;
+    private DirectByteBuffer buffer;
+    private final static int BASE_MESSAGE_LENGTH = 5;
+    private final static int MAX_MESSAGE_LENGTH = 109;
 
-	private int messageLength;
+    private int messageLength;
 
-	public OSF2FTextSearch(byte version, byte type, int searchID, String searchString) {
-		this.searchString = searchString;
-		try {
-			this.searchStringBytes = searchString.getBytes("UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-			this.searchStringBytes = searchString.getBytes();
-		}
-		this.version = version;
-		this.type = type;
-		this.searchID = searchID;
-		this.messageLength = Math.min(MAX_MESSAGE_LENGTH, BASE_MESSAGE_LENGTH + searchStringBytes.length);
-	}
+    public OSF2FTextSearch(byte version, byte type, int searchID, String searchString) {
+        this.searchString = searchString;
+        try {
+            this.searchStringBytes = searchString.getBytes("UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            this.searchStringBytes = searchString.getBytes();
+        }
+        this.version = version;
+        this.type = type;
+        this.searchID = searchID;
+        this.messageLength = Math.min(MAX_MESSAGE_LENGTH, BASE_MESSAGE_LENGTH
+                + searchStringBytes.length);
+    }
 
-	public OSF2FTextSearch clone() {
-		return new OSF2FTextSearch(this.getVersion(), type, this.getSearchID(), this.getSearchString());
-	}
+    public OSF2FTextSearch clone() {
+        return new OSF2FTextSearch(this.getVersion(), type, this.getSearchID(),
+                this.getSearchString());
+    }
 
-	public int getSearchID() {
-		return searchID;
-	}
+    public int getSearchID() {
+        return searchID;
+    }
 
-	public String getSearchString() {
-		return searchString;
-	}
+    public String getSearchString() {
+        return searchString;
+    }
 
-	public String getID() {
-		return OSF2FMessage.ID_OS_TEXT_SEARCH;
-	}
+    public String getID() {
+        return OSF2FMessage.ID_OS_TEXT_SEARCH;
+    }
 
-	public byte[] getIDBytes() {
-		return OSF2FMessage.ID_OS_TEXT_SEARCH_BYTES;
-	}
+    public byte[] getIDBytes() {
+        return OSF2FMessage.ID_OS_TEXT_SEARCH_BYTES;
+    }
 
-	public String getFeatureID() {
-		return OSF2FMessage.OS_FEATURE_ID;
-	}
+    public String getFeatureID() {
+        return OSF2FMessage.OS_FEATURE_ID;
+    }
 
-	public int getFeatureSubID() {
-		return OSF2FMessage.SUBID_OS_TEXT_SEARCH;
-	}
+    public int getFeatureSubID() {
+        return OSF2FMessage.SUBID_OS_TEXT_SEARCH;
+    }
 
-	public int getType() {
-		return Message.TYPE_PROTOCOL_PAYLOAD;
-	}
+    public int getType() {
+        return Message.TYPE_PROTOCOL_PAYLOAD;
+    }
 
-	public byte getVersion() {
-		return version;
-	};
+    public byte getVersion() {
+        return version;
+    };
 
-	public String getDescription() {
-		if (description == null) {
-			description = OSF2FMessage.ID_OS_TEXT_SEARCH + "\tsearchID=" + Integer.toHexString(searchID) + "\tstring=" + searchString;
-		}
+    public String getDescription() {
+        if (description == null) {
+            description = OSF2FMessage.ID_OS_TEXT_SEARCH + "\tsearchID="
+                    + Integer.toHexString(searchID) + "\tstring=" + searchString;
+        }
 
-		return description;
-	}
+        return description;
+    }
 
-	public DirectByteBuffer[] getData() {
-		if (buffer == null) {
-			buffer = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG, messageLength);
-			buffer.put(DirectByteBuffer.SS_MSG, type);
-			buffer.putInt(DirectByteBuffer.SS_MSG, searchID);
-			buffer.put(DirectByteBuffer.SS_MSG, searchStringBytes);
+    public DirectByteBuffer[] getData() {
+        if (buffer == null) {
+            buffer = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG, messageLength);
+            buffer.put(DirectByteBuffer.SS_MSG, type);
+            buffer.putInt(DirectByteBuffer.SS_MSG, searchID);
+            buffer.put(DirectByteBuffer.SS_MSG, searchStringBytes);
 
-			buffer.flip(DirectByteBuffer.SS_MSG);
-		}
-		return new DirectByteBuffer[] { buffer };
-	}
+            buffer.flip(DirectByteBuffer.SS_MSG);
+        }
+        return new DirectByteBuffer[] { buffer };
+    }
 
-	public Message deserialize(DirectByteBuffer data, byte version) throws MessageException {
-		if (data == null) {
-			throw new MessageException("[" + getID() + "] decode error: data == null");
-		}
+    public Message deserialize(DirectByteBuffer data, byte version) throws MessageException {
+        if (data == null) {
+            throw new MessageException("[" + getID() + "] decode error: data == null");
+        }
 
-		if (data.remaining(DirectByteBuffer.SS_MSG) <= BASE_MESSAGE_LENGTH) {
-			throw new MessageException("[" + getID() + "] decode error: payload.remaining[" + data.remaining(DirectByteBuffer.SS_MSG) + "] <= " + BASE_MESSAGE_LENGTH);
-		}
-		byte type = data.get(DirectByteBuffer.SS_MSG);
-		int search = data.getInt(DirectByteBuffer.SS_MSG);
-		int stringLength = data.remaining(DirectByteBuffer.SS_MSG);
-		byte[] stringBytes = new byte[stringLength];
-		data.get(DirectByteBuffer.SS_MSG, stringBytes);
+        if (data.remaining(DirectByteBuffer.SS_MSG) <= BASE_MESSAGE_LENGTH) {
+            throw new MessageException("[" + getID() + "] decode error: payload.remaining["
+                    + data.remaining(DirectByteBuffer.SS_MSG) + "] <= " + BASE_MESSAGE_LENGTH);
+        }
+        byte type = data.get(DirectByteBuffer.SS_MSG);
+        int search = data.getInt(DirectByteBuffer.SS_MSG);
+        int stringLength = data.remaining(DirectByteBuffer.SS_MSG);
+        byte[] stringBytes = new byte[stringLength];
+        data.get(DirectByteBuffer.SS_MSG, stringBytes);
 
-		data.returnToPool();
-		try {
-			return new OSF2FTextSearch(version, type, search, new String(stringBytes, "UTF-8"));
-		} catch (UnsupportedEncodingException e) {
-			Debug.out("unable to decode packet using utf-8, fallback to std encoding", e);
-			return new OSF2FTextSearch(version, type, search, new String(stringBytes));
-		}
-	}
+        data.returnToPool();
+        try {
+            return new OSF2FTextSearch(version, type, search, new String(stringBytes, "UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            Debug.out("unable to decode packet using utf-8, fallback to std encoding", e);
+            return new OSF2FTextSearch(version, type, search, new String(stringBytes));
+        }
+    }
 
-	public void destroy() {
-		if (buffer != null)
-			buffer.returnToPool();
-	}
+    public void destroy() {
+        if (buffer != null)
+            buffer.returnToPool();
+    }
 
-	public byte getRequestType() {
-		return type;
-	}
+    public byte getRequestType() {
+        return type;
+    }
 
-	public int getMessageSize() {
-		return messageLength;
-	}
+    public int getMessageSize() {
+        return messageLength;
+    }
 
-	public int getValueID() {
-		return searchString.hashCode();
-	}
+    public int getValueID() {
+        return searchString.hashCode();
+    }
 }

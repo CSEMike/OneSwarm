@@ -33,74 +33,74 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmUIServiceAsync;
 
 class ShowMyPublicKeyDialog extends OneSwarmDialogBox {
 
-	private final VerticalPanel mainPanel = new VerticalPanel();
-	private final Button okButton = new Button("Close");
-	private final TextArea publicKeyArea = new TextArea();
-	private final static int WIDTH = 375;
-	private final static int HEIGHT = 140;
+    private final VerticalPanel mainPanel = new VerticalPanel();
+    private final Button okButton = new Button("Close");
+    private final TextArea publicKeyArea = new TextArea();
+    private final static int WIDTH = 375;
+    private final static int HEIGHT = 140;
 
-	public ShowMyPublicKeyDialog() {
-		this.setText("Local Public Key");
-		mainPanel.setWidth(WIDTH + "px");
-		mainPanel.setHeight(HEIGHT + "px");
+    public ShowMyPublicKeyDialog() {
+        this.setText("Local Public Key");
+        mainPanel.setWidth(WIDTH + "px");
+        mainPanel.setHeight(HEIGHT + "px");
 
-		// public key
-		publicKeyArea.setWidth(WIDTH + "px");
-		publicKeyArea.setVisibleLines(7);
-		mainPanel.add(publicKeyArea);
+        // public key
+        publicKeyArea.setWidth(WIDTH + "px");
+        publicKeyArea.setVisibleLines(7);
+        mainPanel.add(publicKeyArea);
 
-		okButton.addClickHandler(this);
-		okButton.setWidth("100px");
-		mainPanel.add(okButton);
-		mainPanel.setCellHorizontalAlignment(okButton, HorizontalPanel.ALIGN_CENTER);
-		mainPanel.setWidth(WIDTH + "px");
-		mainPanel.setHeight(HEIGHT + "px");
-		setWidget(mainPanel);
+        okButton.addClickHandler(this);
+        okButton.setWidth("100px");
+        mainPanel.add(okButton);
+        mainPanel.setCellHorizontalAlignment(okButton, HorizontalPanel.ALIGN_CENTER);
+        mainPanel.setWidth(WIDTH + "px");
+        mainPanel.setHeight(HEIGHT + "px");
+        setWidget(mainPanel);
 
-		this.update();
-	}
+        this.update();
+    }
 
-	private void update() {
-		String session = OneSwarmRPCClient.getSessionID();
-		OneSwarmUIServiceAsync service = OneSwarmRPCClient.getService();
+    private void update() {
+        String session = OneSwarmRPCClient.getSessionID();
+        OneSwarmUIServiceAsync service = OneSwarmRPCClient.getService();
 
-		AsyncCallback<String> callback = new AsyncCallback<String>() {
-			public void onSuccess(String result) {
-				publicKeyArea.setText(result);
-				wordWrap();
-			}
+        AsyncCallback<String> callback = new AsyncCallback<String>() {
+            public void onSuccess(String result) {
+                publicKeyArea.setText(result);
+                wordWrap();
+            }
 
-			public void onFailure(Throwable caught) {
-				// well, do nothing...
-				OneSwarmGWT.log("error " + caught.getMessage());
-			}
-		};
-		service.getMyPublicKey(session, callback);
-	}
+            public void onFailure(Throwable caught) {
+                // well, do nothing...
+                OneSwarmGWT.log("error " + caught.getMessage());
+            }
+        };
+        service.getMyPublicKey(session, callback);
+    }
 
-	private void wordWrap() {
-		// some word wrapping would be nice here...
-		String text = publicKeyArea.getText();
-		text = text.replaceAll("\\s+", "");
-		int pos = 0;
-		int len = text.length();
+    private void wordWrap() {
+        // some word wrapping would be nice here...
+        String text = publicKeyArea.getText();
+        text = text.replaceAll("\\s+", "");
+        int pos = 0;
+        int len = text.length();
 
-		StringBuilder b = new StringBuilder();
-		while (pos < len) {
-			int maxlen = Math.min(45, text.length() - pos);
-			b.append(text.substring(pos, pos + maxlen));
-			b.append("\n");
-			pos += maxlen;
-		}
+        StringBuilder b = new StringBuilder();
+        while (pos < len) {
+            int maxlen = Math.min(45, text.length() - pos);
+            b.append(text.substring(pos, pos + maxlen));
+            b.append("\n");
+            pos += maxlen;
+        }
 
-		publicKeyArea.setText(b.toString());
-	}
+        publicKeyArea.setText(b.toString());
+    }
 
-	public void onClick(ClickEvent event) {
-		if (event.getSource().equals(okButton)) {
-			hide();
-		} else {
-			super.onClick(event);
-		}
-	}
+    public void onClick(ClickEvent event) {
+        if (event.getSource().equals(okButton)) {
+            hide();
+        } else {
+            super.onClick(event);
+        }
+    }
 }

@@ -5,76 +5,77 @@ import java.util.Date;
 import com.google.gwt.user.client.rpc.IsSerializable;
 
 public class SerialChatMessage implements IsSerializable {
-	
-	long uid;
-	String message;
-	boolean unread;
-	long timestamp;
-	String nickname;
-	boolean outgoing;
-	boolean sent;
-	
-	public SerialChatMessage() {}
 
-	public String getMessage() {
-		return message;
-	}
+    long uid;
+    String message;
+    boolean unread;
+    long timestamp;
+    String nickname;
+    boolean outgoing;
+    boolean sent;
 
-	public void setMessage(String message) {
-		this.message = message;
-	}
+    public SerialChatMessage() {
+    }
 
-	public boolean isUnread() {
-		return unread;
-	}
+    public String getMessage() {
+        return message;
+    }
 
-	public void setUnread(boolean unread) {
-		this.unread = unread;
-	}
+    public void setMessage(String message) {
+        this.message = message;
+    }
 
-	public long getTimestamp() {
-		return timestamp;
-	}
+    public boolean isUnread() {
+        return unread;
+    }
 
-	public void setTimestamp(long timestamp) {
-		this.timestamp = timestamp;
-	}
+    public void setUnread(boolean unread) {
+        this.unread = unread;
+    }
 
-	public String getNickname() {
-		return nickname;
-	}
+    public long getTimestamp() {
+        return timestamp;
+    }
 
-	public void setNickname(String nickname) {
-		this.nickname = nickname;
-	}
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
 
-	public boolean isOutgoing() {
-		return outgoing;
-	}
+    public String getNickname() {
+        return nickname;
+    }
 
-	public void setOutgoing(boolean outgoing) {
-		this.outgoing = outgoing;
-	}
-	
-	public String toString() {
-		return "[" + getNickname() + " @ " + (new Date(timestamp)) + "]: " + message + " (unread: " + unread + " / outgoing: " + outgoing + ")";
-	}
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
 
-	public long getUid() {
-		return uid;
-	}
+    public boolean isOutgoing() {
+        return outgoing;
+    }
 
-	public void setUid(long uid) {
-		this.uid = uid;
-	}
+    public void setOutgoing(boolean outgoing) {
+        this.outgoing = outgoing;
+    }
 
-	public boolean isSent() {
-		return sent;
-	}
+    public String toString() {
+        return "[" + getNickname() + " @ " + (new Date(timestamp)) + "]: " + message + " (unread: "
+                + unread + " / outgoing: " + outgoing + ")";
+    }
 
-	public void setSent(boolean sent) {
-		this.sent = sent;
-	}
-	
-	
+    public long getUid() {
+        return uid;
+    }
+
+    public void setUid(long uid) {
+        this.uid = uid;
+    }
+
+    public boolean isSent() {
+        return sent;
+    }
+
+    public void setSent(boolean sent) {
+        this.sent = sent;
+    }
+
 }

@@ -38,7 +38,7 @@ import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.tags.FlvTag;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.tags.MetaTag;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class FileWriter {
@@ -59,7 +59,7 @@ public class FileWriter {
         debug = false;
     }
 
-    public void writeTags(){
+    public void writeTags() {
 
         BufferHelper bufh = new BufferHelper();
         ByteHelper bh = new ByteHelper();
@@ -71,48 +71,51 @@ public class FileWriter {
         byte[] dsize = null;
         byte[] tstamp = null;
         byte[] prevTagSize = null;
-        byte[] ender = bh.getUintBytes(0,4);
+        byte[] ender = bh.getUintBytes(0, 4);
 
-        try{
+        try {
 
             stream.open();
 
-        }catch(Exception ex){
+        } catch (Exception ex) {
 
             System.out.println("Error - unable to open specified output file");
-            if(debug){ex.printStackTrace();}
+            if (debug) {
+                ex.printStackTrace();
+            }
             return;
 
-        }//catch()
+        }// catch()
 
-        //write FLV header
+        // write FLV header
         stream.write(bufh.byte2buffer(flvh.getFlvHeaderBytes()));
         stream.write(bufh.byte2buffer(ender));
         stream.setInputStream(inStream);
 
         int cntr = 1;
 
-        for(TagStor ts : tags){
+        for (TagStor ts : tags) {
 
-            type = bh.getUintBytes(ts.getType(),1);
-            dsize = bh.getUintBytes(ts.getDataSize(),3);
-            tstamp = bh.getUintBytes(ts.getTimestamp(),3);
+            type = bh.getUintBytes(ts.getType(), 1);
+            dsize = bh.getUintBytes(ts.getDataSize(), 3);
+            tstamp = bh.getUintBytes(ts.getTimestamp(), 3);
 
-            if(prevTagSize != null){
-                buf = new byte[type.length + dsize.length + tstamp.length + ender.length + prevTagSize.length];
-                System.arraycopy(prevTagSize,0,buf,0,prevTagSize.length);
+            if (prevTagSize != null) {
+                buf = new byte[type.length + dsize.length + tstamp.length + ender.length
+                        + prevTagSize.length];
+                System.arraycopy(prevTagSize, 0, buf, 0, prevTagSize.length);
                 fpos += prevTagSize.length;
-            }else{
+            } else {
                 buf = new byte[type.length + dsize.length + tstamp.length + ender.length];
             }
 
-            System.arraycopy(type,0,buf,fpos,type.length);
+            System.arraycopy(type, 0, buf, fpos, type.length);
             fpos += type.length;
-            System.arraycopy(dsize,0,buf,fpos,dsize.length);
+            System.arraycopy(dsize, 0, buf, fpos, dsize.length);
             fpos += dsize.length;
-            System.arraycopy(tstamp,0,buf,fpos,tstamp.length);
+            System.arraycopy(tstamp, 0, buf, fpos, tstamp.length);
             fpos += tstamp.length;
-            System.arraycopy(ender,0,buf,fpos,ender.length);
+            System.arraycopy(ender, 0, buf, fpos, ender.length);
 
             prevTagSize = null;
             type = null;
@@ -120,25 +123,28 @@ public class FileWriter {
             tstamp = null;
 
             stream.write(bufh.byte2buffer(buf));
-            if(ts.getType() == FlvTag.META && ts.isNew()){
-                stream.write(((MetaTag)ts.getTag()).getDataAsBuffer());
-                prevTagSize = bh.getUintBytes((((MetaTag)ts.getTag()).getDataSizeFromBuffer()-4), 4);
-//                System.out.println("writing meta tag");
-            }else{
-                tmpFlvt = (FlvTag)ts.getTag();
-                stream.writeDirect(tmpFlvt.getStartingOffset(), (tmpFlvt.getDataSize()-15));
-                prevTagSize = bh.getUintBytes((tmpFlvt.getDataSize()-4), 4);
-//                System.out.println("writing other tag");
+            if (ts.getType() == FlvTag.META && ts.isNew()) {
+                stream.write(((MetaTag) ts.getTag()).getDataAsBuffer());
+                prevTagSize = bh.getUintBytes(
+                        (((MetaTag) ts.getTag()).getDataSizeFromBuffer() - 4), 4);
+                // System.out.println("writing meta tag");
+            } else {
+                tmpFlvt = (FlvTag) ts.getTag();
+                stream.writeDirect(tmpFlvt.getStartingOffset(), (tmpFlvt.getDataSize() - 15));
+                prevTagSize = bh.getUintBytes((tmpFlvt.getDataSize() - 4), 4);
+                // System.out.println("writing other tag");
             }
 
             buf = null;
             fpos = 0;
 
-        }//for
+        }// for
 
-        if(prevTagSize != null){stream.write(bufh.byte2buffer(prevTagSize));}
+        if (prevTagSize != null) {
+            stream.write(bufh.byte2buffer(prevTagSize));
+        }
 
-    }//writeTags()
+    }// writeTags()
 
     public void setStream(StreamWriter stream) {
         this.stream = stream;
@@ -160,4 +166,4 @@ public class FileWriter {
         this.debug = debug;
     }
 
-}//FileWriter()
+}// FileWriter()

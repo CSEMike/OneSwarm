@@ -36,7 +36,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class StreamReader {
@@ -57,7 +57,7 @@ public class StreamReader {
     private boolean isOpened;
 
     /** Creates a new instance of StreamReader */
-    public StreamReader(){
+    public StreamReader() {
 
         fsize = 0;
         byt2write = 0;
@@ -99,91 +99,96 @@ public class StreamReader {
         fpos = 0;
         isOpened = true;
 
-        try{
+        try {
 
             fillBuffer();
 
-        }catch(Exception e){
+        } catch (Exception e) {
 
             isOpened = false;
             System.out.println("Error - unable to initialize buffer");
-            if(debug){e.printStackTrace();}
+            if (debug) {
+                e.printStackTrace();
+            }
 
-        }//catch()
+        }// catch()
 
-    }//open()
+    }// open()
 
-    public boolean isOpen(){
+    public boolean isOpen() {
         return this.isOpened;
     }
 
-    public void close(){
+    public void close() {
 
-        try{
+        try {
 
             chan.close();
             raf.close();
 
-        }catch(Exception e){
+        } catch (Exception e) {
 
-            if(debug){
+            if (debug) {
                 System.out.println("Error - unable to close stream");
                 e.printStackTrace();
             }
 
-        }finally{
+        } finally {
 
             chan = null;
             raf = null;
             isOpened = false;
 
-        }//finally()
+        }// finally()
 
-    }//close()
+    }// close()
 
     private void fillBuffer() throws EoflvException {
 
-        if(fpos >= fsize){
+        if (fpos >= fsize) {
 
-            //done reading
+            // done reading
             throw new EoflvException();
 
-        }else if((fpos + CHUNK_SIZE) > fsize){
+        } else if ((fpos + CHUNK_SIZE) > fsize) {
 
             byt2write = fsize - fpos;
 
-        }else{
+        } else {
 
             byt2write = CHUNK_SIZE;
 
-        }//else
+        }// else
 
-        try{
+        try {
 
             data = chan.map(FileChannel.MapMode.READ_ONLY, fpos, byt2write);
-            //System.out.println("cap: " + data.capacity() + " remaining: " + data.remaining());
+            // System.out.println("cap: " + data.capacity() + " remaining: " +
+            // data.remaining());
             fpos += byt2write;
 
-        }catch(IOException ex){
+        } catch (IOException ex) {
 
             System.out.println("Error - unable to refill buffer");
-            if(debug){ex.printStackTrace();}
+            if (debug) {
+                ex.printStackTrace();
+            }
 
-        }//catch()
+        }// catch()
 
-    }//fillBuffer()
+    }// fillBuffer()
 
     public byte[] read(int len) throws EoflvException {
-    	//System.err.println("reading position: " + pos + " len=" + len);
+        // System.err.println("reading position: " + pos + " len=" + len);
         byte[] buf = new byte[len];
 
-        if(len > data.remaining()){
+        if (len > data.remaining()) {
             written = data.remaining();
-            data.get(buf,0,written);
+            data.get(buf, 0, written);
             fillBuffer();
-            data.get(buf,written,(len-written));
-            //data.position((len-written));
-        }else{
+            data.get(buf, written, (len - written));
+            // data.position((len-written));
+        } else {
             data.get(buf);
         }
 
@@ -191,21 +196,21 @@ public class StreamReader {
 
         return buf;
 
-    }//read()
+    }// read()
 
     public void skip(int len) throws EoflvException {
 
-        if(len > data.remaining()){
+        if (len > data.remaining()) {
             written = data.remaining();
             fillBuffer();
             data.position((len - written));
-        }else{
+        } else {
             data.position(data.position() + len);
         }
 
         pos += len;
 
-    }//skip()
+    }// skip()
 
     public long getPos() {
         return pos;
@@ -231,4 +236,4 @@ public class StreamReader {
         this.debug = debug;
     }
 
-}//StreamReader
+}// StreamReader

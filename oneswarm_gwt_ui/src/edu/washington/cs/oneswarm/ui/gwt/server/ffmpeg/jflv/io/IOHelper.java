@@ -33,7 +33,7 @@ import java.io.File;
 import edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.metadata.FlvHeader;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
 public class IOHelper {
@@ -63,70 +63,70 @@ public class IOHelper {
         bufh = new BufferHelper();
 
     }
-    
-    public IOHelper(byte[] array, byte[] newArray){
-    	   debug = false;
-          
-           inStream = new ByteStreamReader(array);
-           outStream = new ByteStreamWriter(newArray,array);
 
-           fh = new FileReader();
-           fh.setStream(inStream);
-           bh = new ByteHelper();
-           bufh = new BufferHelper();
+    public IOHelper(byte[] array, byte[] newArray) {
+        debug = false;
+
+        inStream = new ByteStreamReader(array);
+        outStream = new ByteStreamWriter(newArray, array);
+
+        fh = new FileReader();
+        fh.setStream(inStream);
+        bh = new ByteHelper();
+        bufh = new BufferHelper();
     }
 
-    public void closeAll(){
+    public void closeAll() {
         inStream.close();
         outStream.close();
     }
 
-    public FileReader getFileReader(){
+    public FileReader getFileReader() {
         return fh;
     }
 
-    public FileWriter getFileWriter(FlvHeader flvh){
+    public FileWriter getFileWriter(FlvHeader flvh) {
         fw = new FileWriter(flvh);
         fw.setStream(outStream);
         return fw;
     }
 
     public StreamWriter getOutStream() {
-		return outStream;
-	}
+        return outStream;
+    }
 
-	public ByteHelper getByteHelper(){
+    public ByteHelper getByteHelper() {
         return this.bh;
     }
 
-    public BufferHelper getBufferHelper(){
+    public BufferHelper getBufferHelper() {
         this.bufh.reset();
         return this.bufh;
     }
 
-    public void setOutFile(String outfile){
+    public void setOutFile(String outfile) {
         outStream = null;
         outStream = new StreamWriter(new File(outfile));
     }
 
-    public boolean isDebug(){
+    public boolean isDebug() {
         return this.debug;
     }
 
-    public void setDebug(boolean debug){
+    public void setDebug(boolean debug) {
         this.debug = debug;
 
-        try{
+        try {
             outStream.setDebug(debug);
             inStream.setDebug(debug);
             fw.setDebug(debug);
             fh.setDebug(debug);
             bufh.setDebug(debug);
             bh.setDebug(debug);
-        }catch(Exception e){
-            //do nothing -- vars may not be initialized yet
+        } catch (Exception e) {
+            // do nothing -- vars may not be initialized yet
         }
 
-    }//setDebug()
+    }// setDebug()
 
-}//IOHelper
+}// IOHelper

@@ -48,118 +48,130 @@ import edu.washington.cs.oneswarm.f2f.network.OverlayManager;
  */
 public class ExperimentMain {
 
-	public static boolean logToStdOut = true;
+    public static boolean logToStdOut = true;
 
-	private NetworkManager.ByteMatcher matcher;
+    private NetworkManager.ByteMatcher matcher;
 
-	private OverlayManager overlayManager;
-	private FriendManager friendManager;
+    private OverlayManager overlayManager;
+    private FriendManager friendManager;
 
-	private FileListManager fileListManager;
-	private F2FDownloadManager f2DownloadManager;
-	private static final HashMap<String, Boolean> friends = new HashMap<String, Boolean>();
+    private FileListManager fileListManager;
+    private F2FDownloadManager f2DownloadManager;
+    private static final HashMap<String, Boolean> friends = new HashMap<String, Boolean>();
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		if (args.length != 4) {
-			System.out.println("usage: ExperimentMain permissions_file host_address torrent_file destination_file upload_rate");
-			System.exit(0);
-		}
-		try {
-			BufferedReader in = new BufferedReader(new FileReader(new File(args[0])));
-			String line;
-			while ((line = in.readLine()) != null) {
-				String[] split = line.split(" ");
-				if (split[0].equals(args[1])) {
-					friends.put(split[1], true);
-					System.out.println("adding friend: " + split[1]);
-				} else if (split[1].equals(args[1])) {
-					System.out.println("adding friend: " + split[0]);
-					friends.put(split[0], true);
-				}
-			}
-			if (friends.size() < 1) {
-				System.out.println("no friends :-(, exiting");
-			}
-			new CLI_Main(new String[] { "-file", args[2], "-outfile", args[3], "-rate", args[4] });
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        if (args.length != 4) {
+            System.out
+                    .println("usage: ExperimentMain permissions_file host_address torrent_file destination_file upload_rate");
+            System.exit(0);
+        }
+        try {
+            BufferedReader in = new BufferedReader(new FileReader(new File(args[0])));
+            String line;
+            while ((line = in.readLine()) != null) {
+                String[] split = line.split(" ");
+                if (split[0].equals(args[1])) {
+                    friends.put(split[1], true);
+                    System.out.println("adding friend: " + split[1]);
+                } else if (split[1].equals(args[1])) {
+                    System.out.println("adding friend: " + split[0]);
+                    friends.put(split[0], true);
+                }
+            }
+            if (friends.size() < 1) {
+                System.out.println("no friends :-(, exiting");
+            }
+            new CLI_Main(new String[] { "-file", args[2], "-outfile", args[3], "-rate", args[4] });
 
-			new ExperimentMain(args[0], args[1]);
+            new ExperimentMain(args[0], args[1]);
 
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+        } catch (FileNotFoundException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 
-	private final Friend testUser;
-	private final PublicKey localPublicKey;
+    private final Friend testUser;
+    private final PublicKey localPublicKey;
 
-	public ExperimentMain(String permissionsFile, String hostAddress) throws InterruptedException, UnknownHostException {
+    public ExperimentMain(String permissionsFile, String hostAddress) throws InterruptedException,
+            UnknownHostException {
 
-		localPublicKey = OneSwarmSslKeyManager.getInstance().getOwnPublicKey();
+        localPublicKey = OneSwarmSslKeyManager.getInstance().getOwnPublicKey();
 
-		testUser = new Friend("manual", "tester", localPublicKey.getEncoded(), false);
+        testUser = new Friend("manual", "tester", localPublicKey.getEncoded(), false);
 
-		this.friendManager = new FriendManager(Thread.currentThread().getContextClassLoader(), localPublicKey.getEncoded());
-		//this.fileListManager = new FileListManager();
-		this.overlayManager = new OverlayManager(friendManager, localPublicKey, fileListManager,AzureusCoreImpl.getSingleton().getGlobalManager().getStats());
-		matcher = new OsProtocolMatcher(true);
+        this.friendManager = new FriendManager(Thread.currentThread().getContextClassLoader(),
+                localPublicKey.getEncoded());
+        // this.fileListManager = new FileListManager();
+        this.overlayManager = new OverlayManager(friendManager, localPublicKey, fileListManager,
+                AzureusCoreImpl.getSingleton().getGlobalManager().getStats());
+        matcher = new OsProtocolMatcher(true);
 
-		NetworkManager.getSingleton().requestIncomingConnectionRouting(matcher, new ExperimentRouterListener(), new MessageStreamFactory() {
-			public MessageStreamDecoder createDecoder() {
-				return new OSF2FMessageDecoder();
-			}
+        NetworkManager.getSingleton().requestIncomingConnectionRouting(matcher,
+                new ExperimentRouterListener(), new MessageStreamFactory() {
+                    public MessageStreamDecoder createDecoder() {
+                        return new OSF2FMessageDecoder();
+                    }
 
-			public MessageStreamEncoder createEncoder() {
-				return new OSF2FMessageEncoder();
-			}
-		});
+                    public MessageStreamEncoder createEncoder() {
+                        return new OSF2FMessageEncoder();
+                    }
+                });
 
-		AzureusCoreImpl.getSingleton().getInstanceManager().setIncludeWellKnownLANs(false);
-		this.f2DownloadManager = new F2FDownloadManager(overlayManager);
-		System.out.println("sleeping before initiating connections");
-		Thread.sleep(60 * 1000);
+        AzureusCoreImpl.getSingleton().getInstanceManager().setIncludeWellKnownLANs(false);
+        this.f2DownloadManager = new F2FDownloadManager(overlayManager);
+        System.out.println("sleeping before initiating connections");
+        Thread.sleep(60 * 1000);
 
-		for (String friendIp : friends.keySet()) {
-			overlayManager.createOutgoingConnection(new ConnectionEndpoint(new InetSocketAddress(InetAddress.getByName(friendIp), 4919)), testUser);
-		}
-	}
+        for (String friendIp : friends.keySet()) {
+            overlayManager.createOutgoingConnection(new ConnectionEndpoint(new InetSocketAddress(
+                    InetAddress.getByName(friendIp), 4919)), testUser);
+        }
+    }
 
-	private class ExperimentRouterListener implements NetworkManager.RoutingListener {
-		public boolean autoCryptoFallback() {
-			return (false);
-		}
+    private class ExperimentRouterListener implements NetworkManager.RoutingListener {
+        public boolean autoCryptoFallback() {
+            return (false);
+        }
 
-		public void connectionRouted(NetworkConnection connection, Object routing_data) {
+        public void connectionRouted(NetworkConnection connection, Object routing_data) {
 
-			if (!connection.getTransport().getEncryption().startsWith(OneSwarmSslTransportHelperFilterStream.SSL_NAME)) {
-				Log.log(LogEvent.LT_WARNING, "OSF2F connection without SSL!: " + connection + " (" + connection.getTransport().getEncryption() + ")", logToStdOut);
-				return;
-			}
-			byte[][] remoteKeys = matcher.getSharedSecrets();
-			byte[] remotePub = new byte[0];
-			if (remoteKeys != null) {
-				remotePub = remoteKeys[0];
-			}
-			Log.log("Incoming connection from [" + connection + "] successfully routed to OneSwarm F2F: encr: " + connection.getTransport().getEncryption() + "\n" + "remote public key: " + Base64.encode(remotePub), logToStdOut);
+            if (!connection.getTransport().getEncryption()
+                    .startsWith(OneSwarmSslTransportHelperFilterStream.SSL_NAME)) {
+                Log.log(LogEvent.LT_WARNING, "OSF2F connection without SSL!: " + connection + " ("
+                        + connection.getTransport().getEncryption() + ")", logToStdOut);
+                return;
+            }
+            byte[][] remoteKeys = matcher.getSharedSecrets();
+            byte[] remotePub = new byte[0];
+            if (remoteKeys != null) {
+                remotePub = remoteKeys[0];
+            }
+            Log.log("Incoming connection from [" + connection
+                    + "] successfully routed to OneSwarm F2F: encr: "
+                    + connection.getTransport().getEncryption() + "\n" + "remote public key: "
+                    + Base64.encode(remotePub), logToStdOut);
 
-			String remoteIp = connection.getEndpoint().getNotionalAddress().getAddress().getHostAddress();
-			if (friends.containsKey(remoteIp)) {
-				Log.log("got connection from friend, creating friendconnection");
-				overlayManager.createIncomingConnection(remotePub, connection);
-			} else {
-				Debug.out("got connection from non friend: " + remoteIp);
-			}
+            String remoteIp = connection.getEndpoint().getNotionalAddress().getAddress()
+                    .getHostAddress();
+            if (friends.containsKey(remoteIp)) {
+                Log.log("got connection from friend, creating friendconnection");
+                overlayManager.createIncomingConnection(remotePub, connection);
+            } else {
+                Debug.out("got connection from non friend: " + remoteIp);
+            }
 
-		}
-	}
+        }
+    }
 
 }

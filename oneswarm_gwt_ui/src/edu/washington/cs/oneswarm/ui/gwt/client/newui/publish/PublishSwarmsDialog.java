@@ -39,186 +39,194 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.TorrentInfo;
 
 public class PublishSwarmsDialog extends OneSwarmDialogBox implements ClickHandler {
 
-	static final int WIDTH = 450;
-//	static final int HEIGHT = 200;
+    static final int WIDTH = 450;
+    // static final int HEIGHT = 200;
 
-	VerticalPanel mainPanel = new VerticalPanel();
-	
-	Button cancelButton = new Button(msg.button_cancel());
-	Button publishButton = new Button(msg.button_publish());
-	
-	Label statusLabel = new Label();
+    VerticalPanel mainPanel = new VerticalPanel();
 
-	private HorizontalPanel status_hp;
-	private TorrentInfo[] mSwarms;
+    Button cancelButton = new Button(msg.button_cancel());
+    Button publishButton = new Button(msg.button_publish());
 
-	private ListBox serversPopup = new ListBox();
-	
-	private List<CommunityRecord> menuRecs = new ArrayList<CommunityRecord>();
+    Label statusLabel = new Label();
 
-	private List<PublishSwarmInfoPanel> infoPanels;
-	
-	public PublishSwarmsDialog(EntireUIRoot inRoot, TorrentInfo[] infos) {
-		super(false, true, true);
-		
-		mSwarms = infos;
-		infoPanels = new ArrayList<PublishSwarmInfoPanel>(infos.length);
-		
-		setText(msg.publish_title());
+    private HorizontalPanel status_hp;
+    private TorrentInfo[] mSwarms;
 
-		Label selectLabel = new Label(msg.publish_help());
-		selectLabel.addStyleName(CSS_DIALOG_HEADER);
-		selectLabel.setWidth(WIDTH + "px");
-		mainPanel.add(selectLabel);
-		mainPanel.setCellVerticalAlignment(selectLabel, VerticalPanel.ALIGN_TOP);
-		
-		mainPanel.setWidth(WIDTH+"px");
-//		mainPanel.setHeight(HEIGHT+"px");
-		
-		serversPopup.addItem("...");
-		
-		mainPanel.add(serversPopup);
-		
-		HorizontalPanel buttons_hp = new HorizontalPanel();
-		buttons_hp.add(cancelButton);
-		buttons_hp.add(publishButton);
-		buttons_hp.setSpacing(3);
-		
-		cancelButton.setEnabled(false);
-		publishButton.setEnabled(false);
+    private ListBox serversPopup = new ListBox();
 
-		cancelButton.addClickHandler(this);
-		publishButton.addClickHandler(this);
-		
-		status_hp = new HorizontalPanel();
-		status_hp.add(new Image(ImageConstants.PROGRESS_SPINNER));
-		status_hp.add(statusLabel);
-		
-		status_hp.setCellVerticalAlignment(statusLabel, VerticalPanel.ALIGN_MIDDLE);
-		status_hp.setVisible(false);
-		
-		HorizontalPanel status_and_buttons = new HorizontalPanel();
-		status_and_buttons.add(status_hp);
-		status_and_buttons.add(buttons_hp);
-		
-		status_and_buttons.setCellVerticalAlignment(status_hp, VerticalPanel.ALIGN_MIDDLE);
-		status_and_buttons.setCellHorizontalAlignment(buttons_hp, HorizontalPanel.ALIGN_RIGHT);
-		status_and_buttons.setWidth("100%");
-		
-		for( TorrentInfo s : mSwarms ) { 
-			DisclosurePanel p = new DisclosurePanel(s.getName(), true);
-			PublishSwarmInfoPanel siPanel = new PublishSwarmInfoPanel(s);
-			infoPanels.add(siPanel);
-			p.add(siPanel);
-			if( mSwarms.length <= 4 ) {
-				p.setOpen(true);
-			} else { 
-				p.setOpen(false);
-			}
-			mainPanel.add(p);
-		}
-		
-		com.google.gwt.user.client.ui.Widget hrule = new SimplePanel();
-		hrule.addStyleName(SettingsDialog.CSS_HRULE);
-		mainPanel.add(hrule);
-		mainPanel.add(status_and_buttons);
-		
-		setWidget(mainPanel);
-		
-		final ChangeHandler serversChangeHandler = new ChangeHandler(){
-			public void onChange(ChangeEvent event) {
-				for( PublishSwarmInfoPanel p : infoPanels ) { 
-					p.updateCategories(null);
-				}
-				
-				/**
-				 * hack attack for backwards compatibility with old community servers
-				 */
-				CommunityRecord selected = menuRecs.get(serversPopup.getSelectedIndex());
-				OneSwarmRPCClient.getService().getCategoriesForCommunityServer(
-						OneSwarmRPCClient.getSessionID(), selected, new AsyncCallback<ArrayList<String>>(){
-							public void onFailure(Throwable caught) {
-								caught.printStackTrace();
-							}
+    private List<CommunityRecord> menuRecs = new ArrayList<CommunityRecord>();
 
-							public void onSuccess(ArrayList<String> result) {
-								for( PublishSwarmInfoPanel p : infoPanels ) { 
-									p.updateCategories(result);
-								}
-							}});
-			}};
-		
-		OneSwarmRPCClient.getService().getStringListParameterValue(OneSwarmRPCClient.getSessionID(), 
-				"oneswarm.community.servers", new AsyncCallback<ArrayList<String>>(){
-			public void onFailure(Throwable caught) {
-				caught.printStackTrace();
-			}
+    private List<PublishSwarmInfoPanel> infoPanels;
 
-			public void onSuccess(ArrayList<String> result) {
-				
-				serversPopup.clear();
-				
-				for( int i=0; i<result.size()/5; i++ ) { 
-					CommunityRecord candidate = new CommunityRecord(result, 5*i);
-					
-					if( candidate.getSupports_publish() != null ) {
-						menuRecs.add(candidate);
-						StringBuilder name = new StringBuilder();
-						if( candidate.getServer_name() != null ) { 
-							name.append(candidate.getServer_name());
-							name.append(" - ");
-						}
-						name.append(StringTools.truncate(candidate.getUrl(), 64, true));
-						serversPopup.addItem(StringTools.truncate(name.toString(), 64, true));
-					}
-				}
-				
-				if( serversPopup.getItemCount() == 0 ) { 
-					Window.alert(msg.publish_no_servers());
-					hide();
-					return;	
-				}
-				
-				serversChangeHandler.onChange(null);
-				
-				cancelButton.setEnabled(true);
-				publishButton.setEnabled(true);
-			}});
-		
-		serversPopup.addChangeHandler(serversChangeHandler);
-	}
-	
-	public void onClick(ClickEvent event) {
-		if( event.getSource().equals(cancelButton) ) { 
-			hide();
-		} else if( event.getSource().equals(publishButton) ) { 
-			
-			String [] previewPaths = new String[mSwarms.length];
-			String [] comments = new String[mSwarms.length];
-			String [] categories = new String[mSwarms.length];
-			
-			for( int i=0; i<mSwarms.length; i++ ) { 
-				previewPaths[i] = infoPanels.get(i).getPreviewPath();
-				comments[i] = infoPanels.get(i).getDescription();
-				categories[i] = infoPanels.get(i).getCategory();
-			}
-			
-			statusLabel.setText("");
-			status_hp.setVisible(true);
-			
-			OneSwarmRPCClient.getService().publishSwarms(OneSwarmRPCClient.getSessionID(), 
-					mSwarms, previewPaths, comments, categories, 
-					menuRecs.get(serversPopup.getSelectedIndex()), new AsyncCallback<BackendTask>(){
-				public void onFailure(Throwable caught) {
-					caught.printStackTrace();
-				}
+    public PublishSwarmsDialog(EntireUIRoot inRoot, TorrentInfo[] infos) {
+        super(false, true, true);
 
-				public void onSuccess(BackendTask result) {
-					hide();
-				}});
-			
-		} else { 
-			super.hide();
-		}
-	}
+        mSwarms = infos;
+        infoPanels = new ArrayList<PublishSwarmInfoPanel>(infos.length);
+
+        setText(msg.publish_title());
+
+        Label selectLabel = new Label(msg.publish_help());
+        selectLabel.addStyleName(CSS_DIALOG_HEADER);
+        selectLabel.setWidth(WIDTH + "px");
+        mainPanel.add(selectLabel);
+        mainPanel.setCellVerticalAlignment(selectLabel, VerticalPanel.ALIGN_TOP);
+
+        mainPanel.setWidth(WIDTH + "px");
+        // mainPanel.setHeight(HEIGHT+"px");
+
+        serversPopup.addItem("...");
+
+        mainPanel.add(serversPopup);
+
+        HorizontalPanel buttons_hp = new HorizontalPanel();
+        buttons_hp.add(cancelButton);
+        buttons_hp.add(publishButton);
+        buttons_hp.setSpacing(3);
+
+        cancelButton.setEnabled(false);
+        publishButton.setEnabled(false);
+
+        cancelButton.addClickHandler(this);
+        publishButton.addClickHandler(this);
+
+        status_hp = new HorizontalPanel();
+        status_hp.add(new Image(ImageConstants.PROGRESS_SPINNER));
+        status_hp.add(statusLabel);
+
+        status_hp.setCellVerticalAlignment(statusLabel, VerticalPanel.ALIGN_MIDDLE);
+        status_hp.setVisible(false);
+
+        HorizontalPanel status_and_buttons = new HorizontalPanel();
+        status_and_buttons.add(status_hp);
+        status_and_buttons.add(buttons_hp);
+
+        status_and_buttons.setCellVerticalAlignment(status_hp, VerticalPanel.ALIGN_MIDDLE);
+        status_and_buttons.setCellHorizontalAlignment(buttons_hp, HorizontalPanel.ALIGN_RIGHT);
+        status_and_buttons.setWidth("100%");
+
+        for (TorrentInfo s : mSwarms) {
+            DisclosurePanel p = new DisclosurePanel(s.getName(), true);
+            PublishSwarmInfoPanel siPanel = new PublishSwarmInfoPanel(s);
+            infoPanels.add(siPanel);
+            p.add(siPanel);
+            if (mSwarms.length <= 4) {
+                p.setOpen(true);
+            } else {
+                p.setOpen(false);
+            }
+            mainPanel.add(p);
+        }
+
+        com.google.gwt.user.client.ui.Widget hrule = new SimplePanel();
+        hrule.addStyleName(SettingsDialog.CSS_HRULE);
+        mainPanel.add(hrule);
+        mainPanel.add(status_and_buttons);
+
+        setWidget(mainPanel);
+
+        final ChangeHandler serversChangeHandler = new ChangeHandler() {
+            public void onChange(ChangeEvent event) {
+                for (PublishSwarmInfoPanel p : infoPanels) {
+                    p.updateCategories(null);
+                }
+
+                /**
+                 * hack attack for backwards compatibility with old community
+                 * servers
+                 */
+                CommunityRecord selected = menuRecs.get(serversPopup.getSelectedIndex());
+                OneSwarmRPCClient.getService().getCategoriesForCommunityServer(
+                        OneSwarmRPCClient.getSessionID(), selected,
+                        new AsyncCallback<ArrayList<String>>() {
+                            public void onFailure(Throwable caught) {
+                                caught.printStackTrace();
+                            }
+
+                            public void onSuccess(ArrayList<String> result) {
+                                for (PublishSwarmInfoPanel p : infoPanels) {
+                                    p.updateCategories(result);
+                                }
+                            }
+                        });
+            }
+        };
+
+        OneSwarmRPCClient.getService().getStringListParameterValue(
+                OneSwarmRPCClient.getSessionID(), "oneswarm.community.servers",
+                new AsyncCallback<ArrayList<String>>() {
+                    public void onFailure(Throwable caught) {
+                        caught.printStackTrace();
+                    }
+
+                    public void onSuccess(ArrayList<String> result) {
+
+                        serversPopup.clear();
+
+                        for (int i = 0; i < result.size() / 5; i++) {
+                            CommunityRecord candidate = new CommunityRecord(result, 5 * i);
+
+                            if (candidate.getSupports_publish() != null) {
+                                menuRecs.add(candidate);
+                                StringBuilder name = new StringBuilder();
+                                if (candidate.getServer_name() != null) {
+                                    name.append(candidate.getServer_name());
+                                    name.append(" - ");
+                                }
+                                name.append(StringTools.truncate(candidate.getUrl(), 64, true));
+                                serversPopup.addItem(StringTools.truncate(name.toString(), 64, true));
+                            }
+                        }
+
+                        if (serversPopup.getItemCount() == 0) {
+                            Window.alert(msg.publish_no_servers());
+                            hide();
+                            return;
+                        }
+
+                        serversChangeHandler.onChange(null);
+
+                        cancelButton.setEnabled(true);
+                        publishButton.setEnabled(true);
+                    }
+                });
+
+        serversPopup.addChangeHandler(serversChangeHandler);
+    }
+
+    public void onClick(ClickEvent event) {
+        if (event.getSource().equals(cancelButton)) {
+            hide();
+        } else if (event.getSource().equals(publishButton)) {
+
+            String[] previewPaths = new String[mSwarms.length];
+            String[] comments = new String[mSwarms.length];
+            String[] categories = new String[mSwarms.length];
+
+            for (int i = 0; i < mSwarms.length; i++) {
+                previewPaths[i] = infoPanels.get(i).getPreviewPath();
+                comments[i] = infoPanels.get(i).getDescription();
+                categories[i] = infoPanels.get(i).getCategory();
+            }
+
+            statusLabel.setText("");
+            status_hp.setVisible(true);
+
+            OneSwarmRPCClient.getService().publishSwarms(OneSwarmRPCClient.getSessionID(), mSwarms,
+                    previewPaths, comments, categories,
+                    menuRecs.get(serversPopup.getSelectedIndex()),
+                    new AsyncCallback<BackendTask>() {
+                        public void onFailure(Throwable caught) {
+                            caught.printStackTrace();
+                        }
+
+                        public void onSuccess(BackendTask result) {
+                            hide();
+                        }
+                    });
+
+        } else {
+            super.hide();
+        }
+    }
 }

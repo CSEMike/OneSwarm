@@ -31,14 +31,14 @@ package edu.washington.cs.oneswarm.ui.gwt.server.ffmpeg.jflv.metadata;
 import java.util.HashMap;
 
 /**
- *
+ * 
  * @author Jon Keys
  */
-public class AMFObject extends HashMap{
+public class AMFObject extends HashMap {
 
     /** Creates a new instance of AMFObject */
     public AMFObject() {
         super();
     }
 
-}//AMFObject
+}// AMFObject

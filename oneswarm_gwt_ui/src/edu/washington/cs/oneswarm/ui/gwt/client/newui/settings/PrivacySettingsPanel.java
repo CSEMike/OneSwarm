@@ -14,84 +14,94 @@ import edu.washington.cs.oneswarm.ui.gwt.client.newui.OneSwarmCss;
 
 class PrivacySettingsPanel extends SettingsPanel {
 
-	private final List<SettingsCheckBox> checkBoxes = new ArrayList<SettingsCheckBox>();
+    private final List<SettingsCheckBox> checkBoxes = new ArrayList<SettingsCheckBox>();
 
-	ClickHandler advancedCL = new ClickHandler() {
-		public void onClick(ClickEvent event) {
-			VersionCheckAdvancedDialog dlg = new VersionCheckAdvancedDialog();
-			dlg.show();
-			dlg.setVisible(false);
-			dlg.center();
-			dlg.setPopupPosition(dlg.getPopupLeft(), dlg.getPopupTop() + 20);
-			dlg.setVisible(true);
-		}
-	};
+    ClickHandler advancedCL = new ClickHandler() {
+        public void onClick(ClickEvent event) {
+            VersionCheckAdvancedDialog dlg = new VersionCheckAdvancedDialog();
+            dlg.show();
+            dlg.setVisible(false);
+            dlg.center();
+            dlg.setPopupPosition(dlg.getPopupLeft(), dlg.getPopupTop() + 20);
+            dlg.setVisible(true);
+        }
+    };
 
-	PrivacySettingsPanel() {
-		loadNotify();
-		
-		final SettingsCheckBox autoUpdateCheckBox = new SettingsCheckBox(msg.settings_interface_privacy_updates_check(), new String[] { "update.periodic", "update.start" });
-		checkBoxes.add(autoUpdateCheckBox);
+    PrivacySettingsPanel() {
+        loadNotify();
 
-		final SettingsCheckBox autoUpdateInstallCheckBox = new SettingsCheckBox(msg.settings_interface_privacy_updates_install(), "update.autodownload");
-		checkBoxes.add(autoUpdateInstallCheckBox);
+        final SettingsCheckBox autoUpdateCheckBox = new SettingsCheckBox(
+                msg.settings_interface_privacy_updates_check(), new String[] { "update.periodic",
+                        "update.start" });
+        checkBoxes.add(autoUpdateCheckBox);
 
-		final SettingsCheckBox autoUpdateStatsCheckBox = new SettingsCheckBox(msg.settings_interface_privacy_updates_stats(), "Send Version Info");
-		checkBoxes.add(autoUpdateStatsCheckBox);
+        final SettingsCheckBox autoUpdateInstallCheckBox = new SettingsCheckBox(
+                msg.settings_interface_privacy_updates_install(), "update.autodownload");
+        checkBoxes.add(autoUpdateInstallCheckBox);
 
-		final SettingsCheckBox newFriendNotification = new SettingsCheckBox(msg.settings_interface_privacy_friends_check(), "OSF2F.FriendNotifications");
-		checkBoxes.add(newFriendNotification);
+        final SettingsCheckBox autoUpdateStatsCheckBox = new SettingsCheckBox(
+                msg.settings_interface_privacy_updates_stats(), "Send Version Info");
+        checkBoxes.add(autoUpdateStatsCheckBox);
 
-		final SettingsCheckBox lanFriendFinder = new SettingsCheckBox(msg.settings_interface_privacy_friends_lan(), "OSF2F.LanFriendFinder");
-		checkBoxes.add(lanFriendFinder);
+        final SettingsCheckBox newFriendNotification = new SettingsCheckBox(
+                msg.settings_interface_privacy_friends_check(), "OSF2F.FriendNotifications");
+        checkBoxes.add(newFriendNotification);
 
-		final SettingsCheckBox dhtCheckbox = new SettingsCheckBox(msg.settings_interface_privacy_dht(), "dht.enabled");
-		checkBoxes.add(dhtCheckbox);
+        final SettingsCheckBox lanFriendFinder = new SettingsCheckBox(
+                msg.settings_interface_privacy_friends_lan(), "OSF2F.LanFriendFinder");
+        checkBoxes.add(lanFriendFinder);
 
-		final SettingsCheckBox dhtProxyCheckbox = new SettingsCheckBox(msg.settings_interface_privacy_dht_proxy(), "OSF2F.Use DHT Proxy");
-		checkBoxes.add(dhtProxyCheckbox);
+        final SettingsCheckBox dhtCheckbox = new SettingsCheckBox(
+                msg.settings_interface_privacy_dht(), "dht.enabled");
+        checkBoxes.add(dhtCheckbox);
 
-		final SettingsCheckBox natCheckCheckbox = new SettingsCheckBox(msg.settings_interface_privacy_nat(), "Perform.NAT.Check");
-		checkBoxes.add(natCheckCheckbox);
+        final SettingsCheckBox dhtProxyCheckbox = new SettingsCheckBox(
+                msg.settings_interface_privacy_dht_proxy(), "OSF2F.Use DHT Proxy");
+        checkBoxes.add(dhtProxyCheckbox);
 
-		final SettingsCheckBox silentURLsCheckbox = new SettingsCheckBox(msg.settings_interface_privacy_silent_url(), "Add URL Silently");
-		checkBoxes.add(silentURLsCheckbox);
+        final SettingsCheckBox natCheckCheckbox = new SettingsCheckBox(
+                msg.settings_interface_privacy_nat(), "Perform.NAT.Check");
+        checkBoxes.add(natCheckCheckbox);
 
-		// final SettingsCheckBox speedCheckCheckbox = new
-		// SettingsCheckBox("Allow incoming speed checks",
-		// "Allow.Incoming.Speed.Check");
-		// checkBoxes.add(speedCheckCheckbox);
+        final SettingsCheckBox silentURLsCheckbox = new SettingsCheckBox(
+                msg.settings_interface_privacy_silent_url(), "Add URL Silently");
+        checkBoxes.add(silentURLsCheckbox);
 
-		Grid g = new Grid(checkBoxes.size(), 1);
+        // final SettingsCheckBox speedCheckCheckbox = new
+        // SettingsCheckBox("Allow incoming speed checks",
+        // "Allow.Incoming.Speed.Check");
+        // checkBoxes.add(speedCheckCheckbox);
 
-		for (int row = 0; row < checkBoxes.size(); row++) {
-			if (row == 0) {
-				HorizontalPanel p = new HorizontalPanel();
-				p.add(checkBoxes.get(row));
-				Button advancedButton = new Button("Advanced");
-				advancedButton.addStyleName(OneSwarmCss.SMALL_BUTTON);
-				advancedButton.addClickHandler(advancedCL);
-				SimplePanel sp = new SimplePanel();
-				sp.setWidth("5px");
-				p.add(sp);
-				p.add(advancedButton);
-				g.setWidget(row, 0, p);
-			} else {
-				g.setWidget(row, 0, checkBoxes.get(row));
-			}
-		}
+        Grid g = new Grid(checkBoxes.size(), 1);
 
-		super.add(g);
-	}
+        for (int row = 0; row < checkBoxes.size(); row++) {
+            if (row == 0) {
+                HorizontalPanel p = new HorizontalPanel();
+                p.add(checkBoxes.get(row));
+                Button advancedButton = new Button("Advanced");
+                advancedButton.addStyleName(OneSwarmCss.SMALL_BUTTON);
+                advancedButton.addClickHandler(advancedCL);
+                SimplePanel sp = new SimplePanel();
+                sp.setWidth("5px");
+                p.add(sp);
+                p.add(advancedButton);
+                g.setWidget(row, 0, p);
+            } else {
+                g.setWidget(row, 0, checkBoxes.get(row));
+            }
+        }
 
-	public void sync() {
-		for (SettingsCheckBox checkBox : checkBoxes) {
-			checkBox.save();
-		}
-	}
+        super.add(g);
+    }
 
-	@Override
-	String validData() {
-		return null;
-	}
+    public void sync() {
+        for (SettingsCheckBox checkBox : checkBoxes) {
+            checkBox.save();
+        }
+    }
+
+    @Override
+    String validData() {
+        return null;
+    }
 }
