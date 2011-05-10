@@ -28,7 +28,7 @@
 	<entry-point class='edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmGWT' />
 
 	<!-- set the servlet path -->
-	<servlet path='/OneSwarmGWT'
+	<servlet path='/oneswarmgwt/oneswarmgwt'
 		class='edu.washington.cs.oneswarm.ui.gwt.server.OneSwarmUIServiceImpl' />
 	<servlet path='/image'
 		class='edu.washington.cs.oneswarm.ui.gwt.server.PreviewImageGenerator' />

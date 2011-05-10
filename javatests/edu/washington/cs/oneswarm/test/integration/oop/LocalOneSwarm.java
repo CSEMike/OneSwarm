@@ -166,7 +166,8 @@ public class LocalOneSwarm {
                     + "* build.xml run-tests target for an example of this    *\n"
                     + "* value.                                               *\n"
                     + "* (If you're building in eclipse, perhaps add:         *\n"
-                    + "*     -Doneswarm.test.local.classpath=eclipse-bin      *\n"
+                    + "* -Doneswarm.test.local.classpath=                     *\n"
+                    + "*       oneswarm_gwt_ui/war/WEB-INF/classes            *\n"
                     + "* to your run configuration JVM parameters.            *\n"
                     + "********************************************************");
             Assert.fail();
