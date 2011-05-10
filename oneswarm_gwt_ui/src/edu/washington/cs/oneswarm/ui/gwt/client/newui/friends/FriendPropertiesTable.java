@@ -57,6 +57,7 @@ public class FriendPropertiesTable extends Composite {
             selectAll.addStyleName(OneSwarmCss.SMALL_BUTTON);
             selectNone.addStyleName(OneSwarmCss.SMALL_BUTTON);
             ClickListener selectAllNoneListener = new ClickListener() {
+                @Override
                 public void onClick(Widget sender) {
                     boolean val = sender.equals(selectAll);
                     for (FriendPropertiesPanel p : panels) {
@@ -68,7 +69,7 @@ public class FriendPropertiesTable extends Composite {
             selectNone.addClickListener(selectAllNoneListener);
             buttonPanel.add(selectAll);
             buttonPanel.add(selectNone);
-            mainPanel.add(buttonPanel);
+            mainPanel.insert(buttonPanel, 0);
         }
 
         this.initWidget(scroll);

@@ -44,11 +44,14 @@ public class CommunityServerTest extends TwoProcessTestBase {
 
     @Before
     public void setupTest() throws IOException {
-        TestUtils.flushCommunityServerState();
+        if (TestUtils.isLocalCommunityServerRunning()) {
+            TestUtils.flushCommunityServerState();
+        }
     }
 
     @Test
     public void testCommunityServerRegistration() throws InterruptedException {
+
         try {
             // Test plan: Register for community server using the web UI in both
             // clients. We
