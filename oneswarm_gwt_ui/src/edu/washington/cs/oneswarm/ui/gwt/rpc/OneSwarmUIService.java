@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import com.google.gwt.user.client.rpc.RemoteService;
+import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants.SecurityLevel;
 
+@RemoteServiceRelativePath("OneSwarmGWT")
 public interface OneSwarmUIService extends RemoteService {
     public Boolean startBackend() throws OneSwarmException;
 

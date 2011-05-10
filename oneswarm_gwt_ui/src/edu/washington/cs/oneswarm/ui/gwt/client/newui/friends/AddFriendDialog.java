@@ -53,7 +53,7 @@ class AddFriendDialog extends OneSwarmDialogBox implements ClickHandler, ChangeH
     private final static int WIDTH = 430;
 
     private final FriendListPanel parent;
-    private Label lengthLabel;
+    private final Label lengthLabel;
 
     public AddFriendDialog(FriendListPanel parent) {
         this.parent = parent;
@@ -111,6 +111,7 @@ class AddFriendDialog extends OneSwarmDialogBox implements ClickHandler, ChangeH
         setWidget(mainPanel);
     }
 
+    @Override
     public void onClick(ClickEvent event) {
         if (event.getSource().equals(okButton)) {
             addFriend(nickBox.getText(), publicKeyArea.getText());
@@ -135,6 +136,7 @@ class AddFriendDialog extends OneSwarmDialogBox implements ClickHandler, ChangeH
         OneSwarmUIServiceAsync service = OneSwarmRPCClient.getService();
 
         AsyncCallback<Void> callback = new AsyncCallback<Void>() {
+            @Override
             public void onSuccess(Void result) {
                 OneSwarmGWT.log("added friend " + result);
                 parent.updateUI();
@@ -152,6 +154,7 @@ class AddFriendDialog extends OneSwarmDialogBox implements ClickHandler, ChangeH
                 hide();
             }
 
+            @Override
             public void onFailure(Throwable caught) {
                 String error = caught.getMessage();
                 if (error.equals("Friend already in friend list")) {
@@ -165,6 +168,7 @@ class AddFriendDialog extends OneSwarmDialogBox implements ClickHandler, ChangeH
 
     }
 
+    @Override
     public void onChange(ChangeEvent sender) {
         wordWrap();
     }
@@ -187,6 +191,7 @@ class AddFriendDialog extends OneSwarmDialogBox implements ClickHandler, ChangeH
         publicKeyArea.setText(b.toString());
     }
 
+    @Override
     public void onKeyUp(KeyUpEvent event) {
         wordWrap();
     }

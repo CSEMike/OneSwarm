@@ -85,6 +85,7 @@ import com.aelitis.azureus.plugins.dht.DHTPluginContact;
 import com.aelitis.azureus.plugins.dht.DHTPluginOperationListener;
 import com.aelitis.azureus.plugins.dht.DHTPluginValue;
 import com.google.gwt.user.client.rpc.IncompatibleRemoteServiceException;
+import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 import com.google.gwt.user.client.rpc.SerializationException;
 import com.google.gwt.user.server.rpc.RPC;
 import com.google.gwt.user.server.rpc.RPCRequest;
@@ -153,6 +154,7 @@ import edu.washington.cs.oneswarm.watchdir.MagicDirectoryManager;
 import edu.washington.cs.oneswarm.watchdir.UpdatingFileTree;
 import edu.washington.cs.oneswarm.watchdir.UpdatingFileTreeListener;
 
+@RemoteServiceRelativePath("OneSwarmGWT")
 public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSwarmUIService {
     private static Logger logger = Logger.getLogger(OneSwarmUIServiceImpl.class.getName());
     // private final OsgwtuiMain parent;

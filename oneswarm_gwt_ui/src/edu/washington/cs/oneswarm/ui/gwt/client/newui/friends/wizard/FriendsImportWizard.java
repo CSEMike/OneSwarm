@@ -47,6 +47,7 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
     public static final int BWIDTH = 405;
     private final ClickHandler cancelListener = new ClickHandler() {
 
+        @Override
         public void onClick(ClickEvent event) {
             hide();
         }
@@ -62,15 +63,18 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
 
         CheckBox removal = null;
 
+        @Override
         public void cancel() {
             hide();
         }
 
+        @Override
         public void back() {
             panel.clear();
             panel.add(createInitalPanel());
         }
 
+        @Override
         public void connectSuccesful(FriendInfoLite[] changes, boolean showSkip) {
             final FriendPropertiesTable friendPropertiesTable = new FriendPropertiesTable(changes,
                     true, showSkip);
@@ -91,7 +95,7 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
 
             HorizontalPanel buttonPanel = new HorizontalPanel();
             buttonPanel.setSpacing(3);
-            panel.add(buttonPanel);
+            panel.insert(buttonPanel, 0);
             panel.setCellHorizontalAlignment(buttonPanel, HorizontalPanel.ALIGN_RIGHT);
 
             Button saveButton = new Button(msg.button_save());
@@ -100,6 +104,7 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
             } else {
                 Button cancelButton = new Button(msg.button_cancel());
                 cancelButton.addClickHandler(new ClickHandler() {
+                    @Override
                     public void onClick(ClickEvent event) {
                         hide();
                     }
@@ -110,6 +115,7 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
             saveButton.getElement().setId("communitySaveAfterReceiveButton");
 
             saveButton.addClickHandler(new ClickHandler() {
+                @Override
                 public void onClick(ClickEvent event) {
                     if (friendPropertiesTable != null) {
                         boolean reallySkip = mSelectImportMethod.startsWith(FRIEND_SRC_COMMUNITY);
@@ -122,10 +128,12 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
                                             OneSwarmRPCClient.getSessionID(),
                                             friendsToDelete.toArray(new FriendInfoLite[0]),
                                             new AsyncCallback<Void>() {
+                                                @Override
                                                 public void onFailure(Throwable caught) {
                                                     caught.printStackTrace();
                                                 }
 
+                                                @Override
                                                 public void onSuccess(Void result) {
                                                     System.out.println("deletes successful: "
                                                             + friendsToDelete.size());
@@ -143,7 +151,8 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
             panel.add(buttonPanel);
             panel.setCellHorizontalAlignment(buttonPanel, VerticalPanel.ALIGN_RIGHT);
 
-            panel.setWidth("560px");
+            // Update the width to deal with the table size increase
+            panel.setWidth("601px");
         }
     };;
 
@@ -269,6 +278,7 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
         Button nextButton = new Button(msg.button_next());
         nextButton.addClickHandler(new ClickHandler() {
 
+            @Override
             public void onClick(ClickEvent event) {
                 mSelectImportMethod = null;
                 for (RadioButton b : friendSrcRb) {

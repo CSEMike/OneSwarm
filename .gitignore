@@ -30,3 +30,6 @@ eclipse-bin/
 
 # Auto-generated source
 oneswarm_gwt_ui/src/edu/washington/cs/oneswarm/ui/gwt/client/i18n/OSMessages.java
+
+# GWT hosted mode
+tomcat/
