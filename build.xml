@@ -285,7 +285,10 @@
 	
 	<target name="gwt-war-init" description="Creates the war/ directory structure in the gwt output directory.">		
 		<copy todir="${root.dir}/gwt-bin/war">
-			<fileset dir="oneswarm_gwt_ui/war"/>
+			<fileset dir="oneswarm_gwt_ui/war">
+				<exclude name="oneswarmgwt/**"/>
+				<exclude name="WEB-INF/classes/**"/>
+			</fileset>
 		</copy>		
 		<mkdir dir="${root.dir}/gwt-bin/war/WEB-INF/classes" />
 	</target>
