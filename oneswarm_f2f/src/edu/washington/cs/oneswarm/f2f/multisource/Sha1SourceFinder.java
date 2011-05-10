@@ -73,7 +73,7 @@ public class Sha1SourceFinder {
         t.start();
 
         // run at app start 5 minutes in
-        Timer emptyFolderTimer = new Timer();
+        Timer emptyFolderTimer = new Timer("emptyFolderTimer", true);
         emptyFolderTimer.schedule(new TimerTask() {
             @Override
             public void run() {
@@ -116,6 +116,7 @@ public class Sha1SourceFinder {
             if (autoAddedDir.isDirectory()) {
                 // check for .torrent files
                 File[] dotTorrents = autoAddedDir.listFiles(new FilenameFilter() {
+                    @Override
                     public boolean accept(File dir, String name) {
                         boolean torrentFile = name.toLowerCase().endsWith(".torrent");
                         if (!torrentFile) {
@@ -153,6 +154,7 @@ public class Sha1SourceFinder {
                 }
 
                 File[] directories = autoAddedDir.listFiles(new FileFilter() {
+                    @Override
                     public boolean accept(File pathname) {
                         if (!pathname.isDirectory()) {
                             return false;
@@ -738,6 +740,7 @@ public class Sha1SourceFinder {
         private long lastRun = System.currentTimeMillis();
         private final static long PERIODIC_CHECK_RATE = 60 * 1000;
 
+        @Override
         public void run() {
             try {
                 while (true) {
@@ -842,6 +845,7 @@ public class Sha1SourceFinder {
                 logger.finer(torrentFileHash + ": searching for sources");
                 searchesSent++;
                 searchManager.sendTextSearch("sha1;" + sha1, new TextSearchListener() {
+                    @Override
                     public void searchResponseReceived(TextSearchResponseItem r) {
                         List<FileCollection> swarms = r.getFileList().getElements();
                         logger.finest(torrentFileHash + ": got search results: " + swarms.size());
@@ -876,6 +880,7 @@ public class Sha1SourceFinder {
                             overlayManager.sendMetaInfoRequest(r.getConnectionId(),
                                     r.getChannelId(), hw.getBytes(), 0,
                                     new PluginCallback<byte[]>() {
+                                        @Override
                                         public void requestCompleted(byte[] data) {
                                             logger.finer(torrentFileHash
                                                     + ": metainfo download completed, swarm="
@@ -886,15 +891,18 @@ public class Sha1SourceFinder {
                                             }
                                         }
 
+                                        @Override
                                         public void progressUpdate(int progress) {
                                             logger.finest(torrentFileHash
                                                     + ": downloading metainfo, swarm=" + infoHash
                                                     + " progress=" + progress);
                                         }
 
+                                        @Override
                                         public void errorOccured(String string) {
                                         }
 
+                                        @Override
                                         public void dataRecieved(long bytes) {
                                         }
                                     });
