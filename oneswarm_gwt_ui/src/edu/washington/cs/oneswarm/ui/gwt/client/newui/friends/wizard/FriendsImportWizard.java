@@ -96,7 +96,7 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
             HorizontalPanel buttonPanel = new HorizontalPanel();
             buttonPanel.setSpacing(3);
             panel.insert(buttonPanel, 0);
-            panel.setCellHorizontalAlignment(buttonPanel, HorizontalPanel.ALIGN_RIGHT);
+            panel.setCellHorizontalAlignment(buttonPanel, HorizontalPanel.ALIGN_LEFT);
 
             Button saveButton = new Button(msg.button_save());
             if (changes.length == 0 && friendsToDelete.size() == 0) {
@@ -148,8 +148,6 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
                     }
                 }
             });
-            panel.add(buttonPanel);
-            panel.setCellHorizontalAlignment(buttonPanel, VerticalPanel.ALIGN_RIGHT);
 
             // Update the width to deal with the table size increase
             panel.setWidth("601px");

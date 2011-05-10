@@ -54,7 +54,9 @@ public class TestUtils {
     public static final String JVM_INSTANCE_WEB_UI = "http://127.0.0.1:" + JVM_INSTANCE_WEB_UI_PORT
             + "/";
 
-    public static final String TEST_COMMUNITY_SERVER = "localhost:8888";
+    // Changed to 8889 to allow running OneSwarm in hosted mode along with the
+    // community server
+    public static final String TEST_COMMUNITY_SERVER = "localhost:8889";
 
     /** Checks if a test instance of the community server is running locally. */
     public static boolean isLocalCommunityServerRunning() {

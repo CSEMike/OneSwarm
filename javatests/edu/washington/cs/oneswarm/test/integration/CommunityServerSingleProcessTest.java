@@ -36,7 +36,9 @@ public class CommunityServerSingleProcessTest {
 
     @Before
     public void setupTest() throws IOException {
-        TestUtils.flushCommunityServerState();
+        if (TestUtils.isLocalCommunityServerRunning()) {
+            TestUtils.flushCommunityServerState();
+        }
     }
 
     @Test
