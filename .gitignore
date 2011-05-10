@@ -34,4 +34,5 @@ oneswarm_gwt_ui/src/edu/washington/cs/oneswarm/ui/gwt/client/i18n/OSMessages.jav
 # GWT hosted mode
 tomcat/
 oneswarm_gwt_ui/war/WEB-INF/classes/
+oneswarm_gwt_ui/war/oneswarmgwt/
 .gwt-tmp/
