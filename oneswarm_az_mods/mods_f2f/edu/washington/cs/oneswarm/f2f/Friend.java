@@ -17,8 +17,6 @@ import java.util.Date;
 import org.bouncycastle.util.encoders.Base64;
 import org.gudy.azureus2.core3.util.Debug;
 
-import com.aelitis.azureus.core.networkmanager.impl.osssl.OneSwarmSslTools;
-
 public class Friend
 {
 
@@ -121,13 +119,15 @@ public class Friend
 		this.dhtReadLocation = dhtReadLocation;
 	}
 
-	private String			 sourceNetwork;
+	private final String			 sourceNetwork;
 
 	private volatile int status										= 0;
 
 	private boolean			supportsChat							= false;
 
 	private boolean			supportsExtendedFileLists = false;
+
+    private boolean supportsPuzzleMessages = false;
 
 	private long				 totalDownloaded;
 
@@ -278,7 +278,8 @@ public class Friend
 		}
 	}
 
-	public boolean equals(Object obj) {
+	@Override
+    public boolean equals(Object obj) {
 		if (obj instanceof Friend) {
 			Friend comp = (Friend) obj;
 			if (Arrays.equals(comp.getPublicKey(), this.getPublicKey())) {
@@ -379,8 +380,8 @@ public class Friend
 		return totalUploadSinceAppStart;
 	}
 
-	public void handShakeCompleted(int connectionHash, boolean extendedFileLists,
-			boolean chat) {
+    public void handShakeCompleted(int connectionHash, boolean extendedFileLists, boolean chat,
+            boolean puzzles) {
 		synchronized (this) {
 			if (this.connectionId != NOT_CONNECTED_CONNECTION_ID) {
 				Debug.out("got Friend.handShakeCompleted even though the connection id isn't 'not connected'");
@@ -391,12 +392,14 @@ public class Friend
 			this.connectionId = connectionHash;
 			this.supportsChat = chat;
 			this.supportsExtendedFileLists = extendedFileLists;
+            this.supportsPuzzleMessages = puzzles;
 
 			updateConnectionLog(true, connectionHash, "handshake completed");
 		}
 	}
 
-	public int hashCode() {
+	@Override
+    public int hashCode() {
 		if (hash == 0) {
 			hash = Arrays.hashCode(publicKey);
 		}
@@ -492,7 +495,8 @@ public class Friend
 		this.status = status;
 	}
 
-	public String toString() {
+	@Override
+    public String toString() {
 		return nick + " (" + sourceNetwork + ")";
 	}
 

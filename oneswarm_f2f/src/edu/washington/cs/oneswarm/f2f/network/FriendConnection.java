@@ -811,6 +811,9 @@ public class FriendConnection {
             if (this.hasExtendedDHTKeyNegotiationSupport()) {
                 extras += "(dht loc)";
             }
+            if (this.hasPuzzleSupport()) {
+                extras += "(puzzles)";
+            }
 
             /*
              * check that we still are connected, if we are mark friends
@@ -901,6 +904,14 @@ public class FriendConnection {
         }
 
         return (remoteFlags[0] & OSF2FHandshake.SUPPORTS_CHAT) == OSF2FHandshake.SUPPORTS_CHAT;
+    }
+
+    public boolean hasPuzzleSupport() {
+        if (remoteFlags == null) {
+            return false;
+        }
+
+        return (remoteFlags[0] & OSF2FHandshake.SUPPORTS_PUZZLE_MESSAGES) == OSF2FHandshake.SUPPORTS_PUZZLE_MESSAGES;
     }
 
     public boolean hasExtendedFileListsSupport() {
@@ -1700,7 +1711,7 @@ public class FriendConnection {
                 }
                 if (!filelistReceived) {
                     remoteFriend.handShakeCompleted(FriendConnection.this.hashCode(),
-                            hasExtendedFileListsSupport(), hasChatSupport());
+                            hasExtendedFileListsSupport(), hasChatSupport(), hasPuzzleSupport());
                     filelistReceived = true;
                 }
                 listener.handshakeCompletedFully(FriendConnection.this);

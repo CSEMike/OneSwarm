@@ -8,8 +8,6 @@ import com.aelitis.azureus.core.networkmanager.RawMessage;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 
-import edu.washington.cs.oneswarm.f2f.Log;
-
 public class OSF2FHandshake implements OSF2FMessage, RawMessage {
 
     private String description = null;
@@ -25,6 +23,8 @@ public class OSF2FHandshake implements OSF2FMessage, RawMessage {
     public static final byte SUPPORTS_EXTENDED_FILE_LISTS = 1;
     public static final byte SUPPORTS_CHAT = 2;
     public static final byte SUPPORTS_DHT_LOCATION_HS = 4;
+    public static final byte SUPPORTS_PUZZLE_MESSAGES = 8;
+
     /**
      * Protocol extensions we support in the current version. This is a very
      * hacky way to do protocol versioning, but it's what we're using for now to
@@ -33,7 +33,8 @@ public class OSF2FHandshake implements OSF2FMessage, RawMessage {
      * handshake message
      */
     public final static byte[] OS_FLAGS = new byte[] {
-            SUPPORTS_EXTENDED_FILE_LISTS | SUPPORTS_CHAT | SUPPORTS_DHT_LOCATION_HS, 0, 0, 0, 0, 0,
+            SUPPORTS_EXTENDED_FILE_LISTS | SUPPORTS_CHAT | SUPPORTS_DHT_LOCATION_HS
+                    | SUPPORTS_PUZZLE_MESSAGES, 0, 0, 0, 0, 0,
             0, 0 };
 
     public final static byte MESSAGE_LENGTH = (byte) (1 + ONESWARM_PROTOCOL.length() + OS_FLAGS.length);
@@ -47,6 +48,7 @@ public class OSF2FHandshake implements OSF2FMessage, RawMessage {
         return reserved;
     }
 
+    @Override
     public Message deserialize(DirectByteBuffer data, byte version) throws MessageException {
         if (data == null) {
             throw new MessageException("[" + getID() + "] decode error: data == null");
@@ -79,30 +81,37 @@ public class OSF2FHandshake implements OSF2FMessage, RawMessage {
         return new OSF2FHandshake(version, reserved);
     }
 
+    @Override
     public String getID() {
         return OSF2FMessage.ID_OS_HANDSHAKE;
     }
 
+    @Override
     public byte[] getIDBytes() {
         return OSF2FMessage.ID_OS_HANDSHAKE_BYTES;
     }
 
+    @Override
     public String getFeatureID() {
         return OSF2FMessage.OS_FEATURE_ID;
     }
 
+    @Override
     public int getFeatureSubID() {
         return OSF2FMessage.SUBID_OS_HANDSHAKE;
     }
 
+    @Override
     public int getType() {
         return Message.TYPE_PROTOCOL_PAYLOAD;
     }
 
+    @Override
     public byte getVersion() {
         return version;
     };
 
+    @Override
     public String getDescription() {
         if (description == null) {
             description = OSF2FMessage.ID_OS_HANDSHAKE + " flags: " + Base32.encode(reserved);
@@ -111,9 +120,11 @@ public class OSF2FHandshake implements OSF2FMessage, RawMessage {
         return description;
     }
 
+    @Override
     public void destroy() {
-        if (buffer != null)
+        if (buffer != null) {
             buffer.returnToPool();
+        }
     }
 
     private void constructBuffer() {
@@ -126,38 +137,46 @@ public class OSF2FHandshake implements OSF2FMessage, RawMessage {
         }
     }
 
+    @Override
     public DirectByteBuffer[] getData() {
         this.constructBuffer();
 
         return new DirectByteBuffer[] { buffer };
     }
 
+    @Override
     public DirectByteBuffer[] getRawData() {
         this.constructBuffer();
 
         return new DirectByteBuffer[] { buffer };
     }
 
+    @Override
     public int getPriority() {
         return RawMessage.PRIORITY_HIGH;
     }
 
+    @Override
     public boolean isNoDelay() {
         return noDelay;
     }
 
+    @Override
     public Message[] messagesToRemove() {
         return null;
     }
 
+    @Override
     public Message getBaseMessage() {
         return this;
     }
 
+    @Override
     public void setNoDelay() {
         noDelay = true;
     }
 
+    @Override
     public int getMessageSize() {
         return MESSAGE_LENGTH;
     }

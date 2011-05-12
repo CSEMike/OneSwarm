@@ -63,6 +63,10 @@ public class OSF2FMessageFactory {
         legacy_data.put(OSF2FMessage.ID_OS_DHT_LOCATION, new LegacyData(RawMessage.PRIORITY_NORMAL,
                 NO_DELAY, null, OSF2FMessage.SUBID_OS_DHT_LOCATION));
         id_to_name[OSF2FMessage.SUBID_OS_DHT_LOCATION] = OSF2FMessage.ID_OS_DHT_LOCATION;
+
+        legacy_data.put(OSF2FMessage.ID_OS_PUZZLE_WRAPPER, new LegacyData(
+                RawMessage.PRIORITY_NORMAL, NO_DELAY, null, OSF2FMessage.SUBID_OS_PUZZLE_WRAPPER));
+        id_to_name[OSF2FMessage.SUBID_OS_PUZZLE_WRAPPER] = OSF2FMessage.ID_OS_PUZZLE_WRAPPER;
     }
 
     /**
@@ -113,7 +117,9 @@ public class OSF2FMessageFactory {
     public static int getMessageType(DirectByteBuffer stream_payload) {
         byte id = stream_payload.get(DirectByteBuffer.SS_MSG, 0);
         if (id == 101)
+         {
             return Message.TYPE_PROTOCOL_PAYLOAD; // handshake
+        }
         // message byte
         // in position 4
         // ("e" in
@@ -204,7 +210,7 @@ public class OSF2FMessageFactory {
             return (RawMessage) base_message;
         }
 
-        LegacyData ld = (LegacyData) legacy_data.get(base_message.getID());
+        LegacyData ld = legacy_data.get(base_message.getID());
 
         if (ld == null) {
             Debug.out("legacy message type id not found for [" + base_message.getID() + "]");
