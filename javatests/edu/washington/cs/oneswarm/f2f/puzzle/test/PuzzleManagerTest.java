@@ -6,8 +6,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.util.SHA1Hasher;
+import org.junit.Assert;
 import org.junit.Test;
-import org.testng.Assert;
 
 import edu.washington.cs.oneswarm.f2f.puzzle.PuzzleManager;
 import edu.washington.cs.oneswarm.f2f.puzzle.PuzzleSolutionCallback;
@@ -83,7 +83,7 @@ public class PuzzleManagerTest {
 					});
 			latch.await(20, TimeUnit.SECONDS);
 
-			Assert.assertTrue(good.get(), "solvePuzzle failed for " + matchingBits + " bits.");
+            Assert.assertTrue("solvePuzzle failed for " + matchingBits + " bits.", good.get());
 		}
 
 		logger.info("End testSolvePuzzle()");
