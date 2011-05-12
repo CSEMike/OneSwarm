@@ -58,7 +58,7 @@ public class OSF2FPuzzleWrappedMessageTest {
             // Unpack and verify equality
             Assert.assertEquals(originalTimestamp, deserialized.getTimestamp());
             Assert.assertEquals(bogusMessageSubId, deserialized.getWrappedMessageFeatureId());
-            DirectByteBuffer scratch = deserialized.getWrappedMessage()[0];
+            DirectByteBuffer scratch = deserialized.getWrappedMessageBuffer()[0];
             byte[] deserializedBytes = new byte[scratch.remaining((byte) 0)];
             scratch.get((byte) 0, deserializedBytes);
             Assert.assertArrayEquals(originalBytes, deserializedBytes);
@@ -66,6 +66,10 @@ public class OSF2FPuzzleWrappedMessageTest {
         } finally {
             logger.info("End testSerializeDeserializeMessage()");
         }
+    }
+
+    public static final void main(String... args) throws Exception {
+        org.junit.runner.JUnitCore.main(OSF2FPuzzleWrappedMessageTest.class.getCanonicalName());
     }
 
 }

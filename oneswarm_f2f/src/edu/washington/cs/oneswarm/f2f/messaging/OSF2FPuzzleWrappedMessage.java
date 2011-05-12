@@ -122,6 +122,21 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
         return buffer.clone();
     }
 
+    /** Decodes the raw bytes wrapped in this message as an OSF2FMessage type. */
+    public OSF2FMessage getWrappedMessage() throws MessageException {
+
+        DirectByteBuffer flattened = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG,
+                wrappedMessageSize + 1);
+        flattened.put(DirectByteBuffer.SS_MSG, messageSubId);
+        for (DirectByteBuffer b : buffer) {
+            flattened.put(DirectByteBuffer.SS_MSG, b);
+            b.flip(DirectByteBuffer.SS_MSG);
+        }
+        flattened.flip(DirectByteBuffer.SS_MSG);
+
+        return (OSF2FMessage) OSF2FMessageFactory.createOSF2FMessage(flattened);
+    }
+
     @Override
     public Message deserialize(DirectByteBuffer data, byte version) throws MessageException {
         if (data == null) {
@@ -214,7 +229,7 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
         return timestamp;
     }
 
-    public DirectByteBuffer[] getWrappedMessage() {
+    public DirectByteBuffer[] getWrappedMessageBuffer() {
         return wrappedMessage;
     }
 
