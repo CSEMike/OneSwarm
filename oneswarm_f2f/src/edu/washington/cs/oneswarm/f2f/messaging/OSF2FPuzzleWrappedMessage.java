@@ -101,7 +101,7 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
             // Compute the message length
             mMessageLength = puzzleSolution.length + 8 + wrappedMessageSize;
 
-            DirectByteBuffer[] buffer = new DirectByteBuffer[wrapped.length + 1];
+            buffer = new DirectByteBuffer[wrapped.length + 1];
             buffer[0] = solutionBuffer;
             for (int i = 0; i < wrapped.length; i++) {
                 buffer[i + 1] = wrapped[i];
@@ -183,5 +183,21 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
         this.wrappedMessage = wrappedMessage;
         this.wrappedMessageSize = wrappedMessageSize;
         this.version = version;
+    }
+
+    public byte[] getPuzzleSolution() {
+        return puzzleSolution;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public DirectByteBuffer[] getWrappedMessage() {
+        return wrappedMessage;
+    }
+
+    public int getWrappedMessageSize() {
+        return wrappedMessageSize;
     }
 }
