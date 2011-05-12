@@ -88,4 +88,8 @@ public class PuzzleManagerTest {
 
 		logger.info("End testSolvePuzzle()");
 	}
+
+	public static final void main(String... args) throws Exception {
+		org.junit.runner.JUnitCore.main(PuzzleManagerTest.class.getCanonicalName());
+	}
 }
