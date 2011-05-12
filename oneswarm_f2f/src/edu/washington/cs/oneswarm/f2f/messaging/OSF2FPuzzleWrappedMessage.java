@@ -40,7 +40,11 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
     /** Length of the message, computed in {@code getData()}. */
     private int mMessageLength;
 
+    /** The size of the wrapped message, ignoring the header byte. */
     private final int wrappedMessageSize;
+
+    /** The type of the wrapped message, taken from {@code OSF2FMessage}. */
+    private final byte messageSubId;
 
     @Override
     public String getID() {
@@ -83,26 +87,33 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
 
             /*
              * Format: [0...19] -- Solution to the puzzle [20...27] -- Recent
-             * timestamp [28...] -- Wrapped message
+             * timestamp [28] -- Wrapped message sub id from OSF2FMessage
+             * [29...] -- Wrapped message
              */
 
             // Prepend the solution to the puzzle
-            DirectByteBuffer solutionBuffer = DirectByteBufferPool.getBuffer(
-                    DirectByteBuffer.AL_MSG, puzzleSolution.length + 8);
-            solutionBuffer.put(DirectByteBuffer.SS_MSG, puzzleSolution);
+            DirectByteBuffer headerBuffer = DirectByteBufferPool.getBuffer(
+                    DirectByteBuffer.AL_MSG, puzzleSolution.length + 8 + 1);
+            headerBuffer.put(DirectByteBuffer.SS_MSG, puzzleSolution);
             // For some reason, the Azureus wrapper doesn't export putLong, so
             // we do this directly.
-            solutionBuffer.getBuffer(DirectByteBuffer.SS_MSG).putLong(timestamp);
-            solutionBuffer.flip(DirectByteBuffer.SS_MSG);
+            headerBuffer.getBuffer(DirectByteBuffer.SS_MSG).putLong(timestamp);
+
+            // This must preceed the wrapped message bytes since they will be
+            // deserialized together using
+            // OSF2FMessageFactory.createOSF2FMessage, which expects an initial
+            // message type identifier.
+            headerBuffer.put(DirectByteBuffer.SS_MSG, messageSubId);
+            headerBuffer.flip(DirectByteBuffer.SS_MSG);
 
             // Attach the underlying message data
             DirectByteBuffer[] wrapped = wrappedMessage;
 
             // Compute the message length
-            mMessageLength = puzzleSolution.length + 8 + wrappedMessageSize;
+            mMessageLength = puzzleSolution.length + 8 + 1 + wrappedMessageSize;
 
             buffer = new DirectByteBuffer[wrapped.length + 1];
-            buffer[0] = solutionBuffer;
+            buffer[0] = headerBuffer;
             for (int i = 0; i < wrapped.length; i++) {
                 buffer[i + 1] = wrapped[i];
             }
@@ -123,12 +134,15 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
         long incomingTimestamp;
         byte[] incomingWrappedMessage;
         int incomingWrappedMessageSize;
+        byte incomingWrappedMessageType;
 
         try {
             data.get(DirectByteBuffer.SS_MSG, incomingSolution);
             incomingTimestamp = data.getBuffer(DirectByteBuffer.SS_MSG).getLong();
-            incomingWrappedMessageSize = length - (incomingSolution.length + 8);
+            incomingWrappedMessageSize = length - (incomingSolution.length + 8 + 1);
             incomingWrappedMessage = new byte[incomingWrappedMessageSize];
+            incomingWrappedMessageType = data.get(DirectByteBuffer.SS_MSG);
+
             data.get(DirectByteBuffer.SS_MSG, incomingWrappedMessage);
             
             // Wrap up byte arrays in DirectByteBuffers.
@@ -137,8 +151,9 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
             buff.put(DirectByteBuffer.SS_MSG, incomingWrappedMessage);
             buff.flip(DirectByteBuffer.SS_MSG);
 
-            return new OSF2FPuzzleWrappedMessage(version, new DirectByteBuffer[] { buff },
-                    incomingWrappedMessageSize, incomingTimestamp, incomingSolution);
+            return new OSF2FPuzzleWrappedMessage(version, incomingWrappedMessageType,
+                    new DirectByteBuffer[] { buff }, incomingWrappedMessageSize, incomingTimestamp,
+                    incomingSolution);
         } finally {
             data.returnToPool();
         }
@@ -169,16 +184,22 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
      */
     public OSF2FPuzzleWrappedMessage(byte version, OSF2FPuzzleSupportingMessage toWrap,
             long timestamp, byte[] puzzleSolution) {
-        this(version, toWrap.getData(), toWrap.getMessageSize(), timestamp, puzzleSolution);
+        this(version, (byte) toWrap.getFeatureSubID(), toWrap.getData(), toWrap.getMessageSize(),
+                timestamp, puzzleSolution);
     }
 
-    public OSF2FPuzzleWrappedMessage(byte version, DirectByteBuffer[] wrappedMessage,
+    /**
+     * Creates a puzzle wrapped message from a raw byte buffer.
+     */
+    public OSF2FPuzzleWrappedMessage(byte version, byte messageSubId,
+            DirectByteBuffer[] wrappedMessage,
             int wrappedMessageSize, long timestamp, byte[] puzzleSolution) {
 
         // All puzzle solutions are 20 bytes.
         Preconditions.checkArgument(puzzleSolution.length == 20);
 
         this.timestamp = timestamp;
+        this.messageSubId = messageSubId;
         this.puzzleSolution = puzzleSolution;
         this.wrappedMessage = wrappedMessage;
         this.wrappedMessageSize = wrappedMessageSize;
@@ -199,5 +220,9 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
 
     public int getWrappedMessageSize() {
         return wrappedMessageSize;
+    }
+
+    public byte getWrappedMessageFeatureId() {
+        return messageSubId;
     }
 }

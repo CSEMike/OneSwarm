@@ -28,6 +28,7 @@ public class OSF2FPuzzleWrappedMessageTest {
             Random r = new Random(5);
             r.nextBytes(originalSolution);
             long originalTimestamp = System.currentTimeMillis();
+            byte bogusMessageSubId = 5;
 
             DirectByteBuffer wrapped = DirectByteBufferPool.getBuffer((byte) 0,
                     originalBytes.length);
@@ -35,6 +36,7 @@ public class OSF2FPuzzleWrappedMessageTest {
             wrapped.flip((byte) 0);
 
             OSF2FPuzzleWrappedMessage original = new OSF2FPuzzleWrappedMessage((byte) 1,
+                    bogusMessageSubId,
                     new DirectByteBuffer[] { wrapped }, originalBytes.length, originalTimestamp,
                     originalSolution);
 
@@ -51,10 +53,11 @@ public class OSF2FPuzzleWrappedMessageTest {
 
             // Deserialize the flattened, serialized message.
             OSF2FPuzzleWrappedMessage deserialized = (OSF2FPuzzleWrappedMessage) new OSF2FPuzzleWrappedMessage(
-                    (byte) 0, null, 0, 0, new byte[20]).deserialize(flattened, (byte) 1);
+                    (byte) 0, (byte) 0, null, 0, 0, new byte[20]).deserialize(flattened, (byte) 1);
 
             // Unpack and verify equality
             Assert.assertEquals(originalTimestamp, deserialized.getTimestamp());
+            Assert.assertEquals(bogusMessageSubId, deserialized.getWrappedMessageFeatureId());
             DirectByteBuffer scratch = deserialized.getWrappedMessage()[0];
             byte[] deserializedBytes = new byte[scratch.remaining((byte) 0)];
             scratch.get((byte) 0, deserializedBytes);

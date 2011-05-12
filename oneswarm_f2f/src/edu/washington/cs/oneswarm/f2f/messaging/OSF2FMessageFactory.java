@@ -108,6 +108,10 @@ public class OSF2FMessageFactory {
                     new OSF2FChat(OSF2FChat.CURRENT_VERSION, null));
             MessageManager.getSingleton().registerMessageType(
                     new OSF2FDhtLocation(OSF2FDhtLocation.CURRENT_VERSION, null, null));
+            
+            MessageManager.getSingleton().registerMessageType(
+                    new OSF2FPuzzleWrappedMessage(OSF2FPuzzleWrappedMessage.CURRENT_VERSION, null,
+                            0, new byte[20]));
 
         } catch (MessageException me) {
             me.printStackTrace();
@@ -189,6 +193,10 @@ public class OSF2FMessageFactory {
         case OSF2FMessage.SUBID_OS_DHT_LOCATION:
             return MessageManager.getSingleton().createMessage(
                     OSF2FMessage.ID_OS_DHT_LOCATION_BYTES, stream_payload,
+                    OSF2FMessage.CURRENT_VERSION);
+        case OSF2FMessage.SUBID_OS_PUZZLE_WRAPPER:
+            return MessageManager.getSingleton().createMessage(
+                    OSF2FMessage.ID_OS_PUZZLE_WRAPPER_BYTES, stream_payload,
                     OSF2FMessage.CURRENT_VERSION);
         default: {
             System.out.println("Unknown OSF2F message id [" + id + "]");
