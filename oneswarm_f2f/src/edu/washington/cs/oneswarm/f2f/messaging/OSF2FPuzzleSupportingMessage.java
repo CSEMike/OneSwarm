@@ -1,6 +1,5 @@
 package edu.washington.cs.oneswarm.f2f.messaging;
 
-import org.gudy.azureus2.core3.util.DirectByteBuffer;
 
 /**
  * Messages implementing this interface support prioritization via computational
@@ -12,5 +11,12 @@ public interface OSF2FPuzzleSupportingMessage extends OSF2FMessage {
      * Returns the immutable part of this message that serves as the basis for
      * the puzzle. If forwarded, this data must not change per-hop.
      */
-	DirectByteBuffer getPuzzleMaterial();
+    byte[] getPuzzleMaterial();
+
+    /**
+     * State carried by puzzle supporting messages that's used and/or filled in
+     * at various stages of processing.
+     */
+    void setPuzzleWrapper(OSF2FPuzzleWrappedMessage wrapper);
+    OSF2FPuzzleWrappedMessage getPuzzleWrapper();
 }

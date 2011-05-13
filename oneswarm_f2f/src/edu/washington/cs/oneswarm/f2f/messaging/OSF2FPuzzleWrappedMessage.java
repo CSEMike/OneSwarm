@@ -2,10 +2,13 @@ package edu.washington.cs.oneswarm.f2f.messaging;
 
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 import org.gudy.azureus2.core3.util.DirectByteBufferPool;
+import org.gudy.azureus2.core3.util.SHA1Hasher;
 
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 import com.google.inject.internal.Preconditions;
+
+import edu.washington.cs.oneswarm.f2f.puzzle.PuzzleManager;
 
 /**
  * A message that wraps another message with a solution to a computational
@@ -45,6 +48,12 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
 
     /** The type of the wrapped message, taken from {@code OSF2FMessage}. */
     private final byte messageSubId;
+
+    /**
+     * The number of bits in which SHA-1(puzzleSolution) matches
+     * SHA-1(getPuzzleMaterial()).
+     */
+    private short solutionMatchingBits = -1;
 
     @Override
     public String getID() {
@@ -190,6 +199,34 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
             getData();
         }
         return mMessageLength;
+    }
+
+    /**
+     * Computes a hash of the puzzle bytes and compares it to the stored
+     * solution. The number of matching bytes is memoized.
+     * 
+     * As an optimization, this function takes a typed version of the message it
+     * encapsulated, {@code convertedType}. Because this method is called only
+     * when the encapsulated message has been unpacked, we avoid unpacking it
+     * for a second time here.
+     */
+    public short computePuzzleMatchingBits(OSF2FPuzzleSupportingMessage convertedType) {
+        if (solutionMatchingBits == -1) {
+            SHA1Hasher hasher = new SHA1Hasher();
+            byte[] targetHash = hasher.calculateHash(convertedType.getPuzzleMaterial());
+            byte[] solutionHash = hasher.calculateHash(puzzleSolution);
+            solutionMatchingBits = PuzzleManager.computeMatchingBitsLeftToRight(solutionHash,
+                    targetHash);
+        }
+        return solutionMatchingBits;
+    }
+
+    /** Returns the computed number of matching bits. */
+    public short getPuzzleMatchingBitCount() {
+        // Check that we did in fact compute this before making this call
+        Preconditions.checkState(solutionMatchingBits >= 0,
+                "Attempted to retrieve matching bits before computing the count.");
+        return solutionMatchingBits;
     }
 
     /**

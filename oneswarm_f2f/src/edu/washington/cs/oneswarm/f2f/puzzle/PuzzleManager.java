@@ -94,11 +94,11 @@ public class PuzzleManager {
 	 * first difference.
 	 */
 	@VisibleForTesting
-	public static int computeMatchingBitsLeftToRight(byte[] lhs, byte[] rhs) {
+    public static short computeMatchingBitsLeftToRight(byte[] lhs, byte[] rhs) {
 		Preconditions.checkArgument(lhs.length == rhs.length,
 				"Provided byte arrays are of different sizes.");
 
-		int count = 0;
+        short count = 0;
 		for (int i = 0; i < lhs.length; i++) {
 			if (lhs[i] == rhs[i]) {
 				count += 8;

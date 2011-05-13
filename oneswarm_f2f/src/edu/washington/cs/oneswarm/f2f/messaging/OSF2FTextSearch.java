@@ -1,5 +1,7 @@
 package edu.washington.cs.oneswarm.f2f.messaging;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 import org.gudy.azureus2.core3.util.Debug;
@@ -9,7 +11,7 @@ import org.gudy.azureus2.core3.util.DirectByteBufferPool;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 
-public class OSF2FTextSearch implements OSF2FMessage, OSF2FSearch {
+public class OSF2FTextSearch implements OSF2FSearch, OSF2FPuzzleSupportingMessage {
 
     private final byte version;
     private final int searchID;
@@ -23,7 +25,13 @@ public class OSF2FTextSearch implements OSF2FMessage, OSF2FSearch {
     private final static int BASE_MESSAGE_LENGTH = 5;
     private final static int MAX_MESSAGE_LENGTH = 109;
 
-    private int messageLength;
+    private final int messageLength;
+
+    /** A buffer containing the puzzle material. */
+    byte[] puzzleMaterialBuffer = null;
+
+    /** The puzzle message which wrapped this search, if any. */
+    private OSF2FPuzzleWrappedMessage puzzleWrapper;
 
     public OSF2FTextSearch(byte version, byte type, int searchID, String searchString) {
         this.searchString = searchString;
@@ -40,11 +48,13 @@ public class OSF2FTextSearch implements OSF2FMessage, OSF2FSearch {
                 + searchStringBytes.length);
     }
 
+    @Override
     public OSF2FTextSearch clone() {
         return new OSF2FTextSearch(this.getVersion(), type, this.getSearchID(),
                 this.getSearchString());
     }
 
+    @Override
     public int getSearchID() {
         return searchID;
     }
@@ -53,30 +63,37 @@ public class OSF2FTextSearch implements OSF2FMessage, OSF2FSearch {
         return searchString;
     }
 
+    @Override
     public String getID() {
         return OSF2FMessage.ID_OS_TEXT_SEARCH;
     }
 
+    @Override
     public byte[] getIDBytes() {
         return OSF2FMessage.ID_OS_TEXT_SEARCH_BYTES;
     }
 
+    @Override
     public String getFeatureID() {
         return OSF2FMessage.OS_FEATURE_ID;
     }
 
+    @Override
     public int getFeatureSubID() {
         return OSF2FMessage.SUBID_OS_TEXT_SEARCH;
     }
 
+    @Override
     public int getType() {
         return Message.TYPE_PROTOCOL_PAYLOAD;
     }
 
+    @Override
     public byte getVersion() {
         return version;
     };
 
+    @Override
     public String getDescription() {
         if (description == null) {
             description = OSF2FMessage.ID_OS_TEXT_SEARCH + "\tsearchID="
@@ -86,6 +103,7 @@ public class OSF2FTextSearch implements OSF2FMessage, OSF2FSearch {
         return description;
     }
 
+    @Override
     public DirectByteBuffer[] getData() {
         if (buffer == null) {
             buffer = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG, messageLength);
@@ -98,6 +116,7 @@ public class OSF2FTextSearch implements OSF2FMessage, OSF2FSearch {
         return new DirectByteBuffer[] { buffer };
     }
 
+    @Override
     public Message deserialize(DirectByteBuffer data, byte version) throws MessageException {
         if (data == null) {
             throw new MessageException("[" + getID() + "] decode error: data == null");
@@ -122,20 +141,50 @@ public class OSF2FTextSearch implements OSF2FMessage, OSF2FSearch {
         }
     }
 
+    @Override
     public void destroy() {
-        if (buffer != null)
+        if (buffer != null) {
             buffer.returnToPool();
+        }
     }
 
     public byte getRequestType() {
         return type;
     }
 
+    @Override
     public int getMessageSize() {
         return messageLength;
     }
 
+    @Override
     public int getValueID() {
         return searchString.hashCode();
+    }
+
+    @Override
+    public byte[] getPuzzleMaterial() {
+        if (puzzleMaterialBuffer == null) {
+            try {
+                // We include the search ID and text string.
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                baos.write(searchID);
+                baos.write(searchStringBytes);
+                puzzleMaterialBuffer = baos.toByteArray();
+            } catch (IOException e) {
+                Debug.out("error during puzzle material retrieval", e);
+            }
+        }
+        return puzzleMaterialBuffer;
+    }
+
+    @Override
+    public void setPuzzleWrapper(OSF2FPuzzleWrappedMessage wrapper) {
+        this.puzzleWrapper = wrapper;
+    }
+
+    @Override
+    public OSF2FPuzzleWrappedMessage getPuzzleWrapper() {
+        return puzzleWrapper;
     }
 }

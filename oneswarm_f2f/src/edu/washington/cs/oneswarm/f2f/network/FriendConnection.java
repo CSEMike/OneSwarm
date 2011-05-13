@@ -37,6 +37,7 @@ import com.aelitis.azureus.core.networkmanager.impl.osssl.OneSwarmSslTools;
 import com.aelitis.azureus.core.networkmanager.impl.osssl.OneSwarmSslTransportHelperFilterStream;
 import com.aelitis.azureus.core.networkmanager.impl.tcp.ProtocolEndpointTCP;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
+import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 import com.aelitis.azureus.core.peermanager.messaging.bittorrent.BTKeepAlive;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
@@ -58,6 +59,8 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessageDecoder;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessageEncoder;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMetaInfoReq;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMetaInfoResp;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FPuzzleSupportingMessage;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FPuzzleWrappedMessage;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FSearchCancel;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FSearchResp;
@@ -1833,11 +1836,42 @@ public class FriendConnection {
                 handleChat(message);
             } else if (message.getID().equals(OSF2FMessage.ID_OS_DHT_LOCATION)) {
                 handleDhtLocationMessage((OSF2FDhtLocation) message);
+            } else if (message.getID().equals(OSF2FMessage.ID_OS_PUZZLE_WRAPPER)) {
+                handlePuzzleWrappedMessage((OSF2FPuzzleWrappedMessage) message);
             } else {
                 Debug.out(getDescription() + "unknown message: " + message.getDescription());
             }
 
             return (true);
+        }
+
+        /**
+         * Unwraps the {@code message} and configures internal state based on
+         * the puzzle solution.
+         */
+        public void handlePuzzleWrappedMessage(OSF2FPuzzleWrappedMessage message) {
+            try {
+                OSF2FMessage unwrapped = message.getWrappedMessage();
+
+                /*
+                 * We can support wrapped messages even though our current
+                 * version may not support them as puzzleable objects. We use
+                 * RTTI to detect this and pass such messages through without
+                 * configuration.
+                 */
+                if (unwrapped instanceof OSF2FPuzzleSupportingMessage) {
+                    // We need to verify the puzzle and update the message's
+                    // state appropriately.
+                    ((OSF2FPuzzleSupportingMessage) unwrapped).setPuzzleWrapper(message);
+                    message.computePuzzleMatchingBits((OSF2FPuzzleSupportingMessage) unwrapped);
+                }
+
+                messageReceived(message);
+
+            } catch (MessageException e) {
+                logger.severe("Error during handling of puzzle wrapped message:" + e);
+                e.printStackTrace();
+            }
         }
 
         @Override
