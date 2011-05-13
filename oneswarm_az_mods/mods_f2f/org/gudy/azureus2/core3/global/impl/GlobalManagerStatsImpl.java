@@ -71,6 +71,9 @@ GlobalManagerStatsImpl
 
     private long textSearchesReceived = 0;
     private long hashSearchesReceived = 0;
+    private long idPrefixSearchesReceived = 0;
+    private long e2dkPrefixSearchesReceived = 0;
+    private long sha1PrefixSearchesReceived = 0;
 
     @Override
     public long getTotalF2FBytesSent() {
@@ -279,4 +282,33 @@ GlobalManagerStatsImpl
     	return( manager.getTotalSwarmsPeerRate(downloading,seeding));
     }
 
+    @Override
+    public void sha1PrefixSearchReceived() {
+        sha1PrefixSearchesReceived++;
+    }
+
+    @Override
+    public void ed2kPrefixSearchReceived() {
+        e2dkPrefixSearchesReceived++;
+    }
+
+    @Override
+    public void idPrefixSearchReceived() {
+        idPrefixSearchesReceived++;
+    }
+
+    @Override
+    public long getIdPrefixSearchesReceived() {
+        return idPrefixSearchesReceived;
+    }
+
+    @Override
+    public long getE2dkPrefixSearchesReceived() {
+        return e2dkPrefixSearchesReceived;
+    }
+
+    @Override
+    public long getSha1PrefixSearchesReceived() {
+        return sha1PrefixSearchesReceived;
+    }
 }

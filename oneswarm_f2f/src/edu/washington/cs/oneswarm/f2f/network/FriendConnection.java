@@ -1002,7 +1002,17 @@ public class FriendConnection {
 
         // Update the stats based on the _raw_ volume of searches we observe.
         if (message instanceof OSF2FTextSearch) {
-            stats.textSearchReceived();
+            OSF2FTextSearch cast = (OSF2FTextSearch) message;
+            if (cast.getSearchString().startsWith("sha1;")) {
+                stats.sha1PrefixSearchReceived();
+            } else if (cast.getSearchString().startsWith("ed2k;")) {
+                stats.ed2kPrefixSearchReceived();
+            } else if (cast.getSearchString().startsWith("id;")) {
+                stats.idPrefixSearchReceived();
+            } else {
+                stats.textSearchReceived();
+            }
+
         } else if (message instanceof OSF2FHashSearch) {
             stats.hashSearchReceived();
         }

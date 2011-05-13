@@ -76,6 +76,9 @@ public class AnalyticsReporter extends Thread {
 
         Rate<Long> textSearchRate = new Rate<Long>();
         Rate<Long> hashSearchRate = new Rate<Long>();
+        Rate<Long> idSearchRate = new Rate<Long>();
+        Rate<Long> e2dkSearchRate = new Rate<Long>();
+        Rate<Long> sha1SearchRate = new Rate<Long>();
 
         Rate<Long> uploadRate = new Rate<Long>();
         Rate<Long> downloadRate = new Rate<Long>();
@@ -113,6 +116,15 @@ public class AnalyticsReporter extends Thread {
                 analyticsTracker
                         .trackEvent("Stats", "Rates", "textSearchRate", (int) textSearchRate
                                 .updateAndGetRate(globalStats.getTextSearchesReceived()));
+                analyticsTracker.trackEvent("Stats", "Rates", "idSearchRate", (int) idSearchRate
+                        .updateAndGetRate(globalStats.getIdPrefixSearchesReceived()));
+                analyticsTracker.trackEvent("Stats", "Rates", "e2dkSearchRate",
+                        (int) e2dkSearchRate.updateAndGetRate(globalStats
+                                .getE2dkPrefixSearchesReceived()));
+
+                analyticsTracker.trackEvent("Stats", "Rates", "sha1SearchRate",
+                        (int) sha1SearchRate.updateAndGetRate(globalStats
+                                .getSha1PrefixSearchesReceived()));
 
                 // Transfer rates
                 analyticsTracker.trackEvent("Stats", "Rates", "upload",

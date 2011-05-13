@@ -82,6 +82,13 @@ GlobalManagerStats
 
     public void textSearchReceived();
     public void hashSearchReceived();
+    public void sha1PrefixSearchReceived();
+    public void ed2kPrefixSearchReceived();
+    public void idPrefixSearchReceived();
     public long getTextSearchesReceived();
     public long getHashSearchesReceived();
+    public long getIdPrefixSearchesReceived();
+    public long getE2dkPrefixSearchesReceived();
+    public long getSha1PrefixSearchesReceived();
+
 }
