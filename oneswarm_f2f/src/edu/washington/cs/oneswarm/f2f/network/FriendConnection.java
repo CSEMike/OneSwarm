@@ -1299,7 +1299,6 @@ public class FriendConnection {
         // we need to add some deterministic randomness to this.
         // The goal is to be able to uniquely identify a path
         // without leaking the connections link id
-        // (new RuntimeException()).printStackTrace();
         message.updatePathID(randomnessManager.getDeterministicRandomInt(message.getPathID()));
         if (forwarded) {
             friendConnectionQueue.queuePacketForceQueue(QueueBuckets.FORWARD, message);
@@ -1392,12 +1391,39 @@ public class FriendConnection {
         sendMessage(msg, QueueBuckets.CONTROL, skipQueue);
     }
 
+    /**
+     * Sends a message to this friend. If supported, the outgoing message is
+     * wrapped with its puzzle solution.
+     */
     private void sendMessage(OSF2FMessage msg, QueueBuckets queueBuckets, boolean skipQueue) {
         if (!handShakeReceived) {
             bufferedMessages.add(msg);
             logger.finer(getDescription() + "waiting for handshake to complete, queue size: "
                     + bufferedMessages.size());
         } else {
+            
+            /*
+             * If:
+             * 1) friend supports puzzle messages and
+             * 2) the message type itself supports puzzles and
+             * 3) the message includes a solution
+             * 
+             * We wrap the outgoing message before sending it.
+             */
+            if (hasPuzzleSupport() && msg instanceof OSF2FPuzzleSupportingMessage) {
+                OSF2FPuzzleSupportingMessage cast = (OSF2FPuzzleSupportingMessage) msg;
+                if (cast.getPuzzleWrapper() != null
+                        && cast.getPuzzleWrapper().getPuzzleSolution() != null) {
+
+                    OSF2FPuzzleWrappedMessage wrapped = new OSF2FPuzzleWrappedMessage(
+                            OSF2FPuzzleWrappedMessage.CURRENT_VERSION, cast, cast
+                                    .getPuzzleWrapper().getTimestamp(), cast.getPuzzleWrapper()
+                                    .getPuzzleSolution());
+
+                    msg = wrapped;
+                }
+            }
+
             friendConnectionQueue.queuePacket(QueueBuckets.CONTROL, msg, skipQueue);
         }
     }
@@ -1417,6 +1443,10 @@ public class FriendConnection {
         return stats;
     }
 
+    /**
+     * Sends a search message to this friend, optionally skipping the queue of
+     * messages if specified.
+     */
     void sendSearch(OSF2FSearch search, boolean skipQueue) {
         if (receivedSearches.containsKey(search.getSearchID())) {
             logger.finer("not sending search, this search id is already received from this friend");
