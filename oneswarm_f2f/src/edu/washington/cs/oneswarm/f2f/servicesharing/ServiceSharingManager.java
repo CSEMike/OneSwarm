@@ -15,11 +15,12 @@ import com.aelitis.azureus.core.networkmanager.NetworkConnection;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
 import com.aelitis.azureus.core.networkmanager.NetworkManager;
 import com.aelitis.azureus.core.networkmanager.NetworkManager.ByteMatcher;
-import com.aelitis.azureus.core.networkmanager.Transport;
-import com.aelitis.azureus.core.networkmanager.impl.IncomingConnectionManager;
-import com.aelitis.azureus.core.networkmanager.impl.IncomingConnectionManager.MatchListener;
+import com.aelitis.azureus.core.networkmanager.NetworkManager.RoutingListener;
 import com.aelitis.azureus.core.networkmanager.impl.TransportHelper;
 import com.aelitis.azureus.core.networkmanager.impl.tcp.IncomingSocketChannelManager;
+import com.aelitis.azureus.core.peermanager.messaging.MessageStreamDecoder;
+import com.aelitis.azureus.core.peermanager.messaging.MessageStreamEncoder;
+import com.aelitis.azureus.core.peermanager.messaging.MessageStreamFactory;
 
 import edu.washington.cs.oneswarm.f2f.BigFatLock;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
@@ -47,6 +48,7 @@ public class ServiceSharingManager {
     public HashMap<Long, ClientService> clientServices = new HashMap<Long, ClientService>();
 
     public void registerServerService(long searchkey, SharedService service) {
+        logger.fine("Registering service: key=" + searchkey + " service=" + service.toString());
         try {
             lock.lock();
             serverServices.put(searchkey, service);
@@ -199,16 +201,29 @@ public class ServiceSharingManager {
                 incomingSocketChannelManager.setExplicitBindAddress(InetAddress
                         .getByName("127.0.0.1"));
                 int port = getPort();
-                IncomingConnectionManager.getSingleton().registerMatchBytes(new PortMatcher(port),
-                        new MatchListener() {
+                NetworkManager.getSingleton().requestIncomingConnectionRouting(
+                        new PortMatcher(port), new RoutingListener() {
                             @Override
-                            public void connectionMatched(Transport transport, Object routing_data) {
+                            public void connectionRouted(NetworkConnection connection,
+                                    Object routing_data) {
                                 logger.info("connection routed");
+
                             }
 
                             @Override
                             public boolean autoCryptoFallback() {
                                 return false;
+                            }
+                        }, new MessageStreamFactory() {
+                            @Override
+                            public MessageStreamEncoder createEncoder() {
+
+                                return new RawMessageEncoder();
+                            }
+
+                            @Override
+                            public MessageStreamDecoder createDecoder() {
+                                return new RawMessageDecoder();
                             }
                         });
             } catch (Exception e) {
@@ -243,8 +258,10 @@ public class ServiceSharingManager {
         public boolean isEnabled() {
             long lastFailedAge = System.currentTimeMillis() - lastFailedConnect;
             boolean enabled = lastFailedAge > FAILURE_BACKOFF;
-            logger.finer(String.format("Service %s is disabled, last failure: %d seconds ago",
-                    name, lastFailedAge));
+            if (!enabled) {
+                logger.finer(String.format("Service %s is disabled, last failure: %d seconds ago",
+                        name, lastFailedAge));
+            }
             return enabled;
         }
 
@@ -284,7 +301,7 @@ public class ServiceSharingManager {
         }
 
         public String toString() {
-            return name + " " + address;
+            return name + " " + address + " enabled=" + isEnabled();
         }
     }
 }

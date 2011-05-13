@@ -1,6 +1,5 @@
 package edu.washington.cs.oneswarm.f2f.network;
 
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.logging.Logger;
 
@@ -8,14 +7,13 @@ import org.gudy.azureus2.core3.util.DirectByteBuffer;
 
 import com.aelitis.azureus.core.networkmanager.IncomingMessageQueue.MessageQueueListener;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
-import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager.SharedService;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager.ClientService;
 
-public class ServiceConnection extends OverlayEndpoint {
+public abstract class ServiceConnection extends OverlayEndpoint {
     /**
      ** High level **
      * 
@@ -49,27 +47,18 @@ public class ServiceConnection extends OverlayEndpoint {
 
     private final static Logger logger = Logger.getLogger(ServiceConnection.class.getName());
     // all operations on this object must be in a synchronized block
-    private final LinkedList<OSF2FChannelDataMsg> bufferedMessages;
-    private NetworkConnection serverConnection;
+    protected final LinkedList<OSF2FChannelDataMsg> bufferedMessages;
+    protected NetworkConnection serverConnection;
 
-    private final SharedService service;
-    private final boolean serverSide;
-
-    public ServiceConnection(SharedService service, FriendConnection connection, int channelId,
-            int pathID) {
+    public ServiceConnection(FriendConnection connection, int channelId, int pathID) {
         super(connection, channelId, pathID, 0);
-        this.service = service;
         this.bufferedMessages = new LinkedList<OSF2FChannelDataMsg>();
-        this.serverSide = true;
     }
 
-    public ServiceConnection(NetworkConnection serverConnection, SharedService service,
+    public ServiceConnection(NetworkConnection serverConnection, ClientService service,
             FriendConnection connection, int channelId, int pathID) {
         super(connection, channelId, pathID, 0);
-        this.service = service;
         this.bufferedMessages = new LinkedList<OSF2FChannelDataMsg>();
-        this.serverSide = false;
-        this.serverConnection = serverConnection;
     }
 
     @Override
@@ -85,11 +74,6 @@ public class ServiceConnection extends OverlayEndpoint {
             }
         }
     };
-
-    @Override
-    public String getDescription() {
-        return super.getDescription() + " " + service.toString() + " serverside=" + serverSide;
-    }
 
     @Override
     protected void handleDelayedOverlayMessage(OSF2FChannelDataMsg msg) {
@@ -108,65 +92,7 @@ public class ServiceConnection extends OverlayEndpoint {
         writeMessageToServerConnection(msg.getData());
     }
 
-    /**
-     * Currently we connect to the server when we get the first message data.
-     */
-    // TODO (isdal): connect to the server on incoming search message and send
-    // reply on successful connect?
-    @Override
-    public void start() {
-        logger.fine(getDescription() + " starting");
-        if (isStarted()) {
-            logger.warning("Tried to start already started service");
-            return;
-        }
-        if (!service.isEnabled()) {
-            logger.fine("Tried to start disabled connection");
-            return;
-        }
-        started = true;
-        if (serverConnection != null) {
-            // serverConnection supplied in the constructor
-            return;
-        }
-        serverConnection = service.createConnection(new ConnectionListener() {
-            @Override
-            public void connectFailure(Throwable failure_msg) {
-                logger.fine(ServiceConnection.this.getDescription() + " connection failure");
-                ServiceConnection.this.close("Exception during connect");
-            }
-
-            @Override
-            public void connectStarted() {
-                logger.fine(ServiceConnection.this.getDescription() + " connect started");
-            }
-
-            @Override
-            public void connectSuccess(ByteBuffer remaining_initial_data) {
-                logger.fine(ServiceConnection.this.getDescription() + " connected");
-                serverConnection.getIncomingMessageQueue().registerQueueListener(
-                        new ServerIncomingMessageListener());
-                synchronized (bufferedMessages) {
-                    for (OSF2FChannelDataMsg msg : bufferedMessages) {
-                        logger.finest("sending queued message: " + msg.getDescription());
-                        writeMessageToServerConnection(msg.getData());
-                    }
-                }
-            }
-
-            @Override
-            public void exceptionThrown(Throwable error) {
-                ServiceConnection.this.close("Exception during connect");
-            }
-
-            @Override
-            public String getDescription() {
-                return ServiceConnection.this.getDescription() + " connect listener";
-            }
-        });
-    }
-
-    private void writeMessageToServerConnection(DirectByteBuffer[] data) {
+    protected void writeMessageToServerConnection(DirectByteBuffer[] data) {
         for (DirectByteBuffer directByteBuffer : data) {
             DataMessage msg = new DataMessage(directByteBuffer);
             logger.finest("writing message to server queue: " + msg.getDescription());
@@ -174,7 +100,7 @@ public class ServiceConnection extends OverlayEndpoint {
         }
     }
 
-    private class ServerIncomingMessageListener implements MessageQueueListener {
+    protected class ServerIncomingMessageListener implements MessageQueueListener {
 
         @Override
         public void dataBytesReceived(int byte_count) {
