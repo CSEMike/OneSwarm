@@ -64,7 +64,7 @@ public interface OSF2FMessage extends Message {
     public static final byte[] ID_OS_PUZZLE_WRAPPER_BYTES = ID_OS_PUZZLE_WRAPPER.getBytes();
     public static final byte SUBID_OS_PUZZLE_WRAPPER = 12 + 64;
 
-    public static final byte LAST_ID = SUBID_OS_DHT_LOCATION;
+    public static final byte LAST_ID = SUBID_OS_PUZZLE_WRAPPER;
 
     public final byte METAINFO_TYPE_BITTORRENT = 0;
     public final byte METAINFO_TYPE_THUMBNAIL = 1;
