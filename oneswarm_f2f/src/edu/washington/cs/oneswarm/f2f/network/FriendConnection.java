@@ -1398,6 +1398,14 @@ public class FriendConnection {
 
     private void sendMessage(OSF2FMessage msg, QueueBuckets queueBuckets, boolean skipQueue) {
         if (!handShakeReceived) {
+
+            // We don't buffer search messages -- if the handshake takes a long
+            // time, a large queue may build up, resulting in a flood.
+            if (msg instanceof OSF2FSearch) {
+                logger.finest("Dropping search message prior to handshake.");
+                return;
+            }
+
             bufferedMessages.add(msg);
             logger.finer(getDescription() + "waiting for handshake to complete, queue size: "
                     + bufferedMessages.size());
