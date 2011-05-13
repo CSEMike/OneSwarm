@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import java.util.Properties;
 import java.util.logging.Logger;
 
+import org.gudy.azureus2.core3.global.GlobalManagerStats;
 import org.gudy.azureus2.core3.util.Constants;
 
 import com.aelitis.azureus.core.AzureusCore;
@@ -73,6 +74,9 @@ public class AnalyticsReporter extends Thread {
         Rate<Long> searchRate = new Rate<Long>();
         Rate<Long> cacheHitRate = new Rate<Long>();
 
+        Rate<Long> textSearchRate = new Rate<Long>();
+        Rate<Long> hashSearchRate = new Rate<Long>();
+
         Rate<Long> uploadRate = new Rate<Long>();
         Rate<Long> downloadRate = new Rate<Long>();
 
@@ -88,25 +92,29 @@ public class AnalyticsReporter extends Thread {
                 double cacheHitRateInst = cacheHitRate.updateAndGetRate(filelistManager
                         .getSearchCacheHits());
 
-                long sessionUL = core.getGlobalManager().getStats().getTotalDataBytesSent()
-                        + core.getGlobalManager().getStats().getTotalProtocolBytesSent();
-                long sessionDL = core.getGlobalManager().getStats().getTotalDataBytesReceived()
-                        + core.getGlobalManager().getStats().getTotalProtocolBytesReceived();
-
-                RotatingBloomFilter recentSearches = f2f.getOverlayManager().getSearchManager()
-                        .getRecentSearchesBloomFilter();
-                analyticsTracker.trackEvent("Stats", "Scalars", "bfStoredSearches",
-                        recentSearches.getPrevFilterNumElements());
-                analyticsTracker.trackEvent("Stats", "Scalars", "bfFalsePostive100000",
-                        (int) (100000 * recentSearches.getPrevFilterFalsePositiveEst()));
+                GlobalManagerStats globalStats = core.getGlobalManager().getStats();
+                long sessionUL = globalStats.getTotalDataBytesSent()
+                        + globalStats.getTotalProtocolBytesSent();
+                long sessionDL = globalStats.getTotalDataBytesReceived()
+                        + globalStats.getTotalProtocolBytesReceived();
 
                 // Heartbeat
                 analyticsTracker.trackPageView("/running.plab", versionString, hostname);
 
                 // Update rates
+
+                // Search rates
                 analyticsTracker.trackEvent("Stats", "Rates", "searchRate", (int) searchRateInst);
                 analyticsTracker.trackEvent("Stats", "Rates", "searchCacheHitRate",
                         (int) cacheHitRateInst);
+                analyticsTracker
+                        .trackEvent("Stats", "Rates", "hashSearchRate", (int) hashSearchRate
+                                .updateAndGetRate(globalStats.getHashSearchesReceived()));
+                analyticsTracker
+                        .trackEvent("Stats", "Rates", "textSearchRate", (int) textSearchRate
+                                .updateAndGetRate(globalStats.getTextSearchesReceived()));
+
+                // Transfer rates
                 analyticsTracker.trackEvent("Stats", "Rates", "upload",
                         (int) uploadRate.updateAndGetRate(sessionUL));
                 analyticsTracker.trackEvent("Stats", "Rates", "download",
@@ -115,6 +123,14 @@ public class AnalyticsReporter extends Thread {
                 // Update scalars
                 analyticsTracker.trackEvent("Stats", "Scalars", "friendConnections", f2f
                         .getOverlayManager().getConnectCount());
+
+                // Bloom filter stats
+                RotatingBloomFilter recentSearches = f2f.getOverlayManager().getSearchManager()
+                        .getRecentSearchesBloomFilter();
+                analyticsTracker.trackEvent("Stats", "Scalars", "bfStoredSearches",
+                        recentSearches.getPrevFilterNumElements());
+                analyticsTracker.trackEvent("Stats", "Scalars", "bfFalsePostive100000",
+                        (int) (100000 * recentSearches.getPrevFilterFalsePositiveEst()));
 
                 System.gc();
                 analyticsTracker.trackEvent("Stats", "Scalars", "mem", (int) Runtime.getRuntime()

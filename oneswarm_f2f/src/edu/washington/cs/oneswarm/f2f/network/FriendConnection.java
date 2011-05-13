@@ -52,6 +52,7 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelReset;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChat;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDhtLocation;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHandshake;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessageDecoder;
@@ -998,6 +999,13 @@ public class FriendConnection {
     private void handleSearch(Message message) {
 
         boolean possiblePrune = true;
+
+        // Update the stats based on the _raw_ volume of searches we observe.
+        if (message instanceof OSF2FTextSearch) {
+            stats.textSearchReceived();
+        } else if (message instanceof OSF2FHashSearch) {
+            stats.hashSearchReceived();
+        }
 
         if (message instanceof OSF2FTextSearch) {
             OSF2FTextSearch asSearch = (OSF2FTextSearch) message;
