@@ -95,8 +95,9 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
         if (buffer == null) {
 
             /*
-             * Format: [0...19] -- Solution to the puzzle [20...27] -- Recent
-             * timestamp [28] -- Wrapped message sub id from OSF2FMessage
+             * Format: [0...19] -- Solution to the puzzle
+             * [20...27] -- Recent timestamp
+             * [28] -- Wrapped message sub id from OSF2FMessage
              * [29...] -- Wrapped message
              */
 
