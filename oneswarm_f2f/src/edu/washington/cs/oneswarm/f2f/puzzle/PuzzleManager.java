@@ -1,18 +1,24 @@
 package edu.washington.cs.oneswarm.f2f.puzzle;
 
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.gudy.azureus2.core3.util.SHA1Hasher;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
-/** A singleton that maintains a thread pool for performance search puzzle generation. */
+import edu.uw.cse.netlab.utils.ByteManip;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FPuzzleSupportingMessage;
+import edu.washington.cs.oneswarm.util.Box;
+
+/** A singleton that generates and checks search puzzle results. */
 public class PuzzleManager {
 
 	/** Logger. */
@@ -50,6 +56,37 @@ public class PuzzleManager {
 			}
 		});
 	}
+
+    /**
+     * Generate the best possible puzzle solution for a given message with a
+     * given timeout.
+     */
+    public byte[] solveMessagePuzzleSynchronous(OSF2FPuzzleSupportingMessage message,
+            long timestamp, final long timeout, final TimeUnit unit) {
+        
+        final CountDownLatch latch = new CountDownLatch(1);
+        final Box<byte[]> result = new Box<byte[]>();
+        ByteArrayOutputStream puzzleBytes = new ByteArrayOutputStream();
+        try {
+            puzzleBytes.write(ByteManip.ltob(timestamp));
+            puzzleBytes.write(message.getPuzzleMaterial());
+            solvePuzzleWithTimeout(puzzleBytes.toByteArray(), 160, timeout, unit,
+                    new PuzzleSolutionCallback() {
+                        @Override
+                        public void solved(byte[] offeredBytes, byte[] bestSolution,
+                                int matchingBits) {
+                            result.set(bestSolution);
+                            latch.countDown();
+                        }
+                    });
+            latch.await();
+        } catch (Exception e) {
+            logger.warning("Error during puzzle solution: " + e.toString());
+            e.printStackTrace();
+            return null;
+        }
+        return result.get();
+    }
 
 	/**
 	 * Searches for a 20 byte entry whose SHA-1 hash matches {@code rawBytesIn} in
@@ -115,4 +152,23 @@ public class PuzzleManager {
 		}
 		return count;
 	}
+
+    /**
+     * Returns true iff the timestamp is within the acceptable window for
+     * puzzles.
+     */
+    public static boolean isValidTimestamp(long timestamp) {
+        return timestamp + 30 * 60 * 1000 < System.currentTimeMillis()
+                && System.currentTimeMillis() > timestamp;
+    }
+
+    /**
+     * Returns a valid puzzle timestamp. Something in the 20 minutes, at least 5
+     * minutes ago, rounded to the nearest 10 seconds.
+     */
+    public long getTimestamp() {
+        long lower = System.currentTimeMillis() - (15 * 60 * 1000);
+        long out = random.nextInt(10 * 60 * 1000);
+        return out - (out % 10000);
+    }
 }

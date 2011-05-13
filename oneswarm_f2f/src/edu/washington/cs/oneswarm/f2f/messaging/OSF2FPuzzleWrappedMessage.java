@@ -1,14 +1,18 @@
 package edu.washington.cs.oneswarm.f2f.messaging;
 
+import java.util.logging.Logger;
+
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 import org.gudy.azureus2.core3.util.DirectByteBufferPool;
 import org.gudy.azureus2.core3.util.SHA1Hasher;
 
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 import com.aelitis.azureus.core.peermanager.messaging.MessageException;
-import com.google.inject.internal.Preconditions;
+import com.google.common.base.Preconditions;
 
+import edu.uw.cse.netlab.utils.ByteManip;
 import edu.washington.cs.oneswarm.f2f.puzzle.PuzzleManager;
+
 
 /**
  * A message that wraps another message with a solution to a computational
@@ -19,6 +23,9 @@ import edu.washington.cs.oneswarm.f2f.puzzle.PuzzleManager;
  * {@code getPuzzleMaterial()}.)
  */
 public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
+
+    private final static Logger logger = Logger
+            .getLogger(OSF2FPuzzleWrappedMessage.class.getName());
 
     private final byte version;
 
@@ -213,11 +220,22 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
      */
     public short computePuzzleMatchingBits(OSF2FPuzzleSupportingMessage convertedType) {
         if (solutionMatchingBits == -1) {
-            SHA1Hasher hasher = new SHA1Hasher();
-            byte[] targetHash = hasher.calculateHash(convertedType.getPuzzleMaterial());
-            byte[] solutionHash = hasher.calculateHash(puzzleSolution);
-            solutionMatchingBits = PuzzleManager.computeMatchingBitsLeftToRight(solutionHash,
-                    targetHash);
+
+            // First, verify that the timestamp is within the last 30 minutes.
+            if (PuzzleManager.isValidTimestamp(timestamp)) {
+                solutionMatchingBits = 0;
+
+                logger.warning("Puzzle message has an invalid timestamp: "
+                        + (System.currentTimeMillis() - timestamp) / 1000.0 + " ago");
+            } else {
+                // If the timestamp checks out, verify the actual hash.
+                SHA1Hasher hasher = new SHA1Hasher();
+                hasher.update(ByteManip.ltob(timestamp));
+                byte[] targetHash = hasher.calculateHash(convertedType.getPuzzleMaterial());
+                byte[] solutionHash = hasher.calculateHash(puzzleSolution);
+                solutionMatchingBits = PuzzleManager.computeMatchingBitsLeftToRight(solutionHash,
+                        targetHash);
+            }
         }
         return solutionMatchingBits;
     }
@@ -245,11 +263,10 @@ public class OSF2FPuzzleWrappedMessage implements OSF2FMessage {
      * Creates a puzzle wrapped message from a raw byte buffer.
      */
     public OSF2FPuzzleWrappedMessage(byte version, byte messageSubId,
-            DirectByteBuffer[] wrappedMessage,
-            int wrappedMessageSize, long timestamp, byte[] puzzleSolution) {
+            DirectByteBuffer[] wrappedMessage, int wrappedMessageSize, long timestamp,
+            byte[] puzzleSolution) {
 
-        // All puzzle solutions are 20 bytes.
-        Preconditions.checkArgument(puzzleSolution.length == 20);
+        Preconditions.checkState(puzzleSolution.length == 20, "Puzzle solutions must be 20 bytes.");
 
         this.timestamp = timestamp;
         this.messageSubId = messageSubId;

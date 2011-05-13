@@ -17,6 +17,7 @@ import java.util.StringTokenizer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -49,6 +50,7 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelReset;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FPuzzleWrappedMessage;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FSearchCancel;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FSearchResp;
@@ -57,6 +59,7 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FTextSearchResp;
 import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExecutionEntry;
 import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExecutor;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayRegistrationError;
+import edu.washington.cs.oneswarm.f2f.puzzle.PuzzleManager;
 import edu.washington.cs.oneswarm.f2f.share.ShareManagerTools;
 import edu.washington.cs.oneswarm.ui.gwt.BackendErrorLog;
 
@@ -1062,6 +1065,7 @@ public class SearchManager {
     }
 
     public int sendTextSearch(String searchString, TextSearchListener listener) {
+
         int newSearchId = 0;
         while (newSearchId == 0) {
             newSearchId = random.nextInt();
@@ -1072,8 +1076,24 @@ public class SearchManager {
             searchString = handleKeyWords(searchString);
         }
 
-        OSF2FSearch search = new OSF2FTextSearch(OSF2FMessage.CURRENT_VERSION,
+        OSF2FTextSearch search = new OSF2FTextSearch(OSF2FMessage.CURRENT_VERSION,
                 OSF2FMessage.FILE_LIST_TYPE_PARTIAL, newSearchId, searchString);
+
+        /*
+         * This function is called from a jetty worker thread. We can spend some
+         * time computing a puzzle result here without blocking any critical
+         * tasks.
+         */
+        long timestamp = PuzzleManager.get().getTimestamp();
+        // Best solution we can generate in 500 milliseconds.
+        byte[] solution = PuzzleManager.get().solveMessagePuzzleSynchronous(search, timestamp, 500,
+                TimeUnit.MILLISECONDS);
+        if (solution != null) {
+            OSF2FPuzzleWrappedMessage wrapper = new OSF2FPuzzleWrappedMessage(
+                    OSF2FPuzzleWrappedMessage.CURRENT_VERSION, search, timestamp, solution);
+            search.setPuzzleWrapper(wrapper);
+        }
+
         textSearchManager.sentSearch(newSearchId, searchString, listener);
         sendSearch(newSearchId, search, false);
         return newSearchId;

@@ -1672,7 +1672,6 @@ public class FriendConnection {
                 notifyListenerComplete(filelistManager.getFriendsList(remoteFriend));
 
                 // now, try so sync up all the thumbnails
-
                 final List<byte[]> neededThumbnails = filelistManager.getMetaInfoManager()
                         .getTorrentThumbnailNeeded(newInfoHashes);
 
@@ -1879,13 +1878,6 @@ public class FriendConnection {
     private class MetaInfoRequestHandler {
 
         public final static int MAX_METAINFO_REQUEST_AGE = 10 * 60 * 1000;
-
-        // private final ConcurrentHashMap<Integer, Long> lastMsgTimes = new
-        // ConcurrentHashMap<Integer, Long>();
-        // private final ConcurrentHashMap<Integer, Long> sentRequests = new
-        // ConcurrentHashMap<Integer, Long>();
-        // private final HashMap<Integer, List<PluginCallback<byte[]>>>
-        // callbacks = new HashMap<Integer, List<PluginCallback<byte[]>>>();
 
         private final ConcurrentHashMap<Long, MetaInfoRequest> imageRequests = new ConcurrentHashMap<Long, MetaInfoRequest>();
 

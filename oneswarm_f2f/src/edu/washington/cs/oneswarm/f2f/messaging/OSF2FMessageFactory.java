@@ -110,8 +110,8 @@ public class OSF2FMessageFactory {
                     new OSF2FDhtLocation(OSF2FDhtLocation.CURRENT_VERSION, null, null));
             
             MessageManager.getSingleton().registerMessageType(
-                    new OSF2FPuzzleWrappedMessage(OSF2FPuzzleWrappedMessage.CURRENT_VERSION, null,
-                            0, new byte[20]));
+                    new OSF2FPuzzleWrappedMessage(OSF2FPuzzleWrappedMessage.CURRENT_VERSION,
+                            (byte) 0, null, 0, 0, new byte[20]));
 
         } catch (MessageException me) {
             me.printStackTrace();
