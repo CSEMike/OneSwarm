@@ -183,7 +183,5 @@ public class AnalyticsReporter extends Thread {
         System.out.println("Done with tracking events.");
 
         Thread.sleep(1000);
-
     }
-
 }
