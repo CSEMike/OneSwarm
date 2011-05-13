@@ -1486,75 +1486,8 @@ public class FriendConnection {
         return desc;
     }
 
-    // private class OutgoingQueueListener implements
-    // OutgoingMessageQueue.MessageQueueListener {
-    //
-    // private long packetNum = 0;
-    //
-    // public void dataBytesSent(int byte_count) {
-    // dataBytesUploaded += byte_count;
-    // remoteFriend.updateUploaded(byte_count);
-    // }
-    //
-    // public boolean messageAdded(Message message) {
-    //
-    // queueLengthBytes = connection.getOutgoingMessageQueue().getTotalSize();
-    // // System.out.println(" added: " + message + " , queue: "
-    // // + queueLengthBytes + " bytes ");
-    // messageQueueTimes.put(message.hashCode(), System.currentTimeMillis());
-    // return (true);
-    // }
-    //
-    // public void messageQueued(Message message) {
-    // // System.out.println(" queued: " + message);
-    // }
-    //
-    // public void messageRemoved(Message message) {
-    // // System.out.println(" removed: " + message);
-    // messageQueueTimes.remove(message.hashCode());
-    // queueLengthBytes = connection.getOutgoingMessageQueue().getTotalSize();
-    // message.destroy();
-    // }
-    //
-    // public void messageSent(Message message) {
-    // lastMessageSentTime = System.currentTimeMillis();
-    // packetNum++;
-    // int len = 0;
-    // DirectByteBuffer[] b = message.getData();
-    // for (int i = 0; i < b.length; i++) {
-    // len += b[i].position(DirectByteBuffer.SS_NET);
-    // }
-    // queueLengthBytes = connection.getOutgoingMessageQueue().getTotalSize();
-    // Long queued = messageQueueTimes.remove(message.hashCode());
-    //
-    // if (queued != null) {
-    // queueLengthMs = System.currentTimeMillis() - queued;
-    // }
-    // if (!message.getID().equals(OSF2FMessage.ID_OS_CHANNEL_MSG) || packetNum
-    // % 100 == 0) {
-    // logger.fine(" sent: " + message.getDescription() + " " + len +
-    // " bytes, queue: " + queueLengthBytes + " (" + queueLengthMs + "ms) \t::"
-    // + FriendConnection.this);
-    // // printRatelimitInfo();
-    // }
-    //
-    // readyForWrite();
-    // }
-    //
-    // public void protocolBytesSent(int byte_count) {
-    // protocolBytesUploaded += byte_count;
-    // remoteFriend.updateUploaded(byte_count);
-    // }
-    //
-    // public void flush() {
-    // }
-    // }
-
     public void triggerFileListSend() {
         this.sendFileListResponse(OSF2FMessage.FILE_LIST_TYPE_COMPLETE, 0, -1, false);
-        // if (remoteFriend.isRequestFileList()) {
-        // sendFileListRequest(OSF2FMessage.FILE_LIST_TYPE_COMPLETE, null);
-        // }
     }
 
     public String getDebugMessageLog() {
