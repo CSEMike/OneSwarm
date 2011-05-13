@@ -16,6 +16,7 @@ import com.dmurph.tracking.JGoogleAnalyticsTracker.GoogleAnalyticsVersion;
 
 import edu.washington.cs.oneswarm.f2f.FileListManager;
 import edu.washington.cs.oneswarm.f2f.OSF2FMain;
+import edu.washington.cs.oneswarm.f2f.network.SearchManager.RotatingBloomFilter;
 
 public class AnalyticsReporter extends Thread {
 
@@ -91,6 +92,13 @@ public class AnalyticsReporter extends Thread {
                         + core.getGlobalManager().getStats().getTotalProtocolBytesSent();
                 long sessionDL = core.getGlobalManager().getStats().getTotalDataBytesReceived()
                         + core.getGlobalManager().getStats().getTotalProtocolBytesReceived();
+
+                RotatingBloomFilter recentSearches = f2f.getOverlayManager().getSearchManager()
+                        .getRecentSearchesBloomFilter();
+                analyticsTracker.trackEvent("Stats", "Scalars", "bfStoredSearches",
+                        recentSearches.getPrevFilterNumElements());
+                analyticsTracker.trackEvent("Stats", "Scalars", "bfFalsePostive100000",
+                        (int) (100000 * recentSearches.getPrevFilterFalsePositiveEst()));
 
                 // Heartbeat
                 analyticsTracker.trackPageView("/running.plab", versionString, hostname);

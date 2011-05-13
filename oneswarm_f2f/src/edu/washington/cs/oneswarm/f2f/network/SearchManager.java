@@ -165,6 +165,7 @@ public class SearchManager {
         COConfigurationManager.addAndFireParameterListeners(new String[] { "LAN Speed Enabled",
                 "Max Upload Speed KBs", "oneswarm.search.filter.keywords", "f2f_search_max_paths",
                 "f2f_search_forward_delay" }, new ParameterListener() {
+            @Override
             public void parameterChanged(String parameterName) {
                 includeLanUploads = !COConfigurationManager
                         .getBooleanParameter("LAN Speed Enabled");
@@ -1133,6 +1134,7 @@ public class SearchManager {
             this.count = count;
         }
 
+        @Override
         public int compareTo(DebugChannelIdEntry o) {
             if (o.count > count) {
                 return 1;
@@ -1339,6 +1341,7 @@ public class SearchManager {
 
         class DelayedSearchQueueThread implements Runnable {
 
+            @Override
             public void run() {
                 while (true) {
                     try {
@@ -1445,7 +1448,7 @@ public class SearchManager {
         }
     }
 
-    static class RotatingBloomFilter {
+    public static class RotatingBloomFilter {
         private static final int OBJECTS_TO_STORE = 1000000;
 
         private static final int SIZE_IN_BITS = 10240 * 1024;
@@ -1570,8 +1573,9 @@ public class SearchManager {
                     int2 = rand.nextInt();
                     bytes = bytesFromInts(int1, int2);
                 } while (inserts.contains(new String(Base64.encode(bytes))) == true);
-                if (bf.contains(int1, int2) == true)
+                if (bf.contains(int1, int2) == true) {
                     fps++;
+                }
             }
 
             System.out.println("false positive check, " + fps + "/" + to_check);
@@ -1747,4 +1751,8 @@ public class SearchManager {
         return false;
     }
 
+    // Only visible for the analytics code
+    public RotatingBloomFilter getRecentSearchesBloomFilter() {
+        return recentSearches;
+    }
 }
