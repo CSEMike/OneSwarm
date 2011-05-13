@@ -68,15 +68,27 @@ GlobalManagerStats
 	public void dataBytesReceived( int bytes, boolean LAN );
 	public void protocolBytesReceived( int bytes, boolean LAN );
 	
-	//*************************************************
-	public void f2fBytesSent( int bytes );
-	public void f2fBytesReceived( int bytes );
-	public long getTotalF2FBytesSent();
-  public long getTotalF2FBytesReceived();
-  //*************************************************
-
-	
 	public void
 	discarded(
 		int		bytes );
+
+    // *************************************************
+    // Additions for F2F processing.
+    // *************************************************
+    public void f2fBytesSent(int bytes);
+    public void f2fBytesReceived(int bytes);
+    public long getTotalF2FBytesSent();
+    public long getTotalF2FBytesReceived();
+
+    public void textSearchReceived();
+    public void hashSearchReceived();
+    public void sha1PrefixSearchReceived();
+    public void ed2kPrefixSearchReceived();
+    public void idPrefixSearchReceived();
+    public long getTextSearchesReceived();
+    public long getHashSearchesReceived();
+    public long getIdPrefixSearchesReceived();
+    public long getE2dkPrefixSearchesReceived();
+    public long getSha1PrefixSearchesReceived();
+
 }

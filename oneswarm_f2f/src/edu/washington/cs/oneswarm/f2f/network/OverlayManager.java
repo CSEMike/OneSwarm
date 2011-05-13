@@ -133,6 +133,7 @@ public class OverlayManager {
                 "f2f_overlay_emulate_link_latency_max", "f2f_search_emulate_hops_min",
                 "f2f_search_emulate_hops_max", "f2f_search_forward_delay",
                 "f2f_forward_search_probability" }, new ParameterListener() {
+            @Override
             public void parameterChanged(String parameterName) {
                 mMIN_DELAY_LINK_LATENCY = COConfigurationManager
                         .getIntParameter("f2f_search_emulate_hops_min")
@@ -367,20 +368,6 @@ public class OverlayManager {
     public List<FriendConnection> getFriendConnections() {
         return new ArrayList<FriendConnection>(connections.values());
     }
-
-    // private int parallelConnectCount(InetAddress remoteIP, byte[]
-    // remotePubKey) {
-    // int count = 0;
-    // for (FriendConnection overlayConnection : connections.values()) {
-    // if (overlayConnection.getRemoteIp().equals(remoteIP)
-    // && Arrays.equals(overlayConnection.getRemotePublicKey(),
-    // remotePubKey)) {
-    // count++;
-    // }
-    // }
-    //
-    // return count;
-    // }
 
     public long getLastConnectionCheckRun() {
         return lastConnectionCheckRun;

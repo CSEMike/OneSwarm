@@ -1448,7 +1448,7 @@ public class SearchManager {
         }
     }
 
-    static class RotatingBloomFilter {
+    public static class RotatingBloomFilter {
         private static final int OBJECTS_TO_STORE = 1000000;
 
         private static final int SIZE_IN_BITS = 10240 * 1024;
@@ -1720,4 +1720,8 @@ public class SearchManager {
         return false;
     }
 
+    // Only visible for the analytics code
+    public RotatingBloomFilter getRecentSearchesBloomFilter() {
+        return recentSearches;
+    }
 }

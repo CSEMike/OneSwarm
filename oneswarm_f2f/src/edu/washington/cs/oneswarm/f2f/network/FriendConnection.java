@@ -53,6 +53,7 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelReset;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChat;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDhtLocation;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHandshake;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessageDecoder;
@@ -1013,6 +1014,23 @@ public class FriendConnection {
 
         boolean possiblePrune = true;
 
+        // Update the stats based on the _raw_ volume of searches we observe.
+        if (message instanceof OSF2FTextSearch) {
+            OSF2FTextSearch cast = (OSF2FTextSearch) message;
+            if (cast.getSearchString().startsWith("sha1;")) {
+                stats.sha1PrefixSearchReceived();
+            } else if (cast.getSearchString().startsWith("ed2k;")) {
+                stats.ed2kPrefixSearchReceived();
+            } else if (cast.getSearchString().startsWith("id;")) {
+                stats.idPrefixSearchReceived();
+            } else {
+                stats.textSearchReceived();
+            }
+
+        } else if (message instanceof OSF2FHashSearch) {
+            stats.hashSearchReceived();
+        }
+
         if (message instanceof OSF2FTextSearch) {
             OSF2FTextSearch asSearch = (OSF2FTextSearch) message;
             if (asSearch.getSearchString().startsWith("sha1;") == false
@@ -1397,6 +1415,14 @@ public class FriendConnection {
      */
     private void sendMessage(OSF2FMessage msg, QueueBuckets queueBuckets, boolean skipQueue) {
         if (!handShakeReceived) {
+
+            // We don't buffer search messages -- if the handshake takes a long
+            // time, a large queue may build up, resulting in a flood.
+            if (msg instanceof OSF2FSearch) {
+                logger.finest("Dropping search message prior to handshake.");
+                return;
+            }
+
             bufferedMessages.add(msg);
             logger.finer(getDescription() + "waiting for handshake to complete, queue size: "
                     + bufferedMessages.size());
