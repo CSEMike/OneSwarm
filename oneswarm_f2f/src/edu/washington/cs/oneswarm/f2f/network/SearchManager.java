@@ -700,6 +700,14 @@ public class SearchManager {
         // create the overlay transport
         byte[] infoHash = filelistManager.getMetainfoHash(hashSearch.getInfohashhash());
         if (infoHash == null) {
+
+            if (ReflectionUtils.isExperimental()
+                    && Boolean.TRUE == ReflectionUtils.invokeExperimentalMethod(
+                            "processSpecialSearchResponse", hashSearch)) {
+                logger.info("Search response handled in experimental code. Skipping.");
+                return;
+            }
+
             logger.warning("got channel setup request, " + "but the infohash we searched for "
                     + "is not in filelistmananger");
             return;

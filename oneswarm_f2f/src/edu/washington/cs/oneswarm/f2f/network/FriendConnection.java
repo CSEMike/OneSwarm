@@ -602,14 +602,6 @@ public class FriendConnection {
         return super.equals(obj);
     }
 
-    // public boolean equals(Object o) {
-    // if (o instanceof FriendConnection) {
-    // FriendConnection fc = (FriendConnection) o;
-    // return Arrays.equals(fc.getRemotePublicKey(), getRemotePublicKey());
-    // }
-    // return false;
-    // }
-
     public long getConnectionAge() {
         return System.currentTimeMillis() - connectionTime;
     }
@@ -630,10 +622,6 @@ public class FriendConnection {
         return friendConnectionQueue.getForwardQueueBytes();
     }
 
-    // public long getForwardQueueLengthMs() {
-    // return friendConnectionQueue.getForwardQueueMs();
-    // }
-
     public long getLastMessageRecvTime() {
         return System.currentTimeMillis() - lastByteRecvTime;
     }
@@ -642,8 +630,6 @@ public class FriendConnection {
         return friendConnectionQueue.getLastMessageSentTime();
     }
 
-    // private long protocolBytesUploaded = 0;
-    // private long dataBytesUploaded = 0;
     NetworkConnection getNetworkConnection() {
         return connection;
     }

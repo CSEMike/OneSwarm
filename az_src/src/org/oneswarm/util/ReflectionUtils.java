@@ -21,6 +21,12 @@ public class ReflectionUtils {
      * arguments.
      */
     public static Object invokeExperimentalMethod(String methodName, Object... args) {
+
+        // Just in case we missed a check elsewhere.
+        if (isExperimental() == false) {
+            return null;
+        }
+
         try {
             Class<?> expConfigManagerClass = Class
                     .forName("edu.washington.cs.oneswarm.planetlab.ExperimentConfigManager");
