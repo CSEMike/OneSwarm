@@ -530,7 +530,7 @@ public class SearchManager {
                 final OSF2FHashSearchResp response = new OSF2FHashSearchResp(
                         OSF2FMessage.CURRENT_VERSION, msg.getSearchID(), newChannelId, pathID);
 
-                ServiceConnection conn = new ServiceConnection(service, source, newChannelId,
+                ServiceConnection conn = new ServerServiceConnection(service, source, newChannelId,
                         transportFakePathId);
                 // register it with the friendConnection
                 source.registerOverlayTransport(conn);

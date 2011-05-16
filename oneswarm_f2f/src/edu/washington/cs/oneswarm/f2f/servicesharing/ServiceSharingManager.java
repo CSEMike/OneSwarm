@@ -18,13 +18,16 @@ import com.aelitis.azureus.core.networkmanager.NetworkManager.ByteMatcher;
 import com.aelitis.azureus.core.networkmanager.NetworkManager.RoutingListener;
 import com.aelitis.azureus.core.networkmanager.impl.TransportHelper;
 import com.aelitis.azureus.core.networkmanager.impl.tcp.IncomingSocketChannelManager;
+import com.aelitis.azureus.core.networkmanager.impl.tcp.ProtocolEndpointTCP;
 import com.aelitis.azureus.core.peermanager.messaging.MessageStreamDecoder;
 import com.aelitis.azureus.core.peermanager.messaging.MessageStreamEncoder;
 import com.aelitis.azureus.core.peermanager.messaging.MessageStreamFactory;
 
 import edu.washington.cs.oneswarm.f2f.BigFatLock;
+import edu.washington.cs.oneswarm.f2f.OSF2FMain;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.network.OverlayManager;
+import edu.washington.cs.oneswarm.f2f.network.SearchManager;
 import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage.RawMessageDecoder;
 import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage.RawMessageEncoder;
 
@@ -105,10 +108,15 @@ public class ServiceSharingManager {
     }
 
     public SharedService handleSearch(OSF2FHashSearch search) {
+        long searchKey = search.getInfohashhash();
+        return getSharedService(searchKey);
+    }
+
+    private SharedService getSharedService(long infohashhash) {
         SharedService service = null;
         try {
             lock.lock();
-            service = serverServices.get(search.getInfohashhash());
+            service = serverServices.get(infohashhash);
         } finally {
             lock.unlock();
         }
@@ -119,7 +127,20 @@ public class ServiceSharingManager {
         return service;
     }
 
-    public static class ClientService {
+    public static class ClientService implements RoutingListener {
+        private final class RawMessageFactory implements MessageStreamFactory {
+            @Override
+            public MessageStreamEncoder createEncoder() {
+
+                return new RawMessageEncoder();
+            }
+
+            @Override
+            public MessageStreamDecoder createDecoder() {
+                return new RawMessageDecoder();
+            }
+        }
+
         private static class PortMatcher implements ByteMatcher {
 
             private final int port;
@@ -202,30 +223,7 @@ public class ServiceSharingManager {
                         .getByName("127.0.0.1"));
                 int port = getPort();
                 NetworkManager.getSingleton().requestIncomingConnectionRouting(
-                        new PortMatcher(port), new RoutingListener() {
-                            @Override
-                            public void connectionRouted(NetworkConnection connection,
-                                    Object routing_data) {
-                                logger.info("connection routed");
-
-                            }
-
-                            @Override
-                            public boolean autoCryptoFallback() {
-                                return false;
-                            }
-                        }, new MessageStreamFactory() {
-                            @Override
-                            public MessageStreamEncoder createEncoder() {
-
-                                return new RawMessageEncoder();
-                            }
-
-                            @Override
-                            public MessageStreamDecoder createDecoder() {
-                                return new RawMessageDecoder();
-                            }
-                        });
+                        new PortMatcher(port), this, new RawMessageFactory());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -238,6 +236,33 @@ public class ServiceSharingManager {
 
         public String toString() {
             return "Service: " + getName() + " port=" + getPort() + " key=" + serverSearchKey;
+        }
+
+        @Override
+        public void connectionRouted(NetworkConnection incomingConnection, Object routing_data) {
+            logger.info("connection routed");
+            // Check if local
+            final SharedService sharedService = ServiceSharingManager.getInstance()
+                    .getSharedService(serverSearchKey);
+            if (sharedService != null) {
+                logger.info("got request for local service, doing loopback");
+                ServiceSharingLoopback loopback = new ServiceSharingLoopback(sharedService,
+                        incomingConnection);
+                loopback.connect();
+            } else {
+                logger.info("sending search to " + serverSearchKey);
+                SearchManager searchManager = OSF2FMain.getSingelton().getOverlayManager()
+                        .getSearchManager();
+                // searchManager.sendHashSearch(infoHash)
+                // OSF2FHashSearch search = new
+                // OSF2FHashSearch(OSF2FMessage.CURRENT_VERSION,
+                // searchID, infohashhash)
+            }
+        }
+
+        @Override
+        public boolean autoCryptoFallback() {
+            return false;
         }
     }
 
@@ -265,39 +290,48 @@ public class ServiceSharingManager {
             return enabled;
         }
 
-        public NetworkConnection createConnection(final ConnectionListener listener) {
+        public NetworkConnection createConnection() {
             ConnectionEndpoint target = new ConnectionEndpoint(address);
+            target.addProtocol(new ProtocolEndpointTCP(address));
             NetworkConnection conn = NetworkManager.getSingleton().createConnection(target,
                     new RawMessageEncoder(), new RawMessageDecoder(), false, false, new byte[0][0]);
-            conn.connect(false, new ConnectionListener() {
 
-                @Override
-                public String getDescription() {
-                    return name + "Listener";
-                }
-
-                @Override
-                public void exceptionThrown(Throwable error) {
-                    listener.exceptionThrown(error);
-                }
-
-                @Override
-                public void connectSuccess(ByteBuffer remaining_initial_data) {
-                    listener.connectSuccess(remaining_initial_data);
-                }
-
-                @Override
-                public void connectStarted() {
-                    listener.connectStarted();
-                }
-
-                @Override
-                public void connectFailure(Throwable failure_msg) {
-                    lastFailedConnect = System.currentTimeMillis();
-                    listener.connectFailure(failure_msg);
-                }
-            });
             return conn;
+        }
+
+        public void connect(NetworkConnection conn, final ConnectionListener listener) {
+            try {
+                conn.connect(true, new ConnectionListener() {
+
+                    @Override
+                    public String getDescription() {
+                        return name + "Listener";
+                    }
+
+                    @Override
+                    public void exceptionThrown(Throwable error) {
+                        listener.exceptionThrown(error);
+                    }
+
+                    @Override
+                    public void connectSuccess(ByteBuffer remaining_initial_data) {
+                        listener.connectSuccess(remaining_initial_data);
+                    }
+
+                    @Override
+                    public void connectStarted() {
+                        listener.connectStarted();
+                    }
+
+                    @Override
+                    public void connectFailure(Throwable failure_msg) {
+                        lastFailedConnect = System.currentTimeMillis();
+                        listener.connectFailure(failure_msg);
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         public String toString() {

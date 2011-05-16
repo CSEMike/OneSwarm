@@ -40,7 +40,8 @@ public class ServerServiceConnection extends ServiceConnection {
             return;
         }
         started = true;
-        serverConnection = serverService.createConnection(new ConnectionListener() {
+        serverConnection = serverService.createConnection();
+        serverService.connect(serverConnection, new ConnectionListener() {
             @Override
             public void connectFailure(Throwable failure_msg) {
                 logger.fine(ServerServiceConnection.this.getDescription() + " connection failure");

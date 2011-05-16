@@ -15,10 +15,9 @@ import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 import com.aelitis.azureus.core.peermanager.messaging.MessageStreamDecoder;
 import com.aelitis.azureus.core.peermanager.messaging.MessageStreamEncoder;
 
-import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 
-public class DataMessage extends OSF2FChannelDataMsg {
+public class DataMessage implements OSF2FMessage {
     private static final byte SS = DirectByteBuffer.SS_MSG;
 
     private DirectByteBuffer buffer = null;
@@ -27,7 +26,7 @@ public class DataMessage extends OSF2FChannelDataMsg {
     private final int size;
 
     public DataMessage(DirectByteBuffer _buffer) {
-        super(OSF2FMessage.CURRENT_VERSION, 1, _buffer);
+        this.buffer = _buffer;
         size = _buffer.remaining(SS);
         desc = "Raw message: " + size + " bytes";
     }
@@ -107,7 +106,6 @@ public class DataMessage extends OSF2FChannelDataMsg {
 
     static class RawMessageDecoder implements MessageStreamDecoder {
 
-        private static int MAX_PAYLOAD = OSF2FMessage.MAX_PAYLOAD_SIZE;
         DirectByteBuffer payload_buffer;
         private boolean paused = false;
 
@@ -133,20 +131,19 @@ public class DataMessage extends OSF2FChannelDataMsg {
             int bytes_left = max_bytes;
             while (bytes_left > 0) {
                 if (payload_buffer == null) {
-                    payload_buffer = DirectByteBufferPool.getBuffer(SS, MAX_PAYLOAD);
+                    payload_buffer = DirectByteBufferPool.getBuffer(SS, MAX_PAYLOAD_SIZE);
                 }
                 if (paused) {
                     break;
                 }
-                long read = transport.read(new ByteBuffer[] { payload_buffer.getBuffer(SS) }, 0,
-                        bytes_left);
+                long read = transport.read(new ByteBuffer[] { payload_buffer.getBuffer(SS) }, 0, 1);
                 bytes_left -= read;
                 // Message is done if:
                 // * payload is full
                 // * transport has no more data
                 if (payload_buffer.remaining(SS) == 0 || read == 0) {
                     if (payload_buffer.position(SS) > 0) {
-                        payload_buffer.position(SS, 0);
+                        payload_buffer.flip(SS);
                         Message msg = new DataMessage(payload_buffer);
                         messages_last_read.add(msg);
                         payload_buffer = null;
@@ -172,7 +169,7 @@ public class DataMessage extends OSF2FChannelDataMsg {
 
         @Override
         public int getPercentDoneOfCurrentMessage() {
-            return (int) (getDataBytesDecoded() * 100.0 / MAX_PAYLOAD);
+            return (int) (getDataBytesDecoded() * 100.0 / MAX_PAYLOAD_SIZE);
         }
 
         @Override

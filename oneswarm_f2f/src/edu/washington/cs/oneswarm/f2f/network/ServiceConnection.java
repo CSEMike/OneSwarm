@@ -11,7 +11,6 @@ import com.aelitis.azureus.core.peermanager.messaging.Message;
 
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager.ClientService;
 
 public abstract class ServiceConnection extends OverlayEndpoint {
     /**
@@ -51,12 +50,6 @@ public abstract class ServiceConnection extends OverlayEndpoint {
     protected NetworkConnection serverConnection;
 
     public ServiceConnection(FriendConnection connection, int channelId, int pathID) {
-        super(connection, channelId, pathID, 0);
-        this.bufferedMessages = new LinkedList<OSF2FChannelDataMsg>();
-    }
-
-    public ServiceConnection(NetworkConnection serverConnection, ClientService service,
-            FriendConnection connection, int channelId, int pathID) {
         super(connection, channelId, pathID, 0);
         this.bufferedMessages = new LinkedList<OSF2FChannelDataMsg>();
     }
