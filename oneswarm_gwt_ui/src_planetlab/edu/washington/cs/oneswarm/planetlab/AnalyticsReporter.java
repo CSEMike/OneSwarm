@@ -80,6 +80,10 @@ public class AnalyticsReporter extends Thread {
         Rate<Long> e2dkSearchRate = new Rate<Long>();
         Rate<Long> sha1SearchRate = new Rate<Long>();
 
+        Rate<Long> outgoingTextSearchRate = new Rate<Long>();
+        Rate<Long> outgoingHashSearchRate = new Rate<Long>();
+        Rate<Long> outgoingSearchCancelRate = new Rate<Long>();
+
         Rate<Long> uploadRate = new Rate<Long>();
         Rate<Long> downloadRate = new Rate<Long>();
 
@@ -106,7 +110,7 @@ public class AnalyticsReporter extends Thread {
 
                 // Update rates
 
-                // Search rates
+                // Incoming Search rates
                 analyticsTracker.trackEvent("Stats", "Rates", "searchRate", (int) searchRateInst);
                 analyticsTracker.trackEvent("Stats", "Rates", "searchCacheHitRate",
                         (int) cacheHitRateInst);
@@ -125,6 +129,17 @@ public class AnalyticsReporter extends Thread {
                 analyticsTracker.trackEvent("Stats", "Rates", "sha1SearchRate",
                         (int) sha1SearchRate.updateAndGetRate(globalStats
                                 .getSha1PrefixSearchesReceived()));
+
+                // Outgoing search rates
+                analyticsTracker.trackEvent("Search", "Outgoing", "outgoingTextSearches",
+                        (int) outgoingTextSearchRate.updateAndGetRate(globalStats
+                                .getTextSearchesSent()));
+                analyticsTracker.trackEvent("Search", "Outgoing", "outgoingHashSearches",
+                        (int) outgoingHashSearchRate.updateAndGetRate(globalStats
+                                .getHashSearchesSent()));
+                analyticsTracker.trackEvent("Search", "Outgoing", "outgoingSearchCancels",
+                        (int) outgoingSearchCancelRate.updateAndGetRate(globalStats
+                                .getSearchCancelsSent()));
 
                 // Transfer rates
                 analyticsTracker.trackEvent("Stats", "Rates", "upload",

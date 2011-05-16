@@ -75,6 +75,10 @@ GlobalManagerStatsImpl
     private long e2dkPrefixSearchesReceived = 0;
     private long sha1PrefixSearchesReceived = 0;
 
+    long textSearchesSent = 0;
+    long hashSearchesSent = 0;
+    long searchCancelsSent = 0;
+
     @Override
     public long getTotalF2FBytesSent() {
     	return f2f_bytes_sent;
@@ -310,5 +314,35 @@ GlobalManagerStatsImpl
     @Override
     public long getSha1PrefixSearchesReceived() {
         return sha1PrefixSearchesReceived;
+    }
+
+    @Override
+    public void textSearchSent() {
+        textSearchesSent++;
+    }
+
+    @Override
+    public void hashSearchSent() {
+        hashSearchesSent++;
+    }
+
+    @Override
+    public void searchCancelSent() {
+        searchCancelsSent++;
+    }
+
+    @Override
+    public long getTextSearchesSent() {
+        return textSearchesSent;
+    }
+
+    @Override
+    public long getHashSearchesSent() {
+        return hashSearchesSent;
+    }
+
+    @Override
+    public long getSearchCancelsSent() {
+        return searchCancelsSent;
     }
 }

@@ -1441,6 +1441,14 @@ public class FriendConnection {
         }
         outgoingSearchRate.addValue(1);
 
+        if (search instanceof OSF2FTextSearch) {
+            stats.textSearchSent();
+        } else if (search instanceof OSF2FHashSearch) {
+            stats.hashSearchSent();
+        } else if (search instanceof OSF2FSearchCancel) {
+            stats.searchCancelSent();
+        }
+
         if (logger.isLoggable(Level.FINE) && search instanceof OSF2FTextSearch) {
             logger.finer("Forwarding text search: " + ((OSF2FTextSearch) search).getSearchString());
         }

@@ -21,10 +21,6 @@
 
 package org.gudy.azureus2.core3.global;
 
-/**
- * @author parg
- *
- */
 public interface 
 GlobalManagerStats 
 {
@@ -80,6 +76,7 @@ GlobalManagerStats
     public long getTotalF2FBytesSent();
     public long getTotalF2FBytesReceived();
 
+    // Incoming searches
     public void textSearchReceived();
     public void hashSearchReceived();
     public void sha1PrefixSearchReceived();
@@ -91,4 +88,11 @@ GlobalManagerStats
     public long getE2dkPrefixSearchesReceived();
     public long getSha1PrefixSearchesReceived();
 
+    // Outgoing searches
+    public void textSearchSent();
+    public void hashSearchSent();
+    public void searchCancelSent();
+    public long getTextSearchesSent();
+    public long getHashSearchesSent();
+    public long getSearchCancelsSent();
 }
