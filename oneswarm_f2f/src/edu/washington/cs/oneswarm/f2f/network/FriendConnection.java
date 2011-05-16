@@ -1434,12 +1434,12 @@ public class FriendConnection {
             logger.finer("not sending search, this search id is already received from this friend");
             return;
         }
-        outgoingSearchRate.addValue(1);
         long average = outgoingSearchRate.getAverage();
         if (average > MAX_OUTGOING_SEARCH_RATE) {
             logger.warning(getDescription() + "Dropping search, sending too fast");
             return;
         }
+        outgoingSearchRate.addValue(1);
 
         if (logger.isLoggable(Level.FINE) && search instanceof OSF2FTextSearch) {
             logger.finer("Forwarding text search: " + ((OSF2FTextSearch) search).getSearchString());
