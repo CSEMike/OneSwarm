@@ -32,6 +32,7 @@ import org.gudy.azureus2.core3.global.GlobalManagerStats;
 import org.gudy.azureus2.core3.peer.PEPeerManager;
 import org.gudy.azureus2.core3.util.Debug;
 import org.gudy.azureus2.core3.util.HashWrapper;
+import org.oneswarm.util.ReflectionUtils;
 
 import com.aelitis.azureus.core.impl.AzureusCoreImpl;
 
@@ -511,112 +512,145 @@ public class SearchManager {
         return textSearchManager.getResults(searchId);
     }
 
+    /**
+     * Process a given hash search message from a given friend. Returns true iff
+     * the message should be forwarded (i.e., it wasn't handled by us locally).
+     */
     private boolean handleHashSearch(final FriendConnection source, final OSF2FHashSearch msg) {
 
         // second, we might actually have this data
-        final byte[] infohash = filelistManager.getMetainfoHash(msg.getInfohashhash());
+        byte[] infohash = filelistManager.getMetainfoHash(msg.getInfohashhash());
 
-        if (infohash != null) {
-            DownloadManager dm = AzureusCoreImpl.getSingleton().getGlobalManager()
-                    .getDownloadManager(new HashWrapper(infohash));
+        // If this is an experiment search, we might not have a download
+        // manager. If so, don't
+        // consider the download manager when responding to the search.
+        boolean considerDownloadManager = true;
+        boolean foundExperimentalMatch = false;
+        if (infohash == null && ReflectionUtils.isExperimental()) {
+            infohash = (byte[]) ReflectionUtils.invokeExperimentalMethod(
+                    "getInfohashForHashSearch", source, msg);
 
-            if (dm != null) {
-                logger.fine("found match: " + new String(Base64.encode(infohash)));
-
-                logger.fine("found dm match, we have this stuff");
-
-                // check if the torrent allow osf2f search peers
-                boolean allowed = OverlayTransport.checkOSF2FAllowed(dm.getDownloadState()
-                        .getPeerSources(), dm.getDownloadState().getNetworks());
-                if (!allowed) {
-                    logger.warning("got search match for torrent "
-                            + "that does not allow osf2f peers");
-                    return true;
-                }
-
-                boolean completedOrDownloading = FileListManager.completedOrDownloading(dm);
-                if (!completedOrDownloading) {
-                    return true;
-                }
-
-                // check if we have the capacity to respond
-                if (canRespondToSearch() == false) {
-                    return false;
-                }
-
-                // yeah, we actually have this stuff and we have spare capacity
-                // create an overlay transport
-                final int newChannelId = random.nextInt();
-                final int transportFakePathId = random.nextInt();
-                // set the path id for the overlay transport for something
-                // random (since otherwise all transports for this infohash will
-                // get the same pathid, which will limit it to be only one. The
-                // path id set in the channel setup message will be
-                // deterministic. It is the responsibility of the source to
-                // monitor for duplicate paths
-
-                // set the path id to something that will persist between
-                // searches, for example a deterministic random seeded with
-                // the infohashhash
-                final int pathID = randomnessManager.getDeterministicRandomInt((int) msg
-                        .getInfohashhash());
-
-                // get the delay for this overlaytranport, that is the latency
-                // component of the delay
-                final int overlayDelay = overlayManager.getLatencyDelayForInfohash(
-                        source.getRemoteFriend(), infohash);
-
-                TimerTask task = new TimerTask() {
-                    @Override
-                    public void run() {
-                        try {
-                            /*
-                             * check if the search got canceled while we were
-                             * sleeping
-                             */
-                            if (!isSearchCanceled(msg.getSearchID())) {
-                                final OSF2FHashSearchResp response = new OSF2FHashSearchResp(
-                                        OSF2FMessage.CURRENT_VERSION, msg.getSearchID(),
-                                        newChannelId, pathID);
-
-                                final OverlayTransport transp = new OverlayTransport(source,
-                                        newChannelId, infohash, transportFakePathId, false,
-                                        overlayDelay);
-                                // register it with the friendConnection
-                                source.registerOverlayTransport(transp);
-                                // send the channel setup message
-                                source.sendChannelSetup(response, false);
-                            }
-                        } catch (OverlayRegistrationError e) {
-                            Debug.out("got an error when registering incoming transport to '"
-                                    + source.getRemoteFriend().getNick() + "': " + e.message);
-                        }
-                    }
-
-                };
-                // get the search delay.
-                int searchDelay = overlayManager.getSearchDelayForInfohash(
-                        source.getRemoteFriend(), infohash);
-
-                delayedExecutor.queue(searchDelay + overlayDelay, task);
-
-                // we are still forwarding if there are files in the torrent
-                // that we chose not to download
-                DiskManagerFileInfo[] diskManagerFileInfo = dm.getDiskManagerFileInfo();
-                for (DiskManagerFileInfo d : diskManagerFileInfo) {
-                    if (d.isSkipped()) {
-                        return true;
-                    }
-                }
-                /*
-                 * ok, we shouldn't forward this, already sent a hash response
-                 * and we have/are downloading all the files
-                 */
-                return false;
+            // If we got a special infohash, don't consider the download
+            // manager, and set the
+            // response bytes
+            if (infohash != null) {
+                considerDownloadManager = false;
+                foundExperimentalMatch = true;
             }
         }
 
-        return true;
+        // If we didn't find any infohash, we should forward the search.
+        if (infohash == null) {
+            return true;
+        }
+
+        DownloadManager dm = null;
+
+        if (considerDownloadManager) {
+            dm = AzureusCoreImpl.getSingleton().getGlobalManager()
+                    .getDownloadManager(new HashWrapper(infohash));
+        }
+
+        if (dm != null) {
+            logger.fine("found dm match: " + new String(Base64.encode(infohash)));
+        }
+
+        // check if the torrent allow osf2f search peers
+        boolean allowed = false;
+
+        if (dm != null) {
+            allowed = OverlayTransport.checkOSF2FAllowed(dm.getDownloadState().getPeerSources(), dm
+                    .getDownloadState().getNetworks());
+        } else {
+            allowed = foundExperimentalMatch;
+        }
+
+        if (!allowed) {
+            logger.warning("got search match for torrent " + "that does not allow osf2f peers");
+            return true;
+        }
+
+        if (foundExperimentalMatch == false) {
+            boolean completedOrDownloading = FileListManager.completedOrDownloading(dm);
+            if (!completedOrDownloading) {
+                return true;
+            }
+        }
+
+        // check if we have the capacity to respond
+        if (canRespondToSearch() == false) {
+            return false;
+        }
+
+        // yeah, we actually have this stuff and we have spare capacity
+        // create an overlay transport
+        final int newChannelId = random.nextInt();
+        final int transportFakePathId = random.nextInt();
+        // set the path id for the overlay transport for something
+        // random (since otherwise all transports for this infohash will
+        // get the same pathid, which will limit it to be only one. The
+        // path id set in the channel setup message will be
+        // deterministic. It is the responsibility of the source to
+        // monitor for duplicate paths
+
+        // set the path id to something that will persist between
+        // searches, for example a deterministic random seeded with
+        // the infohashhash
+        final int pathID = randomnessManager.getDeterministicRandomInt((int) msg.getInfohashhash());
+
+        // get the delay for this overlaytranport, that is the latency
+        // component of the delay
+        final int overlayDelay = overlayManager.getLatencyDelayForInfohash(
+                source.getRemoteFriend(), infohash);
+
+        final byte[] infohashShadow = infohash;
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    /*
+                     * check if the search got canceled while we were
+                     * sleeping
+                     */
+                    if (!isSearchCanceled(msg.getSearchID())) {
+                        final OSF2FHashSearchResp response = new OSF2FHashSearchResp(
+                                OSF2FMessage.CURRENT_VERSION, msg.getSearchID(), newChannelId,
+                                pathID);
+
+                        final OverlayTransport transp = new OverlayTransport(source, newChannelId,
+                                infohashShadow, transportFakePathId, false, overlayDelay);
+                        // register it with the friendConnection
+                        source.registerOverlayTransport(transp);
+                        // send the channel setup message
+                        source.sendChannelSetup(response, false);
+                    }
+                } catch (OverlayRegistrationError e) {
+                    Debug.out("got an error when registering incoming transport to '"
+                            + source.getRemoteFriend().getNick() + "': " + e.message);
+                }
+            }
+
+        };
+        // get the search delay.
+        int searchDelay = overlayManager.getSearchDelayForInfohash(source.getRemoteFriend(),
+                infohash);
+
+        delayedExecutor.queue(searchDelay + overlayDelay, task);
+
+        // we are still forwarding if there are files in the torrent
+        // that we chose not to download
+        DiskManagerFileInfo[] diskManagerFileInfo = dm.getDiskManagerFileInfo();
+        for (DiskManagerFileInfo d : diskManagerFileInfo) {
+            if (d.isSkipped()) {
+                return true;
+            }
+        }
+
+        /*
+         * ok, we shouldn't forward this, already sent a hash response
+         * and we have/are downloading all the files
+         */
+        return false;
     }
 
     private boolean isSearchCanceled(int searchId) {
