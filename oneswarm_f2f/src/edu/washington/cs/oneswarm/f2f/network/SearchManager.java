@@ -1085,7 +1085,7 @@ public class SearchManager {
         sendSearch(newSearchId, search, false);
     }
 
-    private void sendSearch(int newSearchId, OSF2FSearch search, boolean skipQueue) {
+    public void sendSearch(int newSearchId, OSF2FSearch search, boolean skipQueue) {
         lock.lock();
         try {
             sentSearches.put(newSearchId, new SentSearch(search));
