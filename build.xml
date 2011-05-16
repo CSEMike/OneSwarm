@@ -320,9 +320,6 @@
 		<javac destdir="${root.dir}/gwt-bin/war/WEB-INF/classes" nowarn="yes" source="1.5" target="1.5" includeAntRuntime="no" debug="true" debuglevel="lines,vars,source" fork="yes" memoryMaximumSize="256m">
 			<src path="${root.dir}/oneswarm_gwt_ui/src" />
 			<src path="${f2f-src.dir}"/>
-            
-			<!-- This PlanetLab source will be stripped later using the plab.build option if required. -->
-			<src path="${root.dir}/oneswarm_gwt_ui/src_planetlab"/>
 			
 			<classpath refid="project.class.path.servlet" />
 			<classpath refid="f2f.class.path" />
@@ -414,8 +411,6 @@
 			<!-- Servlet binaries -->
 			<fileset dir="gwt-bin/war/WEB-INF/classes">
 				<include name="**/*.class" />
-				<exclude name="**/planetlab/**.class" unless="plab.build" />
-				<exclude name="**/dmurph/**.class" unless="plab.build" />
 			</fileset>
 			
 			<!-- Language files -->
