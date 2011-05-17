@@ -276,9 +276,10 @@ public class TestUtils {
      * Blocks while creating a new {@code LocalOneSwarm} instance which has the
      * local JVM client added and connected as a friend.
      */
-    public static LocalOneSwarm spawnOneSwarmInstance(boolean connectToLocalInstance)
+    public static LocalOneSwarm spawnOneSwarmInstance(boolean connectToLocalInstance,
+            boolean experimentalInstance)
             throws Exception {
-        final LocalOneSwarm localOneSwarm = new LocalOneSwarm();
+        final LocalOneSwarm localOneSwarm = new LocalOneSwarm(experimentalInstance);
         localOneSwarm.start();
         TestUtils.awaitInstanceStart(localOneSwarm);
 

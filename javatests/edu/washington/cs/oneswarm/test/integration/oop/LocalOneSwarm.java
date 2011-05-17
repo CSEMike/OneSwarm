@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -80,6 +81,9 @@ public class LocalOneSwarm {
         /** Classpath elements for the invocation. */
         List<String> classPathElements = new ArrayList<String>();
 
+        /** System properties for the instance. */
+        Map<String, String> systemProperties = new HashMap<String, String>();
+
         public String getLabel() {
             return label;
         }
@@ -119,6 +123,10 @@ public class LocalOneSwarm {
         public void setStartServerPort(int port) {
             startServerPort = port;
         }
+
+        public void addSystemProperty(String key, String value) {
+            systemProperties.put(key, value);
+        }
     }
 
     /** Forcibly shuts down the OneSwarm instance associated with this object. */
@@ -133,7 +141,7 @@ public class LocalOneSwarm {
         }
     };
 
-    public LocalOneSwarm() throws IOException {
+    public LocalOneSwarm(boolean experimentalSupport) throws IOException {
         rootPath = new File(".").getAbsolutePath();
 
         config.setLabel("LocalOneSwarm-" + instanceCount);
@@ -145,6 +153,10 @@ public class LocalOneSwarm {
          */
         config.setWebUiPort(3000 + (3 * instanceCount));
         config.setStartServerPort(3000 + (3 * instanceCount + 2));
+
+        if (experimentalSupport) {
+            config.addSystemProperty("oneswarm.experimental.config.file", "dummy");
+        }
 
         // The coordinator listens for connections from running clients and
         // sends commands
@@ -268,10 +280,15 @@ public class LocalOneSwarm {
 
         state = State.STARTING;
 
+        StringBuilder propertiesString = new StringBuilder();
+        for (String property : config.systemProperties.keySet()) {
+            propertiesString.append(" -D" + property + "=" + config.systemProperties.get(property));
+        }
+
         // Construct a ProcessBuilder with common options
         ProcessBuilder pb = new ProcessBuilder(config.javaPath, "-Xmx256m", "-Ddebug.war="
                 + new File(rootPath, config.warRootPath), "-Dazureus.security.manager.install=0",
-                "-DMULTI_INSTANCE=true");
+                "-DMULTI_INSTANCE=true" + propertiesString);
 
         List<String> command = pb.command();
 
@@ -395,7 +412,7 @@ public class LocalOneSwarm {
     }
 
     public static void main(String[] args) throws Exception {
-        new LocalOneSwarm().start();
+        new LocalOneSwarm(false).start();
         while (true) {
             Thread.sleep(100);
         }

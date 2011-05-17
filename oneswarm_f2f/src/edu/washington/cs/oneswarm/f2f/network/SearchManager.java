@@ -528,7 +528,8 @@ public class SearchManager {
         boolean foundExperimentalMatch = false;
         if (infohash == null && ReflectionUtils.isExperimental()) {
             infohash = (byte[]) ReflectionUtils.invokeExperimentalMethod(
-                    "getInfohashForHashSearch", source, msg);
+                    "getInfohashForHashSearch", new Object[] { source, msg }, new Class<?>[] {
+                            FriendConnection.class, OSF2FHashSearch.class });
 
             // If we got a special infohash, don't consider the download
             // manager, and set the
@@ -639,10 +640,12 @@ public class SearchManager {
 
         // we are still forwarding if there are files in the torrent
         // that we chose not to download
-        DiskManagerFileInfo[] diskManagerFileInfo = dm.getDiskManagerFileInfo();
-        for (DiskManagerFileInfo d : diskManagerFileInfo) {
-            if (d.isSkipped()) {
-                return true;
+        if (considerDownloadManager) {
+            DiskManagerFileInfo[] diskManagerFileInfo = dm.getDiskManagerFileInfo();
+            for (DiskManagerFileInfo d : diskManagerFileInfo) {
+                if (d.isSkipped()) {
+                    return true;
+                }
             }
         }
 
@@ -695,7 +698,7 @@ public class SearchManager {
     }
 
     private void handleIncomingHashSearchResponse(OSF2FHashSearch hashSearch,
-            FriendConnection source, OSF2FHashSearchResp msg) {
+            FriendConnection source, OSF2FHashSearchResp searchResponse) {
         // great, we found someone that has what we searched for!
         // create the overlay transport
         byte[] infoHash = filelistManager.getMetainfoHash(hashSearch.getInfohashhash());
@@ -703,7 +706,8 @@ public class SearchManager {
 
             if (ReflectionUtils.isExperimental()
                     && Boolean.TRUE == ReflectionUtils.invokeExperimentalMethod(
-                            "processSpecialSearchResponse", hashSearch)) {
+                            "processSpecialSearchResponse", new Object[] { searchResponse },
+                            new Class<?>[] { OSF2FHashSearchResp.class })) {
                 logger.info("Search response handled in experimental code. Skipping.");
                 return;
             }
@@ -720,16 +724,16 @@ public class SearchManager {
             return;
         }
 
-        if (source.hasRegisteredPath(msg.getPathID())) {
+        if (source.hasRegisteredPath(searchResponse.getPathID())) {
             logger.finer("got channel setup response, "
                     + "but path is already used: sending back a reset");
-            source.sendChannelRst(new OSF2FChannelReset(OSF2FMessage.CURRENT_VERSION, msg
+            source.sendChannelRst(new OSF2FChannelReset(OSF2FMessage.CURRENT_VERSION, searchResponse
                     .getChannelID()));
             return;
         }
 
-        OverlayTransport overlayTransport = new OverlayTransport(source, msg.getChannelID(),
-                infoHash, msg.getPathID(), true, overlayManager.getLatencyDelayForInfohash(
+        OverlayTransport overlayTransport = new OverlayTransport(source, searchResponse.getChannelID(),
+                infoHash, searchResponse.getPathID(), true, overlayManager.getLatencyDelayForInfohash(
                         source.getRemoteFriend(), infoHash));
         // register it with the friendConnection
         try {
