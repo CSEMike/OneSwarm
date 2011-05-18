@@ -150,7 +150,7 @@ public class LocalOneSwarmCoordinator extends Thread {
 
                 // The last line contains all the form parameters, if included.
                 if (lastLine.startsWith("dlsummary=")) {
-                    logger.info("Got POST from instance " + instance.toString() + " / " + lastLine);
+                    logger.fine("Got POST from instance " + instance.toString() + " / " + lastLine);
                     String[] kvPairs = lastLine.split("&");
                     for (String kv : kvPairs) {
                         String[] toks = kv.split("=");
@@ -174,7 +174,7 @@ public class LocalOneSwarmCoordinator extends Thread {
                 }
                 out.flush();
 
-                logger.info("Got ping from local instance: " + socket);
+                logger.fine("Got ping from local instance: " + socket);
                 pendingCommands.clear();
             } catch (IOException e) {
                 logger.warning("LocalOneSwarm coordinator stopped: " + e.toString());

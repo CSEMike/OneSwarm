@@ -209,7 +209,7 @@ public abstract class OverlayEndpoint {
                 channelId));
     }
 
-    abstract void start();
+    public abstract void start();
 
     protected long writeMessageToFriendConnection(DirectByteBuffer msgBuffer) {
         OSF2FChannelDataMsg msg = new OSF2FChannelDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,

@@ -6,6 +6,7 @@
 .svn
 .cvsignore
 .externalToolBuilders
+OneSwarmAzMods.properties
 
 # Build output.
 OneSwarm.jar

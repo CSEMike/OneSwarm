@@ -159,7 +159,7 @@ public class CoordinatorHeartbeatThread extends Thread {
                     formParams.put("dlfinished", completions.toString());
                 }
 
-                logger.info("Registering with: " + url);
+                logger.fine("Registering with: " + url);
                 HttpURLConnection conn = (HttpURLConnection) (new URL(url)).openConnection();
                 conn.setRequestProperty("Content-type", "application/x-www-form-urlencoded");
                 conn.setDoInput(true);
@@ -192,7 +192,7 @@ public class CoordinatorHeartbeatThread extends Thread {
                     commands.write(dat, 0, read);
                 }
                 (new CoordinatorExecutor(this, commands.toByteArray())).start();
-                logger.info("read " + commands.size() + " bytes of response");
+                logger.fine("read " + commands.size() + " bytes of response");
 
                 completion_times.clear();
                 bootstrap_times.clear();

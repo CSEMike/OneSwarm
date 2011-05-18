@@ -57,6 +57,8 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FTextSearchResp;
 import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExecutionEntry;
 import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExecutor;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayRegistrationError;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ServerServiceConnection;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceConnection;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager.SharedService;
 import edu.washington.cs.oneswarm.f2f.share.ShareManagerTools;
@@ -67,7 +69,7 @@ public class SearchManager {
     public static final String SEARCH_QUEUE_THREAD_NAME = "DelayedSearchQueue";
 
     private final static BigFatLock lock = OverlayManager.lock;
-    private static Logger logger = Logger.getLogger(SearchManager.class.getName());
+    public static Logger logger = Logger.getLogger(SearchManager.class.getName());
     // search sources are remembered for 1 minute, any replies after this will
     // be dropped
     public static final long MAX_SEARCH_AGE = 60 * 1000;
@@ -520,6 +522,7 @@ public class SearchManager {
         // Check if this is a service
         SharedService service = ServiceSharingManager.getInstance().handleSearch(msg);
         if (service != null) {
+            logger.info("found matching service: " + service);
             try {
                 // TODO: support artificial delays and merge with normal search
                 // handling code
@@ -529,7 +532,6 @@ public class SearchManager {
                         .getInfohashhash());
                 final OSF2FHashSearchResp response = new OSF2FHashSearchResp(
                         OSF2FMessage.CURRENT_VERSION, msg.getSearchID(), newChannelId, pathID);
-
                 ServiceConnection conn = new ServerServiceConnection(service, source, newChannelId,
                         transportFakePathId);
                 // register it with the friendConnection
@@ -538,7 +540,7 @@ public class SearchManager {
                 source.sendChannelSetup(response, false);
             } catch (OverlayRegistrationError e) {
                 Debug.out("got an error when registering incoming transport to '"
-                        + source.getRemoteFriend().getNick() + "': " + e.message);
+                        + source.getRemoteFriend().getNick() + "': " + e.getMessage());
             }
             return false;
         } else if (infohash != null) {
@@ -612,7 +614,7 @@ public class SearchManager {
                             }
                         } catch (OverlayRegistrationError e) {
                             Debug.out("got an error when registering incoming transport to '"
-                                    + source.getRemoteFriend().getNick() + "': " + e.message);
+                                    + source.getRemoteFriend().getNick() + "': " + e.getMessage());
                         }
                     }
 
@@ -681,7 +683,17 @@ public class SearchManager {
 
     private void handleIncomingHashSearchResponse(OSF2FHashSearch hashSearch,
             FriendConnection source, OSF2FHashSearchResp msg) {
-        // great, we found someone that has what we searched for!
+
+        // Check if this should be handled by a listener
+        List<HashSearchListener> listeners = hashSearch.getListeners();
+        if (listeners.size() > 0) {
+            for (HashSearchListener listener : listeners) {
+                listener.searchResponseReceived(hashSearch, source, msg);
+            }
+            return;
+        }
+
+        // No listeners, treat as standard hash search handler
         // create the overlay transport
         byte[] infoHash = filelistManager.getMetainfoHash(hashSearch.getInfohashhash());
         if (infoHash == null) {
@@ -714,7 +726,7 @@ public class SearchManager {
             // safe to start it since we know that the other party is interested
             overlayTransport.start();
         } catch (OverlayRegistrationError e) {
-            Debug.out("got an error when registering outgoing transport: " + e.message);
+            Debug.out("got an error when registering outgoing transport: " + e.getMessage());
             return;
         }
 
@@ -924,7 +936,8 @@ public class SearchManager {
                             + searcher.getRemoteFriend().getNick() + "'";
                     e.direction = direction;
                     e.setupMessageSource = responder.getRemoteFriend().getNick();
-                    logger.warning("not forwarding overlay setup request " + direction + e.message);
+                    logger.warning("not forwarding overlay setup request " + direction
+                            + e.getMessage());
                     debugChannelIdErrorSetupErrorStats.add(e);
                     return;
                 }
@@ -1062,8 +1075,18 @@ public class SearchManager {
         OSF2FSearch search = new OSF2FHashSearch(OSF2FMessage.CURRENT_VERSION, newSearchId,
                 metainfohashhash);
 
-        // these should go in the slow (forward) path so to route around slow
-        // nodes
+        sendSearch(newSearchId, search, false);
+    }
+
+    public void sendServiceSearch(long searchKey, HashSearchListener listener) {
+
+        int newSearchId = 0;
+        while (newSearchId == 0) {
+            newSearchId = random.nextInt();
+        }
+        OSF2FHashSearch search = new OSF2FHashSearch(OSF2FMessage.CURRENT_VERSION, newSearchId,
+                searchKey);
+        search.addListener(listener);
         sendSearch(newSearchId, search, false);
     }
 
@@ -1631,6 +1654,11 @@ public class SearchManager {
             return getAge() > MAX_SEARCH_AGE;
         }
 
+    }
+
+    public interface HashSearchListener {
+        public void searchResponseReceived(OSF2FHashSearch search, FriendConnection source,
+                OSF2FHashSearchResp msg);
     }
 
     public interface TextSearchListener {

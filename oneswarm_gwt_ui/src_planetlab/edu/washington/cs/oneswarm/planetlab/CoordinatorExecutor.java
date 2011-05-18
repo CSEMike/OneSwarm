@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.InvalidKeyException;
@@ -51,6 +52,8 @@ import edu.washington.cs.oneswarm.f2f.OSF2FMain;
 import edu.washington.cs.oneswarm.f2f.TextSearchResult;
 import edu.washington.cs.oneswarm.f2f.permissions.GroupBean;
 import edu.washington.cs.oneswarm.f2f.permissions.PermissionsDAO;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager.SharedService;
 import edu.washington.cs.oneswarm.plugins.PluginCallback;
 import edu.washington.cs.oneswarm.ui.gwt.CoreInterface;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.FriendInfoLite;
@@ -103,7 +106,7 @@ public class CoordinatorExecutor extends Thread {
 
                 String[] toks = s.split("\\s+");
 
-                logger.info("Processing command: " + s + " / " + toks[0]);
+                logger.fine("Processing command: " + s + " / " + toks[0]);
 
                 if (toks[0].equals("ok")) {
                     ;
@@ -346,6 +349,16 @@ public class CoordinatorExecutor extends Thread {
                     logger.info("Forcing location info republish...");
                     final OSF2FMain f2fMain = OSF2FMain.getSingelton();
                     f2fMain.getDHTConnector().forceRepublish();
+                } else if (toks[0].equals("share_service")) {
+                    String name = toks[1];
+                    long searchKey = Long.parseLong(toks[2]);
+                    String address = toks[3];
+                    int port = Integer.parseInt(toks[4]);
+                    // final OSF2FMain f2fMain = OSF2FMain.getSingelton();
+                    ServiceSharingManager.getInstance().registerServerService(searchKey,
+                            new SharedService(new InetSocketAddress(address, port), name));
+                    System.out.println("adding service: "
+                            + ServiceSharingManager.getInstance().getSharedService(searchKey));
                 } else {
                     logger.warning("Unknown command: " + s);
                 }

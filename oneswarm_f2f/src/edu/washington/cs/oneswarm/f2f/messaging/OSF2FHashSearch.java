@@ -1,10 +1,15 @@
 package edu.washington.cs.oneswarm.f2f.messaging;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 import org.gudy.azureus2.core3.util.DirectByteBufferPool;
 
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 import com.aelitis.azureus.core.peermanager.messaging.MessageException;
+
+import edu.washington.cs.oneswarm.f2f.network.SearchManager.HashSearchListener;
 
 public class OSF2FHashSearch implements OSF2FMessage, OSF2FSearch {
 
@@ -16,10 +21,21 @@ public class OSF2FHashSearch implements OSF2FMessage, OSF2FSearch {
     private DirectByteBuffer buffer;
     private final static int MESSAGE_LENGTH = 12;
 
+    // Listener to call if we receive a response
+    private final List<HashSearchListener> listeners = new LinkedList<HashSearchListener>();
+
     public OSF2FHashSearch(byte version, int searchID, long infohashhash) {
         this.infohashhash = infohashhash;
         this.version = version;
         this.searchID = searchID;
+    }
+
+    public void addListener(HashSearchListener listener) {
+        listeners.add(listener);
+    }
+
+    public List<HashSearchListener> getListeners() {
+        return listeners;
     }
 
     public OSF2FHashSearch clone() {

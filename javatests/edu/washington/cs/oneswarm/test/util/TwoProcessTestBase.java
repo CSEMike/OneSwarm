@@ -12,7 +12,7 @@ import com.thoughtworks.selenium.Selenium;
 
 import edu.washington.cs.oneswarm.test.integration.oop.LocalOneSwarm;
 
-public class TwoProcessTestBase {
+public class TwoProcessTestBase extends OneSwarmTestBase {
 
     private static Logger logger = Logger.getLogger(TwoProcessTestBase.class.getName());
 
@@ -21,7 +21,7 @@ public class TwoProcessTestBase {
 
     /** The selenium control interface. */
     protected static Selenium selenium;
-
+    protected static boolean startSelenium = true;
     /** The OneSwarm instance with which we will chat. */
     protected static LocalOneSwarm localOneSwarm;
 
@@ -30,24 +30,27 @@ public class TwoProcessTestBase {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        seleniumServer = TestUtils.startSeleniumServer((new File(".").getAbsolutePath()));
-
+        if (startSelenium) {
+            seleniumServer = TestUtils.startSeleniumServer((new File(".").getAbsolutePath()));
+        }
         // Start a local client in this JVM
         TestUtils.awaitJVMOneSwarmStart();
 
         // One additional remote client with which we'll chat
         localOneSwarm = TestUtils.spawnOneSwarmInstance(connectPeers);
         logger.info("OOP LocalOneSwarm started.");
-
-        selenium = new DefaultSelenium("127.0.0.1", 4444, "*firefox", TestUtils.JVM_INSTANCE_WEB_UI) {
-            // Fix for bug:
-            // http://code.google.com/p/selenium/issues/detail?id=408
-            @Override
-            public void open(String url) {
-                commandProcessor.doCommand("open", new String[] { url, "true" });
-            }
-        };
-        selenium.start();
+        if (startSelenium) {
+            selenium = new DefaultSelenium("127.0.0.1", 4444, "*firefox",
+                    TestUtils.JVM_INSTANCE_WEB_UI) {
+                // Fix for bug:
+                // http://code.google.com/p/selenium/issues/detail?id=408
+                @Override
+                public void open(String url) {
+                    commandProcessor.doCommand("open", new String[] { url, "true" });
+                }
+            };
+            selenium.start();
+        }
     }
 
     @AfterClass

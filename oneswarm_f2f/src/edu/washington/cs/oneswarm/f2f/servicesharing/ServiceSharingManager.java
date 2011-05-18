@@ -6,9 +6,11 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.config.COConfigurationManager;
+import org.gudy.azureus2.core3.util.Debug;
 
 import com.aelitis.azureus.core.networkmanager.ConnectionEndpoint;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
@@ -26,8 +28,12 @@ import com.aelitis.azureus.core.peermanager.messaging.MessageStreamFactory;
 import edu.washington.cs.oneswarm.f2f.BigFatLock;
 import edu.washington.cs.oneswarm.f2f.OSF2FMain;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
+import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
+import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayRegistrationError;
 import edu.washington.cs.oneswarm.f2f.network.OverlayManager;
 import edu.washington.cs.oneswarm.f2f.network.SearchManager;
+import edu.washington.cs.oneswarm.f2f.network.SearchManager.HashSearchListener;
 import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage.RawMessageDecoder;
 import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage.RawMessageEncoder;
 
@@ -37,7 +43,7 @@ public class ServiceSharingManager {
 
     private static BigFatLock lock = OverlayManager.lock;
 
-    private final static Logger logger = Logger.getLogger(ServiceSharingManager.class.getName());
+    public final static Logger logger = Logger.getLogger(ServiceSharingManager.class.getName());
 
     public static ServiceSharingManager getInstance() {
         return instance;
@@ -112,7 +118,7 @@ public class ServiceSharingManager {
         return getSharedService(searchKey);
     }
 
-    private SharedService getSharedService(long infohashhash) {
+    public SharedService getSharedService(long infohashhash) {
         SharedService service = null;
         try {
             lock.lock();
@@ -239,24 +245,46 @@ public class ServiceSharingManager {
         }
 
         @Override
-        public void connectionRouted(NetworkConnection incomingConnection, Object routing_data) {
-            logger.info("connection routed");
+        public void connectionRouted(final NetworkConnection incomingConnection, Object routing_data) {
+            logger.fine("connection routed");
             // Check if local
+            final AtomicInteger responseCount = new AtomicInteger(0);
             final SharedService sharedService = ServiceSharingManager.getInstance()
                     .getSharedService(serverSearchKey);
             if (sharedService != null) {
-                logger.info("got request for local service, doing loopback");
+                logger.finer("got request for local service, doing loopback");
                 ServiceSharingLoopback loopback = new ServiceSharingLoopback(sharedService,
                         incomingConnection);
                 loopback.connect();
             } else {
-                logger.info("sending search to " + serverSearchKey);
+                logger.finer("sending search to " + serverSearchKey);
                 SearchManager searchManager = OSF2FMain.getSingelton().getOverlayManager()
                         .getSearchManager();
-                // searchManager.sendHashSearch(infoHash)
-                // OSF2FHashSearch search = new
-                // OSF2FHashSearch(OSF2FMessage.CURRENT_VERSION,
-                // searchID, infohashhash)
+                searchManager.sendServiceSearch(serverSearchKey, new HashSearchListener() {
+                    @Override
+                    public void searchResponseReceived(OSF2FHashSearch search,
+                            FriendConnection source, OSF2FHashSearchResp msg) {
+                        // TODO Handle multiple responses
+                        int count = responseCount.incrementAndGet();
+                        if (count > 1) {
+                            return;
+                        }
+                        ClientServiceConnection serviceConnection = new ClientServiceConnection(
+                                ClientService.this, incomingConnection, source, msg.getChannelID(),
+                                msg.getPathID());
+                        // register it with the friendConnection
+                        try {
+                            source.registerOverlayTransport(serviceConnection);
+                            // safe to start it since we know that the other
+                            // party is interested
+                            serviceConnection.start();
+                        } catch (OverlayRegistrationError e) {
+                            Debug.out("got an error when registering outgoing transport: "
+                                    + e.getMessage());
+                            return;
+                        }
+                    }
+                });
             }
         }
 

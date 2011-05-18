@@ -1243,7 +1243,7 @@ public class FriendConnection {
         }
     }
 
-    void registerOverlayTransport(OverlayEndpoint transport) throws OverlayRegistrationError {
+    public void registerOverlayTransport(OverlayEndpoint transport) throws OverlayRegistrationError {
         lock.lock();
         try {
             int channelId = transport.getChannelId();
@@ -2277,18 +2277,17 @@ public class FriendConnection {
 
     }
 
-    static class OverlayRegistrationError extends Exception {
+    public static class OverlayRegistrationError extends Exception {
 
         private static final long serialVersionUID = 1L;
         String setupMessageSource;
         final int channelId;
-        final String message;
         String direction;
 
         public OverlayRegistrationError(String setupMessageSource, int channelID, String message) {
+            super(message);
             this.setupMessageSource = setupMessageSource;
             this.channelId = channelID;
-            this.message = message;
         }
 
         @Override
