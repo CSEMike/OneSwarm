@@ -45,7 +45,7 @@
 	<source path="client" />
 
 	<!-- speed up compilation during development -->
-	<set-property name="user.agent" value="safari,gecko1_8" /> -->
+	<set-property name="user.agent" value="safari,gecko1_8" /> 
 
 	<!-- localization 
 	<extend-property name="locale" values="de_DE" />
