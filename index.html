@@ -14,8 +14,8 @@ title: OneSwarm - Private P2P data sharing
 						document.write('Install_OneSwarm.exe');
 					} else if (navigator.appVersion.indexOf("Mac") != -1) {
 						document.write('OneSwarm.dmg');
-					} else if (navigator.appVersion.toLowerCase().indexOf("linux") != -1) {
-						if (window.navigator.cpuClass.indexOf("64") != -1) {
+					} else if (navigator.userAgent.toLowerCase().indexOf("linux") != -1) {
+						if (window.navigator.platform.indexOf("_64") != -1) {
 							document.write('OneSwarm_linux_x86_64.tar.gz');
 						} else {
 							document.write('OneSwarm_linux_x86.tar.gz');
@@ -32,8 +32,8 @@ title: OneSwarm - Private P2P data sharing
 					document.write('Windows 7, Vista, XP');
 				} else if (navigator.appVersion.indexOf("Mac") != -1) {
 					document.write('Mac OS X 10.6+ (64-bit Intel only)');
-				} else if (navigator.appVersion.toLowerCase().indexOf("linux") != -1) {
-					if (window.navigator.cpuClass.indexOf("64") != -1) {
+				} else if (navigator.userAgent.toLowerCase().indexOf("linux") != -1) {
+					if (window.navigator.platform.indexOf("_64") != -1) {
 						document.write('Linux (64-bit)');
 					} else {
 						document.write('Linux (32-bit)');
