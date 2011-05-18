@@ -45,6 +45,4 @@
 
 # Testing
 
-Before running the full suite, ensure that the appengine community server is running. (The community server / CHT tests require this.)
-
 `ant test`
