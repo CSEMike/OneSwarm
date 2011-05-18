@@ -14,6 +14,13 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelReset;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExecutor;
 
+/**
+ * This class handles shared functionality of all overlay end-points and must be
+ * extended.
+ * 
+ * @author isdal
+ * 
+ */
 public abstract class OverlayEndpoint {
     private final static Logger logger = Logger.getLogger(OverlayEndpoint.class.getName());
     /*

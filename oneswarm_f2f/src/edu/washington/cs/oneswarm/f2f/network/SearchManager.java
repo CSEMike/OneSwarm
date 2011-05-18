@@ -738,15 +738,6 @@ public class SearchManager {
         // Verify that we searched for this.
         byte[] infoHash = filelistManager.getMetainfoHash(hashSearch.getInfohashhash());
         if (infoHash == null) {
-
-            if (ReflectionUtils.isExperimental()
-                    && Boolean.TRUE == ReflectionUtils.invokeExperimentalMethod(
-                            "processSpecialSearchResponse", new Object[] { searchResponse },
-                            new Class<?>[] { OSF2FHashSearchResp.class })) {
-                logger.info("Search response handled in experimental code. Skipping.");
-                return;
-            }
-
             logger.warning("got channel setup request, " + "but the infohash we searched for "
                     + "is not in filelistmananger");
             return;
