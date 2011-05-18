@@ -1,3 +1,5 @@
+/* @override http://localhost:4000/css/home.css */
+
 body {
 	font-family: Georgia, Times New Roman, Times, serif;
 	text-align: left;
@@ -7,12 +9,77 @@ body {
 	margin-right: auto;
 }
 
+table#peopletable {
+	font-family: Georgia, Times New Roman, Times, serif;
+}
+
 #nav {
+	text-align: center;
+	padding-bottom: 5px;
+	border-bottom: 1px solid gray;
+	font-family: Helvetica, Arial, sans-serif;
+	font-size: 21px;
+}
+
+a {
+	text-decoration: none;
+	color: #2200C1;
+}
+
+a:hover {
+	text-decoration: underline;
+	cursor: hand;
+}
+
+div.nocolor a {
+	color: #000000;
+}
+
+.dlbutton {
+	display:block;
+	width:257px;
+	height:67px;
+	text-indent:-9999px;
+}
+
+.dlbutton a {
+	display:block;
+	width:100%;
+	height:100%;
+	background: url(/images/dlbutton.png) no-repeat 0 0;
+	outline:none;
+}
+.dlbutton a:hover {
+	background-position:0 -67px;
+}
+
+div.dltext {
+	font-family: 'Open Sans', arial, sans-serif;
+	font-size: 13px;
+	margin-top: -10px;
 	text-align: center;
 }
 
-.headerNews {
-	font-size: 14px;
+div.maincontent {
+	position: relative;
+}
+
+div.buttonpos {
+	margin-left: 13px;
+}
+
+div.dlbox {
+	position: absolute;
+	top: 0;
+	right: 0;
+	float: right;
+	width: 280px;
+	border: 1px solid #ccf;
+	background-color: #f2f2fe;
+}
+
+div.overview {
+	width: 500px;
 }
 
 h3 {
@@ -21,11 +88,6 @@ h3 {
 	font-variant: normal;
 	font-weight: bold;
 	text-align: left;
-}
-
-h4 {
-	font-weight: normal;
-	font-style: italic;
 }
 
 li {
@@ -39,34 +101,11 @@ li {
 	padding-top: 10px;
 }
 
-#sshot {
-	display: block;
-	margin-left:  auto;
-	margin-right:  auto;
-	text-align: center;
-}
-
-#acknowledgments {
-	margin-top: 10px;
-}
-
 #download_table {
 	border: 1px solid #c2c2c2;
 	border-collapse: collapse;
 }
 
-#dino {
-	margin-right: auto;
-	margin-left: auto;
-	text-align: center;
-}
-
 blockquote { 
 	width: 650px; 
 } 
-
-#sites {
-	text-align: center;
-	font-size: small;
-	vertical-align: middle;
-}
