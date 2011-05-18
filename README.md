@@ -12,7 +12,7 @@
 1.  Install the [developer tools](http://developer.apple.com/xcode/)
 2.  Install git, ant, and ant-contrib from [macports](http://www.macports.org/)
 
-  *  `sudo port install git`
+  *  `sudo port install git-core`
   *  `sudo port install apache-ant`
   *  `sudo port install ant-contrib`
     
@@ -44,7 +44,5 @@
 
 
 # Testing
-
-Before running the full suite, ensure that the appengine community server is running. (The community server / CHT tests require this.)
 
 `ant test`

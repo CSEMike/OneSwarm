@@ -455,6 +455,11 @@ public abstract class CommunityServerOperation extends Thread implements Cancell
             }
         }
 
+        String extraHeader = System.getProperty("oneswarm.community.request.header");
+        if (extraHeader != null) {
+            conn.setRequestProperty("x-oneswarm", extraHeader);
+        }
+
         /**
          * SSL processing --
          * 

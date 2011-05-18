@@ -32,6 +32,7 @@ import org.gudy.azureus2.core3.global.GlobalManagerStats;
 import org.gudy.azureus2.core3.peer.PEPeerManager;
 import org.gudy.azureus2.core3.util.Debug;
 import org.gudy.azureus2.core3.util.HashWrapper;
+import org.oneswarm.util.ReflectionUtils;
 
 import com.aelitis.azureus.core.impl.AzureusCoreImpl;
 
@@ -169,6 +170,7 @@ public class SearchManager {
         COConfigurationManager.addAndFireParameterListeners(new String[] { "LAN Speed Enabled",
                 "Max Upload Speed KBs", "oneswarm.search.filter.keywords", "f2f_search_max_paths",
                 "f2f_search_forward_delay" }, new ParameterListener() {
+            @Override
             public void parameterChanged(String parameterName) {
                 includeLanUploads = !COConfigurationManager
                         .getBooleanParameter("LAN Speed Enabled");
@@ -514,11 +516,11 @@ public class SearchManager {
         return textSearchManager.getResults(searchId);
     }
 
+    /**
+     * Process a given hash search message from a given friend. Returns true iff
+     * the message should be forwarded (i.e., it wasn't handled by us locally).
+     */
     private boolean handleHashSearch(final FriendConnection source, final OSF2FHashSearch msg) {
-
-        // we might actually have this data
-        final byte[] infohash = filelistManager.getMetainfoHash(msg.getInfohashhash());
-
         // Check if this is a service
         SharedService service = ServiceSharingManager.getInstance().handleSearch(msg);
         if (service != null) {
@@ -543,101 +545,142 @@ public class SearchManager {
                         + source.getRemoteFriend().getNick() + "': " + e.getMessage());
             }
             return false;
-        } else if (infohash != null) {
-            DownloadManager dm = AzureusCoreImpl.getSingleton().getGlobalManager()
-                    .getDownloadManager(new HashWrapper(infohash));
+        }
+        // second, we might actually have this data
+        byte[] infohash = filelistManager.getMetainfoHash(msg.getInfohashhash());
+        // If this is an experiment search, we might not have a download
+        // manager. If so, don't
+        // consider the download manager when responding to the search.
+        boolean considerDownloadManager = true;
+        boolean foundExperimentalMatch = false;
+        if (infohash == null && ReflectionUtils.isExperimental()) {
+            infohash = (byte[]) ReflectionUtils.invokeExperimentalMethod(
+                    "getInfohashForHashSearch", new Object[] { source, msg }, new Class<?>[] {
+                            FriendConnection.class, OSF2FHashSearch.class });
 
-            if (dm != null) {
-                logger.fine("found match: " + new String(Base64.encode(infohash)));
-
-                // check if the torrent allow osf2f search peers
-                boolean allowed = OverlayTransport.checkOSF2FAllowed(dm.getDownloadState()
-                        .getPeerSources(), dm.getDownloadState().getNetworks());
-                if (!allowed) {
-                    logger.warning("got search match for torrent "
-                            + "that does not allow osf2f peers");
-                    return true;
-                }
-
-                boolean completedOrDownloading = FileListManager.completedOrDownloading(dm);
-                if (!completedOrDownloading) {
-                    return true;
-                }
-
-                // check if we have the capacity to respond
-                if (canRespondToSearch() == false) {
-                    return false;
-                }
-
-                // yeah, we actually have this stuff and we have spare capacity
-                // create an overlay transport
-                final int newChannelId = random.nextInt();
-                final int transportFakePathId = random.nextInt();
-                // set the path id for the overlay transport for something
-                // random (since otherwise all transports for this infohash will
-                // get the same pathid, which will limit it to be only one. The
-                // path id set in the channel setup message will be
-                // deterministic. It is the responsibility of the source to
-                // monitor for duplicate paths
-
-                // set the path id to something that will persist between
-                // searches, for example a deterministic random seeded with
-                // the infohashhash
-                final int pathID = randomnessManager.getDeterministicRandomInt((int) msg
-                        .getInfohashhash());
-
-                // get the delay for this overlaytranport, that is the latency
-                // component of the delay
-                final int overlayDelay = overlayManager.getLatencyDelayForInfohash(
-                        source.getRemoteFriend(), infohash);
-
-                TimerTask task = new TimerTask() {
-                    @Override
-                    public void run() {
-                        try {
-                            /*
-                             * check if the search got canceled while we were
-                             * sleeping
-                             */
-                            if (!isSearchCanceled(msg.getSearchID())) {
-                                final OSF2FHashSearchResp response = new OSF2FHashSearchResp(
-                                        OSF2FMessage.CURRENT_VERSION, msg.getSearchID(),
-                                        newChannelId, pathID);
-
-                                final OverlayTransport transp = new OverlayTransport(source,
-                                        newChannelId, infohash, transportFakePathId, false,
-                                        overlayDelay);
-                                // register it with the friendConnection
-                                source.registerOverlayTransport(transp);
-                                // send the channel setup message
-                                source.sendChannelSetup(response, false);
-                            }
-                        } catch (OverlayRegistrationError e) {
-                            Debug.out("got an error when registering incoming transport to '"
-                                    + source.getRemoteFriend().getNick() + "': " + e.getMessage());
-                        }
-                    }
-
-                };
-                delayedExecutor.queue(overlayDelay, task);
-
-                // we are still forwarding if there are files in the torrent
-                // that we chose not to download
-                DiskManagerFileInfo[] diskManagerFileInfo = dm.getDiskManagerFileInfo();
-                for (DiskManagerFileInfo d : diskManagerFileInfo) {
-                    if (d.isSkipped()) {
-                        return true;
-                    }
-                }
-                /*
-                 * ok, we shouldn't forward this, already sent a hash response
-                 * and we have/are downloading all the files
-                 */
-                return false;
+            // If we got a special infohash, don't consider the download
+            // manager, and set the
+            // response bytes
+            if (infohash != null) {
+                considerDownloadManager = false;
+                foundExperimentalMatch = true;
             }
         }
 
-        return true;
+        // If we didn't find any infohash, we should forward the search.
+        if (infohash == null) {
+            return true;
+        }
+
+        DownloadManager dm = null;
+
+        if (considerDownloadManager) {
+            dm = AzureusCoreImpl.getSingleton().getGlobalManager()
+                    .getDownloadManager(new HashWrapper(infohash));
+        }
+
+        if (dm != null) {
+            logger.fine("found dm match: " + new String(Base64.encode(infohash)));
+        }
+
+        // check if the torrent allow osf2f search peers
+        boolean allowed = false;
+
+        if (dm != null) {
+            allowed = OverlayTransport.checkOSF2FAllowed(dm.getDownloadState().getPeerSources(), dm
+                    .getDownloadState().getNetworks());
+        } else {
+            allowed = foundExperimentalMatch;
+        }
+
+        if (!allowed) {
+            logger.warning("got search match for torrent " + "that does not allow osf2f peers");
+            return true;
+        }
+
+        if (foundExperimentalMatch == false) {
+            boolean completedOrDownloading = FileListManager.completedOrDownloading(dm);
+            if (!completedOrDownloading) {
+                return true;
+            }
+        }
+
+        // check if we have the capacity to respond
+        if (canRespondToSearch() == false) {
+            return false;
+        }
+
+        // yeah, we actually have this stuff and we have spare capacity
+        // create an overlay transport
+        final int newChannelId = random.nextInt();
+        final int transportFakePathId = random.nextInt();
+        // set the path id for the overlay transport for something
+        // random (since otherwise all transports for this infohash will
+        // get the same pathid, which will limit it to be only one. The
+        // path id set in the channel setup message will be
+        // deterministic. It is the responsibility of the source to
+        // monitor for duplicate paths
+
+        // set the path id to something that will persist between
+        // searches, for example a deterministic random seeded with
+        // the infohashhash
+        final int pathID = randomnessManager.getDeterministicRandomInt((int) msg.getInfohashhash());
+
+        // get the delay for this overlaytranport, that is the latency
+        // component of the delay
+        final int overlayDelay = overlayManager.getLatencyDelayForInfohash(
+                source.getRemoteFriend(), infohash);
+
+        final byte[] infohashShadow = infohash;
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    /*
+                     * check if the search got canceled while we were
+                     * sleeping
+                     */
+                    if (!isSearchCanceled(msg.getSearchID())) {
+                        final OSF2FHashSearchResp response = new OSF2FHashSearchResp(
+                                OSF2FMessage.CURRENT_VERSION, msg.getSearchID(), newChannelId,
+                                pathID);
+
+                        final OverlayTransport transp = new OverlayTransport(source, newChannelId,
+                                infohashShadow, transportFakePathId, false, overlayDelay);
+                        // register it with the friendConnection
+                        source.registerOverlayTransport(transp);
+                        // send the channel setup message
+                        source.sendChannelSetup(response, false);
+                    }
+                } catch (OverlayRegistrationError e) {
+                    Debug.out("got an error when registering incoming transport to '"
+                            + source.getRemoteFriend().getNick() + "': " + e.getMessage());
+                }
+            }
+
+        };
+        // get the search delay.
+        int searchDelay = overlayManager.getSearchDelayForInfohash(source.getRemoteFriend(),
+                infohash);
+
+        delayedExecutor.queue(searchDelay + overlayDelay, task);
+
+        // we are still forwarding if there are files in the torrent
+        // that we chose not to download
+        if (considerDownloadManager) {
+            DiskManagerFileInfo[] diskManagerFileInfo = dm.getDiskManagerFileInfo();
+            for (DiskManagerFileInfo d : diskManagerFileInfo) {
+                if (d.isSkipped()) {
+                    return true;
+                }
+            }
+        }
+
+        /*
+         * ok, we shouldn't forward this, already sent a hash response
+         * and we have/are downloading all the files
+         */
+        return false;
     }
 
     private boolean isSearchCanceled(int searchId) {
@@ -682,26 +725,32 @@ public class SearchManager {
     }
 
     private void handleIncomingHashSearchResponse(OSF2FHashSearch hashSearch,
-            FriendConnection source, OSF2FHashSearchResp msg) {
-
+            FriendConnection source, OSF2FHashSearchResp searchResponse) {
         // Check if this should be handled by a listener
         List<HashSearchListener> listeners = hashSearch.getListeners();
         if (listeners.size() > 0) {
             for (HashSearchListener listener : listeners) {
-                listener.searchResponseReceived(hashSearch, source, msg);
+                listener.searchResponseReceived(hashSearch, source, searchResponse);
             }
             return;
         }
 
-        // No listeners, treat as standard hash search handler
-        // create the overlay transport
+        // Verify that we searched for this.
         byte[] infoHash = filelistManager.getMetainfoHash(hashSearch.getInfohashhash());
         if (infoHash == null) {
+
+            if (ReflectionUtils.isExperimental()
+                    && Boolean.TRUE == ReflectionUtils.invokeExperimentalMethod(
+                            "processSpecialSearchResponse", new Object[] { searchResponse },
+                            new Class<?>[] { OSF2FHashSearchResp.class })) {
+                logger.info("Search response handled in experimental code. Skipping.");
+                return;
+            }
+
             logger.warning("got channel setup request, " + "but the infohash we searched for "
                     + "is not in filelistmananger");
             return;
         }
-
         DownloadManager dm = AzureusCoreImpl.getSingleton().getGlobalManager()
                 .getDownloadManager(new HashWrapper(infoHash));
         if (dm == null) {
@@ -709,17 +758,17 @@ public class SearchManager {
             return;
         }
 
-        if (source.hasRegisteredPath(msg.getPathID())) {
+        if (source.hasRegisteredPath(searchResponse.getPathID())) {
             logger.finer("got channel setup response, "
                     + "but path is already used: sending back a reset");
-            source.sendChannelRst(new OSF2FChannelReset(OSF2FMessage.CURRENT_VERSION, msg
-                    .getChannelID()));
+            source.sendChannelRst(new OSF2FChannelReset(OSF2FMessage.CURRENT_VERSION,
+                    searchResponse.getChannelID()));
             return;
         }
 
-        OverlayTransport overlayTransport = new OverlayTransport(source, msg.getChannelID(),
-                infoHash, msg.getPathID(), true, overlayManager.getLatencyDelayForInfohash(
-                        source.getRemoteFriend(), infoHash));
+        OverlayTransport overlayTransport = new OverlayTransport(source,
+                searchResponse.getChannelID(), infoHash, searchResponse.getPathID(), true,
+                overlayManager.getLatencyDelayForInfohash(source.getRemoteFriend(), infoHash));
         // register it with the friendConnection
         try {
             source.registerOverlayTransport(overlayTransport);
@@ -1090,7 +1139,7 @@ public class SearchManager {
         sendSearch(newSearchId, search, false);
     }
 
-    private void sendSearch(int newSearchId, OSF2FSearch search, boolean skipQueue) {
+    public void sendSearch(int newSearchId, OSF2FSearch search, boolean skipQueue) {
         lock.lock();
         try {
             sentSearches.put(newSearchId, new SentSearch(search));
@@ -1173,6 +1222,7 @@ public class SearchManager {
             this.count = count;
         }
 
+        @Override
         public int compareTo(DebugChannelIdEntry o) {
             if (o.count > count) {
                 return 1;
@@ -1379,6 +1429,7 @@ public class SearchManager {
 
         class DelayedSearchQueueThread implements Runnable {
 
+            @Override
             public void run() {
                 while (true) {
                     try {
@@ -1485,7 +1536,7 @@ public class SearchManager {
         }
     }
 
-    static class RotatingBloomFilter {
+    public static class RotatingBloomFilter {
         private static final int OBJECTS_TO_STORE = 1000000;
 
         private static final int SIZE_IN_BITS = 10240 * 1024;
@@ -1610,8 +1661,9 @@ public class SearchManager {
                     int2 = rand.nextInt();
                     bytes = bytesFromInts(int1, int2);
                 } while (inserts.contains(new String(Base64.encode(bytes))) == true);
-                if (bf.contains(int1, int2) == true)
+                if (bf.contains(int1, int2) == true) {
                     fps++;
+                }
             }
 
             System.out.println("false positive check, " + fps + "/" + to_check);
@@ -1792,4 +1844,8 @@ public class SearchManager {
         return false;
     }
 
+    // Only visible for the analytics code
+    public RotatingBloomFilter getRecentSearchesBloomFilter() {
+        return recentSearches;
+    }
 }

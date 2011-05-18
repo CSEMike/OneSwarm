@@ -28,16 +28,25 @@ public class TwoProcessTestBase extends OneSwarmTestBase {
     /** Should the two created peers be connected? */
     protected static boolean connectPeers = true;
 
+    /** Should we include experimental support? */
+    protected static boolean experimentalInstance = false;
+
     @BeforeClass
     public static void setUpClass() throws Exception {
         if (startSelenium) {
             seleniumServer = TestUtils.startSeleniumServer((new File(".").getAbsolutePath()));
         }
+        // If running in experimental mode, set this but ignore the config.
+        // We'll configure statically.
+        if (experimentalInstance) {
+            System.setProperty("oneswarm.experimental.config.file", "dummy");
+        }
+
         // Start a local client in this JVM
         TestUtils.awaitJVMOneSwarmStart();
 
         // One additional remote client with which we'll chat
-        localOneSwarm = TestUtils.spawnOneSwarmInstance(connectPeers);
+        localOneSwarm = TestUtils.spawnOneSwarmInstance(connectPeers, experimentalInstance);
         logger.info("OOP LocalOneSwarm started.");
         if (startSelenium) {
             selenium = new DefaultSelenium("127.0.0.1", 4444, "*firefox",

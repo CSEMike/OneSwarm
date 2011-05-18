@@ -52,6 +52,7 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelReset;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChat;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDhtLocation;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHandshake;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessageDecoder;
@@ -78,7 +79,7 @@ public class FriendConnection {
     /*
      * the max search rate, average over 10 s
      */
-    public final static double MAX_OUTGOING_SEARCH_RATE = 1000;
+    public final static double MAX_OUTGOING_SEARCH_RATE = 300;
 
     // This is set to 1000 for legacy clients who had a MAX_OUTGOING_SEARCH_RATE
     // of 1000.
@@ -605,14 +606,6 @@ public class FriendConnection {
         return super.equals(obj);
     }
 
-    // public boolean equals(Object o) {
-    // if (o instanceof FriendConnection) {
-    // FriendConnection fc = (FriendConnection) o;
-    // return Arrays.equals(fc.getRemotePublicKey(), getRemotePublicKey());
-    // }
-    // return false;
-    // }
-
     public long getConnectionAge() {
         return System.currentTimeMillis() - connectionTime;
     }
@@ -633,10 +626,6 @@ public class FriendConnection {
         return friendConnectionQueue.getForwardQueueBytes();
     }
 
-    // public long getForwardQueueLengthMs() {
-    // return friendConnectionQueue.getForwardQueueMs();
-    // }
-
     public long getLastMessageRecvTime() {
         return System.currentTimeMillis() - lastByteRecvTime;
     }
@@ -645,8 +634,6 @@ public class FriendConnection {
         return friendConnectionQueue.getLastMessageSentTime();
     }
 
-    // private long protocolBytesUploaded = 0;
-    // private long dataBytesUploaded = 0;
     NetworkConnection getNetworkConnection() {
         return connection;
     }
@@ -1003,6 +990,23 @@ public class FriendConnection {
 
         boolean possiblePrune = true;
 
+        // Update the stats based on the _raw_ volume of searches we observe.
+        if (message instanceof OSF2FTextSearch) {
+            OSF2FTextSearch cast = (OSF2FTextSearch) message;
+            if (cast.getSearchString().startsWith("sha1;")) {
+                stats.sha1PrefixSearchReceived();
+            } else if (cast.getSearchString().startsWith("ed2k;")) {
+                stats.ed2kPrefixSearchReceived();
+            } else if (cast.getSearchString().startsWith("id;")) {
+                stats.idPrefixSearchReceived();
+            } else {
+                stats.textSearchReceived();
+            }
+
+        } else if (message instanceof OSF2FHashSearch) {
+            stats.hashSearchReceived();
+        }
+
         if (message instanceof OSF2FTextSearch) {
             OSF2FTextSearch asSearch = (OSF2FTextSearch) message;
             if (asSearch.getSearchString().startsWith("sha1;") == false
@@ -1010,9 +1014,8 @@ public class FriendConnection {
                 possiblePrune = false;
             } else {
                 // Just always skip sha1;, ed2k; searches for now.
-                // TODO(piatek): remove this when some more principled thing is
-                // figured out.
-                return;
+                // No search drop in 0.7.5
+                // return;
             }
         } else {
             // For now, just disable early drops
@@ -1412,11 +1415,19 @@ public class FriendConnection {
             logger.finer("not sending search, this search id is already received from this friend");
             return;
         }
-        outgoingSearchRate.addValue(1);
         long average = outgoingSearchRate.getAverage();
         if (average > MAX_OUTGOING_SEARCH_RATE) {
             logger.warning(getDescription() + "Dropping search, sending too fast");
             return;
+        }
+        outgoingSearchRate.addValue(1);
+
+        if (search instanceof OSF2FTextSearch) {
+            stats.textSearchSent();
+        } else if (search instanceof OSF2FHashSearch) {
+            stats.hashSearchSent();
+        } else if (search instanceof OSF2FSearchCancel) {
+            stats.searchCancelSent();
         }
 
         if (logger.isLoggable(Level.FINE) && search instanceof OSF2FTextSearch) {
