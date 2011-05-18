@@ -44,10 +44,10 @@
 	<source path="rpc" />
 	<source path="client" />
 
-	<!-- speed up compilation during development -->
+	<!-- speed up compilation during development 
 	<set-property name="user.agent" value="safari,gecko1_8" /> -->
 
-	<!-- localization 
+	<!-- localization -->
 	<extend-property name="locale" values="de_DE" />
 	<extend-property name="locale" values="es_ES" />
 	<extend-property name="locale" values="fi_FI" />
@@ -59,6 +59,6 @@
 	<extend-property name="locale" values="ro_RO" />
 	<extend-property name="locale" values="ru_RU" />
 	<extend-property name="locale" values="sv_SE" />
-	<extend-property name="locale" values="zh_HANS" /> -->
+	<extend-property name="locale" values="zh_HANS" />
 
 </module>

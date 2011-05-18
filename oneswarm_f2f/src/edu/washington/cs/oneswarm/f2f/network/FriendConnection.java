@@ -78,7 +78,7 @@ public class FriendConnection {
     /*
      * the max search rate, average over 10 s
      */
-    public final static double MAX_OUTGOING_SEARCH_RATE = 1000;
+    public final static double MAX_OUTGOING_SEARCH_RATE = 300;
 
     // This is set to 1000 for legacy clients who had a MAX_OUTGOING_SEARCH_RATE
     // of 1000.
@@ -1006,9 +1006,8 @@ public class FriendConnection {
                 possiblePrune = false;
             } else {
                 // Just always skip sha1;, ed2k; searches for now.
-                // TODO(piatek): remove this when some more principled thing is
-                // figured out.
-                return;
+                // No search drop in 0.7.5
+                // return;
             }
         } else {
             // For now, just disable early drops
@@ -1380,6 +1379,12 @@ public class FriendConnection {
 
     private void sendMessage(OSF2FMessage msg, QueueBuckets queueBuckets, boolean skipQueue) {
         if (!handShakeReceived) {
+            // We don't buffer search messages -- if the handshake takes a long
+            // time, a large queue may build up, resulting in a flood.
+            if (msg instanceof OSF2FSearch) {
+                logger.finest("Dropping search message prior to handshake.");
+                return;
+            }
             bufferedMessages.add(msg);
             logger.finer(getDescription() + "waiting for handshake to complete, queue size: "
                     + bufferedMessages.size());
