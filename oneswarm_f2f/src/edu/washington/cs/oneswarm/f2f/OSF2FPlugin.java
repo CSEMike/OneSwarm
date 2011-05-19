@@ -45,7 +45,7 @@ import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayForward;
 import edu.washington.cs.oneswarm.f2f.network.OverlayEndpoint;
 import edu.washington.cs.oneswarm.f2f.network.OverlayManager;
-import edu.washington.cs.oneswarm.f2f.network.OverlayTransport;
+import edu.washington.cs.oneswarm.f2f.permissions.GroupBean;
 import edu.washington.cs.oneswarm.f2f.permissions.PermissionsDAO;
 import edu.washington.cs.oneswarm.plugins.PluginCallback;
 import edu.washington.cs.publickey.PublicKeyFriend;
@@ -57,20 +57,22 @@ public class OSF2FPlugin implements Plugin {
     // public static boolean logToStdOut = false;
     private OSF2FMain main;
 
-    private long mStartupTime = System.currentTimeMillis();
+    private final long mStartupTime = System.currentTimeMillis();
 
     class OneSwarmURIHandlerListener implements MagnetURIHandlerListener {
 
-        private PluginInterface pluginInterface;
+        private final PluginInterface pluginInterface;
 
         public OneSwarmURIHandlerListener(PluginInterface pluginInterface) {
             this.pluginInterface = pluginInterface;
         }
 
+        @Override
         public byte[] badge() {
             return null; // we don't really need this
         }
 
+        @Override
         public boolean download(URL magnet_url) throws MagnetURIHandlerException {
             try {
                 pluginInterface.getDownloadManager().addDownload(magnet_url, false);
@@ -80,6 +82,7 @@ public class OSF2FPlugin implements Plugin {
             }
         }
 
+        @Override
         public byte[] download(final MagnetURIHandlerProgressListener progress, final byte[] hash,
                 InetSocketAddress[] sources, long timeout) throws MagnetURIHandlerException {
 
@@ -145,22 +148,26 @@ public class OSF2FPlugin implements Plugin {
 
                         OSF2FPlugin.this.sendMetaInfoRequest(connection_id, channel_id, hash, 0,
                                 new PluginCallback<byte[]>() {
+                                    @Override
                                     public void dataRecieved(long count) {
                                         progress.reportActivity("Read: " + count);
                                         logger.finer("Read " + count);
                                     }
 
+                                    @Override
                                     public void errorOccured(String str) {
                                         progress.reportActivity("Error: " + str);
                                         logger.warning("Error occurred during metainfo download: "
                                                 + connection_id + " / " + channel_id + " / " + str);
                                     }
 
+                                    @Override
                                     public void progressUpdate(int percentage) {
                                         progress.reportCompleteness(percentage);
                                         logger.finer("Progress updated: " + percentage);
                                     }
 
+                                    @Override
                                     public void requestCompleted(byte[] bytes) {
                                         try {
                                             out.write(bytes);
@@ -183,15 +190,18 @@ public class OSF2FPlugin implements Plugin {
             return null;
         }
 
+        @Override
         public int get(String name, Map values) {
             return Integer.MIN_VALUE;
         }
 
+        @Override
         public boolean set(String name, Map values) {
             return false;
         }
     };
 
+    @Override
     public void initialize(final PluginInterface pluginInterface) throws PluginException {
         System.err.println("Loading friend-to-friend plugin");
         Log.setLogger(pluginInterface.getLogger());
@@ -463,10 +473,14 @@ public class OSF2FPlugin implements Plugin {
              */
             // PermissionsDAO.get().refresh_friend_groups();
             try {
-                PermissionsDAO.get().renameGroup(
-                        PermissionsDAO.get()
-                                .getUserGroup(new String(Base64.encode(f.getPublicKey())))
-                                .getGroupID(), f.getNick());
+                GroupBean userGroup = PermissionsDAO.get().getUserGroup(
+                        new String(Base64.encode(f.getPublicKey())));
+                // New users may have no GroupBean.
+                if (userGroup != null) {
+                    PermissionsDAO.get().renameGroup(userGroup.getGroupID(), f.getNick());
+                } else {
+                    logger.warning("Couldn't rename group (GroupBean null): " + f.getNick());
+                }
             } catch (IOException e) {
                 logger.warning("Group rename failed: " + e.toString());
                 e.printStackTrace();
