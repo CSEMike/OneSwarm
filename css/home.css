@@ -1,5 +1,3 @@
-/* @override http://localhost:4000/css/home.css */
-
 body {
 	font-family: Georgia, Times New Roman, Times, serif;
 	text-align: left;
@@ -7,6 +5,14 @@ body {
 	width: 800px;
 	margin-left: auto;
 	margin-right: auto;
+}
+
+div.mainhead {
+	font-size: 16pt;
+	margin-bottom: 15px;
+	text-align: center;
+font-family: HelveticaNeue-Light, Helvetica, sans-serif;
+	background-color: #feffff;
 }
 
 table#peopletable {
@@ -17,7 +23,7 @@ table#peopletable {
 	text-align: center;
 	padding-bottom: 5px;
 	border-bottom: 1px solid gray;
-	font-family: Helvetica, Arial, sans-serif;
+	font-family: 'Open Sans', arial, sans-serif;
 	font-size: 21px;
 }
 
