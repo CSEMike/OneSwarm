@@ -43,6 +43,11 @@
 8.  `ant run`
 
 
+#### Linux
+
+*  [Ubuntu](https://github.com/CSEMike/OneSwarm/wiki/Building-on-Ubuntu)
+
+
 # Testing
 
 `ant test`
