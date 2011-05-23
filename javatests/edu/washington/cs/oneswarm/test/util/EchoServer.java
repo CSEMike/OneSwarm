@@ -83,16 +83,17 @@ public class EchoServer implements Runnable {
         assert (Arrays.equals(payload, returned));
     }
 
-    private final int port;
+    private int port;
     private final Semaphore started = new Semaphore(0);
 
     public EchoServer(int port) {
         this.port = port;
     }
 
-    public void waitForStart() throws InterruptedException {
+    public int waitForStart() throws InterruptedException {
         started.acquire();
         started.release();
+        return port;
     }
 
     @Override
@@ -100,6 +101,9 @@ public class EchoServer implements Runnable {
         ServerSocket ss = null;
         try {
             ss = new ServerSocket(port);
+            // If port 0 is specified the server will bind to a free port
+            // when that is the case, update the port field so be accurate.
+            this.port = ss.getLocalPort();
             started.release();
             while (true) {
                 Socket client = ss.accept();
