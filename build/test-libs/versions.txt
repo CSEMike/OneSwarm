@@ -1,2 +1,0 @@
-selenium-server.jar -- 2.0b3 -- http://seleniumhq.org/download/
-selenium-java-client-driver.jar -- 2.0b3 -- http://seleniumhq.org/download/
