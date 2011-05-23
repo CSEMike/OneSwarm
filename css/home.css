@@ -1,0 +1,117 @@
+body {
+	font-family: Georgia, Times New Roman, Times, serif;
+	text-align: left;
+	direction: ltr;
+	width: 800px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+div.mainhead {
+	font-size: 16pt;
+	margin-bottom: 15px;
+	text-align: center;
+font-family: HelveticaNeue-Light, Helvetica, sans-serif;
+	background-color: #feffff;
+}
+
+table#peopletable {
+	font-family: Georgia, Times New Roman, Times, serif;
+}
+
+#nav {
+	text-align: center;
+	padding-bottom: 5px;
+	border-bottom: 1px solid gray;
+	font-family: 'Open Sans', arial, sans-serif;
+	font-size: 21px;
+}
+
+a {
+	text-decoration: none;
+	color: #2200C1;
+}
+
+a:hover {
+	text-decoration: underline;
+	cursor: hand;
+}
+
+div.nocolor a {
+	color: #000000;
+}
+
+.dlbutton {
+	display:block;
+	width:257px;
+	height:67px;
+	text-indent:-9999px;
+}
+
+.dlbutton a {
+	display:block;
+	width:100%;
+	height:100%;
+	background: url(/images/dlbutton.png) no-repeat 0 0;
+	outline:none;
+}
+.dlbutton a:hover {
+	background-position:0 -67px;
+}
+
+div.dltext {
+	font-family: 'Open Sans', arial, sans-serif;
+	font-size: 13px;
+	margin-top: -10px;
+	text-align: center;
+}
+
+div.maincontent {
+	position: relative;
+}
+
+div.buttonpos {
+	margin-left: 13px;
+}
+
+div.dlbox {
+	position: absolute;
+	top: 0;
+	right: 0;
+	float: right;
+	width: 280px;
+	border: 1px solid #ccf;
+	background-color: #f2f2fe;
+}
+
+div.overview {
+	width: 500px;
+}
+
+h3 {
+	border-bottom: 1px solid #36322f;
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-variant: normal;
+	font-weight: bold;
+	text-align: left;
+}
+
+li {
+	margin-bottom: 10px;
+}
+
+#footer {
+	text-align: center;
+	font-size: 10pt;
+	border-top: 1px solid #36322f;
+	padding-top: 10px;
+}
+
+#download_table {
+	border: 1px solid #c2c2c2;
+	border-collapse: collapse;
+}
+
+blockquote { 
+	width: 650px; 
+} 

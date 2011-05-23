@@ -1,0 +1,56 @@
+---
+layout: default
+title: OneSwarm - Private P2P Data Sharing
+---
+
+<div class="mainhead">
+	OneSwarm is a P2P file sharing service that protects your privacy. <br/>
+	It's fast, BitTorrent-compatible, and free!
+</div>
+
+<div class="maincontent">
+	
+	<div class="dlbox">
+		<div class="buttonpos">
+			<p class="dlbutton">
+				<script language='JavaScript'>
+					document.write('<a href="builds/');
+					if (navigator.appVersion.toLowerCase().indexOf("windows") != -1) {
+						document.write('Install_OneSwarm.exe');
+					} else if (navigator.appVersion.indexOf("Mac") != -1) {
+						document.write('OneSwarm.dmg');
+					} else if (navigator.userAgent.toLowerCase().indexOf("linux") != -1) {
+						if (window.navigator.platform.indexOf("_64") != -1) {
+							document.write('OneSwarm_linux_x86_64.tar.gz');
+						} else {
+							document.write('OneSwarm_linux_x86.tar.gz');
+						} // if 64 bit
+					}					
+					document.writeln('">Download OneSwarm</a>');
+				</script>
+			</p>
+		</div> <!-- buttonpos -->
+
+		<div class="dltext">
+			<script language='JavaScript'>
+				if (navigator.appVersion.toLowerCase().indexOf("windows") != -1) {
+					document.write('Windows 7, Vista, XP');
+				} else if (navigator.appVersion.indexOf("Mac") != -1) {
+					document.write('Mac OS X 10.6+ (64-bit Intel only)');
+				} else if (navigator.userAgent.toLowerCase().indexOf("linux") != -1) {
+					if (window.navigator.platform.indexOf("_64") != -1) {
+						document.write('Linux (64-bit)');
+					} else {
+						document.write('Linux (32-bit)');
+					} // if 64 bit
+				} // if linux
+			</script>
+			<p><a href="download.html">All platforms</a></p>
+		</div> <!-- dltext -->
+	</div> <!-- dlbox -->
+
+	<div class="screencast">
+		<iframe width="480" height="375" src="http://www.youtube.com/embed/Zk_3iUeCvQg?rel=0" frameborder="0" allowfullscreen></iframe>
+	</div> <!-- screencast -->
+
+</div> <!-- maincontent -->
