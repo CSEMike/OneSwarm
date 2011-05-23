@@ -1,0 +1,80 @@
+---
+layout: default
+title: OneSwarm - About
+---
+
+<p>Although widely used, currently popular peer-to-peer (P2P) applications offer no  user privacy. By design, services like BitTorrent and Gnutella share data  with anyone that asks for it, allowing a third-party to <a href="http://dmca.cs.washington.edu/">systematically monitor</a> user behavior. As a result, using a P2P network means that your online activities become public knowledge. </p> 
+
+<p>OneSwarm is a new peer-to-peer tool that provides users with explicit control over their privacy by letting them determine how data is shared. Instead of sharing data indiscriminately, data shared with OneSwarm can be made public, it can be shared with friends, shared with some friends but not others, and so forth. We call this friend-to-friend (F2F) data sharing. OneSwarm is:</p> 
+
+<ul> 
+	<li>
+		<strong>Privacy preserving:  </strong>OneSwarm uses source address rewriting to protect user privacy. Instead of always transmitting data directly from sender to receiver (immediately identifying both), OneSwarm may forward data through multiple intermedaries, obscuring the identity of both sender and receiver. For more details, check out the papers below</a>.
+	</li> 
+	<li>
+		<strong>User friendly: </strong>OneSwarm&#146;s interface is  web-based and supports real-time transcoding of many audio and video formats for in-browser playback, eliminating the need for casual users to master a new application&#146;s interface or search for custom media codecs. 
+	</li> 
+  	<li>
+		<strong>Open: </strong>OneSwarm is freely available and built on existing standards. OneSwarm can operate as a fully backwards compatible BitTorrent client, and its friend-to-friend data sharing features are built on cryptographic standards, e.g., X.509 certificates and SSL encryption. 
+	</li> 
+</ul> 
+
+<h3>Papers</h3>
+
+<p>This paper describes the data sharing features of OneSwarm:</p>
+<ul>
+  <li><a href="http://www.michaelpiatek.com/papers/oneswarm_SIGCOMM.pdf">Privacy-preserving P2P data sharing with OneSwarm</a><br>
+	<div class="nocolor">
+    <a href="http://www.cs.washington.edu/homes/isdal/">Tomas Isdal</a>, <a href="http://www.michaelpiatek.com/">Michael Piatek</a>, <a href="http://www.cs.washington.edu/homes/arvind/">Arvind Krishnamurthy</a>, <a href="http://www.cs.washington.edu/homes/tom/">Thomas Anderson</a><br>
+    <a href="http://www.sigcomm.org/sigcomm2010/">SIGCOMM 2010</a>. </div></li>
+</ul>
+<p>OneSwarm builds on our current and recent work regarding P2P system design. For more information, check out the papers below. </p>
+<ul>
+  <li><a href="http://www.michaelpiatek.com/papers/piatek_hotnets09_p2p_isps.pdf">Pitfalls for ISP-friendly P2P design</a>
+    <br>
+	<div class="nocolor">
+    <a href="http://www.michaelpiatek.com/">Michael Piatek</a>, <a href="http://www.cs.washington.edu/homes/harsha">Harsha V. Madhyastha</a>, <a href="http://www.cs.washington.edu/homes/jjohn/">John P. John</a>, <a href="http://www.cs.washington.edu/homes/arvind/">Arvind Krishnamurthy</a>, <a href="http://www.cs.washington.edu/homes/tom/">Thomas Anderson</a>        <br>
+    <a href="http://conferences.sigcomm.org/hotnets/2009/">HotNets 2009</a>.</div></li>
+
+  <li><a href="http://www.michaelpiatek.com/papers/piatek_hotsec08.pdf">Challenges and Directions for Monitoring P2P File Sharing Networks &ndash;or&ndash; Why My Printer Received a DMCA Takedown Notice</a><br>
+	<div class="nocolor">
+    <a href="http://www.michaelpiatek.com/">Michael Piatek</a>, <a href="http://www.cs.washington.edu/homes/yoshi/">Tadayoshi Kohno</a>, <a href="http://www.cs.washington.edu/homes/arvind/">Arvind Krishnamurthy<br>
+    </a><a href="http://www.usenix.org/event/hotsec08/">HotSec 2008</a>. </div></li>
+
+  <li><a href="http://www.michaelpiatek.com/papers/onehop_nsdi08.pdf">One hop Reputations for Peer to Peer File Sharing Workloads</a><br>
+	<div class="nocolor">
+	<a href="http://www.michaelpiatek.com/">Michael Piatek</a>, <a href="http://www.cs.washington.edu/homes/isdal/">Tomas Isdal</a>, <a href="http://www.cs.washington.edu/homes/arvind/">Arvind Krishnamurthy</a>, <a href="http://www.cs.washington.edu/homes/tom/">Thomas Anderson</a><br>
+    <a href="http://www.usenix.org/events/nsdi08/">NSDI 2008</a>.</div></li>
+
+  <li><a href="http://www.michaelpiatek.com/papers/dht_imc_falkner.pdf">Profiling a million user DHT</a><br>
+	<div class="nocolor">
+    Jarret Falkner, <a href="http://www.michaelpiatek.com/">Michael Piatek</a>, <a href="http://www.cs.washington.edu/homes/jjohn/">John P. John</a>, <a href="http://www.cs.washington.edu/homes/arvind/">Arvind Krishnamurthy</a>,  <a href="http://www.cs.washington.edu/homes/tom/">Thomas Anderson</a><br>
+    <a href="http://www.imconf.net/imc-2007/">IMC 2007</a>.</div></li>
+
+  <li><a href="http://www.michaelpiatek.com/papers/piatek_fudico3.pdf">A case for holistic incentive design</a><br>
+	<div class="nocolor">
+	<a href="http://www.michaelpiatek.com/">Michael Piatek</a>, <a href="http://www.cs.washington.edu/homes/tom/">Thomas Anderson</a>, <a href="http://www.cs.washington.edu/homes/arvind/">Arvind Krishnamurthy</a><br>
+    Workshop on Future Directions in Distributed Computing (<a href="http://www.cs.utexas.edu/~lorenzo/FuDiCoIII/">FuDiCo III</a>), 2007.</div>
+  </li>
+
+  <li><a href="http://www.michaelpiatek.com/papers/BitTyrant.pdf">Do incentives build robustness in BitTorrent?</a><br>
+	<div class="nocolor">
+	<a href="http://www.michaelpiatek.com/">Michael Piatek</a>, <a href="http://www.cs.washington.edu/homes/isdal/">Tomas Isdal</a>, <a href="http://www.cs.washington.edu/homes/tom/">Thomas Anderson</a>, <a href="http://www.cs.washington.edu/homes/arvind/">Arvind Krishnamurthy</a>, <a href="http://www.cs.umass.edu/%7earun/">Arun Venkataramani</a><br>
+    <a href="http://www.usenix.org/events/nsdi07/">NSDI 2007</a>.</div> </li>
+
+  <li><a href="http://www.michaelpiatek.com/papers/bitprobes_pam.pdf">Leveraging BitTorrent for End Host Measurements</a><br>
+	<div class="nocolor">
+	<a href="http://www.cs.washington.edu/homes/isdal/">Tomas Isdal</a>, <a href="http://www.michaelpiatek.com/">Michael Piatek</a>, <a href="http://www.cs.washington.edu/homes/arvind/">Arvind Krishnamurthy</a>, <a href="http://www.cs.washington.edu/homes/tom/">Thomas Anderson</a><br>
+    <a href="http://pam2007.info.ucl.ac.be/">PAM 2007</a>.</div></li>
+</ul>
+
+<h3>People</h3>
+	
+<table id="peopletable" width="750" border="0" cellspacing="2" cellpadding="0">
+	<tr>
+		<td width="25%"><div align="center"><a href="http://www.cs.washington.edu/homes/isdal/">Tomas Isdal</a></div></td>
+		<td width="25%"><div align="center"><a href="http://www.michaelpiatek.com/">Michael Piatek</a></div></td>
+		<td width="25%"><div align="center"><a href="http://www.cs.washington.edu/homes/arvind/">Arvind Krishnamurthy</a></div></td>
+		<td width="25%"><div align="center"><a href="http://www.cs.washington.edu/homes/tom/">Tom Anderson</a></div></td>
+	</tr>
+</table>
