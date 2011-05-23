@@ -317,7 +317,7 @@ public class Sha1Peer
 	}
 
 	public String getClient() {
-		return ("OneSwarm SHA1 vitual peer");
+		return ("OneSwarm SHA1 virtual peer");
 	}
 
 	public String getClientNameFromExtensionHandshake() {
