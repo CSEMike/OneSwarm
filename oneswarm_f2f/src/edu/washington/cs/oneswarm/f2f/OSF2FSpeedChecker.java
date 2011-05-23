@@ -10,9 +10,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -31,13 +32,14 @@ import org.bouncycastle.util.encoders.Base64;
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.config.ParameterListener;
 import org.gudy.azureus2.core3.global.GlobalManagerStats;
+import org.gudy.azureus2.core3.util.Constants;
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 import org.gudy.azureus2.core3.util.DirectByteBufferPool;
 
-import com.aelitis.azureus.core.networkmanager.NetworkConnection;
-import com.aelitis.azureus.core.networkmanager.NetworkManager;
 import com.aelitis.azureus.core.networkmanager.IncomingMessageQueue.MessageQueueListener;
+import com.aelitis.azureus.core.networkmanager.NetworkConnection;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
+import com.aelitis.azureus.core.networkmanager.NetworkManager;
 import com.aelitis.azureus.core.networkmanager.NetworkManager.RoutingListener;
 import com.aelitis.azureus.core.networkmanager.impl.TransportHelper;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
@@ -427,9 +429,8 @@ public class OSF2FSpeedChecker {
 
     static class OutgoingSpeedCheck {
 
-        private static final int SPEED_TEST_MANAGER_PORT = 27002;
-
-        private static final String SPEEDTEST_ONESWARM_NET = "speedtest.oneswarm.net";
+        private static final String SPEEDTEST_URL = "http://" + Constants.VERSION_SERVER_V4
+                + "/speedcheck";
 
         private List<OutgoingSpeedCheckConnection> connections = new LinkedList<OutgoingSpeedCheckConnection>();
 
@@ -461,15 +462,14 @@ public class OSF2FSpeedChecker {
         public OutgoingSpeedCheck(GlobalManagerStats stats) {
             this.startTime = System.currentTimeMillis();
             log("starting speed test");
-            log("resolving " + SPEEDTEST_ONESWARM_NET);
             InetAddress addr;
             try {
-                addr = InetAddress.getByName(SPEEDTEST_ONESWARM_NET);
 
-                log("connecting to " + addr.getHostAddress() + ":" + SPEED_TEST_MANAGER_PORT);
-                final Socket socket = new Socket(addr, SPEED_TEST_MANAGER_PORT);
+                log("connecting to " + SPEEDTEST_URL);
+                HttpURLConnection conn = (HttpURLConnection) new URL(SPEEDTEST_URL)
+                        .openConnection();
                 BufferedReader in = new BufferedReader(new InputStreamReader(
-                        socket.getInputStream()));
+conn.getInputStream()));
 
                 String line;
                 List<String> hosts = new LinkedList<String>();
@@ -478,7 +478,7 @@ public class OSF2FSpeedChecker {
                 }
 
                 for (String s : hosts) {
-                    String[] split = s.split(":");
+                    String[] split = s.split(" ");
                     String host = split[0];
                     int port = Integer.parseInt(split[1]);
                     OutgoingSpeedCheckConnection c = new OutgoingSpeedCheckConnection(stats, host,
@@ -528,17 +528,7 @@ public class OSF2FSpeedChecker {
                                 }
                             }
                             connections.clear();
-                            try {
-                                OutputStreamWriter out = new OutputStreamWriter(socket
-                                        .getOutputStream());
-                                out.write(localEstimate + " " + remoteEstimate + "\n");
-                                out.flush();
-                                out.close();
-                                socket.close();
-                            } catch (IOException e) {
-                                // TODO Auto-generated catch block
-                                e.printStackTrace();
-                            }
+
                             log("speed test completed");
                             logger.fine("done clearing connections, local=" + localEstimate
                                     + " remote=" + remoteEstimate);
@@ -550,7 +540,7 @@ public class OSF2FSpeedChecker {
                     }
                 }, 1000 + SPEED_CHECK_TIME);
             } catch (UnknownHostException e1) {
-                log("unable to resolv host: " + SPEEDTEST_ONESWARM_NET);
+                log("unable to resolv host: " + SPEEDTEST_URL);
             } catch (IOException e) {
                 log("unable to get server list");
             }
