@@ -1,1 +1,0 @@
-c:\j2sdk1.4.2_04\bin\javah -d . -classpath ..\..\..\..\..\..\.. org.gudy.azureus2.platform.win32.access.impl.AEWin32AccessInterface
