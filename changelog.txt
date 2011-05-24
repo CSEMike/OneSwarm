@@ -1,4 +1,4 @@
-Version 0.7.5
+Version 0.7.5 (May 23, 2011)
 Support for friend address resolution via community servers
 Updated SWT to version 3.6.1 (cocoa and 64 bit on mac)
 bugfix: OneSwarm will no longer stop forwarding after running for several days under heavy traffic
