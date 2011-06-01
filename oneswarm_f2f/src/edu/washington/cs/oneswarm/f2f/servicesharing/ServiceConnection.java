@@ -57,7 +57,10 @@ public abstract class ServiceConnection extends OverlayEndpoint {
 
     @Override
     public void cleanup() {
-        serverConnection.close();
+        if (serverConnection != null) {
+            serverConnection.close();
+        }
+        serverConnection = null;
     }
 
     @Override

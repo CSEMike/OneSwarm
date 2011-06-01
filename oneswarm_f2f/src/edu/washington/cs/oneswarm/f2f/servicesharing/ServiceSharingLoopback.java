@@ -30,6 +30,12 @@ public class ServiceSharingLoopback {
         sharedService.connect(serviceConnection, new ServiceConnectionListener(true));
     }
 
+    public void close() {
+        incomingConnection.close();
+        serviceConnection.close();
+        logger.info("closed loopback connection");
+    }
+
     private class ServiceConnectionListener implements ConnectionListener {
         private boolean outgoing;
 
@@ -58,8 +64,9 @@ public class ServiceSharingLoopback {
 
         @Override
         public void exceptionThrown(Throwable error) {
-            logger.info("connect error to " + sharedService + " " + error.getClass().getName()
+            logger.info("Exception in " + sharedService + " " + error.getClass().getName()
                     + "::" + error.getMessage());
+            close();
         }
 
         @Override

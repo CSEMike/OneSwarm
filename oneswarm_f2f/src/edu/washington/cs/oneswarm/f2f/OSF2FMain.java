@@ -1,7 +1,9 @@
 package edu.washington.cs.oneswarm.f2f;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.PublicKey;
@@ -98,12 +100,38 @@ public class OSF2FMain {
                         }
                     }
                     if (!logConfLoaded) {
+                        BufferedReader in = new BufferedReader(new FileReader(logConfig));
+                        String line;
+                        int num = 0;
+
+                        while ((line = in.readLine()) != null) {
+                            if ("# libs".equals(line)) {
+                                break;
+                            }
+                            if (line.startsWith("#")) {
+                                continue;
+                            }
+
+                            try {
+                                String[] toks = line.split(".level");
+                                if (toks.length == 2) {
+                                    // force-load the classes so the logging is
+                                    // initialized properly during testing
+                                    Class.forName(toks[0]).getCanonicalName();
+                                    num++;
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+
                         logManager.readConfiguration(new FileInputStream(logConfig));
-                        System.err.println("OSF2FMain: read log configuration");
+                        System.err.println("OSF2FMain: read log configuration (" + num
+                                + " classes configured)");
                         Enumeration<String> loggerNames = logManager.getLoggerNames();
                         while (loggerNames.hasMoreElements()) {
                             final String l = loggerNames.nextElement();
-                            System.out.println("OSF2FMain: log-" + l + " "
+                            System.err.println("OSF2FMain: log-" + l + " "
                                     + Logger.getLogger(l).getLevel());
                         }
                     }

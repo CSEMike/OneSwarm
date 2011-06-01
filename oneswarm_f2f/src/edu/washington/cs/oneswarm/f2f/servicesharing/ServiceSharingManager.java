@@ -2,7 +2,9 @@ package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -93,21 +95,51 @@ public class ServiceSharingManager {
 
     }
 
-    public void createClientService(String name, int port, long searchKey) {
+    public int createClientService(String name, int suggestedPort, long searchKey) {
+        int port = suggestedPort;
         try {
             lock.lock();
             @SuppressWarnings("unchecked")
             List<Long> services = COConfigurationManager.getListParameter(
                     CLIENT_SERVICE_CONFIG_KEY, new LinkedList<Long>());
-            if (!services.contains(Long.valueOf(searchKey))) {
-                services.add(Long.valueOf(searchKey));
-                COConfigurationManager.setParameter(CLIENT_SERVICE_CONFIG_KEY, services);
+            ClientService cs = clientServices.get(searchKey);
+            // Create a new
+            if (cs == null) {
+                if (!services.contains(Long.valueOf(searchKey))) {
+                    services.add(Long.valueOf(searchKey));
+                    COConfigurationManager.setParameter(CLIENT_SERVICE_CONFIG_KEY, services);
+                }
+                cs = new ClientService(searchKey);
+                cs.setName(name);
+                cs.setPort(port);
+                clientServices.put(searchKey, cs);
             }
-            ClientService cs = new ClientService(searchKey);
-            COConfigurationManager.setParameter(cs.getNameKey(), name);
-            COConfigurationManager.setParameter(cs.getPortKey(), Long.valueOf(port));
-            COConfigurationManager.setParameter(cs.getEnabledKey(), true);
-            cs.activate();
+            // Activate if needed, and update the port if not set
+            if (!cs.active) {
+                if (cs.getPort() == -1) {
+                    cs.setPort(port);
+                }
+                cs.activate();
+            }
+            port = cs.getPort();
+        } finally {
+            lock.unlock();
+        }
+        return port;
+    }
+
+    public void deactivateClientService(long searchKey) {
+        try {
+            lock.lock();
+            @SuppressWarnings("unchecked")
+            List<Long> services = COConfigurationManager.getListParameter(
+                    CLIENT_SERVICE_CONFIG_KEY, new LinkedList<Long>());
+            services.remove(Long.valueOf(searchKey));
+            COConfigurationManager.setParameter(CLIENT_SERVICE_CONFIG_KEY, services);
+            ClientService cs = clientServices.get(searchKey);
+            if (cs != null) {
+                cs.deactivate();
+            }
         } finally {
             lock.unlock();
         }
@@ -193,10 +225,28 @@ public class ServiceSharingManager {
 
         public static final String CONFIGURATION_PREFIX = "SERVICE_CLIENT_";
         private final long serverSearchKey;
-        private boolean active;
+        private boolean active = false;
+        private PortMatcher matcher;
 
         public ClientService(long key) {
             this.serverSearchKey = key;
+            COConfigurationManager.setParameter(getEnabledKey(), false);
+            IncomingSocketChannelManager incomingSocketChannelManager = new IncomingSocketChannelManager(
+                    getPortKey(), getEnabledKey());
+            try {
+                incomingSocketChannelManager.setExplicitBindAddress(InetAddress
+                        .getByName("127.0.0.1"));
+            } catch (UnknownHostException e) {
+            }
+
+        }
+
+        public void setName(String name) {
+            COConfigurationManager.setParameter(getNameKey(), name);
+        }
+
+        public void setPort(int port) {
+            COConfigurationManager.setParameter(getPortKey(), Long.valueOf(port));
         }
 
         private String getPortKey() {
@@ -222,21 +272,38 @@ public class ServiceSharingManager {
                         + " but it is already active.");
                 return;
             }
+            active = true;
             try {
-                IncomingSocketChannelManager incomingSocketChannelManager = new IncomingSocketChannelManager(
-                        getPortKey(), getEnabledKey());
-                incomingSocketChannelManager.setExplicitBindAddress(InetAddress
-                        .getByName("127.0.0.1"));
                 int port = getPort();
-                NetworkManager.getSingleton().requestIncomingConnectionRouting(
-                        new PortMatcher(port), this, new RawMessageFactory());
+                COConfigurationManager.setParameter(getEnabledKey(), true);
+                matcher = new PortMatcher(port);
+                NetworkManager.getSingleton().requestIncomingConnectionRouting(matcher, this,
+                        new RawMessageFactory());
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
+        public void deactivate() {
+            logger.info("deactivating " + toString());
+            if (!active) {
+                logger.warning("Tried to deactivate service " + getName()
+                        + " but it is already deactivated.");
+                return;
+            }
+            active = false;
+            // remove the matcher
+            if (matcher != null) {
+                NetworkManager.getSingleton().cancelIncomingConnectionRouting(matcher);
+            }
+            COConfigurationManager.setParameter(getEnabledKey(), false);
+            COConfigurationManager.removeParameter(getNameKey());
+            COConfigurationManager.removeParameter(getPortKey());
+            COConfigurationManager.removeParameter(getEnabledKey());
+        }
+
         private int getPort() {
-            int port = COConfigurationManager.getIntParameter(getPortKey());
+            int port = COConfigurationManager.getIntParameter(getPortKey(), -1);
             return port;
         }
 
@@ -364,6 +431,18 @@ public class ServiceSharingManager {
 
         public String toString() {
             return name + " " + address + " enabled=" + isEnabled();
+        }
+    }
+
+    public void clearLocalServices() {
+        ArrayList<Long> currentServices = new ArrayList<Long>(clientServices.keySet());
+        for (Long key : currentServices) {
+            deactivateClientService(key);
+        }
+        currentServices.clear();
+        currentServices.addAll(serverServices.keySet());
+        for (Long key : currentServices) {
+            deregisterServerService(key);
         }
     }
 }

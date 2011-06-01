@@ -21,9 +21,9 @@ import org.junit.Test;
 import com.aelitis.azureus.ui.UIFunctionsManager;
 
 import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage;
+import edu.washington.cs.oneswarm.f2f.servicesharing.EchoServer;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager.SharedService;
-import edu.washington.cs.oneswarm.test.util.EchoServer;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 
 public class ServiceSharingSingleProcessTest {

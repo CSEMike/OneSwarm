@@ -1,4 +1,4 @@
-package edu.washington.cs.oneswarm.test.util;
+package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -128,7 +128,7 @@ public class EchoServer implements Runnable {
         }
     }
 
-    public void startDeamonThread(boolean blockUntilStarted) throws InterruptedException {
+    public Thread startDeamonThread(boolean blockUntilStarted) throws InterruptedException {
         Thread echoServerThread = new Thread(this);
         echoServerThread.setName("Echo server");
         echoServerThread.setDaemon(true);
@@ -136,5 +136,6 @@ public class EchoServer implements Runnable {
         if (blockUntilStarted) {
             waitForStart();
         }
+        return echoServerThread;
     }
 }
