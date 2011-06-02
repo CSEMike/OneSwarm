@@ -50,6 +50,7 @@ import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.config.ParameterListener;
 import org.gudy.azureus2.core3.config.StringList;
 import org.gudy.azureus2.core3.util.Constants;
+import org.oneswarm.util.ReflectionUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -455,9 +456,10 @@ public abstract class CommunityServerOperation extends Thread implements Cancell
             }
         }
 
-        String extraHeader = System.getProperty("oneswarm.community.request.header");
-        if (extraHeader != null) {
-            conn.setRequestProperty("x-oneswarm", extraHeader);
+        // If this is a planetlab machine: add extra headers for detection.
+        if (ReflectionUtils.isExperimental()) {
+            ReflectionUtils.invokeExperimentalMethod("addCommunityHeaders", new Object[] { conn },
+                    new Class<?>[] { HttpURLConnection.class });
         }
 
         /**
