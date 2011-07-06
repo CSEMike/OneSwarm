@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,7 +51,6 @@ import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.config.ParameterListener;
 import org.gudy.azureus2.core3.config.StringList;
 import org.gudy.azureus2.core3.util.Constants;
-import org.oneswarm.util.ReflectionUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -68,9 +68,15 @@ import edu.washington.cs.oneswarm.ui.gwt.server.BackendTaskManager.CancellationL
 
 public abstract class CommunityServerOperation extends Thread implements CancellationListener {
 
+    public interface CommunityServerRequestListener {
+        public void requestInitiated(HttpURLConnection conn);
+    }
+
     static final int MAX_READ_BYTES = 1 * 1024 * 1024;
 
     private static Logger logger = Logger.getLogger(CommunityServerOperation.class.getName());
+
+    private static LinkedList<CommunityServerRequestListener> listeners = new LinkedList<CommunityServerRequestListener>();
 
     boolean cancelled;
     int mTaskID;
@@ -106,6 +112,10 @@ public abstract class CommunityServerOperation extends Thread implements Cancell
                         sCheckedCommunityServers.clear();
                     }
                 });
+    }
+
+    public static void addRequestListener(CommunityServerRequestListener listener) {
+        listeners.add(listener);
     }
 
     void check_server_capabilities() {
@@ -456,10 +466,8 @@ public abstract class CommunityServerOperation extends Thread implements Cancell
             }
         }
 
-        // If this is a planetlab machine: add extra headers for detection.
-        if (ReflectionUtils.isExperimental()) {
-            ReflectionUtils.invokeExperimentalMethod("addCommunityHeaders", new Object[] { conn },
-                    new Class<?>[] { HttpURLConnection.class });
+        for (CommunityServerRequestListener listener : listeners) {
+            listener.requestInitiated(conn);
         }
 
         /**
