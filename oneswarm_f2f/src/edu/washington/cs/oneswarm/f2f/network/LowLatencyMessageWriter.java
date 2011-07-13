@@ -30,7 +30,7 @@ public class LowLatencyMessageWriter implements OutgoingMessageQueue.MessageQueu
     @Override
     public void messageQueued(Message message) {
         if (connection.getTransport() instanceof TransportImpl) {
-            ((TransportImpl) (connection.getTransport())).setReadyForWrite();
+            ((TransportImpl) (connection.getTransport())).readyForWrite(true);
         }
     }
 

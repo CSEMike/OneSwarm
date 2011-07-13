@@ -125,7 +125,7 @@ TransportImpl
 		return is_ready_for_write;  
 	}
 	  
-	protected boolean
+    public boolean
 	readyForWrite(
 		boolean	ready )
 	{
