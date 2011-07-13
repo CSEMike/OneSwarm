@@ -9,6 +9,7 @@ import com.aelitis.azureus.core.networkmanager.NetworkConnection;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 
+import edu.washington.cs.oneswarm.f2f.network.LowLatencyMessageWriter;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager.SharedService;
 
 public class ServiceSharingLoopback {
@@ -65,8 +66,8 @@ public class ServiceSharingLoopback {
 
         @Override
         public void exceptionThrown(Throwable error) {
-            logger.info("Exception in " + sharedService + " " + error.getClass().getName()
-                    + "::" + error.getMessage());
+            logger.info("Exception in " + sharedService + " " + error.getClass().getName() + "::"
+                    + error.getMessage());
             close();
         }
 
@@ -120,7 +121,13 @@ public class ServiceSharingLoopback {
         serviceConnection.startMessageProcessing();
         incomingConnection.startMessageProcessing();
         serviceConnection.enableEnhancedMessageProcessing(true);
+        serviceConnection.getOutgoingMessageQueue().registerQueueListener(
+                new LowLatencyMessageWriter(serviceConnection));
+
         incomingConnection.enableEnhancedMessageProcessing(true);
+        incomingConnection.getOutgoingMessageQueue().registerQueueListener(
+                new LowLatencyMessageWriter(incomingConnection));
+
     }
 
     private void transferMessage(NetworkConnection target, DataMessage message) {

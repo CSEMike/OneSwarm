@@ -6,6 +6,7 @@ import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListe
 
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
+import edu.washington.cs.oneswarm.f2f.network.LowLatencyMessageWriter;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager.SharedService;
 
 public class ServerServiceConnection extends ServiceConnection {
@@ -57,6 +58,9 @@ public class ServerServiceConnection extends ServiceConnection {
                 logger.fine(ServerServiceConnection.this.getDescription() + " connected");
                 serverConnection.startMessageProcessing();
                 serverConnection.enableEnhancedMessageProcessing(true);
+                serverConnection.getOutgoingMessageQueue().registerQueueListener(
+                        new LowLatencyMessageWriter(serverConnection));
+
                 serverConnection.getIncomingMessageQueue().registerQueueListener(
                         new ServerIncomingMessageListener());
                 synchronized (bufferedMessages) {

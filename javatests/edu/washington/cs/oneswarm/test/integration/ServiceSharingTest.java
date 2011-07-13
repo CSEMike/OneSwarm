@@ -28,6 +28,8 @@ public class ServiceSharingTest extends TwoProcessTestBase {
         logFinest(logger);
         logFinest(ServiceSharingSingleProcessTest.logger);
         logFinest(EchoServer.logger);
+        // logFinest(ReadController.logger);
+
         // logFinest(ServiceSharingManager.logger);
         // logFinest(ServiceConnection.logger);
         // logFinest(SearchManager.logger);

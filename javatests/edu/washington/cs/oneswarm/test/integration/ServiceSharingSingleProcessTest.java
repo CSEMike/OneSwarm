@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import com.aelitis.azureus.ui.UIFunctionsManager;
 
+import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage;
 import edu.washington.cs.oneswarm.f2f.servicesharing.EchoServer;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingLoopback;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
@@ -53,6 +54,7 @@ public class ServiceSharingSingleProcessTest extends OneSwarmTestBase {
         logFinest(logger);
         logFinest(EchoServer.logger);
         logFinest(ServiceSharingLoopback.logger);
+
         // logFinest(ServiceSharingManager.logger);
         // logFinest(ServiceConnection.logger);
         // logFinest(SearchManager.logger);
@@ -113,7 +115,7 @@ public class ServiceSharingSingleProcessTest extends OneSwarmTestBase {
         writeReadVerify("hellš".getBytes("UTF-8"), s);
 
         // test a maximumSizePacket
-        // TODO testRandom(s, DataMessage.MAX_PAYLOAD_SIZE);
+        testRandom(s, DataMessage.MAX_PAYLOAD_SIZE);
 
         // test a maximumSizePacket +1
         // TODO testRandom(s, DataMessage.MAX_PAYLOAD_SIZE + 1);
@@ -137,12 +139,12 @@ public class ServiceSharingSingleProcessTest extends OneSwarmTestBase {
         OutputStream outStream = s.getOutputStream();
 
         outStream.write(out);
-        logger.finest("wrote: " + out.length);
+        logger.finest("\n#######################\nwrote: " + out.length);
         byte[] in = new byte[out.length];
         int total = 0;
         while (total < out.length) {
             total += inStream.read(in, total, out.length - total);
-            logger.finest("read: " + total);
+            logger.finest("\n#######################\nread: " + total);
         }
         logger.info("time=" + (System.currentTimeMillis() - startTime));
         assertEquals(in, out);

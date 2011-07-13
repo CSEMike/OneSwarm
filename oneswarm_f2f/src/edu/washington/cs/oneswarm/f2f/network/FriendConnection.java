@@ -590,6 +590,8 @@ public class FriendConnection {
         logger.finer(getDescription() + ": setting fast message processing=" + enable);
         if (enable) {
             NetworkManager.getSingleton().upgradeTransferProcessing(connection);
+            connection.getOutgoingMessageQueue().registerQueueListener(
+                    new LowLatencyMessageWriter(this.connection));
         } else {
 
             // always enable this

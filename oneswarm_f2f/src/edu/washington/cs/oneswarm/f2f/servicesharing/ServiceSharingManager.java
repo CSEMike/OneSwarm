@@ -58,8 +58,20 @@ public class ServiceSharingManager {
 
     public HashMap<Long, ClientService> clientServices = new HashMap<Long, ClientService>();
 
+    private void enableLowLatencyNetwork() {
+        // If the LowLatencyMessageWrite is enabled an attempt is made to write
+        // messages to the channel straigt away, so there is no need to set
+        // network.control.write.idle.time to a lower value. The default setting
+        // will delay outgoing messages up to 50ms.
+
+        // This will trigger tcp read selects every x ms (instead of the default
+        // 25ms). The default setting delays incoming messages up to 25ms.
+        COConfigurationManager.setParameter("network.tcp.read.select.time", 4);
+    }
+
     public void registerServerService(long searchkey, SharedService service) {
         logger.fine("Registering service: key=" + searchkey + " service=" + service.toString());
+        enableLowLatencyNetwork();
         try {
             lock.lock();
             serverServices.put(searchkey, service);
@@ -79,6 +91,8 @@ public class ServiceSharingManager {
     }
 
     public void loadConfiguredClientServices() {
+        boolean enableLowLatencyNetwork = false;
+
         try {
             lock.lock();
             @SuppressWarnings("unchecked")
@@ -88,14 +102,19 @@ public class ServiceSharingManager {
                 ClientService cs = new ClientService(key);
                 clientServices.put(key, cs);
                 cs.activate();
+                enableLowLatencyNetwork = true;
             }
         } finally {
             lock.unlock();
         }
 
+        if (enableLowLatencyNetwork) {
+            enableLowLatencyNetwork();
+        }
     }
 
     public int createClientService(String name, int suggestedPort, long searchKey) {
+        enableLowLatencyNetwork();
         int port = suggestedPort;
         try {
             lock.lock();

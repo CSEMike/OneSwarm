@@ -12,7 +12,7 @@ public class OneSwarmTestBase {
         ConsoleHandler handler = new ConsoleHandler();
         handler.setFormatter(new ConciseLogFormatterWithTime());
         handler.setLevel(Level.ALL);
-        logger.addHandler(handler);
+        // logger.addHandler(handler);
 
     }
 
