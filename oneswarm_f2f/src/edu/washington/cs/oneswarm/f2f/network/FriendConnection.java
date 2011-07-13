@@ -74,7 +74,7 @@ public class FriendConnection {
 
     private static BigFatLock lock = OverlayManager.lock;
 
-    private final static Logger logger = Logger.getLogger(FriendConnection.class.getName());
+    public final static Logger logger = Logger.getLogger(FriendConnection.class.getName());
 
     /*
      * the max search rate, average over 10 s
@@ -1801,14 +1801,8 @@ public class FriendConnection {
 
             lastByteRecvTime = System.currentTimeMillis();
             if (logger.isLoggable(Level.FINEST)) {
-                if (!message.getID().equals(OSF2FMessage.ID_OS_CHANNEL_DATA_MSG)
-                        || packetNum++ % 100 == 0) {
-                    if (!message.getID().equals(BTKeepAlive.ID_BT_KEEP_ALIVE)) {
-                        logger.finest(getDescription() + " got message: "
-                                + message.getDescription() + "\t::" + FriendConnection.this);
-                    }
-                    // printRatelimitInfo();
-                }
+                logger.finest(getDescription() + " got message: " + message.getDescription()
+                        + "\t::" + FriendConnection.this);
             }
 
             if (message.getID().equals(OSF2FMessage.ID_OS_HASH_SEARCH)) {

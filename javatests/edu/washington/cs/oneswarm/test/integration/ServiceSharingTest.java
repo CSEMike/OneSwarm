@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import org.junit.Before;
 import org.junit.Test;
 
+import edu.washington.cs.oneswarm.f2f.servicesharing.EchoServer;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 import edu.washington.cs.oneswarm.test.util.TwoProcessTestBase;
@@ -25,6 +26,8 @@ public class ServiceSharingTest extends TwoProcessTestBase {
     @Before
     public void setupLogging() {
         logFinest(logger);
+        logFinest(ServiceSharingSingleProcessTest.logger);
+        logFinest(EchoServer.logger);
         // logFinest(ServiceSharingManager.logger);
         // logFinest(ServiceConnection.logger);
         // logFinest(SearchManager.logger);

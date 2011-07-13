@@ -8,8 +8,10 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.concurrent.Semaphore;
+import java.util.logging.Logger;
 
 public class EchoServer implements Runnable {
+    public static Logger logger = Logger.getLogger(EchoServer.class.getName());
 
     static class EchoServerHandler implements Runnable {
         private final Socket client;
@@ -30,6 +32,7 @@ public class EchoServer implements Runnable {
                 int read;
                 while ((read = in.read(buffer)) != -1) {
                     out.write(buffer, 0, read);
+                    logger.finest("echoed " + read + " bytes");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -107,7 +110,7 @@ public class EchoServer implements Runnable {
             started.release();
             while (true) {
                 Socket client = ss.accept();
-                System.out.println("connection from: " + client.getRemoteSocketAddress());
+                logger.info("connection from: " + client.getRemoteSocketAddress());
                 Thread t = new Thread(new EchoServerHandler(client));
                 t.setDaemon(true);
                 t.setName("EchoServer_" + port);

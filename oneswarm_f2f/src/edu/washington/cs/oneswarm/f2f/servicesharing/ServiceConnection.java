@@ -1,6 +1,7 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.util.LinkedList;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
@@ -74,6 +75,10 @@ public abstract class ServiceConnection extends OverlayEndpoint {
 
     @Override
     protected void handleDelayedOverlayMessage(OSF2FChannelDataMsg msg) {
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.finest("incoming message: " + msg.getDescription());
+        }
+
         if (closed) {
             return;
         }
@@ -87,11 +92,16 @@ public abstract class ServiceConnection extends OverlayEndpoint {
             return;
         }
         writeMessageToServerConnection(msg.getPayload());
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.finest("message written to server queue: " + msg.getDescription());
+        }
     }
 
     protected void writeMessageToServerConnection(DirectByteBuffer directByteBuffer) {
         DataMessage msg = new DataMessage(directByteBuffer);
-        logger.finest("writing message to server queue: " + msg.getDescription());
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.finest("writing message to server queue: " + msg.getDescription());
+        }
         serverConnection.getOutgoingMessageQueue().addMessage(msg, false);
     }
 

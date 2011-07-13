@@ -1,6 +1,7 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.nio.ByteBuffer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.aelitis.azureus.core.networkmanager.IncomingMessageQueue.MessageQueueListener;
@@ -11,7 +12,7 @@ import com.aelitis.azureus.core.peermanager.messaging.Message;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager.SharedService;
 
 public class ServiceSharingLoopback {
-    private final static Logger logger = Logger.getLogger(ServiceSharingLoopback.class.getName());
+    public final static Logger logger = Logger.getLogger(ServiceSharingLoopback.class.getName());
 
     private final NetworkConnection incomingConnection;
     private final SharedService sharedService;
@@ -86,6 +87,9 @@ public class ServiceSharingLoopback {
 
                     @Override
                     public boolean messageReceived(Message message) {
+                        if (logger.isLoggable(Level.FINEST)) {
+                            logger.finest("From client: " + message.getDescription());
+                        }
                         transferMessage(serviceConnection, (DataMessage) message);
                         return true;
                     }
@@ -102,6 +106,9 @@ public class ServiceSharingLoopback {
 
                     @Override
                     public boolean messageReceived(Message message) {
+                        if (logger.isLoggable(Level.FINEST)) {
+                            logger.finest("From server: " + message.getDescription());
+                        }
                         transferMessage(incomingConnection, (DataMessage) message);
                         return true;
                     }

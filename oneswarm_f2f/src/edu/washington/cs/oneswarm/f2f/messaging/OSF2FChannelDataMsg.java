@@ -1,5 +1,7 @@
 package edu.washington.cs.oneswarm.f2f.messaging;
 
+import java.util.logging.Level;
+
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 import org.gudy.azureus2.core3.util.DirectByteBufferPool;
 
@@ -42,7 +44,9 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
         }
 
         int channelID = data.getInt(DirectByteBuffer.SS_MSG);
-
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.finest("Deserialized: " + getDescription());
+        }
         return new OSF2FChannelDataMsg(version, channelID, data);
     }
 
@@ -93,6 +97,10 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
             buffer[0] = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG, BASE_LENGHT);
             buffer[0].putInt(DirectByteBuffer.SS_MSG, channelID);
             buffer[0].flip(DirectByteBuffer.SS_MSG);
+        }
+
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.finest("Serialized: " + getDescription());
         }
 
         return buffer;
