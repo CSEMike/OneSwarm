@@ -22,6 +22,7 @@
 package com.aelitis.azureus.core.networkmanager.impl.tcp;
 
 
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -746,9 +747,15 @@ public class VirtualChannelSelectorImpl {
         	// rm_type = 2;
           }else{            
             
-	          if( pause_after_select ) { 
-	            key.interestOps( key.interestOps() & ~INTEREST_OP );
-	          }
+              if( pause_after_select ) {
+                  
+                  try{
+                      key.interestOps( key.interestOps() & ~INTEREST_OP );
+                      
+                  }catch( CancelledKeyException e ){
+                      
+                  }
+                }
 	                        
 	          boolean	progress_indicator = parent.selectSuccess( data.listener, data.channel, data.attachment );
 	          
@@ -861,10 +868,17 @@ public class VirtualChannelSelectorImpl {
     	    
     	      RegistrationData data = (RegistrationData)key.attachment();
  
-        	  if (( key.interestOps() & INTEREST_OP) == 0 ) { 
-
-        		  continue;
-        	  }
+    	      try{
+                  if (( key.interestOps() & INTEREST_OP) == 0 ) { 
+    
+                      continue;
+                  }
+              }catch( CancelledKeyException e ){
+                  
+                        // get quite a few of these exceptions, ignore the key
+                  
+                  continue;
+              }
         	  
     	      long	stall_time = now - data.last_select_success_time;
     	      
