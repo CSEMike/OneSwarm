@@ -263,9 +263,9 @@ public class FriendConnection {
                 friendConnectionQueue = queueManager
                         .registerConnectionForQueueHandling(FriendConnection.this);
                 NetworkManager.getSingleton().startTransferProcessing(connection);
-                sendHandshake();
                 enableFastMessageProcessing(true);
 
+                sendHandshake();
                 updateFriendConnectionLog(true, "Sent handshake...");
             }
 
