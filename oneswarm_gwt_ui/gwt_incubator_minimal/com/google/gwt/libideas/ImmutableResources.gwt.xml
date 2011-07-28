@@ -1,0 +1,119 @@
+<!--                                                                        -->
+<!-- Copyright 2008 Google Inc.                                             -->
+<!-- Licensed under the Apache License, Version 2.0 (the "License"); you    -->
+<!-- may not use this file except in compliance with the License. You may   -->
+<!-- may obtain a copy of the License at                                    -->
+<!--                                                                        -->
+<!-- http://www.apache.org/licenses/LICENSE-2.0                             -->
+<!--                                                                        -->
+<!-- Unless required by applicable law or agreed to in writing, software    -->
+<!-- distributed under the License is distributed on an "AS IS" BASIS,      -->
+<!-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or        -->
+<!-- implied. License for the specific language governing permissions and   -->
+<!-- limitations under the License.                                         -->
+
+<!-- TODO(bobv): Rename to ClientBundle; use set-configuration-property -->
+<!-- ResourceBundle supports renaming files with strong names at compile time  -->
+<module>
+  <!-- Pull in the necessary base support, including user.agent detection -->
+  <inherits name="com.google.gwt.core.Core" />
+  <inherits name="com.google.gwt.libideas.BasicLib" />
+  <!-- Used by ExternalTextResource -->
+  <inherits name="com.google.gwt.http.HTTP" />
+
+  <!-- We're using a two-level package naming scheme -->
+  <source path="resources/client" />
+
+  <!--  This acts as a switch to disable the use of data: URLs -->
+  <define-property name="ResourceBundle.enableInlining" values="true,false" />
+  <set-property name="ResourceBundle.enableInlining" value="true" />
+
+  <!-- This can be used to disable the use of strongly-named files -->
+  <define-property name="ResourceBundle.enableRenaming" values="true,false" />
+  <set-property name="ResourceBundle.enableRenaming" value="true" />
+
+  <!--  Specify the default behavior -->
+  <generate-with
+    class="com.google.gwt.libideas.resources.rebind.context.StaticResourceBundleGenerator">
+
+    <!-- We have to specify on which types to execute the Generator -->
+    <when-type-assignable
+      class="com.google.gwt.libideas.resources.client.ImmutableResourceBundle" />
+  </generate-with>
+
+  <!-- Last-matches wins, so this will selectively override the previous rule -->
+  <generate-with
+    class="com.google.gwt.libideas.resources.rebind.context.InlineResourceBundleGenerator">
+
+    <!-- We have a number of conditions that must be satisfied -->
+    <all>
+      <!-- Is inlining enabled? -->
+      <when-property-is name="ResourceBundle.enableInlining" value="true" />
+
+      <!-- Again, it's necessary to specify which types the generator runs on -->
+      <when-type-assignable
+        class="com.google.gwt.libideas.resources.client.ImmutableResourceBundle" />
+
+      <!-- Only some browsers support RFC 2397 data: URLs -->
+      <any>
+        <when-property-is name="user.agent" value="safari" />
+        <when-property-is name="user.agent" value="opera" />
+        <when-property-is name="user.agent" value="gecko1_8" />
+      </any>
+    </all>
+  </generate-with>
+
+  <!-- This allows merging of CSS rules to be disabled. -->
+  <!-- TODO : Consider whether or not to keep this in the final version -->
+  <define-property name="CssResource.enableMerge" values="true,false" />
+  <set-property name="CssResource.enableMerge" value="true" />
+
+  <!-- This forces all CssResource accessor functions to have the @Strict -->
+  <!-- annotation. This is intended primarily for application developers and -->
+  <!-- the library test code. -->
+  <define-property name="CssResource.forceStrict" values="true,false" />
+  <set-property name="CssResource.forceStrict" value="false" />
+
+  <!-- This allows the developer to use shorter obfuscated class names. -->
+  <!-- Is is valid to extend this property to use a custom name. -->
+  <define-property name="CssResource.globalPrefix" values="default, empty" />
+  <set-property name="CssResource.globalPrefix" value="default" />
+
+  <!-- This can be used to make CssResource produce human-readable CSS -->
+  <set-configuration-property name="CssResource.style" value="obf" />
+
+  <!-- This can be used to disable sound resources -->
+  <define-property name="ResourceBundle.enableSound" values="true,false" />
+  <set-property name="ResourceBundle.enableSound" value="true" />
+
+  <!-- Default case uses an embed tag -->
+  <replace-with
+    class="com.google.gwt.libideas.resources.client.impl.SoundPlugin.PluginEmbed">
+    <when-type-is
+      class="com.google.gwt.libideas.resources.client.impl.SoundPlugin" />
+  </replace-with>
+
+  <!-- IE uses the object tag -->
+  <replace-with
+    class="com.google.gwt.libideas.resources.client.impl.SoundPlugin.PluginObject">
+    <all>
+      <when-type-is
+        class="com.google.gwt.libideas.resources.client.impl.SoundPlugin" />
+      <any>
+        <when-property-is name="user.agent" value="ie6" />
+        <when-property-is name="user.agent" value="ie8" />
+        <when-property-is name="user.agent" value="opera" />
+      </any>
+    </all>
+  </replace-with>
+
+  <!-- Override to disable the use of sound -->
+  <replace-with
+    class="com.google.gwt.libideas.resources.client.impl.SoundPlugin.PluginNull">
+    <all>
+      <when-type-is
+        class="com.google.gwt.libideas.resources.client.impl.SoundPlugin" />
+      <when-property-is name="ResourceBundle.enableSound" value="false" />
+    </all>
+  </replace-with>
+</module>

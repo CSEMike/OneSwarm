@@ -1,0 +1,33 @@
+<!-- This code is deprecated as of GWT 2.3.                -->
+<!-- Inherit com.google.gwt.canvas.Canvas instead.         -->
+<module>
+    <replace-with class="com.google.gwt.widgetideas.graphics.client.impl.GWTCanvasImplDefault">
+    	<when-type-is class="com.google.gwt.widgetideas.graphics.client.impl.GWTCanvasImpl"/>
+  	</replace-with>
+  
+  
+    <replace-with class="com.google.gwt.widgetideas.graphics.client.impl.GWTCanvasImplIE6">
+        <when-type-is class="com.google.gwt.widgetideas.graphics.client.impl.GWTCanvasImpl"/>
+        <any>
+        	<when-property-is name="user.agent" value="ie6"/>
+        	<when-property-is name="user.agent" value="ie8"/>
+        </any>
+  	</replace-with>
+  	
+  	<replace-with class="com.google.gwt.widgetideas.graphics.client.impl.GradientFactoryImplDefault">
+    	<when-type-is class="com.google.gwt.widgetideas.graphics.client.GradientFactory"/>
+  	</replace-with>
+  
+  
+    <replace-with class="com.google.gwt.widgetideas.graphics.client.impl.GradientFactoryImplIE6">
+        <when-type-is class="com.google.gwt.widgetideas.graphics.client.GradientFactory"/>
+        <any>
+        	<when-property-is name="user.agent" value="ie6"/>
+        	<when-property-is name="user.agent" value="ie8"/>
+        </any>
+  	</replace-with>
+  	
+    <source path="graphics/client/"/>
+    
+    <inherits name='com.google.gwt.widgetideas.WidgetBase'/>
+</module>

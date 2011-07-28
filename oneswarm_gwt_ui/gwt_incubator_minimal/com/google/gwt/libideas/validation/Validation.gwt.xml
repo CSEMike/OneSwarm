@@ -1,0 +1,5 @@
+<module>	
+    <inherits name='com.google.gwt.i18n.I18N' />
+ 	<source path='client'/>
+    <source path='validators'/>
+</module>

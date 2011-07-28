@@ -1,0 +1,9 @@
+<module>
+    <!-- Note, this module is now deprecated, 
+    as the event system had graduated into gwt 1.6. The events that do not exist yet in gwt should be moved into the gwt.gen2.commonevent package-->
+    <inherits name='com.google.gwt.gen2.base.Base'/>
+    <source path="shared"/>
+    <source path="virtual/shared"/>
+    <source path="logical/shared"/>
+    <source path="dom/client"/> 
+</module>

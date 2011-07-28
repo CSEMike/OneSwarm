@@ -1,0 +1,14 @@
+<module>
+    <!--  As new widgets are created, they should be able to use all of our incubator libraries -->
+    <inherits name='com.google.gwt.libideas.LibIdeas'/>
+    
+    
+    <!--  hack until i18n is added back into users -->
+    <inherits name='com.google.gwt.i18n.I18N'/>
+    
+    <!--  As new widgets are created, they should be able to use all of our gwt libraries -->
+    <inherits name="com.google.gwt.user.User"/>
+    
+    <!-- Base source path to prevent base from picking up client. -->
+    <source path="common"/>
+</module>

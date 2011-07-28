@@ -1,0 +1,32 @@
+
+	<!--
+		Copyright 2008 Google Inc. Licensed under the Apache License, Version
+		2.0 (the "License"); you may not use this file except in compliance
+		with the License. You may obtain a copy of the License at
+		http://www.apache.org/licenses/LICENSE-2.0 Unless required by
+		applicable law or agreed to in writing, software distributed under the
+		License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+		CONDITIONS OF ANY KIND, either express or implied. See the License for
+		the specific language governing permissions and limitations under the
+		License.
+	-->
+	<!--
+		PLEASE READ: This module is NOT intended for production. Period. At
+		all. The preferred way to include incubator css resources is using css
+		resources. In specific, import the WidgetIdeasCssBundle, then request
+		as many css resources from it that you want. If you need to use css
+		the old fashioned way, then take all the individual files here and
+		dump them into a single file.
+	-->
+<module>
+	<inherits name="com.google.gwt.gen2.widgetbase._Resources" />
+	<inherits name="com.google.gwt.gen2.widgetbase.Css_disableDefault" />
+	<stylesheet src="FastTree_base.css" />
+	<stylesheet src="FastTree_rtl.css" />
+	<stylesheet src="LogHandlers.css" />
+	<stylesheet src="DropDownListBox.css" />
+	<stylesheet src="Picker.css" />
+	<stylesheet src="DropDownDatePicker.css" />
+	<stylesheet src="CollapsiblePanel_base.css" />
+	<stylesheet src="CollapsiblePanel_rtl.css" />
+</module>

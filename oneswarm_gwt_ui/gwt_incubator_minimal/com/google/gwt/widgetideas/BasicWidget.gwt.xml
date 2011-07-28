@@ -1,0 +1,4 @@
+<module>
+    <!-- All widgets modules must extend  WidgetBase -->
+    <inherits name='com.google.gwt.widgetideas.WidgetBase'/>
+</module>

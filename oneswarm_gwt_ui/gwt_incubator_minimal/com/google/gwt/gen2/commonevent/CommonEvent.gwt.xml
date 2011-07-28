@@ -1,0 +1,9 @@
+<module>
+	<!--
+		Note, this module is based on the gwt 1.6 event system. There should
+		be absolutely no dependencies on the original incubator event package
+	-->
+	<inherits name='com.google.gwt.gen2.base.Base' />
+	<source path="shared" />
+ 	<source path="client" />
+</module>
