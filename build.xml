@@ -245,10 +245,8 @@
 		<pathelement path="build/gwt-libs/gwt/gwt-servlet.jar" />
 		
 		<!-- GWT add-ons -->
-		<pathelement path="build/gwt-libs/gwt-incubator/gwt-incubator.jar" />
 		<pathelement path="build/gwt-libs/gwt-dnd/gwt-dnd-2.6.5.jar" />
 		
-		<pathelement path="build/gwt-libs/gwt-incubator/gwt-incubator.jar" />
 		<pathelement path="build/gwt-libs/gwt-fx/gwt-fx 2.0.0 RC2.jar" />
 		<pathelement path="build/gwt-libs/gwt-dnd/gwt-dnd-2.6.5.jar" />
 		<pathelement path="build/gwt-libs/commons-http/httpcore-4.0.1.jar" />
@@ -303,12 +301,14 @@
 		<pathelement path="build/gwt-libs/gwt/gwt-user.jar" />
 		<pathelement path="build/gwt-libs/gwt/gwt-dev.jar" />
 		<pathelement path="build/gwt-libs/gwt/gwt-servlet.jar" />
+		<pathelement path="build/gwt-libs/gwt/validation-api-1.0.0.GA.jar" />
+		<pathelement path="build/gwt-libs/gwt/validation-api-1.0.0.GA-sources.jar" />
 		
 		<!-- GWT add-ons -->
-		<pathelement path="build/gwt-libs/gwt-incubator/gwt-incubator.jar" />
 		<pathelement path="build/gwt-libs/gwt-dnd/gwt-dnd-2.6.5.jar" />
 		
 		<!-- src -->
+		<pathelement path="oneswarm_gwt_ui/gwt_incubator_minimal" />
 		<pathelement path="oneswarm_gwt_ui/src" />
 		<pathelement path="oneswarm_az_mods/mods_gwt_ui" />
 		
@@ -318,6 +318,7 @@
 		
 		<!-- compile the f2f/gwt code -->
 		<javac destdir="${root.dir}/gwt-bin/war/WEB-INF/classes" nowarn="yes" source="1.5" target="1.5" includeAntRuntime="no" debug="true" debuglevel="lines,vars,source" fork="yes" memoryMaximumSize="256m">
+			<src path="${root.dir}/oneswarm_gwt_ui/gwt_incubator_minimal" />
 			<src path="${root.dir}/oneswarm_gwt_ui/src" />
 			<src path="${f2f-src.dir}"/>
 			
