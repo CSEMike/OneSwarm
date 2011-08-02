@@ -795,6 +795,13 @@ os-friendPanel {
 	font-weight: normal;
 	font-size: 80%;
 }
+
+.os-service-share-caption {
+	padding-top: 5px;
+	font-size: 14px;
+	font-weight: bold;
+}
+
 /**
  * ScrollTable
  

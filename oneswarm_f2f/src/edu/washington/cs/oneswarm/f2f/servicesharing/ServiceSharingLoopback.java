@@ -10,7 +10,6 @@ import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListe
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 
 import edu.washington.cs.oneswarm.f2f.network.LowLatencyMessageWriter;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager.SharedService;
 
 public class ServiceSharingLoopback {
     public final static Logger logger = Logger.getLogger(ServiceSharingLoopback.class.getName());

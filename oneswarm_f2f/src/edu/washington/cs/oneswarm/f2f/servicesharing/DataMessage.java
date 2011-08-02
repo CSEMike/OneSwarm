@@ -108,6 +108,7 @@ public class DataMessage implements OSF2FMessage {
 
         DirectByteBuffer payload_buffer;
         private boolean paused = false;
+        private IOException pendingException;
 
         private ArrayList<Message> messages_last_read = new ArrayList<Message>();
 
@@ -128,6 +129,9 @@ public class DataMessage implements OSF2FMessage {
 
         @Override
         public int performStreamDecode(Transport transport, int max_bytes) throws IOException {
+            if (pendingException != null) {
+                throw pendingException;
+            }
             int bytes_left = max_bytes;
             while (bytes_left > 0) {
                 if (payload_buffer == null) {
@@ -136,7 +140,18 @@ public class DataMessage implements OSF2FMessage {
                 if (paused) {
                     break;
                 }
-                long read = transport.read(new ByteBuffer[] { payload_buffer.getBuffer(SS) }, 0, 1);
+
+                // If we reach the end of the stream (get and
+                // "end of stream on socket read" error)
+                // return whatever bytes we have read so far and package them up
+                // in a data message
+                // then save the exception and return it on the next read.
+                long read = 0;
+                try {
+                    read = transport.read(new ByteBuffer[] { payload_buffer.getBuffer(SS) }, 0, 1);
+                } catch (IOException e) {
+                    pendingException = e;
+                }
                 bytes_left -= read;
                 // Message is done if:
                 // * payload is full

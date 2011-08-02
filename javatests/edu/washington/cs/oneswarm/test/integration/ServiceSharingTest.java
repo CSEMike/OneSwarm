@@ -52,7 +52,7 @@ public class ServiceSharingTest extends TwoProcessTestBase {
         try {
             tellRemoteToShareService("echo", SEARCH_KEY, LOCALHOST, ECHO_PORT);
             // Register the client service
-            ServiceSharingManager.getInstance().createClientService("echoclient", CLIENT_PORT,
+            ServiceSharingManager.getInstance().registerClientService("echoclient", CLIENT_PORT,
                     SEARCH_KEY);
             Thread.sleep(5000);
             ServiceSharingSingleProcessTest.doEchoTest();

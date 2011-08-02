@@ -8,13 +8,14 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
+import javax.net.ssl.SSLSession;
 
 import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.Hex;
@@ -25,7 +26,6 @@ import org.gudy.azureus2.core3.util.DirectByteBufferPool;
 
 import com.aelitis.azureus.core.networkmanager.impl.TransportHelper;
 import com.aelitis.azureus.core.networkmanager.impl.TransportHelperFilterStream;
-import com.aelitis.azureus.core.networkmanager.impl.TransportHelper.selectListener;
 
 public class OneSwarmSslTransportHelperFilterStream
 	extends TransportHelperFilterStream
@@ -252,13 +252,17 @@ public class OneSwarmSslTransportHelperFilterStream
 			if (leftovers > 0) {
 				int copied = this.putInBuffers(buffers, array_offset, length,
 						decryptedDataForApp);
-				logger.finest("found " + leftovers + " old bytes, copied: " + copied);
+                if (logger.isLoggable(Level.FINEST)) {
+                    logger.finest("found " + leftovers + " old bytes, copied: " + copied);
+                }
 				total_read += copied;
 
 				if (decryptedDataForApp.hasRemaining()) {
 					totalDataRead += total_read;
-					logger.finest("returning decoded " + total_read + " bytes, total: "
+                    if (logger.isLoggable(Level.FINEST)) {
+                        logger.finest("returning decoded " + total_read + " bytes, total: "
 							+ totalDataRead);
+                    }
 					return total_read;
 				}
 			}
@@ -275,7 +279,9 @@ public class OneSwarmSslTransportHelperFilterStream
 			spaceInBuffers += buffers[i].remaining();
 		}
 		if (spaceInBuffers == 0) {
-			logger.finest("returning decoded " + total_read + " bytes");
+            if (logger.isLoggable(Level.FINEST)) {
+                logger.finest("returning decoded " + total_read + " bytes");
+            }
 			return total_read;
 		}
 
@@ -300,8 +306,10 @@ public class OneSwarmSslTransportHelperFilterStream
 			throw new IOException("transport closed (returned -1)");
 		}
 		totalNetRead += readFromTransport;
-		logger.finest("read " + readFromTransport
+        if (readFromTransport > 0 && logger.isLoggable(Level.FINEST)) {
+            logger.finest("read " + readFromTransport
 				+ " bytes from transport, total: " + totalNetRead);
+        }
 		encryptedDataForApp.flip();
 
 		// ********** decrypt the data, if the input buffers have enough
@@ -335,8 +343,10 @@ public class OneSwarmSslTransportHelperFilterStream
 			// care
 			// of the next iter
 			if (decryptedDataForApp.remaining() > 0) {
-				logger.finest("got excess data after decrypt, buffering: "
+                if (logger.isLoggable(Level.FINEST)) {
+                    logger.finest("got excess data after decrypt, buffering: "
 						+ decryptedDataForApp.remaining());
+                }
 			}
 		}
 		if (decryptedDataForApp != null && !decryptedDataForApp.hasRemaining()) {
@@ -371,8 +381,10 @@ public class OneSwarmSslTransportHelperFilterStream
 			Debug.out("unwrapping, got error:\n" + result);
 		}
 		totalDataRead += total_read;
-		logger.finest("returning decoded " + total_read + " bytes, total: "
+        if (total_read > 0 && logger.isLoggable(Level.FINEST)) {
+            logger.finest("returning decoded " + total_read + " bytes, total: "
 				+ totalDataRead);
+        }
 		return total_read;
 	}
 
@@ -495,12 +507,16 @@ public class OneSwarmSslTransportHelperFilterStream
 				encryptedDataForNetwork = null;
 				return -1;
 			}
-			logger.finest("THF: wrote: " + bytesConsumed + " partial write: "
+	        if (logger.isLoggable(Level.FINEST)) {	            
+	            logger.finest("THF: wrote: " + bytesConsumed + " partial write: "
 					+ partial_write + " total: " + totalDataWritten);
+	        }	           
 			if (encryptedDataForNetwork.hasRemaining()) {
-				logger.finest("encrypted data left to be written out, buffering "
+		        if (logger.isLoggable(Level.FINEST)) {		            
+		            logger.finest("encrypted data left to be written out, buffering "
 						+ encryptedDataForNetwork.remaining()
 						+ " forcing calling transport to call us again on next write select");
+		        }
 				/*
 				 * this case is a bit tricky, we need the transport to call us again 
 				 * so we can write out the buffered data, but the calling transport might think it

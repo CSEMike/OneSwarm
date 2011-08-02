@@ -27,9 +27,9 @@ import org.gudy.azureus2.plugins.download.Download;
 import org.gudy.azureus2.plugins.torrent.Torrent;
 import org.gudy.azureus2.plugins.torrent.TorrentException;
 import org.gudy.azureus2.plugins.torrent.TorrentFile;
+import org.mortbay.jetty.HttpHeaders;
 
 import com.aelitis.azureus.core.impl.AzureusCoreImpl;
-import com.google.gwt.dev.util.HttpHeaders;
 
 import edu.washington.cs.oneswarm.ui.gwt.CoreInterface;
 import edu.washington.cs.oneswarm.ui.gwt.CoreTools;

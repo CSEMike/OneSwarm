@@ -20,11 +20,12 @@ import org.junit.Test;
 
 import com.aelitis.azureus.ui.UIFunctionsManager;
 
+import edu.washington.cs.oneswarm.f2f.network.SearchManager;
 import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage;
 import edu.washington.cs.oneswarm.f2f.servicesharing.EchoServer;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceConnection;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingLoopback;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager.SharedService;
 import edu.washington.cs.oneswarm.test.util.OneSwarmTestBase;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 
@@ -55,9 +56,9 @@ public class ServiceSharingSingleProcessTest extends OneSwarmTestBase {
         logFinest(EchoServer.logger);
         logFinest(ServiceSharingLoopback.logger);
 
-        // logFinest(ServiceSharingManager.logger);
-        // logFinest(ServiceConnection.logger);
-        // logFinest(SearchManager.logger);
+        logFinest(ServiceSharingManager.logger);
+        logFinest(ServiceConnection.logger);
+        logFinest(SearchManager.logger);
     }
 
     @Test
@@ -75,11 +76,11 @@ public class ServiceSharingSingleProcessTest extends OneSwarmTestBase {
          */
         try {
             // Register the server service
-            ServiceSharingManager.getInstance().registerServerService(SEARCH_KEY,
-                    new SharedService(new InetSocketAddress(LOCALHOST, ECHO_PORT), "echo"));
+            ServiceSharingManager.getInstance().registerSharedService(SEARCH_KEY, "echo",
+                    new InetSocketAddress(LOCALHOST, ECHO_PORT));
 
             // Register the client service
-            ServiceSharingManager.getInstance().createClientService("echoclient", CLIENT_PORT,
+            ServiceSharingManager.getInstance().registerClientService("echoclient", CLIENT_PORT,
                     SEARCH_KEY);
             doEchoTest();
 

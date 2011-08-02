@@ -2,7 +2,10 @@
 	http://localhost:29615/edu.washington.cs.oneswarm.ui.gwt.OneSwarmGWT/OneSwarm.css
 	http://localhost:8888/edu.washington.cs.oneswarm.ui.gwt.OneSwarmGWT/OneSwarm.css
 	http://127.0.0.1:29615/gwt/standard/standard.css
+	http://127.0.0.1:29615/oneswarmgwt/OneSwarm.css
+	http://localhost:8888/oneswarmgwt/OneSwarm.css
 */
+
 body {
 	background-color: white;
 	color: black;
@@ -20,18 +23,28 @@ body {
 	border-bottom: 1px solid #919191;
 }
 
+.os-clickable {
+	cursor: pointer;
+}
+
+.os-error_text {
+	font-size: 14pt;
+}
 
 /**
  * We needed to tweak the tags tree in the GWT code itself due to 
  * quirks. look there for this
  */
-
 .os-bold {
 	font-weight: bold;
 }
 
-.os-text_color_disabled{
+.os-text_color_disabled {
 	color: #888;
+}
+
+.os-text_color_black {
+	color: black;
 }
 
 a {
@@ -75,6 +88,10 @@ table.gwt-DecoratedTabPanel.os-f2f_tabs .gwt-TabPanelBottom {
 	padding: 0px;
 }
 
+.os-xfer_details_tabs {
+	margin-top: 10px;
+}
+
 table.gwt-DecoratedTabPanel.os-xfer_details_tabs .gwt-TabPanelBottom {
 	border-color: #92c1f0;
 	border-style: solid;
@@ -86,6 +103,16 @@ table.gwt-DecoratedTabPanel.os-xfer_details_tabs .gwt-TabPanelBottom {
 table.gwt-DecoratedTabPanel.os-f2f_tabs table.gwt-DecoratedTabBar .gwt-Label
 	{ /* not quite sure what to do here, but as-is could look better */
 	
+}
+
+.os-welcome_banner {
+	text-align: center;
+	font-size: 24px;
+	font-weight: bold;
+}
+
+.os-welcome_prompt {
+	font-size: 18px;
 }
 
 .os-NotificationDialogBox {
@@ -162,6 +189,7 @@ table.gwt-DecoratedTabPanel.os-f2f_tabs table.gwt-DecoratedTabBar .gwt-Label
 	border-top: None;
 	border-right: None;
 	font-size: 12px;
+	cursor: pointer;
 }
 
 .os-membership_list_disabled .gwt-Label {
@@ -177,9 +205,15 @@ table.gwt-DecoratedTabPanel.os-f2f_tabs table.gwt-DecoratedTabBar .gwt-Label
         */
 }
 
+.gwt-nameStyle {
+	text-decoration: underline;
+	text-color: #00BFFF;
+	cursor: pointer;
+}
+
 .gwt-ScrollTable .headerTable td,.gwt-ScrollTable .footerTable td {
 	color: #000;
-	background: color :                       #10428C;
+	background: color :                                           #10428C;
 	font-weight: bold;
 	padding-bottom: 3px;
 	white-space: nowrap;
@@ -243,10 +277,6 @@ table.gwt-DecoratedTabPanel.os-f2f_tabs table.gwt-DecoratedTabBar .gwt-Label
 	color: #7e7e7e;
 }
 
-.os-search_bar {
-	margin-bottom: 3px;
-}
-
 .os-torrent-list {
 	border: 1px solid #C3D9FF;
 	padding: 0px;
@@ -280,7 +310,7 @@ table.gwt-DecoratedTabPanel.os-f2f_tabs table.gwt-DecoratedTabBar .gwt-Label
 	word-wrap: break-word;
 	line-height: 15px;
 	overflow: hidden;
-	cursor: pointer;
+	cursor: default;
 }
 
 .os-file_highlighted .gwt-Label {
@@ -338,7 +368,7 @@ table.gwt-DecoratedTabPanel.os-f2f_tabs table.gwt-DecoratedTabBar .gwt-Label
 	border: 1px solid #faf9f7;
 	border-right: 1px solid #848280;
 	border-bottom: 1px solid #848280;
-	background-color: #AAAAAA;
+	background-color: #9a9a9b;
 	height: 10pt;
 	width: 95%;
 }
@@ -349,8 +379,11 @@ table.gwt-DecoratedTabPanel.os-f2f_tabs table.gwt-DecoratedTabBar .gwt-Label
 
 .gwt-ProgressBar-shell .gwt-ProgressBar-text {
 	padding: 0px;
-	margin: 0px;
+	margin: 1px 0px 0px;
 	color: white;
+	white-space: nowrap;
+	font-size: 12px;
+	font-weight: bold;
 }
 
 .os-search_results_panel {
@@ -364,6 +397,23 @@ table.gwt-DecoratedTabPanel.os-f2f_tabs table.gwt-DecoratedTabBar .gwt-Label
 	border-left: 2px solid #B3CBE2;
 	border-right: 2px solid #B3CBE2;
 	width: 100%;
+}
+
+.os-no_files_label {
+	text-align: center;
+	margin-top: 75px;
+}
+
+.os-welcome_defaults_button {
+	font-size: 18px;
+	width: 300px;
+	vertical-align: middle;
+	background: #f2f2f2;
+	height: 50px;
+	color: #0000AA;
+	text-decoration: underline;
+	margin-top: 10px;
+	margin-bottom: 10px;
 }
 
 div#os-no_files_label {
@@ -451,6 +501,7 @@ div#os-no_files_label {
 
 .os-HelpBox {
 	z-index: 2001;
+	cursor: pointer;
 }
 
 .os-image-panel {
@@ -549,6 +600,7 @@ os-friendPanel {
 }
 
 .os-friendList {
+	margin-top: 5px;
 	width: 170px;
 	border: 2px solid #C3D9FF;
 }
@@ -562,6 +614,38 @@ os-friendPanel {
 	color: blue;
 	cursor: pointer;
 	font-size: 14px;
+	width: 170px;
+	background-color: #C3D9FF;
+	font-size: 100%;
+	text-align: left;
+	/*	text-decoration: none;
+	font-size: 90%;
+	text-align: left; */
+}
+
+.os-friendInviteSide {
+	margin-top: 30px;
+}
+
+.os-friendInviteSideContent {
+	margin: 0px 5px 2px 5px;
+	padding-left: 2px;
+}
+
+.os-friendInviteSidePanel {
+	width: 170px;
+	border: 2px solid #C3D9FF;
+}
+
+.os-friendInviteSidePanel .header td {
+	color: #0000AA;
+}
+
+.os-friendInviteSidePanel .header {
+	font-family: arial;
+	color: blue;
+	cursor: pointer;
+	font-size: 12px;
 	width: 170px;
 	background-color: #C3D9FF;
 	font-size: 100%;
@@ -594,7 +678,7 @@ os-friendPanel {
 	text-decoration: underline;
 	text-align: center;
 	font-size: 90%;
-	width: 80px;
+	width: 160px;
 	color: #0000cc;
 	cursor: pointer;
 }
@@ -610,6 +694,10 @@ os-friendPanel {
 
 .os-friend_highlight {
 	background-color: #c0ccff;
+}
+
+.os-group_panel_header {
+	margin-bottom: 3px;
 }
 
 .os-friendListElement {
@@ -634,15 +722,25 @@ os-friendPanel {
 	width: 150px;
 }
 
+.os-search_bar {
+	marginBottom: 5px;
+}
+
 .os-searchField {
 	width: 300px;
 	margin-left: 10px;
+	font: 14px Arial, sans-serif;
+	margin-bottom: 5px;
+}
+
+.os-searchLabel {
+	font: 14px Arial, sans-serif;
 }
 
 .os-connectionLog {
 	overflow: scroll;
 	white-space: nowrap;
-	color:black;
+	color: black;
 }
 
 .os-search_tabs div.gwt-TabPanelBottom {
@@ -655,8 +753,53 @@ os-friendPanel {
 }
 
 .limit_exceeded_warning {
-	color: RED;	
+	color: RED;
 }
+
+.friend_invitation-code {
+	color: black;
+	font-size: 65%;
+	font-weight: bold;
+	background-color: white;
+	text-align: center;
+	font-family: "Courier New" Courier;
+	background-color: white;
+}
+
+.friend_invitation-code-padding {
+	padding-top: 20px;
+	padding-bottom: 20px;
+}
+
+.os-add_friend_publickey_text {
+	font-family: "Courier New" Courier;
+	color: black;
+}
+
+.os-date-picker-label {
+	color: black;
+}
+
+.os-date-picker-popup {
+	z-index: 2001;
+}
+
+.rightclick_menu {
+	background-color: gray;
+	border-color: gray gray gray gray;
+	border-width: 1px 3px 3px 1px;
+	border-style: solid solid solid solid;
+}
+
+.rightclick_menu-item {
+	font-weight: normal;
+	font-size: 80%;
+}
+
+.os-service-share-caption {
+	font-size: 16px;
+}
+
 /**
  * ScrollTable
  

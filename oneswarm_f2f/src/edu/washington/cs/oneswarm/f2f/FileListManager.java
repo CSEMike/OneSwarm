@@ -34,7 +34,6 @@ import org.gudy.azureus2.core3.peer.PEPeer;
 import org.gudy.azureus2.core3.peer.PEPeerManager;
 import org.gudy.azureus2.core3.torrent.TOTorrent;
 import org.gudy.azureus2.core3.torrent.TOTorrentException;
-import org.gudy.azureus2.core3.torrent.TOTorrentFile;
 import org.gudy.azureus2.core3.torrent.impl.TOTorrentImpl;
 import org.gudy.azureus2.core3.util.ByteFormatter;
 import org.gudy.azureus2.core3.util.Debug;
@@ -607,8 +606,8 @@ public class FileListManager {
 
     public List<byte[]> receivedFriendFileList(Friend f, int type, byte[] data,
             boolean use_extended_filelists) throws IOException {
+        FileList friendsList = null;
         if (data != null && data.length != 0) {
-            FileList friendsList = null;
             if (use_extended_filelists == false) {
                 // System.out.println("decoding basic");
                 friendsList = FileListManager.decode_basic(data);
@@ -616,9 +615,10 @@ public class FileListManager {
                 // System.out.println("decoding extended");
                 friendsList = FileListManager.decode_extended(data);
             }
-            return receivedFriendFileList(f, type, friendsList);
+        } else {
+            friendsList = new FileList();
         }
-        return new LinkedList<byte[]>();
+        return receivedFriendFileList(f, type, friendsList);
     }
 
     public List<byte[]> receivedFriendFileList(Friend f, int type, FileList friendsList) {

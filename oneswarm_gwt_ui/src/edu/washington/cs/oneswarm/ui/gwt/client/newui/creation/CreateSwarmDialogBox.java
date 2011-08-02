@@ -1,8 +1,6 @@
 package edu.washington.cs.oneswarm.ui.gwt.client.newui.creation;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.RunAsyncCallback;
@@ -35,6 +33,7 @@ import edu.washington.cs.oneswarm.ui.gwt.client.newui.EntireUIRoot;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.HelpButton;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.OneSwarmCss;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.settings.MagicDirectorySettingsPanel;
+import edu.washington.cs.oneswarm.ui.gwt.client.newui.settings.ServiceSharingSettingsPanel;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.PermissionsGroup;
 
 public class CreateSwarmDialogBox extends OneSwarmDialogBox {
@@ -66,6 +65,7 @@ public class CreateSwarmDialogBox extends OneSwarmDialogBox {
 
     VerticalPanel mainPanelShare = null;
     MagicDirectorySettingsPanel mainPanelWatch = null;
+    ServiceSharingSettingsPanel mainPanelService = null;
     final VerticalPanel mainTabPanel = new VerticalPanel();
 
     final ListBox defaultTrackersListBox = new ListBox();
@@ -149,11 +149,13 @@ public class CreateSwarmDialogBox extends OneSwarmDialogBox {
 
         mainPanelShare = createSharePanel();
         mainPanelWatch = new MagicDirectorySettingsPanel();
+        mainPanelService = new ServiceSharingSettingsPanel();
 
         mTabs = new DecoratedTabPanel();
         mTabs.addStyleName(TorrentDownloaderDialog.CSS_F2F_TABS);
         mTabs.add(mainPanelShare, msg.create_swarm_share_tab_manual());
         mTabs.add(mainPanelWatch, msg.create_swarm_share_tab_automatic());
+        mTabs.add(mainPanelService, "Service");
         mTabs.setWidth(WIDTH + "px");
         mTabs.setHeight("100%");
         mTabs.addTabListener(new TabListener() {
@@ -172,7 +174,7 @@ public class CreateSwarmDialogBox extends OneSwarmDialogBox {
                     }
                     break;
 
-                case 1:
+                default:
                     selectLabel.setText(msg.create_swarm_share_automatic_msg());
                     mTabs.setWidth("350px");
                     mainTabPanel.setWidth("350px");
@@ -201,6 +203,9 @@ public class CreateSwarmDialogBox extends OneSwarmDialogBox {
 
         if (mainPanelWatch.isReadyToSave()) {
             mainPanelWatch.sync();
+        }
+        if (mainPanelService.isReadyToSave()) {
+            mainPanelService.sync();
         }
     }
 

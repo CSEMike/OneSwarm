@@ -2,8 +2,6 @@ package edu.washington.cs.oneswarm.ui.gwt.rpc;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import com.google.gwt.user.client.rpc.AsyncCallback;
 
@@ -332,4 +330,13 @@ public interface OneSwarmUIServiceAsync {
             AsyncCallback<Void> callback);
 
     void getMultiTorrentSourceTemp(String session, AsyncCallback<String> callback);
+
+    void getClientServices(AsyncCallback<ArrayList<ClientServiceDTO>> callback);
+
+    void getSharedServices(AsyncCallback<ArrayList<SharedServiceDTO>> callback);
+
+    void saveClientServices(ArrayList<ClientServiceDTO> services, AsyncCallback<Void> callback);
+
+    void saveSharedServices(ArrayList<SharedServiceDTO> services, AsyncCallback<Void> callback);
+
 }

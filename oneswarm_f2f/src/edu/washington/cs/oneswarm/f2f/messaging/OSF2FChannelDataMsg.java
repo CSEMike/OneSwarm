@@ -127,4 +127,9 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
         return messageLength;
     }
 
+    public DirectByteBuffer transferPayload() {
+        DirectByteBuffer payload = buffer[1];
+        buffer[1] = null;
+        return payload;
+    }
 }

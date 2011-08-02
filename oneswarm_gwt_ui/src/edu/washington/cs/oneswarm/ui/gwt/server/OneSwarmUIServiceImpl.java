@@ -8,14 +8,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.security.InvalidKeyException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,6 +37,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.bouncycastle.util.encoders.Base64;
 import org.eclipse.swt.SWT;
@@ -89,6 +94,8 @@ import com.google.gwt.user.client.rpc.SerializationException;
 import com.google.gwt.user.server.rpc.RPC;
 import com.google.gwt.user.server.rpc.RPCRequest;
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
+import com.google.gwt.user.server.rpc.SerializationPolicy;
+import com.google.gwt.user.server.rpc.SerializationPolicyLoader;
 
 import edu.uw.cse.netlab.testharness.CLI_Main;
 import edu.washington.cs.oneswarm.f2f.FileCollection;
@@ -103,6 +110,9 @@ import edu.washington.cs.oneswarm.f2f.multisource.Sha1DownloadManager;
 import edu.washington.cs.oneswarm.f2f.multisource.Sha1HashManager;
 import edu.washington.cs.oneswarm.f2f.permissions.GroupBean;
 import edu.washington.cs.oneswarm.f2f.permissions.PermissionsDAO;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ClientService;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
+import edu.washington.cs.oneswarm.f2f.servicesharing.SharedService;
 import edu.washington.cs.oneswarm.f2f.share.ShareManagerTools;
 import edu.washington.cs.oneswarm.ui.gwt.BackendErrorLog;
 import edu.washington.cs.oneswarm.ui.gwt.CoreInterface;
@@ -118,6 +128,7 @@ import edu.washington.cs.oneswarm.ui.gwt.client.newui.friends.wizard.FriendsImpo
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.settings.MagicWatchType;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.BackendErrorReport;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.BackendTask;
+import edu.washington.cs.oneswarm.ui.gwt.rpc.ClientServiceDTO;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.FileListLite;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.FileTree;
@@ -133,6 +144,7 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.PagedTorrentInfo;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.PermissionsGroup;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.ReportableException;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.SerialChatMessage;
+import edu.washington.cs.oneswarm.ui.gwt.rpc.SharedServiceDTO;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.SpeedTestResult;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.StringTools;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.TextSearchResultLite;
@@ -341,6 +353,87 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 
     Thread metaInfoPruner = null;
     private boolean hostedMode = false;
+
+    /**
+     * Modified to load the .rpc serialization policy file from the classloader
+     * instead of from the servlet context
+     */
+    @Override
+    protected SerializationPolicy doGetSerializationPolicy(HttpServletRequest request,
+            String moduleBaseURL, String strongName) {
+        // The request can tell you the path of the web app relative to the
+        // container root.
+        String contextPath = request.getContextPath();
+
+        String modulePath = null;
+        if (moduleBaseURL != null) {
+            try {
+                modulePath = new URL(moduleBaseURL).getPath();
+            } catch (MalformedURLException ex) {
+                // log the information, we will default
+                this.log("Malformed moduleBaseURL: " + moduleBaseURL, ex);
+            }
+        }
+
+        SerializationPolicy serializationPolicy = null;
+
+        /*
+         * Check that the module path must be in the same web app as the servlet
+         * itself. If you need to implement a scheme different than this,
+         * override
+         * this method.
+         */
+        if (modulePath == null || !modulePath.startsWith(contextPath)) {
+            String message = "ERROR: The module path requested, "
+                    + modulePath
+                    + ", is not in the same web application as this servlet, "
+                    + contextPath
+                    + ".  Your module may not be properly configured or your client and server code maybe out of date.";
+            this.log(message);
+        } else {
+            // Strip off the context path from the module base URL. It should be
+            // a
+            // strict prefix.
+            String contextRelativePath = modulePath.substring(contextPath.length());
+
+            String serializationPolicyFilePath = SerializationPolicyLoader
+                    .getSerializationPolicyFileName(contextRelativePath + strongName);
+
+            // Open the RPC resource file and read its contents.
+            // InputStream is = servlet.getServletContext().getResourceAsStream(
+            // serializationPolicyFilePath);
+
+            InputStream is = getClass().getResourceAsStream(serializationPolicyFilePath);
+            try {
+                if (is != null) {
+                    try {
+                        serializationPolicy = SerializationPolicyLoader.loadFromStream(is, null);
+                    } catch (ParseException e) {
+                        this.log("ERROR: Failed to parse the policy file '"
+                                + serializationPolicyFilePath + "'", e);
+                    } catch (IOException e) {
+                        this.log("ERROR: Could not read the policy file '"
+                                + serializationPolicyFilePath + "'", e);
+                    }
+                } else {
+                    String message = "ERROR: The serialization policy file '"
+                            + serializationPolicyFilePath
+                            + "' was not found; did you forget to include it in this deployment?";
+                    this.log(message);
+                }
+            } finally {
+                if (is != null) {
+                    try {
+                        is.close();
+                    } catch (IOException e) {
+                        // Ignore this error
+                    }
+                }
+            }
+        }
+
+        return serializationPolicy;
+    }
 
     @Override
     public Boolean startBackend() throws OneSwarmException {
@@ -4095,4 +4188,37 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
             return "";
         }
     }
+
+    public ArrayList<ClientServiceDTO> getClientServices() {
+        List<ClientService> clientServices = ServiceSharingManager.getInstance()
+                .getClientServices();
+        ArrayList<ClientServiceDTO> serviceDTOs = new ArrayList<ClientServiceDTO>();
+        for (ClientService clientService : clientServices) {
+            serviceDTOs.add(clientService.toDTO());
+        }
+        return serviceDTOs;
+    }
+
+    public ArrayList<SharedServiceDTO> getSharedServices() {
+        List<SharedService> sharesServices = ServiceSharingManager.getInstance()
+                .getSharedServices();
+        ArrayList<SharedServiceDTO> serviceDTOs = new ArrayList<SharedServiceDTO>();
+        for (SharedService sharedService : sharesServices) {
+            serviceDTOs.add(sharedService.toDTO());
+        }
+        return serviceDTOs;
+    }
+
+    public void saveClientServices(ArrayList<ClientServiceDTO> services) {
+        ServiceSharingManager.getInstance().updateClients(services);
+    }
+
+    public void saveSharedServices(ArrayList<SharedServiceDTO> services) throws OneSwarmException {
+        try {
+            ServiceSharingManager.getInstance().updateSharedServices(services);
+        } catch (UnknownHostException e) {
+            throw new OneSwarmException(e.getClass().getName() + "::" + e.getMessage());
+        }
+    }
+
 }

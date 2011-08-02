@@ -61,7 +61,7 @@ import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayRegistrati
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServerServiceConnection;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceConnection;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager.SharedService;
+import edu.washington.cs.oneswarm.f2f.servicesharing.SharedService;
 import edu.washington.cs.oneswarm.f2f.share.ShareManagerTools;
 import edu.washington.cs.oneswarm.ui.gwt.BackendErrorLog;
 
@@ -534,6 +534,9 @@ public class SearchManager {
                         .getInfohashhash());
                 final OSF2FHashSearchResp response = new OSF2FHashSearchResp(
                         OSF2FMessage.CURRENT_VERSION, msg.getSearchID(), newChannelId, pathID);
+                // TODO: only allow a single path. For now: allow multiple
+                // parallel channels to simplify debugging.
+                response.updatePathID(random.nextInt());
                 ServiceConnection conn = new ServerServiceConnection(service, source, newChannelId,
                         transportFakePathId);
                 // register it with the friendConnection
@@ -726,6 +729,16 @@ public class SearchManager {
 
     private void handleIncomingHashSearchResponse(OSF2FHashSearch hashSearch,
             FriendConnection source, OSF2FHashSearchResp searchResponse) {
+
+        // Check that it is a fresh path
+        if (source.hasRegisteredPath(searchResponse.getPathID())) {
+            logger.finer("got channel setup response, "
+                    + "but path is already used: sending back a reset");
+            source.sendChannelRst(new OSF2FChannelReset(OSF2FMessage.CURRENT_VERSION,
+                    searchResponse.getChannelID()));
+            return;
+        }
+
         // Check if this should be handled by a listener
         List<HashSearchListener> listeners = hashSearch.getListeners();
         if (listeners.size() > 0) {
@@ -746,14 +759,6 @@ public class SearchManager {
                 .getDownloadManager(new HashWrapper(infoHash));
         if (dm == null) {
             logger.warning("got channel setup request, " + "but the downloadmanager is null");
-            return;
-        }
-
-        if (source.hasRegisteredPath(searchResponse.getPathID())) {
-            logger.finer("got channel setup response, "
-                    + "but path is already used: sending back a reset");
-            source.sendChannelRst(new OSF2FChannelReset(OSF2FMessage.CURRENT_VERSION,
-                    searchResponse.getChannelID()));
             return;
         }
 

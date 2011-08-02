@@ -30,7 +30,10 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
@@ -697,6 +700,8 @@ ProtocolDecoderPHE
 		// **********************************************
 		} else if (selected_protocol == CRYPTO_SSL) {
 			filter = sslFilter;
+            System.err.println("HANDSHAKE COMPLETED: outgoing=" + outBoundSSL + " filter: "
+                    + sslFilter.getName());
 		// **********************************************
 			
 			/*

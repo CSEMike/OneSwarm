@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -18,13 +19,13 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 import org.bouncycastle.util.encoders.Base64;
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.config.ParameterListener;
 import org.gudy.azureus2.core3.download.DownloadManager;
 import org.gudy.azureus2.core3.global.GlobalManagerStats;
-import org.gudy.azureus2.core3.logging.LogEvent;
 import org.gudy.azureus2.core3.torrent.TOTorrent;
 import org.gudy.azureus2.core3.torrent.TOTorrentException;
 import org.gudy.azureus2.core3.util.Base32;
@@ -34,13 +35,13 @@ import com.aelitis.azureus.core.impl.AzureusCoreImpl;
 import com.aelitis.azureus.core.instancemanager.AZInstance;
 import com.aelitis.azureus.core.networkmanager.ConnectionEndpoint;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
+import com.aelitis.azureus.core.networkmanager.impl.tcp.TCPTransportImpl;
 
 import edu.washington.cs.oneswarm.f2f.BigFatLock;
 import edu.washington.cs.oneswarm.f2f.FileList;
 import edu.washington.cs.oneswarm.f2f.FileListManager;
 import edu.washington.cs.oneswarm.f2f.Friend;
 import edu.washington.cs.oneswarm.f2f.FriendConnectListener;
-import edu.washington.cs.oneswarm.f2f.Log;
 import edu.washington.cs.oneswarm.f2f.chat.Chat;
 import edu.washington.cs.oneswarm.f2f.chat.ChatDAO;
 import edu.washington.cs.oneswarm.f2f.friends.FriendManager;
@@ -62,7 +63,7 @@ public class OverlayManager {
     public static BigFatLock lock = BigFatLock.getInstance(false);
 
     // private Friend me;
-    public static boolean logToStdOut = false;
+    public final static Logger logger = Logger.getLogger(OverlayManager.class.getName());
 
     private int mMIN_DELAY_LINK_LATENCY = COConfigurationManager
             .getIntParameter("f2f_search_emulate_hops_min")
@@ -177,44 +178,40 @@ public class OverlayManager {
 
     public boolean createIncomingConnection(byte[] publicKey, NetworkConnection netConn) {
 
-        if (isConnectionAllowed(netConn.getEndpoint().getNotionalAddress().getAddress(), publicKey)) {
+        if (isConnectionAllowed(netConn, publicKey)) {
             Friend friend = friendManager.getFriend(publicKey);
             new FriendConnection(stats, queueManager, netConn, friend, filelistManager,
                     new FriendConnectionListener());
 
             return true;
+        } else {
+            System.err.println("INCOMING CONNECTION NOT ALLOWED!!!: " + netConn);
         }
         return false;
     }
 
-    public boolean createOutgoingConnection(ConnectionEndpoint remoteFriendAddr, Friend friend) {
-        if (isConnectionAllowed(remoteFriendAddr.getNotionalAddress().getAddress(),
-                friend.getPublicKey())) {
-            final FriendConnection fc = new FriendConnection(stats, queueManager, remoteFriendAddr,
-                    friend, filelistManager, new FriendConnectionListener());
-            /*
-             * create a check for this connection to verify that we actually get
-             * connected within a reasonable time frame
-             */
-            t.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    if (fc.isTimedOut()) {
-                        fc.close();
-                    }
+    public void createOutgoingConnection(ConnectionEndpoint remoteFriendAddr, Friend friend) {
+        final FriendConnection fc = new FriendConnection(stats, queueManager, remoteFriendAddr,
+                friend, filelistManager, new FriendConnectionListener());
+        /*
+         * create a check for this connection to verify that we actually get
+         * connected within a reasonable time frame
+         */
+        t.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (fc.isTimedOut()) {
+                    fc.close();
                 }
-            }, FriendConnection.INITIAL_HANDSHAKE_TIMEOUT + 10 * 1000);
-
-            return true;
-        }
-        return false;
+            }
+        }, FriendConnection.INITIAL_HANDSHAKE_TIMEOUT + 10 * 1000);
     }
 
     private boolean deregisterConnection(FriendConnection connection) {
         lock.lock();
         try {
-            Log.log("deregistered connection: " + connection.toString() + " "
-                    + connections.containsKey(connection.hashCode()) + " ", logToStdOut);
+            logger.finer("deregistered connection: " + connection.toString() + " "
+                    + connections.containsKey(connection.hashCode()) + " ");
             boolean res = null != connections.remove(connection.hashCode());
             Friend remoteFriend = connection.getRemoteFriend();
 
@@ -243,13 +240,13 @@ public class OverlayManager {
                     // fix it...
                     boolean fileListReceived = connectedConn.isFileListReceived();
                     if (!fileListReceived) {
-                        Log.log("connection closed, existing connection found, set to handshaking: "
-                                + remoteFriend.getNick(), logToStdOut);
+                        logger.finer("connection closed, existing connection found, set to handshaking: "
+                                + remoteFriend.getNick());
                         remoteFriend.setStatus(Friend.STATUS_HANDSHAKING);
                         remoteFriend.setConnectionId(Friend.NOT_CONNECTED_CONNECTION_ID);
                     } else {
-                        Log.log("connection closed, existing connection found, set to connected: "
-                                + remoteFriend.getNick(), logToStdOut);
+                        logger.finer("connection closed, existing connection found, set to connected: "
+                                + remoteFriend.getNick());
                         remoteFriend.setConnectionId(connectedConn.hashCode());
                         remoteFriend.setStatus(Friend.STATUS_ONLINE);
                     }
@@ -276,11 +273,10 @@ public class OverlayManager {
     void forwardSearchOrCancel(FriendConnection ignoreConn, OSF2FSearch msg) {
         for (FriendConnection conn : connections.values()) {
             if (ignoreConn.hashCode() == conn.hashCode()) {
-                Log.log("not forwarding search/cancel to: " + conn + " (source friend)",
-                        logToStdOut);
+                logger.finer("not forwarding search/cancel to: " + conn + " (source friend)");
                 continue;
             }
-            Log.log("forwarding search/cancel to: " + conn, logToStdOut);
+            logger.finer("forwarding search/cancel to: " + conn);
             if (shouldForwardSearch(msg, ignoreConn)) {
                 conn.sendSearch(msg.clone(), false);
             }
@@ -423,44 +419,61 @@ public class OverlayManager {
         return totalUploadSpeed;
     }
 
-    public boolean isConnectionAllowed(InetAddress remoteIP, byte[] remotePubKey) {
+    public boolean isConnectionAllowed(NetworkConnection connection, byte[] remotePubKey) {
+        InetAddress remoteIP = connection.getEndpoint().getNotionalAddress().getAddress();
         Friend friend = friendManager.getFriend(remotePubKey);
         if (stopped) {
-            Log.log("connection denied: (f2f transfers disabled)", logToStdOut);
+            logger.finer("connection denied: (f2f transfers disabled)");
             return false;
         }
         // check if we should allow this public key to connect
         if (Arrays.equals(remotePubKey, ownPublicKey.getEncoded())
                 && remoteIP.equals(myInstance.getExternalAddress())) {
-            Log.log(LogEvent.LT_INFORMATION, "connection from self not allowed (if same ip)",
-                    logToStdOut);
+            logger.info("connection from self not allowed (if same ip)");
             return false;
         } else if (friend == null) {
-            Log.log(LogEvent.LT_WARNING, " access denied (not friend): " + remoteIP, logToStdOut);
+            logger.fine(" access denied (not friend): " + remoteIP);
             return false;
         } else if (friend.isBlocked()) {
-            Log.log(LogEvent.LT_WARNING, " access denied (friend blocked): " + remoteIP,
-                    logToStdOut);
+            logger.fine(" access denied (friend blocked): " + remoteIP);
             return false;
         } else if (friend.getFriendBannedUntil() > System.currentTimeMillis()) {
             double minutesLeft = friend.getFriendBannedUntil() - System.currentTimeMillis()
                     / (60 * 1000.0);
             friend.updateConnectionLog(true, "incoming connection denied, friend blocked for "
                     + minutesLeft + " more minutes because of: " + friend.getBannedReason());
-            Log.log(LogEvent.LT_WARNING, " access denied (friend blocked for " + minutesLeft
-                    + " more minutes): " + remoteIP, logToStdOut);
+            logger.fine(" access denied (friend blocked for " + minutesLeft + " more minutes): "
+                    + remoteIP);
             return false;
         }
 
+        FriendConnection toDisconnect = null;
         for (FriendConnection c : connections.values()) {
+            // If we have 2 concurrent connections (and both have not yet
+            // completed the handshake). Disconnect the one with the lowest sum
+            // of port numbers.
+
             if (c.getRemoteFriend().equals(friend)) {
-                Log.log(LogEvent.LT_WARNING, " access denied (friend already connected): "
-                        + remoteIP, logToStdOut);
-                return false;
+                if (c.isFileListReceived()) {
+                    logger.fine(" access denied (friend already connected): " + remoteIP);
+                    return false;
+                } else {
+                    int existingConnectionPortSum = getPortSum(c.getNetworkConnection());
+                    int newConnectionPortSum = getPortSum(connection);
+                    if (existingConnectionPortSum < newConnectionPortSum) {
+                        toDisconnect = c;
+                        break;
+                    } else {
+                        // the new connection is "worse", keep the old one.
+                        return false;
+                    }
+                }
             }
         }
-        Log.log(LogEvent.LT_INFORMATION, "friend connection ok: " + remoteIP + " :: " + friend,
-                logToStdOut);
+        if (toDisconnect != null) {
+            toDisconnect.close();
+        }
+        logger.fine("friend connection ok: " + remoteIP + " :: " + friend);
         return true;
     }
 
@@ -482,17 +495,24 @@ public class OverlayManager {
         }
     }
 
+    private static int getPortSum(NetworkConnection conn) {
+        TCPTransportImpl transport = (TCPTransportImpl) conn.getTransport();
+        Socket s = transport.getSocketChannel().socket();
+        return s.getLocalPort() + s.getPort();
+    }
+
     private boolean registerConnection(FriendConnection connection) {
         lock.lock();
         try {
-            if (isConnectionAllowed(connection.getRemoteIp(), connection.getRemotePublicKey())) {
+            if (isConnectionAllowed(connection.getNetworkConnection(),
+                    connection.getRemotePublicKey())) {
                 connections.put(connection.hashCode(), connection);
                 /*
                  * don't mark remote friend as connected until after the
                  * oneswarm handshake message is received
                  */
                 // connection.getRemoteFriend().connected(connection.hashCode());
-                Log.log("registered connection: " + connection, logToStdOut);
+                logger.finer("registered connection: " + connection);
                 return true;
             } else {
                 return false;
@@ -521,7 +541,7 @@ public class OverlayManager {
     }
 
     void sendDirectedSearch(FriendConnection target, OSF2FHashSearch search) {
-        Log.log("sending search to " + target, logToStdOut);
+        logger.finer("sending search to " + target);
         target.sendSearch(search, true);
     }
 
@@ -543,7 +563,7 @@ public class OverlayManager {
                 callback.requestCompleted(oldList);
             }
 
-            Log.log("sending filelist request to " + conn);
+            logger.finer("sending filelist request to " + conn);
             conn.sendFileListRequest(OSF2FMessage.FILE_LIST_TYPE_COMPLETE, callback);
             return true;
         } else {
@@ -562,7 +582,7 @@ public class OverlayManager {
     public boolean sendMetaInfoRequest(int connectionId, int channelId, byte[] infohash,
             int lengthHint, PluginCallback<byte[]> callback) {
         FriendConnection conn = connections.get(connectionId);
-        Log.log("sending metainfo request to " + conn);
+        logger.finer("sending metainfo request to " + conn);
         if (conn != null) {
             conn.sendMetaInfoRequest(OSF2FMessage.METAINFO_TYPE_BITTORRENT, channelId, infohash,
                     lengthHint, callback);
@@ -573,7 +593,7 @@ public class OverlayManager {
     }
 
     void sendSearchOrCancel(OSF2FSearch search, boolean skipQueue, boolean forceSend) {
-        Log.log("sending search/cancel to " + connections.size(), logToStdOut);
+        logger.finer("sending search/cancel to " + connections.size());
         int numSent = 0;
         for (FriendConnection conn : connections.values()) {
 
@@ -711,8 +731,8 @@ public class OverlayManager {
     class FriendConnectionListener {
         public boolean connectSuccess(FriendConnection friendConnection) {
             if (!registerConnection(friendConnection)) {
-                Log.log("Unable to register connection, "
-                        + "connect count to high, closing connection", logToStdOut);
+                logger.finer("Unable to register connection, "
+                        + "connect count to high, closing connection");
                 friendConnection.close();
                 return false;
             }
@@ -760,7 +780,7 @@ public class OverlayManager {
             /*
              * check if we have any running downloads that this friend has
              */
-            Log.log("New friend connected, checking if friend has anything we want", logToStdOut);
+            logger.finer("New friend connected, checking if friend has anything we want");
             List<byte[]> runningDownloadHashes = new LinkedList<byte[]>();
             List<DownloadManager> dms = AzureusCoreImpl.getSingleton().getGlobalManager()
                     .getDownloadManagers();
@@ -776,13 +796,13 @@ public class OverlayManager {
                     }
                 }
             }
-            Log.log("found " + runningDownloadHashes.size() + " running downloads", logToStdOut);
+            logger.finer("found " + runningDownloadHashes.size() + " running downloads");
             FileList remoteFileList = filelistManager.getFriendsList(friendConnection
                     .getRemoteFriend());
             for (byte[] hash : runningDownloadHashes) {
                 if (remoteFileList.contains(hash)) {
-                    Log.log("sending search for '" + Base32.encode(hash) + "' to "
-                            + friendConnection.getRemoteFriend(), logToStdOut);
+                    logger.finer("sending search for '" + Base32.encode(hash) + "' to "
+                            + friendConnection.getRemoteFriend());
                     searchManager.sendDirectedHashSearch(friendConnection, hash);
                 }
             }

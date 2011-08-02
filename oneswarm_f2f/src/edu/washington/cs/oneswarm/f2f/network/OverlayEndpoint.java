@@ -110,6 +110,7 @@ public abstract class OverlayEndpoint {
                 // send a reset back to confirm
                 closed = true;
                 sendReset();
+                deregister();
             }
         }
     }

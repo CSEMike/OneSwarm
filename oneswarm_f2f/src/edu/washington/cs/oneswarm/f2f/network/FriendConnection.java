@@ -250,7 +250,6 @@ public class FriendConnection {
                 boolean registered = listener.connectSuccess(FriendConnection.this);
                 if (!registered || !connection.isConnected()) {
                     updateFriendConnectionLog(true, "Parallel connection closed");
-                    close();
                     return;
                 }
                 addQueueListener();

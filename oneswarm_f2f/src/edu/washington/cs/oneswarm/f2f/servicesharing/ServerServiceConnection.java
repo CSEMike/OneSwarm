@@ -7,7 +7,6 @@ import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListe
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.LowLatencyMessageWriter;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager.SharedService;
 
 public class ServerServiceConnection extends ServiceConnection {
     private final SharedService serverService;
@@ -68,12 +67,17 @@ public class ServerServiceConnection extends ServiceConnection {
                         logger.finest("sending queued message: " + msg.getDescription());
                         writeMessageToServerConnection(msg.getPayload());
                     }
+                    bufferedMessages.clear();
                 }
             }
 
             @Override
             public void exceptionThrown(Throwable error) {
-                ServerServiceConnection.this.close("Exception during connect");
+                logger.fine("got exception in server service connection: "
+                        + error.getClass().getName()
+                        + "::" + error.getMessage());
+                error.printStackTrace();
+                ServerServiceConnection.this.close("Exception in connection to server");
             }
 
             @Override

@@ -8,6 +8,7 @@ import org.gudy.azureus2.core3.util.DirectByteBuffer;
 
 import com.aelitis.azureus.core.networkmanager.IncomingMessageQueue.MessageQueueListener;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
+import com.aelitis.azureus.core.networkmanager.OutgoingMessageQueue;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
@@ -59,7 +60,54 @@ public abstract class ServiceConnection extends OverlayEndpoint {
     @Override
     public void cleanup() {
         if (serverConnection != null) {
-            serverConnection.close();
+            final NetworkConnection conn = serverConnection;
+            serverConnection = null;
+            final OutgoingMessageQueue outgoingMessageQueue = conn.getOutgoingMessageQueue();
+            // if (outgoingMessageQueue.getTotalSize() == 0) {
+            logger.fine("closing connection: " + getDescription());
+            conn.close();
+            // } else {
+            // logger.fine("connection has pending messages, closing when flushed: "
+            // + getDescription());
+            // outgoingMessageQueue.flush();
+            // outgoingMessageQueue
+            // .registerQueueListener(new
+            // OutgoingMessageQueue.MessageQueueListener() {
+            // @Override
+            // public boolean messageAdded(Message message) {
+            // return false;
+            // }
+            //
+            // @Override
+            // public void messageQueued(Message message) {
+            // }
+            //
+            // @Override
+            // public void messageRemoved(Message message) {
+            // }
+            //
+            // @Override
+            // public void messageSent(Message message) {
+            // if (outgoingMessageQueue.getTotalSize() == 0) {
+            // logger.fine("closing connection: " + getDescription());
+            // conn.close();
+            // }
+            // }
+            //
+            // @Override
+            // public void protocolBytesSent(int byte_count) {
+            // }
+            //
+            // @Override
+            // public void dataBytesSent(int byte_count) {
+            // }
+            //
+            // @Override
+            // public void flush() {
+            // }
+            //
+            // });
+            // }
         }
         serverConnection = null;
     }
@@ -85,13 +133,17 @@ public abstract class ServiceConnection extends OverlayEndpoint {
         if (!started) {
             start();
         }
+        // We need to create a new message here and transfer the payload over so
+        // the buffer won't be returned while the packet is in the queue.
+        OSF2FChannelDataMsg newMessage = new OSF2FChannelDataMsg(msg.getVersion(),
+                msg.getChannelId(), msg.transferPayload());
         if (!serverConnection.isConnected()) {
             synchronized (bufferedMessages) {
-                bufferedMessages.add(msg);
+                bufferedMessages.add(newMessage);
             }
             return;
         }
-        writeMessageToServerConnection(msg.getPayload());
+        writeMessageToServerConnection(newMessage.getPayload());
         if (logger.isLoggable(Level.FINEST)) {
             logger.finest("message written to server queue: " + msg.getDescription());
         }

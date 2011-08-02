@@ -284,4 +284,13 @@ public interface OneSwarmUIService extends RemoteService {
     void setStreamingDownload(String session, String infohash, boolean streaming);
 
     String getMultiTorrentSourceTemp(String session);
+
+    ArrayList<ClientServiceDTO> getClientServices();
+
+    public void saveClientServices(ArrayList<ClientServiceDTO> services);
+
+    ArrayList<SharedServiceDTO> getSharedServices();
+
+    public void saveSharedServices(ArrayList<SharedServiceDTO> services) throws OneSwarmException;
+
 }
