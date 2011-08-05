@@ -107,7 +107,7 @@ public class FriendConnection {
     private static final long RECENTLY_CLOSED_TIME = 30 * 1000;
 
     final double FORWARD_SEARCH_PROBABILITY = COConfigurationManager.getFloatParameter(
-            "f2f_forward_search_probability", 0.95f);
+            "f2f_forward_search_probability", 0.50f);
 
     private int activeOverlays = 0;
 
