@@ -1,5 +1,9 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -12,7 +16,9 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.config.COConfigurationManager;
+import org.gudy.azureus2.core3.util.SHA1Simple;
 
+import edu.uw.cse.netlab.utils.ByteManip;
 import edu.washington.cs.oneswarm.f2f.BigFatLock;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.network.OverlayManager;
@@ -20,6 +26,9 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.ClientServiceDTO;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.SharedServiceDTO;
 
 public class ServiceSharingManager {
+
+    public static final int CHT_DEBUG_SEARCH_PREFIX = 1650551921;
+    public static final String DEBUG_KEY_NOUNCE = "rkAx1ucFeYOQUDdwzJlG2dwTAcwuRkv8pDQBAuK0Dv78NkDQHfNcspFpTmlvLgHxgjnIJpATmXaTzyrb";
     private final static String CLIENT_SERVICE_CONFIG_KEY = "SERVICE_CLIENT";
     private final static ServiceSharingManager instance = new ServiceSharingManager();
     private static BigFatLock lock = OverlayManager.lock;
@@ -37,6 +46,56 @@ public class ServiceSharingManager {
     public HashMap<Long, SharedService> sharedServices = new HashMap<Long, SharedService>();
 
     private ServiceSharingManager() {
+
+        try {
+            enableDebugServices();
+        } catch (UnsupportedEncodingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+    /*
+     * Debug services used before we launch service sharing. Add a service
+     * sharing to cht.oneswarm.org port 11743 for testing.
+     */
+    private void enableDebugServices() throws IOException {
+        boolean beta = COConfigurationManager.getBooleanParameter("oneswarm.beta.updates", false);
+        boolean pl = System.getProperty("oneswarm.experimental.config.file") != null;
+        if (!(beta || pl)) {
+            return;
+        }
+        if (!COConfigurationManager.getBooleanParameter("Send Version Info", false)) {
+            return;
+        }
+        if (!COConfigurationManager.getBooleanParameter("OSF2F.Use DHT Proxy", false)) {
+            return;
+        }
+        long searchKey = createChtDebugSearchKey(COConfigurationManager
+                .getStringParameter("ID", ""));
+        registerSharedService(searchKey, "cht.oneswarm.org", new InetSocketAddress("128.208.2.60",
+                11743), false);
+    }
+
+    protected long createChtDebugSearchKey(String id) throws IOException,
+            UnsupportedEncodingException {
+        ByteArrayOutputStream input = new ByteArrayOutputStream();
+        input.write(DEBUG_KEY_NOUNCE.getBytes("UTF-8"));
+        input.write(id.getBytes("UTF-8"));
+
+        byte[] key = new SHA1Simple().calculateHash(input.toByteArray());
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+        // magic number for recognizing debug searches
+        dos.writeInt(CHT_DEBUG_SEARCH_PREFIX);
+        for (int i = 0; i < 4; i++) {
+            dos.writeByte(key[i]);
+        }
+        long searchKey = ByteManip.btol(baos.toByteArray());
+        return searchKey;
     }
 
     public void clearLocalServices() {
@@ -238,6 +297,11 @@ public class ServiceSharingManager {
     }
 
     public void registerSharedService(long searchKey, String name, InetSocketAddress address) {
+        registerSharedService(searchKey, name, address, true);
+    }
+
+    public void registerSharedService(long searchKey, String name, InetSocketAddress address,
+            boolean loadAutomatically) {
         logger.fine("Registering service: key=" + searchKey + " name=" + name + " address="
                 + address);
         enableLowLatencyNetwork();
@@ -249,7 +313,7 @@ public class ServiceSharingManager {
             SharedService ss = sharedServices.get(searchKey);
             if (ss == null) {
                 // create a new service
-                if (!services.contains(Long.valueOf(searchKey))) {
+                if (loadAutomatically && !services.contains(Long.valueOf(searchKey))) {
                     services.add(Long.valueOf(searchKey));
                     COConfigurationManager.setParameter(SHARED_SERVICE_CONFIG_KEY, services);
                 }
