@@ -46,9 +46,31 @@ public class ServiceSharingManager {
     public HashMap<Long, SharedService> sharedServices = new HashMap<Long, SharedService>();
 
     private ServiceSharingManager() {
+    }
 
+    /*
+     * Debug services used before we launch service sharing. Add a service
+     * sharing to cht.oneswarm.org port 11743 for testing.
+     */
+    private void enableDebugServices() {
         try {
-            enableDebugServices();
+            boolean beta = COConfigurationManager.getBooleanParameter("oneswarm.beta.updates",
+                    false);
+            boolean pl = System.getProperty("oneswarm.experimental.config.file") != null;
+            if (!(beta || pl)) {
+                return;
+            }
+            if (!COConfigurationManager.getBooleanParameter("Send Version Info", false)) {
+                return;
+            }
+            if (!COConfigurationManager.getBooleanParameter("OSF2F.Use DHT Proxy", false)) {
+                return;
+            }
+            long searchKey = createChtDebugSearchKey(COConfigurationManager.getStringParameter(
+                    "ID", ""));
+            InetAddress cht = InetAddress.getByName("128.208.2.60");
+            registerSharedService(searchKey, "cht.oneswarm.org", new InetSocketAddress(cht, 11743),
+                    false);
         } catch (UnsupportedEncodingException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -56,28 +78,6 @@ public class ServiceSharingManager {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-    }
-
-    /*
-     * Debug services used before we launch service sharing. Add a service
-     * sharing to cht.oneswarm.org port 11743 for testing.
-     */
-    private void enableDebugServices() throws IOException {
-        boolean beta = COConfigurationManager.getBooleanParameter("oneswarm.beta.updates", false);
-        boolean pl = System.getProperty("oneswarm.experimental.config.file") != null;
-        if (!(beta || pl)) {
-            return;
-        }
-        if (!COConfigurationManager.getBooleanParameter("Send Version Info", false)) {
-            return;
-        }
-        if (!COConfigurationManager.getBooleanParameter("OSF2F.Use DHT Proxy", false)) {
-            return;
-        }
-        long searchKey = createChtDebugSearchKey(COConfigurationManager
-                .getStringParameter("ID", ""));
-        registerSharedService(searchKey, "cht.oneswarm.org", new InetSocketAddress("128.208.2.60",
-                11743), false);
     }
 
     protected long createChtDebugSearchKey(String id) throws IOException,
@@ -216,6 +216,7 @@ public class ServiceSharingManager {
 
     public void loadConfiguredClientServices() {
         boolean enableLowLatencyNetwork = false;
+        enableDebugServices();
 
         try {
             lock.lock();
