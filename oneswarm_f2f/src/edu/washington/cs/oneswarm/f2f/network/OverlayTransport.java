@@ -37,6 +37,8 @@ import com.aelitis.azureus.core.peermanager.messaging.bittorrent.BTMessageEncode
 
 import edu.washington.cs.oneswarm.f2f.OSF2FAzSwtUi;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 import edu.washington.cs.oneswarm.f2f.share.DownloadManagerStarter;
 import edu.washington.cs.oneswarm.f2f.share.DownloadManagerStarter.DownloadManagerStartListener;
@@ -79,9 +81,10 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
 
     private List<EventWaiter> writeWaiter = new LinkedList<EventWaiter>();
 
-    public OverlayTransport(FriendConnection connection, int channelId, byte[] infohash,
-            int pathID, boolean outgoing, long overlayDelayMs) {
-        super(connection, channelId, pathID, overlayDelayMs);
+    public OverlayTransport(FriendConnection connection, byte[] infohash, int pathID,
+            boolean outgoing, long overlayDelayMs, OSF2FHashSearch search,
+            OSF2FHashSearchResp response) {
+        super(connection, pathID, overlayDelayMs, search, response);
         this.infoHash = infohash;
         this.bufferedMessages = new LinkedList<OSF2FChannelDataMsg>();
         logger.fine(getDescription() + ": Creating overlay transport");
@@ -424,7 +427,7 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
         if (closed && totalRead == 0) {
             throw new IOException("Channel closed: " + getDescription() + " reason: " + closeReason);
         }
-        bytesIn += totalRead;
+
         downloadRateAverage.addValue(totalRead);
         return totalRead;
     }
@@ -492,7 +495,6 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
             totalWritten += writeMessageToFriendConnection(msgBuffer);
         }
         logger.finest("wrote " + totalWritten + " to overlay channel " + channelId);
-        bytesOut += totalWritten;
         uploadRateAverage.addValue(totalWritten);
         return totalWritten;
     }

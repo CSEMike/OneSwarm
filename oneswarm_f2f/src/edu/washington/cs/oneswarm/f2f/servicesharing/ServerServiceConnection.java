@@ -5,6 +5,8 @@ import java.nio.ByteBuffer;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
 
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.LowLatencyMessageWriter;
 
@@ -12,8 +14,8 @@ public class ServerServiceConnection extends ServiceConnection {
     private final SharedService serverService;
 
     public ServerServiceConnection(SharedService service, FriendConnection connection,
-            int channelId, int pathID) {
-        super(connection, channelId, pathID);
+            OSF2FHashSearch search, OSF2FHashSearchResp response) {
+        super(connection, search, response);
         this.serverService = service;
     }
 
@@ -74,8 +76,7 @@ public class ServerServiceConnection extends ServiceConnection {
             @Override
             public void exceptionThrown(Throwable error) {
                 logger.fine("got exception in server service connection: "
-                        + error.getClass().getName()
-                        + "::" + error.getMessage());
+                        + error.getClass().getName() + "::" + error.getMessage());
                 error.printStackTrace();
                 ServerServiceConnection.this.close("Exception in connection to server");
             }

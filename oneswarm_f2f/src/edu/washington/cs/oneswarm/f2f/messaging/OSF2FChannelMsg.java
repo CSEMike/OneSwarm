@@ -15,9 +15,21 @@ public abstract class OSF2FChannelMsg implements OSF2FMessage {
     private boolean forward = false;
     public final static Logger logger = Logger.getLogger(OSF2FChannelMsg.class.getName());
 
+    // Number of bytes previously forwarded in this channel. (for internal book
+    // keeping)
+    private long byteInChannel;
+
     protected OSF2FChannelMsg(int channelID) {
         this.channelID = channelID;
         this.createdTime = System.currentTimeMillis();
+    }
+
+    public long getByteInChannel() {
+        return byteInChannel;
+    }
+
+    public void setByteInChannel(long bytesForwarded) {
+        this.byteInChannel = bytesForwarded;
     }
 
     public final int getChannelId() {

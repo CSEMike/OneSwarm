@@ -11,10 +11,8 @@ import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 
 import edu.washington.cs.oneswarm.f2f.network.SearchManager.HashSearchListener;
 
-public class OSF2FHashSearch implements OSF2FMessage, OSF2FSearch {
+public class OSF2FHashSearch extends OSF2FSearch implements OSF2FMessage {
 
-    private final byte version;
-    private final int searchID;
     private final long infohashhash;
 
     private String description;
@@ -25,9 +23,8 @@ public class OSF2FHashSearch implements OSF2FMessage, OSF2FSearch {
     private final List<HashSearchListener> listeners = new LinkedList<HashSearchListener>();
 
     public OSF2FHashSearch(byte version, int searchID, long infohashhash) {
+        super(version, searchID);
         this.infohashhash = infohashhash;
-        this.version = version;
-        this.searchID = searchID;
     }
 
     public void addListener(HashSearchListener listener) {
@@ -40,10 +37,6 @@ public class OSF2FHashSearch implements OSF2FMessage, OSF2FSearch {
 
     public OSF2FHashSearch clone() {
         return new OSF2FHashSearch(this.getVersion(), this.getSearchID(), this.getInfohashhash());
-    }
-
-    public int getSearchID() {
-        return searchID;
     }
 
     public long getInfohashhash() {
@@ -70,14 +63,11 @@ public class OSF2FHashSearch implements OSF2FMessage, OSF2FSearch {
         return Message.TYPE_PROTOCOL_PAYLOAD;
     }
 
-    public byte getVersion() {
-        return version;
-    };
-
     public String getDescription() {
         if (description == null) {
             description = OSF2FMessage.ID_OS_HASH_SEARCH + "\tsearch="
-                    + Integer.toHexString(searchID) + "\thash=" + Long.toHexString(infohashhash);
+                    + Integer.toHexString(getSearchID()) + "\thash="
+                    + Long.toHexString(infohashhash);
         }
 
         return description;
@@ -86,7 +76,7 @@ public class OSF2FHashSearch implements OSF2FMessage, OSF2FSearch {
     public DirectByteBuffer[] getData() {
         if (buffer == null) {
             buffer = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG, MESSAGE_LENGTH);
-            buffer.putInt(DirectByteBuffer.SS_MSG, searchID);
+            buffer.putInt(DirectByteBuffer.SS_MSG, getSearchID());
             buffer.getBuffer(DirectByteBuffer.SS_MSG).putLong(infohashhash);
             buffer.flip(DirectByteBuffer.SS_MSG);
         }
@@ -112,17 +102,6 @@ public class OSF2FHashSearch implements OSF2FMessage, OSF2FSearch {
         if (buffer != null)
             buffer.returnToPool();
     }
-
-    // private long bytesToLong(byte[] b) {
-    // {
-    // long val = 0;
-    // for (int i = 0; i < 8; i++) {
-    // int shift = 7 - i;
-    // val |= (b[i] << shift);
-    // }
-    // return val;
-    // }
-    // }
 
     public int getMessageSize() {
         return MESSAGE_LENGTH;

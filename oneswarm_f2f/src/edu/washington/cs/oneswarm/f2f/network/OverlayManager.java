@@ -109,6 +109,8 @@ public class OverlayManager {
     private boolean stopped = false;
     private final Timer t = new Timer("FriendConnectionInitialChecker", true);
 
+    private SetupPacketListener setupPacketListener;
+
     public OverlayManager(FriendManager _friendManager, PublicKey _ownPublicKey,
             FileListManager _fileListManager, GlobalManagerStats _stats) {
         stats = _stats;
@@ -454,19 +456,14 @@ public class OverlayManager {
             // of port numbers.
 
             if (c.getRemoteFriend().equals(friend)) {
-                if (c.isFileListReceived()) {
-                    logger.fine(" access denied (friend already connected): " + remoteIP);
-                    return false;
+                int existingConnectionPortSum = getPortSum(c.getNetworkConnection());
+                int newConnectionPortSum = getPortSum(connection);
+                if (existingConnectionPortSum < newConnectionPortSum) {
+                    toDisconnect = c;
+                    break;
                 } else {
-                    int existingConnectionPortSum = getPortSum(c.getNetworkConnection());
-                    int newConnectionPortSum = getPortSum(connection);
-                    if (existingConnectionPortSum < newConnectionPortSum) {
-                        toDisconnect = c;
-                        break;
-                    } else {
-                        // the new connection is "worse", keep the old one.
-                        return false;
-                    }
+                    // the new connection is "worse", keep the old one.
+                    return false;
                 }
             }
         }
@@ -507,6 +504,7 @@ public class OverlayManager {
             if (isConnectionAllowed(connection.getNetworkConnection(),
                     connection.getRemotePublicKey())) {
                 connections.put(connection.hashCode(), connection);
+                connection.setSetupPacketListener(setupPacketListener);
                 /*
                  * don't mark remote friend as connected until after the
                  * oneswarm handshake message is received
@@ -533,6 +531,17 @@ public class OverlayManager {
 
     public void restartAllConnections() {
         stopped = false;
+    }
+
+    public void setSetupPacketListener(SetupPacketListener listener) {
+        this.setupPacketListener = listener;
+        for (FriendConnection conn : connections.values()) {
+            conn.setSetupPacketListener(listener);
+        }
+    }
+
+    public SetupPacketListener getSetupPacketListener() {
+        return this.setupPacketListener;
     }
 
     public void sendChatMessage(int connectionId, String inPlaintextMessage) {

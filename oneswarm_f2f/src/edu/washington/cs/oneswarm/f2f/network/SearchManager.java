@@ -529,7 +529,6 @@ public class SearchManager {
                 // TODO: support artificial delays and merge with normal search
                 // handling code
                 final int newChannelId = random.nextInt();
-                final int transportFakePathId = random.nextInt();
                 final int pathID = randomnessManager.getDeterministicRandomInt((int) msg
                         .getInfohashhash());
                 final OSF2FHashSearchResp response = new OSF2FHashSearchResp(
@@ -537,8 +536,7 @@ public class SearchManager {
                 // TODO: only allow a single path. For now: allow multiple
                 // parallel channels to simplify debugging.
                 response.updatePathID(random.nextInt());
-                ServiceConnection conn = new ServerServiceConnection(service, source, newChannelId,
-                        transportFakePathId);
+                ServiceConnection conn = new ServerServiceConnection(service, source, msg, response);
                 // register it with the friendConnection
                 source.registerOverlayTransport(conn);
                 // send the channel setup message
@@ -648,8 +646,9 @@ public class SearchManager {
                                 OSF2FMessage.CURRENT_VERSION, msg.getSearchID(), newChannelId,
                                 pathID);
 
-                        final OverlayTransport transp = new OverlayTransport(source, newChannelId,
-                                infohashShadow, transportFakePathId, false, overlayDelay);
+                        final OverlayTransport transp = new OverlayTransport(source,
+                                infohashShadow, transportFakePathId, false, overlayDelay, msg,
+                                response);
                         // register it with the friendConnection
                         source.registerOverlayTransport(transp);
                         // send the channel setup message
@@ -762,9 +761,9 @@ public class SearchManager {
             return;
         }
 
-        OverlayTransport overlayTransport = new OverlayTransport(source,
-                searchResponse.getChannelID(), infoHash, searchResponse.getPathID(), true,
-                overlayManager.getLatencyDelayForInfohash(source.getRemoteFriend(), infoHash));
+        OverlayTransport overlayTransport = new OverlayTransport(source, infoHash,
+                searchResponse.getPathID(), true, overlayManager.getLatencyDelayForInfohash(
+                        source.getRemoteFriend(), infoHash), hashSearch, searchResponse);
         // register it with the friendConnection
         try {
             source.registerOverlayTransport(overlayTransport);

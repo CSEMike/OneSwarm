@@ -79,6 +79,7 @@ public class DataMessage implements OSF2FMessage {
     public void destroy() {
         if (buffer != null) {
             buffer.returnToPool();
+            buffer = null;
         }
     }
 
@@ -160,8 +161,8 @@ public class DataMessage implements OSF2FMessage {
                     if (payload_buffer.position(SS) > 0) {
                         payload_buffer.flip(SS);
                         Message msg = new DataMessage(payload_buffer);
-                        messages_last_read.add(msg);
                         payload_buffer = null;
+                        messages_last_read.add(msg);
                     }
                     // If we read all from transport, break
                     if (read == 0) {

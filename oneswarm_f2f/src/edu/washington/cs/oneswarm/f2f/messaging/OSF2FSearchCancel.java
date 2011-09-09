@@ -6,26 +6,18 @@ import org.gudy.azureus2.core3.util.DirectByteBufferPool;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 
-public class OSF2FSearchCancel implements OSF2FMessage, OSF2FSearch {
-
-    private final byte version;
-    private final int searchID;
+public class OSF2FSearchCancel extends OSF2FSearch implements OSF2FMessage {
 
     private String description;
     private DirectByteBuffer buffer;
     private final static int MESSAGE_LENGTH = 4;
 
     public OSF2FSearchCancel(byte version, int searchID) {
-        this.version = version;
-        this.searchID = searchID;
+        super(version, searchID);
     }
 
     public OSF2FSearchCancel clone() {
         return new OSF2FSearchCancel(this.getVersion(), this.getSearchID());
-    }
-
-    public int getSearchID() {
-        return searchID;
     }
 
     public String getID() {
@@ -48,14 +40,10 @@ public class OSF2FSearchCancel implements OSF2FMessage, OSF2FSearch {
         return Message.TYPE_PROTOCOL_PAYLOAD;
     }
 
-    public byte getVersion() {
-        return version;
-    };
-
     public String getDescription() {
         if (description == null) {
             description = OSF2FMessage.ID_OS_SEARCH_CANCEL + "\tsearch="
-                    + Integer.toHexString(searchID);
+                    + Integer.toHexString(getSearchID());
         }
 
         return description;
@@ -64,7 +52,7 @@ public class OSF2FSearchCancel implements OSF2FMessage, OSF2FSearch {
     public DirectByteBuffer[] getData() {
         if (buffer == null) {
             buffer = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG, MESSAGE_LENGTH);
-            buffer.putInt(DirectByteBuffer.SS_MSG, searchID);
+            buffer.putInt(DirectByteBuffer.SS_MSG, getSearchID());
             buffer.flip(DirectByteBuffer.SS_MSG);
         }
         return new DirectByteBuffer[] { buffer };

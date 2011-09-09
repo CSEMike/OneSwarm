@@ -9,10 +9,8 @@ import org.gudy.azureus2.core3.util.DirectByteBufferPool;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 
-public class OSF2FTextSearch implements OSF2FMessage, OSF2FSearch {
+public class OSF2FTextSearch extends OSF2FSearch implements OSF2FMessage {
 
-    private final byte version;
-    private final int searchID;
     private final byte type;
 
     private final String searchString;
@@ -26,6 +24,7 @@ public class OSF2FTextSearch implements OSF2FMessage, OSF2FSearch {
     private int messageLength;
 
     public OSF2FTextSearch(byte version, byte type, int searchID, String searchString) {
+        super(version, searchID);
         this.searchString = searchString;
         try {
             this.searchStringBytes = searchString.getBytes("UTF-8");
@@ -33,9 +32,7 @@ public class OSF2FTextSearch implements OSF2FMessage, OSF2FSearch {
             e.printStackTrace();
             this.searchStringBytes = searchString.getBytes();
         }
-        this.version = version;
         this.type = type;
-        this.searchID = searchID;
         this.messageLength = Math.min(MAX_MESSAGE_LENGTH, BASE_MESSAGE_LENGTH
                 + searchStringBytes.length);
     }
@@ -43,10 +40,6 @@ public class OSF2FTextSearch implements OSF2FMessage, OSF2FSearch {
     public OSF2FTextSearch clone() {
         return new OSF2FTextSearch(this.getVersion(), type, this.getSearchID(),
                 this.getSearchString());
-    }
-
-    public int getSearchID() {
-        return searchID;
     }
 
     public String getSearchString() {
@@ -73,14 +66,10 @@ public class OSF2FTextSearch implements OSF2FMessage, OSF2FSearch {
         return Message.TYPE_PROTOCOL_PAYLOAD;
     }
 
-    public byte getVersion() {
-        return version;
-    };
-
     public String getDescription() {
         if (description == null) {
             description = OSF2FMessage.ID_OS_TEXT_SEARCH + "\tsearchID="
-                    + Integer.toHexString(searchID) + "\tstring=" + searchString;
+                    + Integer.toHexString(getSearchID()) + "\tstring=" + searchString;
         }
 
         return description;
@@ -90,7 +79,7 @@ public class OSF2FTextSearch implements OSF2FMessage, OSF2FSearch {
         if (buffer == null) {
             buffer = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG, messageLength);
             buffer.put(DirectByteBuffer.SS_MSG, type);
-            buffer.putInt(DirectByteBuffer.SS_MSG, searchID);
+            buffer.putInt(DirectByteBuffer.SS_MSG, getSearchID());
             buffer.put(DirectByteBuffer.SS_MSG, searchStringBytes);
 
             buffer.flip(DirectByteBuffer.SS_MSG);

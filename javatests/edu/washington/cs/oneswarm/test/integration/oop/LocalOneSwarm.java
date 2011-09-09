@@ -383,7 +383,7 @@ public class LocalOneSwarm {
             public boolean satisfied() {
                 return getCoordinator().onlineFriendCount >= count;
             }
-        }, 20 * 1000).await();
+        }, 40 * 1000).await();
     }
 
     /** Blocks until the instance's public key is available and returns it. */

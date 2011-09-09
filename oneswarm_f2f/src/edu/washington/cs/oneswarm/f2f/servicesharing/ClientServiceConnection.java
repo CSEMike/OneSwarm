@@ -6,6 +6,8 @@ import com.aelitis.azureus.core.networkmanager.NetworkConnection;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
 
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.LowLatencyMessageWriter;
 
@@ -14,8 +16,8 @@ public class ClientServiceConnection extends ServiceConnection {
     private final ClientService clientService;
 
     public ClientServiceConnection(ClientService service, NetworkConnection incomingConnetion,
-            FriendConnection connection, int channelId, int pathID) {
-        super(connection, channelId, pathID);
+            FriendConnection connection, OSF2FHashSearch search, OSF2FHashSearchResp response) {
+        super(connection, search, response);
         this.clientService = service;
         this.serverConnection = incomingConnetion;
     }

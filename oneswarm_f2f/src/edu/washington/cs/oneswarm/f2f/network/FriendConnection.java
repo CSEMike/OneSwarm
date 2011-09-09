@@ -124,7 +124,7 @@ public class FriendConnection {
 
     private final FileListManager filelistManager;
     private final FileListRequestHandler fileListRequestHandler = new FileListRequestHandler();
-    private FriendConnectionQueue friendConnectionQueue;
+    private final FriendConnectionQueue friendConnectionQueue;
 
     private boolean filelistReceived = false;
     private volatile boolean handShakeReceived = false;
@@ -184,6 +184,8 @@ public class FriendConnection {
 
     private boolean mClosing;
 
+    private SetupPacketListener setupPacketListener;
+
     /**
      * outgoing
      * 
@@ -218,6 +220,9 @@ public class FriendConnection {
                 + new String(Base64.encode(getRemotePublicKey())));
         this.connection = NetworkManager.getSingleton().createConnection(remoteFriendAddr,
                 new OSF2FMessageEncoder(), new OSF2FMessageDecoder(), true, false, sharedSecret);
+        this.friendConnectionQueue = queueManager
+                .registerConnectionForQueueHandling(FriendConnection.this);
+
         // this.hash = getHashOf(remoteFriend.getPublicKey(),
         // this.getRemoteIp(), this.getRemotePort());
         this.connection.connect(null, false, new ConnectionListener() {
@@ -259,8 +264,6 @@ public class FriendConnection {
                     connection.getOutgoingMessageQueue().registerQueueListener(
                             new OutgoingQueueListener());
                 }
-                friendConnectionQueue = queueManager
-                        .registerConnectionForQueueHandling(FriendConnection.this);
                 NetworkManager.getSingleton().startTransferProcessing(connection);
                 enableFastMessageProcessing(true);
 
@@ -278,6 +281,11 @@ public class FriendConnection {
                 return "connection listener: OSF2F session, outgoing";
             }
         });
+    }
+
+    public void setSetupPacketListener(SetupPacketListener listener) {
+        this.setupPacketListener = listener;
+        friendConnectionQueue.setSetupPacketListener(listener);
     }
 
     private void addQueueListener() {
@@ -2176,6 +2184,11 @@ public class FriendConnection {
         }
 
         public void forwardMessage(OSF2FChannelMsg message) {
+            message.setByteInChannel(bytesForwarded);
+            if (setupPacketListener != null && bytesForwarded == 0) {
+                setupPacketListener.packetAddedToForwardQueue(FriendConnection.this, conn,
+                        sourceMessage, setupMessage, message);
+            }
             lastMsgTime = System.currentTimeMillis();
             int numBytes = message.getMessageSize();
             bytesForwarded += numBytes;
@@ -2324,5 +2337,9 @@ public class FriendConnection {
 
     public boolean isClosing() {
         return mClosing;
+    }
+
+    SetupPacketListener getSetupPacketListener() {
+        return setupPacketListener;
     }
 }

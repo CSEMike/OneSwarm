@@ -103,10 +103,10 @@ Constants
 //  public static final String AZUREUS_NAME	  = "Azureus";
   public static final String AZUREUS_NAME	  = "OneSwarm";
 //  public static final String AZUREUS_VERSION  = "3.0.5.0";  //3.0.5.1_CVS
-	public static final String AZUREUS_VERSION = "0.7.5.0";
+    public static final String AZUREUS_VERSION = "0.7.6.0";
 
 	// MUST be 8 chars long!
-	public static final byte[] VERSION_ID = ("-" + "OS" + "0750" + "-").getBytes();
+    public static final byte[] VERSION_ID = ("-" + "OS" + "0760" + "-").getBytes();
 
 
   public static final String  OSName = System.getProperty("os.name");
@@ -428,37 +428,37 @@ Constants
 	private static String OS_AZ_MODS_VERSION_KEY = "OS_AZ_MODS_VERSION";
 	private static String oneSwarmAzureusModsVersion = null;
 
-	public static String getOneSwarmAzureusModsVersion(){
-		if(oneSwarmAzureusModsVersion == null){
-			InputStream is = Thread.currentThread().getClass().getResourceAsStream("/OneSwarmAzMods.properties");
-			/**
-			 * PIAMOD -- check here so we can run in hosted mode, etc. during development
-			 */
-			if( is == null )
-			{
-				try {
-					is = new FileInputStream("OneSwarmAzMods.properties");
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-					is = null;
-				}
-			}
-			Properties p = new Properties();
-			try {
-				if(is != null){
-				p.load(is);
-				oneSwarmAzureusModsVersion = p.getProperty(OS_AZ_MODS_VERSION_KEY);
-				System.err.println("getting os az mods version: " + oneSwarmAzureusModsVersion);
-				} else {
-					System.err.println("could not load az mods properties file");
-				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		return oneSwarmAzureusModsVersion;
-	}
+    public static String getOneSwarmAzureusModsVersion() {
+        if (oneSwarmAzureusModsVersion == null) {
+            InputStream is = Thread.currentThread().getClass()
+                    .getResourceAsStream("/OneSwarmAzMods.properties");
+            /**
+             * PIAMOD -- check here so we can run in hosted mode, etc. during
+             * development
+             */
+            if (is == null) {
+                try {
+                    is = new FileInputStream("OneSwarmAzMods.properties");
+                } catch (FileNotFoundException e) {
+                    is = null;
+                }
+            }
+            Properties p = new Properties();
+            try {
+                if (is != null) {
+                    p.load(is);
+                    oneSwarmAzureusModsVersion = p.getProperty(OS_AZ_MODS_VERSION_KEY);
+                    System.err.println("getting os az mods version: " + oneSwarmAzureusModsVersion);
+                } else {
+                    System.err.println("could not load az mods properties file");
+                }
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+        return oneSwarmAzureusModsVersion;
+    }
 
 	public static String getF2FVersion() {
 		if (AzureusCoreImpl.isCoreAvailable()) {

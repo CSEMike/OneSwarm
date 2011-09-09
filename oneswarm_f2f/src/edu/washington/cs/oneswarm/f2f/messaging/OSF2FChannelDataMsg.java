@@ -15,15 +15,19 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
     private byte version;
     private int channelID;
     private DirectByteBuffer[] buffer = new DirectByteBuffer[2];
-    private final int messageLength;
+    private int messageLength;
 
     public OSF2FChannelDataMsg(byte _version, int channelID, DirectByteBuffer data) {
         super(channelID);
         this.version = _version;
         this.channelID = channelID;
         this.buffer[1] = data;
-        if (data != null) {
-            messageLength = BASE_LENGHT + data.remaining(DirectByteBuffer.SS_MSG);
+        updateMessageLength();
+    }
+
+    private void updateMessageLength() {
+        if (buffer[1] != null) {
+            messageLength = BASE_LENGHT + buffer[1].remaining(DirectByteBuffer.SS_MSG);
         } else {
             messageLength = BASE_LENGHT;
         }
@@ -86,10 +90,11 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
     }
 
     public void destroy() {
-        if (buffer[0] != null)
-            buffer[0].returnToPool();
-        if (buffer[1] != null)
-            buffer[1].returnToPool();
+        for (int i = 0; i < buffer.length; i++) {
+            if (buffer[i] != null) {
+                buffer[i].returnToPool();
+            }
+        }
     }
 
     public DirectByteBuffer[] getData() {
@@ -131,5 +136,13 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
         DirectByteBuffer payload = buffer[1];
         buffer[1] = null;
         return payload;
+    }
+
+    public void updatePayload(DirectByteBuffer newPayload) {
+        if (buffer[1] != null) {
+            buffer[1].returnToPool();
+        }
+        buffer[1] = newPayload;
+        updateMessageLength();
     }
 }

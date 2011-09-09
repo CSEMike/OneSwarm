@@ -94,8 +94,7 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
                         return;
                     }
                     ClientServiceConnection serviceConnection = new ClientServiceConnection(
-                            ClientService.this, incomingConnection, source, msg.getChannelID(), msg
-                                    .getPathID());
+                            ClientService.this, incomingConnection, source, search, msg);
 
                     // register it with the friendConnection
                     try {
