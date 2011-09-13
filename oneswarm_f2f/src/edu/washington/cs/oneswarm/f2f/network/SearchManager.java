@@ -1119,7 +1119,7 @@ public class SearchManager {
         OSF2FSearch search = new OSF2FHashSearch(OSF2FMessage.CURRENT_VERSION, newSearchId,
                 metainfohashhash);
 
-        sendSearch(newSearchId, search, false);
+        sendSearch(newSearchId, search, true, false);
     }
 
     public void sendServiceSearch(long searchKey, HashSearchListener listener) {
@@ -1131,17 +1131,18 @@ public class SearchManager {
         OSF2FHashSearch search = new OSF2FHashSearch(OSF2FMessage.CURRENT_VERSION, newSearchId,
                 searchKey);
         search.addListener(listener);
-        sendSearch(newSearchId, search, false);
+        // For service sharing, send to all friends and skip queue.
+        sendSearch(newSearchId, search, true, true);
     }
 
-    public void sendSearch(int newSearchId, OSF2FSearch search, boolean skipQueue) {
+    public void sendSearch(int newSearchId, OSF2FSearch search, boolean skipQueue, boolean forceSend) {
         lock.lock();
         try {
             sentSearches.put(newSearchId, new SentSearch(search));
         } finally {
             lock.unlock();
         }
-        overlayManager.sendSearchOrCancel(search, skipQueue, false);
+        overlayManager.sendSearchOrCancel(search, skipQueue, forceSend);
     }
 
     public int sendTextSearch(String searchString, TextSearchListener listener) {
@@ -1158,7 +1159,7 @@ public class SearchManager {
         OSF2FSearch search = new OSF2FTextSearch(OSF2FMessage.CURRENT_VERSION,
                 OSF2FMessage.FILE_LIST_TYPE_PARTIAL, newSearchId, searchString);
         textSearchManager.sentSearch(newSearchId, searchString, listener);
-        sendSearch(newSearchId, search, false);
+        sendSearch(newSearchId, search, true, false);
         return newSearchId;
     }
 
