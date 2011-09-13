@@ -58,9 +58,10 @@ public abstract class OverlayEndpoint {
     protected Average uploadRateAverage = Average.getInstance(1000, 10);
     private final OSF2FHashSearch search;
     private final OSF2FHashSearchResp response;
+    protected final boolean outgoing;
 
     public OverlayEndpoint(FriendConnection friendConnection, int pathID, long overlayDelayMs,
-            OSF2FHashSearch search, OSF2FHashSearchResp response) {
+            OSF2FHashSearch search, OSF2FHashSearchResp response, boolean outgoing) {
         this.friendConnection = friendConnection;
         this.channelId = response.getChannelID();
         this.pathID = pathID;
@@ -71,9 +72,14 @@ public abstract class OverlayEndpoint {
                 overlayDelayMs);
         this.search = search;
         this.response = response;
+        this.outgoing = outgoing;
     }
 
     protected abstract void cleanup();
+
+    public boolean isOutgoing() {
+        return outgoing;
+    }
 
     private void deregister() {
         // remove it from the friend connection
@@ -207,7 +213,7 @@ public abstract class OverlayEndpoint {
                                 .getSetupPacketListener();
                         if (setupPacketListener != null && msg.getByteInChannel() == 0) {
                             setupPacketListener.packetArrivedAtFinalDestination(friendConnection,
-                                    search, response, msg);
+                                    search, response, msg, outgoing);
                         }
                         handleDelayedOverlayMessage(msg);
                     }

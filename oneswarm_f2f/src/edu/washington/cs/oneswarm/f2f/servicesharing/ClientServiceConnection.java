@@ -17,7 +17,7 @@ public class ClientServiceConnection extends ServiceConnection {
 
     public ClientServiceConnection(ClientService service, NetworkConnection incomingConnetion,
             FriendConnection connection, OSF2FHashSearch search, OSF2FHashSearchResp response) {
-        super(connection, search, response);
+        super(connection, search, response, true);
         this.clientService = service;
         this.serverConnection = incomingConnetion;
     }

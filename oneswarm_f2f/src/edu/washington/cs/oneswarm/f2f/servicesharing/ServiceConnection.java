@@ -55,8 +55,8 @@ public abstract class ServiceConnection extends OverlayEndpoint {
     protected NetworkConnection serverConnection;
 
     public ServiceConnection(FriendConnection connection, OSF2FHashSearch search,
-            OSF2FHashSearchResp response) {
-        super(connection, response.getPathID(), 0, search, response);
+            OSF2FHashSearchResp response, boolean outgoing) {
+        super(connection, response.getPathID(), 0, search, response, outgoing);
         this.bufferedMessages = new LinkedList<OSF2FChannelDataMsg>();
     }
 

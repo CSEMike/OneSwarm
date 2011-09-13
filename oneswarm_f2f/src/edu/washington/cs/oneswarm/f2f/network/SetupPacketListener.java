@@ -18,6 +18,6 @@ public interface SetupPacketListener {
             OSF2FSearch sourceMessage, OSF2FSearchResp setupMessage, OSF2FChannelMsg message);
 
     public void packetArrivedAtFinalDestination(FriendConnection source, OSF2FHashSearch search,
-            OSF2FHashSearchResp response, OSF2FChannelDataMsg msg);
+            OSF2FHashSearchResp response, OSF2FChannelDataMsg msg, boolean outgoing);
 
 }

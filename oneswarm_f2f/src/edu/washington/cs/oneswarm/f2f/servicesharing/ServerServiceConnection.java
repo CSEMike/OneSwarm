@@ -15,7 +15,7 @@ public class ServerServiceConnection extends ServiceConnection {
 
     public ServerServiceConnection(SharedService service, FriendConnection connection,
             OSF2FHashSearch search, OSF2FHashSearchResp response) {
-        super(connection, search, response);
+        super(connection, search, response, false);
         this.serverService = service;
     }
 

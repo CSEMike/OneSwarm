@@ -62,11 +62,14 @@ public class ServiceSharingThreeProcessTest extends ThreeProcessTestBase {
             // Register the client service
             ServiceSharingManager.getInstance().registerClientService("echoclient", CLIENT_PORT,
                     searchKey);
+            SetupPacketTraceRoute tracerouteListener = new SetupPacketTraceRoute();
             OSF2FMain.getSingelton().getOverlayManager()
-                    .setSetupPacketListener(new SetupPacketTraceRoute());
+                    .setSetupPacketListener(tracerouteListener);
 
             Thread.sleep(5000);
             ServiceSharingSingleProcessTest.doEchoTest();
+
+            tracerouteListener.printAllTraceRoutes();
         } catch (Exception e) {
             e.printStackTrace();
             logger.severe(e.toString());

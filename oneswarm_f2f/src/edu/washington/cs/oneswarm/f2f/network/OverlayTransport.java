@@ -68,7 +68,6 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
 
     private final byte[] infoHash;
 
-    private volatile boolean outgoing;
     private int posInHandshake = 0;
 
     private List<EventWaiter> readWaiter = new LinkedList<EventWaiter>();
@@ -84,12 +83,11 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
     public OverlayTransport(FriendConnection connection, byte[] infohash, int pathID,
             boolean outgoing, long overlayDelayMs, OSF2FHashSearch search,
             OSF2FHashSearchResp response) {
-        super(connection, pathID, overlayDelayMs, search, response);
+        super(connection, pathID, overlayDelayMs, search, response, outgoing);
         this.infoHash = infohash;
         this.bufferedMessages = new LinkedList<OSF2FChannelDataMsg>();
         logger.fine(getDescription() + ": Creating overlay transport");
         this.channelPeerId = generatePeerId();
-        this.outgoing = outgoing;
     }
 
     @Override
