@@ -155,7 +155,8 @@ public class OverlayManager {
                 mForwardSearchProbability = COConfigurationManager
                         .getFloatParameter("f2f_forward_search_probability");
 
-                if (mForwardSearchProbability <= 0) {
+                if (mForwardSearchProbability <= 0
+                        || Math.abs(mForwardSearchProbability - 0.95) < 0.1) {
                     COConfigurationManager.setParameter("f2f_forward_search_probability", 0.5f);
                     mForwardSearchProbability = 0.5;
                 }
