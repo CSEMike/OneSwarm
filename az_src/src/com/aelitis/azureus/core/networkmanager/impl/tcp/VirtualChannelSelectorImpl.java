@@ -617,7 +617,7 @@ public class VirtualChannelSelectorImpl {
 					}
 				}
 
-				if (select_looks_broken_count >= 5) {
+                if (select_looks_broken_count >= 5) {
 
 					select_is_broken = true;
 

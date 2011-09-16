@@ -248,8 +248,8 @@ public abstract class OverlayEndpoint {
         msg.setByteInChannel(bytesOut);
         SetupPacketListener setupPacketListener = friendConnection.getSetupPacketListener();
         if (setupPacketListener != null && msg.getByteInChannel() == 0) {
-            setupPacketListener
-                    .packetAddedToTransportQueue(friendConnection, search, response, msg);
+            setupPacketListener.packetAddedToTransportQueue(friendConnection, search, response,
+                    outgoing, msg);
         }
         friendConnection.sendChannelMsg(msg, true);
         bytesOut += totalWritten;

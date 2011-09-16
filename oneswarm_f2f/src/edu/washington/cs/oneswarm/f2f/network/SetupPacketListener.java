@@ -12,12 +12,14 @@ public interface SetupPacketListener {
     public void packetReadyForAzureusQueue(OSF2FChannelMsg message);
 
     public void packetAddedToForwardQueue(FriendConnection source, FriendConnection destination,
-            OSF2FSearch sourceMessage, OSF2FSearchResp setupMessage, OSF2FChannelMsg message);
+            OSF2FSearch sourceMessage, OSF2FSearchResp setupMessage, boolean searcherSide,
+            OSF2FChannelMsg message);
 
     public void packetAddedToTransportQueue(FriendConnection destination,
-            OSF2FSearch sourceMessage, OSF2FSearchResp setupMessage, OSF2FChannelMsg message);
+            OSF2FSearch sourceMessage, OSF2FSearchResp setupMessage, boolean searcherSide,
+            OSF2FChannelMsg message);
 
     public void packetArrivedAtFinalDestination(FriendConnection source, OSF2FHashSearch search,
-            OSF2FHashSearchResp response, OSF2FChannelDataMsg msg, boolean outgoing);
+            OSF2FHashSearchResp response, OSF2FChannelDataMsg msg, boolean searcherSide);
 
 }

@@ -2187,7 +2187,7 @@ public class FriendConnection {
             message.setByteInChannel(bytesForwarded);
             if (setupPacketListener != null && bytesForwarded == 0) {
                 setupPacketListener.packetAddedToForwardQueue(FriendConnection.this, conn,
-                        sourceMessage, setupMessage, message);
+                        sourceMessage, setupMessage, searcherSide, message);
             }
             lastMsgTime = System.currentTimeMillis();
             int numBytes = message.getMessageSize();

@@ -147,7 +147,11 @@ public class ServiceSharingSingleProcessTest extends OneSwarmTestBase {
         byte[] in = new byte[out.length];
         int total = 0;
         while (total < out.length) {
-            total += inStream.read(in, total, out.length - total);
+            int value = inStream.read(in, total, out.length - total);
+            if (value == -1) {
+                break;
+            }
+            total += value;
             logger.finest("\n#######################\nread: " + total);
         }
         logger.info("time=" + (System.currentTimeMillis() - startTime));
