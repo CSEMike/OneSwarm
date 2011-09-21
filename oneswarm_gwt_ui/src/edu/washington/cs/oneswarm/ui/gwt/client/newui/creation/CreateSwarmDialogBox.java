@@ -155,7 +155,7 @@ public class CreateSwarmDialogBox extends OneSwarmDialogBox {
         mTabs.addStyleName(TorrentDownloaderDialog.CSS_F2F_TABS);
         mTabs.add(mainPanelShare, msg.create_swarm_share_tab_manual());
         mTabs.add(mainPanelWatch, msg.create_swarm_share_tab_automatic());
-        mTabs.add(mainPanelService, "Service");
+        // mTabs.add(mainPanelService, "Service");
         mTabs.setWidth(WIDTH + "px");
         mTabs.setHeight("100%");
         mTabs.addTabListener(new TabListener() {
