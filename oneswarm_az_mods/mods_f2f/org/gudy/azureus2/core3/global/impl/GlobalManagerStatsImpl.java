@@ -79,42 +79,34 @@ GlobalManagerStatsImpl
     long hashSearchesSent = 0;
     long searchCancelsSent = 0;
 
-    @Override
     public long getTotalF2FBytesSent() {
     	return f2f_bytes_sent;
     }
 
-    @Override
     public long getTotalF2FBytesReceived() {
     	return f2f_bytes_received;
     }
     
-  	@Override
     public void f2fBytesSent(int length) {
   		f2f_bytes_sent += length;
   	}
   	
-  	@Override
     public void f2fBytesReceived(int length) {
   		f2f_bytes_received += length;
   	}
 
-    @Override
     public void textSearchReceived() {
         textSearchesReceived++;
     }
 
-    @Override
     public void hashSearchReceived() {
         hashSearchesReceived++;
     }
 
-    @Override
     public long getTextSearchesReceived() {
         return textSearchesReceived;
     }
 
-    @Override
     public long getHashSearchesReceived() {
         return hashSearchesReceived;
     }
@@ -142,7 +134,6 @@ GlobalManagerStatsImpl
 		COConfigurationManager.setParameter( "globalmanager.stats.send.speed.at.close", getDataSendRate());
 	}
     
-	@Override
     public int 
 	getDataSendRateAtClose()
 	{
@@ -151,12 +142,10 @@ GlobalManagerStatsImpl
 	
   			// update methods
 
-	@Override
     public void discarded(int length) {
 		this.totalDiscarded += length;
 	}
 
-	@Override
     public void dataBytesReceived(int length,boolean LAN){
 		total_data_bytes_received += length;
 		if ( !LAN ){
@@ -166,7 +155,6 @@ GlobalManagerStatsImpl
 	}
 
 
-	@Override
     public void protocolBytesReceived(int length, boolean LAN ){
 		total_protocol_bytes_received += length;
 		if ( !LAN ){
@@ -175,7 +163,6 @@ GlobalManagerStatsImpl
 		protocol_receive_speed.addValue(length);
 	}
 
-	@Override
     public void dataBytesSent(int length, boolean LAN) {
 		total_data_bytes_sent += length;
 		if ( !LAN ){
@@ -184,7 +171,6 @@ GlobalManagerStatsImpl
 		data_send_speed.addValue(length);
 	}
 
-	@Override
     public void protocolBytesSent(int length, boolean LAN) {
 		total_protocol_bytes_sent += length;
 		if ( !LAN ){
@@ -193,84 +179,66 @@ GlobalManagerStatsImpl
 		protocol_send_speed.addValue(length);
 	}
 	
-	@Override
     public int getDataReceiveRate() {
 		return (int)data_receive_speed.getAverage();
 	}
-	@Override
     public int getDataReceiveRateNoLAN() {
 		return (int)data_receive_speed_no_lan.getAverage();
 	}
-	@Override
     public int getDataReceiveRateNoLAN(int average_period) {
 		return (int)(average_period<=0?data_receive_speed_no_lan.getAverage():data_receive_speed_no_lan.getAverage(average_period));
 	}
-	@Override
     public int getProtocolReceiveRate() {
 		return (int)protocol_receive_speed.getAverage();
 	}
-	@Override
     public int getProtocolReceiveRateNoLAN() {
 		return (int)protocol_receive_speed_no_lan.getAverage();
 	}	
-	@Override
     public int getProtocolReceiveRateNoLAN(int average_period) {
 		return (int)(average_period<=0?protocol_receive_speed_no_lan.getAverage():protocol_receive_speed_no_lan.getAverage(average_period));
 	}
 
-	@Override
     public int getDataAndProtocolReceiveRate(){
 		return((int)( protocol_receive_speed.getAverage() + data_receive_speed.getAverage()));
 	}
 
-	@Override
     public int getDataSendRate() {
 		return (int)data_send_speed.getAverage();
 	}
-	@Override
     public int getDataSendRateNoLAN() {
 		return (int)data_send_speed_no_lan.getAverage();
 	}
-	@Override
     public int getDataSendRateNoLAN(int average_period) {
 		return (int)(average_period<=0?data_send_speed_no_lan.getAverage():data_send_speed_no_lan.getAverage(average_period));
 	}
 	
-	@Override
     public int getProtocolSendRate() {
 		return (int)protocol_send_speed.getAverage();
 	}
-	@Override
     public int getProtocolSendRateNoLAN() {
 		return (int)protocol_send_speed_no_lan.getAverage();
 	}
-	@Override
     public int getProtocolSendRateNoLAN(int average_period) {
 		return (int)(average_period<=0?protocol_send_speed_no_lan.getAverage():protocol_send_speed_no_lan.getAverage(average_period));
 	}
 
-	@Override
     public int getDataAndProtocolSendRate(){
 		return((int)( protocol_send_speed.getAverage() + data_send_speed.getAverage()));
 	}
 
-    @Override
     public long getTotalDataBytesSent() {
     	return total_data_bytes_sent;
     }
 
-    @Override
     public long getTotalProtocolBytesSent() {
     	return total_protocol_bytes_sent;
     }
 
 
-    @Override
     public long getTotalDataBytesReceived() {
     	return total_data_bytes_received;
     }
 
-    @Override
     public long getTotalProtocolBytesReceived() {
     	return total_protocol_bytes_received;
     }
@@ -280,68 +248,55 @@ GlobalManagerStatsImpl
     	return totalDiscarded;
     }
 
-    @Override
     public long getTotalSwarmsPeerRate(boolean downloading, boolean seeding )
     {
     	return( manager.getTotalSwarmsPeerRate(downloading,seeding));
     }
 
-    @Override
     public void sha1PrefixSearchReceived() {
         sha1PrefixSearchesReceived++;
     }
 
-    @Override
     public void ed2kPrefixSearchReceived() {
         e2dkPrefixSearchesReceived++;
     }
 
-    @Override
     public void idPrefixSearchReceived() {
         idPrefixSearchesReceived++;
     }
 
-    @Override
     public long getIdPrefixSearchesReceived() {
         return idPrefixSearchesReceived;
     }
 
-    @Override
     public long getE2dkPrefixSearchesReceived() {
         return e2dkPrefixSearchesReceived;
     }
 
-    @Override
     public long getSha1PrefixSearchesReceived() {
         return sha1PrefixSearchesReceived;
     }
 
-    @Override
     public void textSearchSent() {
         textSearchesSent++;
     }
 
-    @Override
     public void hashSearchSent() {
         hashSearchesSent++;
     }
 
-    @Override
     public void searchCancelSent() {
         searchCancelsSent++;
     }
 
-    @Override
     public long getTextSearchesSent() {
         return textSearchesSent;
     }
 
-    @Override
     public long getHashSearchesSent() {
         return hashSearchesSent;
     }
 
-    @Override
     public long getSearchCancelsSent() {
         return searchCancelsSent;
     }
