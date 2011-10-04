@@ -234,10 +234,16 @@ public class FileCollection
 		for (String term : searchTerms) {
 			// ignore terms that contain ':'
 			if (!containsKeyword(term)) {
+				boolean negatedTerm = term.startsWith("-");
+				if (negatedTerm) {
+					term = term.substring(1);
+					System.out.println("got negated term:" + term);
+				}
+
 				// check if the name contains the term
-				if (!n.contains(term)) {
+				if (negatedTerm == n.contains(term)) {
 					// ok, last shot, does the term exist in any of the optional fields?
-					if (!optionalFieldHit(term)) {
+					if (negatedTerm == optionalFieldHit(term)) {
 						// no match, this term does not match either name nor any optional field
 						return false;
 					}

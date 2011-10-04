@@ -208,7 +208,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    @Override
 	public int getPlatformType()
     {
         return PT_MACOSX;
@@ -217,7 +216,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    @Override
 	public String getVersion() throws PlatformManagerException
     {
     	if (!OSXAccess.isLoaded()) {
@@ -231,7 +229,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
      * {@inheritDoc}
      * @see org.gudy.azureus2.core3.util.SystemProperties#getUserPath()
      */
-    @Override
 	public String getUserDataDirectory() throws PlatformManagerException
     {
     	// Special-case: we're running a LocalOneSwarm test instance and we
@@ -246,7 +243,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     			+ SystemProperties.SEP;
     }
 
-	@Override
 	public File
 	getLocation(
 		long	location_id )
@@ -280,14 +276,12 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * Not implemented; returns True
      */
-    @Override
 	public boolean isApplicationRegistered() throws PlatformManagerException
     {
         return true;
     }
 
 
-	@Override
 	public String
 	getApplicationCommandLine()
 		throws PlatformManagerException
@@ -335,7 +329,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 	}
 
 
-	@Override
 	public boolean
 	isAdditionalFileTypeRegistered(
 		String		name,				// e.g. "BitTorrent"
@@ -346,7 +339,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 	    throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
 
-	@Override
 	public void
 	unregisterAdditionalFileType(
 		String		name,				// e.g. "BitTorrent"
@@ -357,7 +349,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 		throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
 
-	@Override
 	public void
 	registerAdditionalFileType(
 		String		name,				// e.g. "BitTorrent"
@@ -373,7 +364,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * Not implemented; does nothing
      */
-    @Override
 	public void registerApplication() throws PlatformManagerException
     {
         // handled by LaunchServices and/0r user interaction
@@ -382,7 +372,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    @Override
 	public void createProcess(String cmd, boolean inheritsHandles) throws PlatformManagerException
     {
         try
@@ -398,7 +387,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    @Override
 	public void performRecoverableFileDelete(String path) throws PlatformManagerException
     {
         File file = new File(path);
@@ -436,7 +424,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    @Override
 	public boolean hasCapability(PlatformManagerCapabilities capability)
     {
         return capabilitySet.contains(capability);
@@ -445,7 +432,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    @Override
 	public void dispose()
     {
         NativeInvocationBridge.sharedInstance().dispose();
@@ -454,13 +440,11 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    @Override
 	public void setTCPTOSEnabled(boolean enabled) throws PlatformManagerException
     {
         throw new PlatformManagerException("Unsupported capability called on platform manager");
     }
 
-	@Override
 	public void
     copyFilePermissions(
 		String	from_file_name,
@@ -474,7 +458,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     /**
      * {@inheritDoc}
      */
-    @Override
 	public void showFile(String path) throws PlatformManagerException
     {
         File file = new File(path);
@@ -777,7 +760,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     	return fileBrowserName;
     }
 
-	@Override
 	public boolean
 	testNativeAvailability(
 		String	name )
@@ -787,7 +769,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 	    throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
 
-	@Override
 	public void
 	traceRoute(
 		InetAddress							interface_address,
@@ -799,7 +780,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 	    throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
 
-	@Override
 	public void
 	ping(
 		InetAddress							interface_address,
@@ -811,14 +791,12 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 	    throw new PlatformManagerException("Unsupported capability called on platform manager");
 	}
 
-    @Override
 	public void
     addListener(
     	PlatformManagerListener		listener )
     {
     }
 
-    @Override
 	public void
     removeListener(
     	PlatformManagerListener		listener )
@@ -826,7 +804,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
     }
 
 		// @see org.gudy.azureus2.core3.util.AEDiagnosticsEvidenceGenerator#generate(org.gudy.azureus2.core3.util.IndentWriter)
-		@Override
 		public void generate(IndentWriter writer) {
 			writer.println("PlatformManager: MacOSX");
 			try {
@@ -848,7 +825,6 @@ public class PlatformManagerImpl implements PlatformManager, AEDiagnosticsEviden
 		}
 
 	// @see org.gudy.azureus2.platform.PlatformManager#getAzComputerID()
-	@Override
 	public String getAzComputerID() throws PlatformManagerException {
 		throw new PlatformManagerException(
 				"Unsupported capability called on platform manager");
