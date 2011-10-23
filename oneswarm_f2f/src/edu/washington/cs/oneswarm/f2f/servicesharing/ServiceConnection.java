@@ -14,6 +14,7 @@ import com.aelitis.azureus.core.peermanager.messaging.Message;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
+import edu.washington.cs.oneswarm.f2f.network.EndpointInterface;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.OverlayEndpoint;
 
@@ -60,7 +61,6 @@ public abstract class ServiceConnection extends OverlayEndpoint {
         this.bufferedMessages = new LinkedList<OSF2FChannelDataMsg>();
     }
 
-    @Override
     public void cleanup() {
         if (serverConnection != null) {
             final NetworkConnection conn = serverConnection;
@@ -115,7 +115,6 @@ public abstract class ServiceConnection extends OverlayEndpoint {
         serverConnection = null;
     }
 
-    @Override
     protected void destroyBufferedMessages() {
         synchronized (bufferedMessages) {
             while (bufferedMessages.size() > 0) {
@@ -124,7 +123,6 @@ public abstract class ServiceConnection extends OverlayEndpoint {
         }
     };
 
-    @Override
     protected void handleDelayedOverlayMessage(OSF2FChannelDataMsg msg) {
         if (logger.isLoggable(Level.FINEST)) {
             logger.finest("incoming message: " + msg.getDescription());

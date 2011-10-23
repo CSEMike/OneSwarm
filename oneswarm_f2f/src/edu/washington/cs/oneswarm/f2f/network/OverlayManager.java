@@ -391,9 +391,9 @@ public class OverlayManager {
         conns.addAll(connections.values());
 
         for (FriendConnection fc : conns) {
-            final Map<Integer, OverlayEndpoint> ot = fc.getOverlayTransports();
+            final Map<Integer, EndpointInterface> ot = fc.getOverlayTransports();
 
-            for (OverlayEndpoint o : ot.values()) {
+            for (EndpointInterface o : ot.values()) {
                 totalDownloadSpeed += o.getDownloadRate();
             }
         }
@@ -408,9 +408,9 @@ public class OverlayManager {
         conns.addAll(connections.values());
 
         for (FriendConnection fc : conns) {
-            final Map<Integer, OverlayEndpoint> ot = fc.getOverlayTransports();
+            final Map<Integer, EndpointInterface> ot = fc.getOverlayTransports();
 
-            for (OverlayEndpoint o : ot.values()) {
+            for (EndpointInterface o : ot.values()) {
                 if (!includeLan && o.isLANLocal()) {
                     // not including lan local peers
                 } else {
