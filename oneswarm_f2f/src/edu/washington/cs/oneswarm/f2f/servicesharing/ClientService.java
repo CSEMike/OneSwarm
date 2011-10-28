@@ -71,7 +71,7 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
     @Override
     public void connectionRouted(final NetworkConnection incomingConnection, Object routing_data) {
         ServiceSharingManager.logger.fine("connection routed");
-        final ClientServiceConnection connection = new ClientServiceConnection(ClientService.this);
+        final ClientServiceConnection connection = new ClientServiceConnection(ClientService.this, incomingConnection);
         final SharedService sharedService = ServiceSharingManager.getInstance().getSharedService(
                 serverSearchKey);
         // Check if local
@@ -88,7 +88,7 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
                 @Override
                 public void searchResponseReceived(OSF2FHashSearch search, FriendConnection source,
                         OSF2FHashSearchResp msg) {
-                    connection.addChannel(incomingConnection, source, search, msg);
+                    connection.addChannel(source, search, msg);
 
                     // register it with the friendConnection
                     try {

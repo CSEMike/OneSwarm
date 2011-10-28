@@ -270,8 +270,8 @@ public abstract class OverlayEndpoint implements EndpointInterface {
                         SetupPacketListener setupPacketListener = friendConnection
                                 .getSetupPacketListener();
                         if (setupPacketListener != null && msg.getByteInChannel() == 0) {
-                            setupPacketListener.packetArrivedAtFinalDestination(friendConnection,
-                                    search, response, msg, outgoing);
+//                            setupPacketListener.packetArrivedAtFinalDestination(friendConnection,
+//                                    search, response, msg, outgoing);
                         }
                         handleDelayedOverlayMessage(msg);
                     }

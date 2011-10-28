@@ -59,7 +59,7 @@ import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExec
 import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExecutor;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayRegistrationError;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServerServiceConnection;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceConnection;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceChannelEndpoint;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
 import edu.washington.cs.oneswarm.f2f.servicesharing.SharedService;
 import edu.washington.cs.oneswarm.f2f.share.ShareManagerTools;
@@ -1569,7 +1569,7 @@ public class SearchManager {
         public void addSource(FriendConnection source, OSF2FHashSearchResp response)
                 throws OverlayRegistrationError {
             sources.add(source);
-            conn.addChannel(null, source, search, response);
+            conn.addChannel(source, search, response);
             // register it with the friendConnection
             source.registerOverlayTransport(conn);
 
