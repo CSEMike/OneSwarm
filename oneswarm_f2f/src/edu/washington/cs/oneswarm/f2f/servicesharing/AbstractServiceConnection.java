@@ -259,15 +259,6 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             bufferedNetworkMessages.add(msg);
         }
     }
-
-    void channelReady(ServiceChannelEndpoint i) {
-        synchronized(bufferedNetworkMessages) {
-            while (bufferedNetworkMessages.size() > 0) {
-                System.out.println("MSG for mesh taken off of shared buffer.");
-                i.writeMessage(bufferedNetworkMessages.removeFirst());
-            }
-        }        
-    }
     
     protected class ServerIncomingMessageListener implements MessageQueueListener {
 
