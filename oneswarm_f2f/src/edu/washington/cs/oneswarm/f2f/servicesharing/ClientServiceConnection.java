@@ -3,6 +3,7 @@ package edu.washington.cs.oneswarm.f2f.servicesharing;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 import org.gudy.azureus2.core3.util.DirectByteBufferPool;
@@ -17,11 +18,14 @@ import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.LowLatencyMessageWriter;
 
 public class ClientServiceConnection extends AbstractServiceConnection {
+    public static final Logger logger = Logger.getLogger(ClientServiceConnection.class.getName());
+
     final ClientService clientService;
     private final NetworkConnection clientConnection;
 
     public ClientServiceConnection(ClientService service, NetworkConnection clientConnection) {
         super();
+        logger.info("ASC Client service connection created.");
         this.clientService = service;
         this.clientConnection = clientConnection;
     }
@@ -29,12 +33,14 @@ public class ClientServiceConnection extends AbstractServiceConnection {
     @Override
     public void addChannel(FriendConnection channel,
             OSF2FHashSearch search, OSF2FHashSearchResp response) {
+    	logger.info("ASC Client channel added.");
         this.connections.add(new ServiceChannelEndpoint(
                 this, channel, search, response, false));
     }
 
     @Override
     public void start() {
+    	logger.info("Client service connection started.");
         clientConnection.connect(false, new ConnectionListener() {
             @Override
             public void connectFailure(Throwable failure_msg) {
@@ -79,6 +85,11 @@ public class ClientServiceConnection extends AbstractServiceConnection {
     }
 
     @Override
+    public boolean isStarted() {
+        return clientConnection.isConnected();
+    }
+
+    @Override
     public boolean isOutgoing() {
         return true;
     }
@@ -91,7 +102,6 @@ public class ClientServiceConnection extends AbstractServiceConnection {
 
     @Override
     public void writeMessageToServiceConnection(OSF2FChannelDataMsg msg) {
-        System.out.println("MSG received by client aggregator.");
         writeMessageToClientConnection(msg.getPayload());
     }
 
@@ -106,7 +116,6 @@ public class ClientServiceConnection extends AbstractServiceConnection {
         }
         DirectByteBuffer data = msg.getPayload();
         int pos = data.position((byte) 0);
-        System.out.println("MSG delivered with val " + data.get((byte) 0));
         data.position((byte) 0, pos);
         clientConnection.getOutgoingMessageQueue().addMessage(msg, false);
     }

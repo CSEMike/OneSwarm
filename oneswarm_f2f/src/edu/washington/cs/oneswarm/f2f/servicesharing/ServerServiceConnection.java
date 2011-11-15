@@ -3,6 +3,7 @@ package edu.washington.cs.oneswarm.f2f.servicesharing;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 
@@ -20,18 +21,22 @@ import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.LowLatencyMessageWriter;
 
 public class ServerServiceConnection extends AbstractServiceConnection {
+    public static final Logger logger = Logger.getLogger(ServerServiceConnection.class.getName());
+
     private final SharedService serverService;
     protected NetworkConnection serverConnection;
     private boolean serviceConnected = false;
 
     public ServerServiceConnection(SharedService service) {
         super();
+        logger.info("Server Service Connection created.");
         this.serverService = service;
     }
     
     @Override
     public void addChannel(FriendConnection channel,
             OSF2FHashSearch search, OSF2FHashSearchResp response) {
+    	logger.info("Server Service Connection channel added.");
         this.connections.add(new ServiceChannelEndpoint(
                 this, channel, search, response, false));
     }
@@ -68,7 +73,6 @@ public class ServerServiceConnection extends AbstractServiceConnection {
 
             @Override
             public void connectSuccess(ByteBuffer remaining_initial_data) {
-                System.out.println("MSG: connect success.");
                 logger.fine(ServerServiceConnection.this.getDescription() + " connected");
                 serverConnection.startMessageProcessing();
                 serverConnection.enableEnhancedMessageProcessing(true);
@@ -99,9 +103,12 @@ public class ServerServiceConnection extends AbstractServiceConnection {
             public String getDescription() {
                 return ServerServiceConnection.this.getDescription() + " connect listener";
             }
-        });        
+        });
+    }
 
-        super.start();
+    @Override
+    public boolean isStarted() {
+        return serviceConnected;
     }
     
     public void cleanup() {
@@ -132,7 +139,6 @@ public class ServerServiceConnection extends AbstractServiceConnection {
         if (logger.isLoggable(Level.FINEST)) {
             logger.finest("writing message to server queue: " + msg.getDescription());
         }
-        System.out.println("MSG writing message to service.");
         serverConnection.getOutgoingMessageQueue().addMessage(msg, false);
     }
 }

@@ -1,10 +1,13 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.PriorityQueue;
 import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
+import org.gudy.azureus2.ui.swt.maketorrent.NewTorrentWizard;
 
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
 import com.aelitis.azureus.core.networkmanager.NetworkManager;
@@ -20,8 +23,7 @@ import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.OverlayEndpoint;
 
 public abstract class AbstractServiceConnection implements EndpointInterface {
-
-    protected static final Logger logger = Logger.getLogger(OverlayEndpoint.class.getName());
+    public static final Logger logger = Logger.getLogger(AbstractServiceConnection.class.getName());
 
     protected final LinkedList<OSF2FChannelDataMsg> bufferedServiceMessages;
     protected final LinkedList<DirectByteBuffer> bufferedNetworkMessages;
@@ -30,37 +32,24 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
     public abstract void addChannel(FriendConnection channel, OSF2FHashSearch search, OSF2FHashSearchResp response);
 
-    protected final ArrayList<ServiceChannelEndpoint> connections;
+    protected final PriorityQueue<ServiceChannelEndpoint> connections;
 
     public AbstractServiceConnection() {
-        this.connections = new ArrayList<ServiceChannelEndpoint>();
-        this.bufferedServiceMessages = new LinkedList<OSF2FChannelDataMsg>();
-        this.bufferedNetworkMessages = new LinkedList<DirectByteBuffer>();
+		this.connections = new PriorityQueue<ServiceChannelEndpoint>(1, new ChannelComparator());
+		this.bufferedServiceMessages = new LinkedList<OSF2FChannelDataMsg>();
+ 		this.bufferedNetworkMessages = new LinkedList<DirectByteBuffer>();
     }
 
     @Override
     public String getDescription() {
         String connectionInfo = "";
         if (this.connections.size() > 0) {
-            connectionInfo = " via: " + this.connections.get(0).getRemoteFriend().getNick();
+            connectionInfo = " via: " + this.connections.peek().getRemoteFriend().getNick();
         }
         if (this.connections.size() > 1) {
             connectionInfo += " and " + (this.connections.size() - 1) + " others.";
         }
         return NetworkManager.OSF2F_TRANSPORT_PREFIX + connectionInfo;
-    }
-
-    /**
-     * Currently we connect to the server when we get the first message data.
-     */
-    @Override
-    public void start() {
-        logger.fine(getDescription() + " starting");
-        for (ServiceChannelEndpoint conn: this.connections) {
-            if (!conn.isStarted()) {
-                conn.start();
-            }
-        }
     }
 
     @Override
@@ -110,7 +99,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     @Override
     public long getArtificialDelay() {
         if (this.connections.size() > 0) {
-            return this.connections.get(0).getArtificialDelay();
+            return this.connections.peek().getArtificialDelay();
         }
         return 0;
     }
@@ -218,15 +207,6 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     }
 
     @Override
-    public boolean isStarted() {
-        for (ServiceChannelEndpoint conn : this.connections) {
-            if (conn.isStarted())
-                return true;
-        }
-        return false;
-    }
-
-    @Override
     public boolean isTimedOut() {
         for (ServiceChannelEndpoint conn : this.connections) {
             if (!conn.isTimedOut())
@@ -245,18 +225,17 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         this.connections.remove(channel);
     }
     
-    // TODO(willscott): Choose correct channel for messages.
     void routeMessageToChannel(DirectByteBuffer msg) {
-        for (ServiceChannelEndpoint channel : this.connections) {
-            if (channel.isStarted()) {
-                System.out.println("MSG directly queued with started channel.");
-                channel.writeMessage(msg);
-                return;
+    	logger.info("ASC routing service message to a channel.");
+        ServiceChannelEndpoint channel = this.connections.peek();
+        if (!channel.isStarted()) {
+            System.out.println("Unstarted channel prioritized, msg buffered");
+            synchronized(bufferedNetworkMessages) {
+                bufferedNetworkMessages.add(msg);
             }
-        }
-        synchronized(bufferedNetworkMessages) {
-            System.out.println("MSG for mesh added to shared buffer.");
-            bufferedNetworkMessages.add(msg);
+        } else {
+            System.out.println("Msg written to available channel.");
+            channel.writeMessage(msg);
         }
     }
     
@@ -268,24 +247,60 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
         @Override
         public boolean messageReceived(Message message) {
-            logger.finest("Message from server: " + message.getDescription());
-            if (!(message instanceof DataMessage)) {
+        	logger.info("ASC Service message recieved.");
+
+        	if (!(message instanceof DataMessage)) {
                 String msg = "got wrong message type from server: ";
                 logger.warning(msg + message.getDescription());
                 AbstractServiceConnection.this.close(msg);
                 return false;
             }
             DataMessage dataMessage = (DataMessage) message;
-            DirectByteBuffer data = dataMessage.getPayload();
-            int pos = data.position((byte) 0);
-            System.out.println("MSG entered with val " + data.get((byte) 0));
-            data.position((byte) 0, pos);
             AbstractServiceConnection.this.routeMessageToChannel(dataMessage.transferPayload());
             return true;
         }
 
         @Override
         public void protocolBytesReceived(int byte_count) {
+        }
+    }
+    
+    private class ChannelComparator implements Comparator<ServiceChannelEndpoint> {
+        static final int CHANNEL_BUFFER = 1024;
+
+        @Override
+        public int compare(ServiceChannelEndpoint first, ServiceChannelEndpoint second) {
+            boolean firstReady = first.isStarted() && first.getOutstanding() < CHANNEL_BUFFER;
+            boolean secondReady = second.isStarted() && second.getOutstanding() < CHANNEL_BUFFER;
+            if (firstReady && secondReady) {
+                // If both available, go with the faster one.
+                return second.getUploadRate() - first.getUploadRate();
+            } else if (firstReady) {
+                return -1;
+            } else if (secondReady) {
+                return 1;
+            } else {
+                // If neither available, prioritize closed channels so they get started.
+                return first.isStarted() ? (second.isStarted() ? 0 : 1): -1;
+            }
+        }
+    }
+
+    public void channelReady(ServiceChannelEndpoint channel) {
+        if (!this.connections.contains(channel)) {
+            System.out.println("bad channel.");
+            logger.warning("Unregistered channel attempted to provide service transit.");
+            return;
+        }
+        this.connections.remove(channel);
+        this.connections.add(channel);
+
+        // At least one message can be written, since a channel just indicated readyness.
+        synchronized(bufferedNetworkMessages) {
+            if (bufferedNetworkMessages.size() > 0) {
+                System.out.println("Buffered message written to ready channel.");
+                this.connections.peek().writeMessage(bufferedNetworkMessages.pop());
+            }
         }
     }
 }
