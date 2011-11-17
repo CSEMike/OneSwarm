@@ -155,7 +155,7 @@ public class FriendConnection {
 
     private final ConcurrentHashMap<Integer, Boolean> overlayTransportPathsId = new ConcurrentHashMap<Integer, Boolean>();
 
-    private final ConcurrentHashMap<Integer, OverlayEndpoint> overlayTransports = new ConcurrentHashMap<Integer, OverlayEndpoint>();
+    private final ConcurrentHashMap<Integer, EndpointInterface> overlayTransports = new ConcurrentHashMap<Integer, EndpointInterface>();
 
     /*
      * map to keep track of received searches to avoid sending the search back
@@ -468,9 +468,9 @@ public class FriendConnection {
         }
 
         // we need to terminate all overlay transports
-        List<OverlayEndpoint> transports = new LinkedList<OverlayEndpoint>(
+        List<EndpointInterface> transports = new LinkedList<EndpointInterface>(
                 overlayTransports.values());
-        for (OverlayEndpoint overlayTransport : transports) {
+        for (EndpointInterface overlayTransport : transports) {
             overlayTransport.closeConnectionClosed("friend closed connection");
         }
 
@@ -560,27 +560,36 @@ public class FriendConnection {
 
     }
 
-    void deregisterOverlayTransport(OverlayEndpoint transport) {
+    void deregisterOverlayTransport(EndpointInterface transport) {
         lock.lock();
         try {
-            int channelId = transport.getChannelId();
-
-            OverlayEndpoint exists = overlayTransports.remove(channelId);
-            recentlyClosedChannels.put(channelId, System.currentTimeMillis());
-            int pathID = transport.getPathID();
-            overlayTransportPathsId.remove(pathID);
-            if (exists != null) {
+            for (int pathID : transport.getPathID()) {
+                overlayTransportPathsId.remove(pathID);
+                if (overlayPathLogger.isEnabled()) {
+                    overlayPathLogger.log(System.currentTimeMillis() + ", deregistered_path, "
+                            + pathID);
+                }
+            }
+            boolean removed = false;
+            for (int channelId : transport.getChannelId()) {
+                EndpointInterface exists = overlayTransports.remove(channelId);
+                recentlyClosedChannels.put(channelId, System.currentTimeMillis());
+                if (exists != null) {
+                    removed = true;
+                } else {
+                    continue;
+                }
+                if (overlayPathLogger.isEnabled()) {
+                    overlayPathLogger
+                            .log(System.currentTimeMillis() + ", deregistered_transport, "
+                                    + exists.getChannelId() + ", " + exists.getBytesIn() + ", "
+                                    + exists.getBytesOut() + ", " + exists.getAge() + ", "
+                                    + exists.getPathID());
+                }
+            }
+            if (removed) {
                 activeOverlays--;
             }
-
-            if (overlayPathLogger.isEnabled()) {
-                overlayPathLogger
-                        .log(System.currentTimeMillis() + ", deregistered_transport, "
-                                + exists.getChannelId() + ", " + exists.getBytesIn() + ", "
-                                + exists.getBytesOut() + ", " + exists.getAge() + ", "
-                                + exists.getPathID());
-            }
-
         } finally {
             lock.unlock();
         }
@@ -651,7 +660,7 @@ public class FriendConnection {
         return overlayForwards;
     }
 
-    public Map<Integer, OverlayEndpoint> getOverlayTransports() {
+    public Map<Integer, EndpointInterface> getOverlayTransports() {
         return overlayTransports;
     }
 
@@ -693,7 +702,7 @@ public class FriendConnection {
 
             if (overlayTransports.containsKey(channelId)) {
                 // ok, this is a msg to us
-                OverlayEndpoint t = overlayTransports.get(channelId);
+                EndpointInterface t = overlayTransports.get(channelId);
                 msg.setForward(false);
                 // this might we the first message we get in this channel
                 // means that the other side responded to our channel setup
@@ -1255,26 +1264,29 @@ public class FriendConnection {
         }
     }
 
-    public void registerOverlayTransport(OverlayEndpoint transport) throws OverlayRegistrationError {
+    public void registerOverlayTransport(EndpointInterface transport) throws OverlayRegistrationError {
         lock.lock();
         try {
-            int channelId = transport.getChannelId();
-            int pathID = transport.getPathID();
-            if (overlayTransports.containsKey(channelId)) {
-                Debug.out(getDescription() + "tried to register existing channel id, "
-                        + "this should _never_ happen " + this);
-                throw new FriendConnection.OverlayRegistrationError(getRemoteFriend().getNick(),
-                        channelId, "existing channel id");
+            for (int channelId : transport.getChannelId()) {
+                if (overlayTransports.containsKey(channelId)) {
+                    Debug.out(getDescription() + "tried to register existing channel id, "
+                            + "this should _never_ happen " + this);
+                    throw new FriendConnection.OverlayRegistrationError(getRemoteFriend().getNick(),
+                            channelId, "existing channel id");
 
+                }
+                overlayTransports.put(channelId, transport);                
             }
-            if (overlayTransportPathsId.containsKey(pathID)) {
-                Debug.out(getDescription() + "tried to register existing path id, "
-                        + "this should _never_ happen " + this);
-                throw new FriendConnection.OverlayRegistrationError(getRemoteFriend().getNick(),
-                        channelId, "existing path id");
+            for (int pathID : transport.getPathID()) {
+                if (overlayTransportPathsId.containsKey(pathID)) {
+                    Debug.out(getDescription() + "tried to register existing path id, "
+                            + "this should _never_ happen " + this);
+                    // TODO(willscott): determine appropriate channelID here.
+                    throw new FriendConnection.OverlayRegistrationError(getRemoteFriend().getNick(),
+                            0, "existing path id");
+                }
+                overlayTransportPathsId.put(pathID, true);
             }
-            overlayTransportPathsId.put(pathID, true);
-            overlayTransports.put(channelId, transport);
             activeOverlays++;
 
         } finally {

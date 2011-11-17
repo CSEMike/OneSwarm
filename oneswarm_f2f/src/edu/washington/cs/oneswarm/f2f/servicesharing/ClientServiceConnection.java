@@ -1,6 +1,12 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.gudy.azureus2.core3.util.DirectByteBuffer;
+import org.gudy.azureus2.core3.util.DirectByteBufferPool;
 
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
@@ -11,40 +17,35 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.LowLatencyMessageWriter;
 
-public class ClientServiceConnection extends ServiceConnection {
+public class ClientServiceConnection extends AbstractServiceConnection {
+    public static final Logger logger = Logger.getLogger(ClientServiceConnection.class.getName());
 
-    private final ClientService clientService;
+    final ClientService clientService;
+    private final NetworkConnection clientConnection;
 
-    public ClientServiceConnection(ClientService service, NetworkConnection incomingConnetion,
-            FriendConnection connection, OSF2FHashSearch search, OSF2FHashSearchResp response) {
-        super(connection, search, response, true);
+    public ClientServiceConnection(ClientService service, NetworkConnection clientConnection) {
+        super();
+        logger.info("ASC Client service connection created.");
         this.clientService = service;
-        this.serverConnection = incomingConnetion;
+        this.clientConnection = clientConnection;
     }
 
     @Override
-    public String getDescription() {
-        return super.getDescription() + " client service: " + clientService.toString();
+    public void addChannel(FriendConnection channel,
+            OSF2FHashSearch search, OSF2FHashSearchResp response) {
+    	logger.info("ASC Client channel added.");
+        this.connections.add(new ServiceChannelEndpoint(
+                this, channel, search, response, false));
     }
 
-    /**
-     * Currently we connect to the server when we get the first message data.
-     */
-    // TODO (isdal): connect to the server on incoming search message and send
-    // reply on successful connect?
     @Override
     public void start() {
-        logger.fine(getDescription() + " starting");
-        if (isStarted()) {
-            logger.warning("Tried to start already started service");
-            return;
-        }
-        started = true;
-        serverConnection.connect(false, new ConnectionListener() {
+    	logger.info("Client service connection started.");
+        clientConnection.connect(false, new ConnectionListener() {
             @Override
             public void connectFailure(Throwable failure_msg) {
                 logger.fine(ClientServiceConnection.this.getDescription()
-                        + " connection failure (This should never happen, we are already connected!!)");
+                         + " connection failure (This should never happen, we are already connected!!)");
                 ClientServiceConnection.this.close("Exception during connect");
             }
 
@@ -56,18 +57,18 @@ public class ClientServiceConnection extends ServiceConnection {
             @Override
             public void connectSuccess(ByteBuffer remaining_initial_data) {
                 logger.fine(ClientServiceConnection.this.getDescription() + " connected");
-                serverConnection.getIncomingMessageQueue().registerQueueListener(
+                clientConnection.getIncomingMessageQueue().registerQueueListener(
                         new ServerIncomingMessageListener());
-                serverConnection.startMessageProcessing();
-                serverConnection.enableEnhancedMessageProcessing(true);
-                serverConnection.getOutgoingMessageQueue().registerQueueListener(
-                        new LowLatencyMessageWriter(serverConnection));
-                synchronized (bufferedMessages) {
-                    for (OSF2FChannelDataMsg msg : bufferedMessages) {
+                clientConnection.startMessageProcessing();
+                clientConnection.enableEnhancedMessageProcessing(true);
+                clientConnection.getOutgoingMessageQueue().registerQueueListener(
+                        new LowLatencyMessageWriter(clientConnection));
+                synchronized (bufferedServiceMessages) {
+                    for (OSF2FChannelDataMsg msg : bufferedServiceMessages) {
                         logger.finest("sending queued message: " + msg.getDescription());
-                        writeMessageToServerConnection(msg.getPayload());
+                        writeMessageToClientConnection(msg.getPayload());
                     }
-                    bufferedMessages.clear();
+                    bufferedServiceMessages.clear();
                 }
             }
 
@@ -83,4 +84,39 @@ public class ClientServiceConnection extends ServiceConnection {
         });
     }
 
+    @Override
+    public boolean isStarted() {
+        return clientConnection.isConnected();
+    }
+
+    @Override
+    public boolean isOutgoing() {
+        return true;
+    }
+
+    @Override
+    public String getDescription() {
+        return super.getDescription() + " client service: " +
+                clientService.toString();
+    }
+
+    @Override
+    public void writeMessageToServiceConnection(OSF2FChannelDataMsg msg) {
+        writeMessageToClientConnection(msg.getPayload());
+    }
+
+    protected void writeMessageToClientConnection(DirectByteBuffer directByteBuffer) {
+        DirectByteBuffer deliveryBuffer = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG,
+                directByteBuffer.capacity((byte) 0));
+        deliveryBuffer.put((byte) 0, directByteBuffer);
+        deliveryBuffer.flip((byte) 0);
+        DataMessage msg = new DataMessage(deliveryBuffer);
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.finest("writing message to server queue: " + msg.getDescription());
+        }
+        DirectByteBuffer data = msg.getPayload();
+        int pos = data.position((byte) 0);
+        data.position((byte) 0, pos);
+        clientConnection.getOutgoingMessageQueue().addMessage(msg, false);
+    }
 }
