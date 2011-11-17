@@ -41,6 +41,7 @@ import edu.washington.cs.oneswarm.f2f.friends.LanFriendFinder;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FTextSearch;
+import edu.washington.cs.oneswarm.f2f.network.EndpointInterface;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayForward;
 import edu.washington.cs.oneswarm.f2f.network.OverlayEndpoint;
@@ -658,14 +659,14 @@ public class OSF2FPlugin implements Plugin {
                         + of.getRemoteFriend().getNick() + " lastSent=" + of.getLastMsgTime()
                         + " src=" + of.getSourceMessage().getDescription() + "\n");
             }
-            Collection<OverlayEndpoint> transports = f.getOverlayTransports().values();
+            Collection<EndpointInterface> transports = f.getOverlayTransports().values();
             if (transports.size() > 0) {
                 b.append("   Transports: \n");
             }
-            for (OverlayEndpoint ot : transports) {
-                b.append("      channel=" + Integer.toHexString(ot.getChannelId()) + " path="
-                        + Integer.toHexString(ot.getPathID()) + " lastSent=" + ot.getLastMsgTime()
-                        + "\n");
+            for (EndpointInterface ot : transports) {
+                b.append("      channel=" + Integer.toHexString(ot.getChannelId()[0]) + "(x"
+                        + ot.getChannelId().length + ") path=" + Integer.toHexString(ot.getPathID()[0])
+                        + "(x" + ot.getPathID().length + " lastSent=" + ot.getLastMsgTime() + "\n");
             }
         }
 

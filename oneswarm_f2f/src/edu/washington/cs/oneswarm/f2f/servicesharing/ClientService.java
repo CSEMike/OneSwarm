@@ -71,10 +71,10 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
     @Override
     public void connectionRouted(final NetworkConnection incomingConnection, Object routing_data) {
         ServiceSharingManager.logger.fine("connection routed");
-        // Check if local
-        final AtomicInteger responseCount = new AtomicInteger(0);
+      	final ClientServiceConnection connection = new ClientServiceConnection(ClientService.this, incomingConnection);
         final SharedService sharedService = ServiceSharingManager.getInstance().getSharedService(
                 serverSearchKey);
+        // Check if local
         if (sharedService != null) {
             ServiceSharingManager.logger.finer("got request for local service, doing loopback");
             ServiceSharingLoopback loopback = new ServiceSharingLoopback(sharedService,
@@ -88,20 +88,14 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
                 @Override
                 public void searchResponseReceived(OSF2FHashSearch search, FriendConnection source,
                         OSF2FHashSearchResp msg) {
-                    // TODO Handle multiple responses
-                    int count = responseCount.incrementAndGet();
-                    if (count > 1) {
-                        return;
-                    }
-                    ClientServiceConnection serviceConnection = new ClientServiceConnection(
-                            ClientService.this, incomingConnection, source, search, msg);
+                    connection.addChannel(source, search, msg);
 
                     // register it with the friendConnection
                     try {
-                        source.registerOverlayTransport(serviceConnection);
+                        source.registerOverlayTransport(connection);
                         // safe to start it since we know that the other
                         // party is interested
-                        serviceConnection.start();
+                        connection.start();
                     } catch (OverlayRegistrationError e) {
                         Debug.out("got an error when registering outgoing transport: "
                                 + e.getMessage());
