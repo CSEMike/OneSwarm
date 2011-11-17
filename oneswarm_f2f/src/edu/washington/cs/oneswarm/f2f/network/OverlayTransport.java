@@ -586,7 +586,7 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
         }
     }
 
-    interface WriteQueueWaiter {
+    public interface WriteQueueWaiter {
         public void readyForWrite();
     }
 }
