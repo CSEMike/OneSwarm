@@ -2,16 +2,19 @@ package edu.washington.cs.oneswarm.ui.gwt.client.newui.friends.wizard;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.dom.client.KeyCodes;
+import com.google.gwt.event.dom.client.KeyPressEvent;
+import com.google.gwt.event.dom.client.KeyPressHandler;
 import com.google.gwt.user.client.ui.CheckBox;
 import com.google.gwt.user.client.ui.DisclosurePanel;
 import com.google.gwt.user.client.ui.Grid;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Image;
-import com.google.gwt.user.client.ui.KeyboardListenerAdapter;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.PasswordTextBox;
 import com.google.gwt.user.client.ui.RadioButton;
 import com.google.gwt.user.client.ui.TextBox;
+import com.google.gwt.user.client.ui.ValueBoxBase.TextAlignment;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 
@@ -66,17 +69,18 @@ public class CommunityServerAddPanel extends VerticalPanel {
 
     private final TextBox minimumRefreshTextBox;
 
-    static final KeyboardListenerAdapter digitsOnly = new KeyboardListenerAdapter() {
+    static final KeyPressHandler digitsOnly = new KeyPressHandler() {
         @Override
-        public void onKeyPress(Widget sender, char keyCode, int modifiers) {
-            if ((!Character.isDigit(keyCode)) && (keyCode != (char) KEY_TAB)
-                    && (keyCode != (char) KEY_BACKSPACE) && (keyCode != (char) KEY_DELETE)
-                    && (keyCode != (char) KEY_ENTER) && (keyCode != (char) KEY_HOME)
-                    && (keyCode != (char) KEY_END) && (keyCode != (char) KEY_LEFT)
-                    && (keyCode != (char) KEY_UP) && (keyCode != (char) KEY_RIGHT)
-                    && (keyCode != (char) KEY_DOWN)) {
-                // TextBox.cancelKey() suppresses the current keyboard event.
-                ((TextBox) sender).cancelKey();
+        public void onKeyPress(KeyPressEvent event) {
+            char charCode = event.getCharCode();
+            int keyCode = event.getNativeEvent().getKeyCode();
+            if ((!Character.isDigit(charCode)) && (keyCode != KeyCodes.KEY_TAB)
+                    && (keyCode != KeyCodes.KEY_BACKSPACE) && (keyCode != KeyCodes.KEY_DELETE)
+                    && (keyCode != KeyCodes.KEY_ENTER) && (keyCode != KeyCodes.KEY_HOME)
+                    && (keyCode != KeyCodes.KEY_END) && (keyCode != KeyCodes.KEY_LEFT)
+                    && (keyCode != KeyCodes.KEY_UP) && (keyCode != KeyCodes.KEY_RIGHT)
+                    && (keyCode != KeyCodes.KEY_DOWN)) {
+                event.preventDefault();
             }
         }
     };
@@ -190,12 +194,12 @@ public class CommunityServerAddPanel extends VerticalPanel {
 
         HorizontalPanel thresholdGroup = new HorizontalPanel();
         thresholdCountTextBox = new TextBox();
-        thresholdCountTextBox.addKeyboardListener(digitsOnly);
+        thresholdCountTextBox.addKeyPressHandler(digitsOnly);
 
         l = new Label("friends");
         thresholdCountTextBox.setText(localRemoveThreshold + "");
         thresholdCountTextBox.setWidth("25px");
-        thresholdCountTextBox.setTextAlignment(TextBox.ALIGN_CENTER);
+        thresholdCountTextBox.setAlignment(TextAlignment.CENTER);
         thresholdGroup.add(localThreshold);
         localThreshold.setValue(!server_sync_deletes);
         Image img = new Image("images/spacer.png");
@@ -225,7 +229,7 @@ public class CommunityServerAddPanel extends VerticalPanel {
 
         minimumRefreshTextBox.setText(minRefreshDefault + "");
 
-        minimumRefreshTextBox.addKeyboardListener(digitsOnly);
+        minimumRefreshTextBox.addKeyPressHandler(digitsOnly);
         intervalGroup.add(minimumRefreshTextBox);
         intervalGroup.setSpacing(3);
         minimumRefreshTextBox.setWidth("50px");
