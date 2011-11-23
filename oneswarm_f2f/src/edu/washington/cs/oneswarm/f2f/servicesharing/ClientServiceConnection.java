@@ -29,6 +29,22 @@ public class ClientServiceConnection extends AbstractServiceConnection {
         this.clientService = service;
         this.clientConnection = clientConnection;
     }
+    
+    /**
+     * Used in the ClientServiceConnection unit tests. Constructs a new
+     * ClientServiceConnection object and attaches a listener to the
+     * NetworkConnection so we can verify that messages are handled correctly
+     * without starting the ClientServiceConnection
+     * 
+     * @return a new ClientServiceConnection that has not been started but has
+     * a listener registered with clientConn's incoming message queue
+     */
+    public static ClientServiceConnection getConnectionForTest(NetworkConnection clientConn) {
+        ClientServiceConnection conn = new ClientServiceConnection(null, clientConn);
+        clientConn.getIncomingMessageQueue().registerQueueListener(
+                conn.new ServerIncomingMessageListener());
+        return conn;
+    }
 
     @Override
     public void addChannel(FriendConnection channel,

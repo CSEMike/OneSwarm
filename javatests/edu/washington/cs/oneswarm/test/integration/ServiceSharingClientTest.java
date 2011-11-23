@@ -28,6 +28,13 @@ import edu.washington.cs.oneswarm.test.util.OneSwarmTestBase;
 import edu.washington.cs.oneswarm.test.util.TestReceivedServer;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 
+/**
+ * Tests that data can be sent from the client to the server. Similar to
+ * ServiceSharingSingleProcessTest but only sends data in one direction.
+ * 
+ * @author Krysta Yousoufian
+ *
+ */
 public class ServiceSharingClientTest extends OneSwarmTestBase {
 
     static final int SEARCH_KEY = 12345;

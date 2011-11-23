@@ -24,7 +24,7 @@ import edu.uw.cse.netlab.utils.ByteManip;
 import edu.washington.cs.oneswarm.f2f.network.SearchManager;
 import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage;
 import edu.washington.cs.oneswarm.f2f.servicesharing.EchoServer;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceConnection;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceChannelEndpoint;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingLoopback;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
 import edu.washington.cs.oneswarm.planetlab.ping.ExperimentalSearchManager;
@@ -58,7 +58,7 @@ public class ServiceSharingSingleProcessTest extends OneSwarmTestBase {
         logFinest(EchoServer.logger);
         logFinest(ServiceSharingLoopback.logger);
         logFinest(ServiceSharingManager.logger);
-        logFinest(ServiceConnection.logger);
+        logFinest(ServiceChannelEndpoint.logger);
         logFinest(SearchManager.logger);
     }
 
@@ -111,7 +111,7 @@ public class ServiceSharingSingleProcessTest extends OneSwarmTestBase {
         Socket s = new Socket(LOCALHOST, CLIENT_PORT);
 
         // add the traceroute magic number
-        writeReadVerify(ByteManip.itob(ExperimentalSearchManager.MAGIC_NUMBER), s);
+        //writeReadVerify(ByteManip.itob(ExperimentalSearchManager.MAGIC_NUMBER), s);
         // test 1 byte
         writeReadVerify("t".getBytes("UTF-8"), s);
 
