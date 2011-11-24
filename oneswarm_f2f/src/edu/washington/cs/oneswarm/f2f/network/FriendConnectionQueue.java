@@ -91,6 +91,9 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
     private final Average uploadAverage = Average.getInstance(1000, 10);
 
     private SetupPacketListener setupPacketListener;
+    
+    /* Used in ClientServiceConnection and ServerServiceConnection unit tests */
+    private OSF2FMessage lastMsgQueued;
 
     public FriendConnectionQueue(QueueManager queueManager, FriendConnection fc) {
         // this.friendConnection = fc;
@@ -217,6 +220,14 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
         return friendScore;
     }
 
+    /**
+     * Used for ClientServiceConnection and ServerServiceConnection unit tests
+     * @return last message passed into queuePacketForceQueue
+     */
+    public OSF2FMessage getLastMessageQueued() {
+        return lastMsgQueued;
+    }
+
     public long getLastMessageSentTime() {
         return System.currentTimeMillis() - lastMessageSentTime;
     }
@@ -285,6 +296,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
                 if (logger.isLoggable(Level.FINEST)) {
                     logger.finest(getDescription() + "queueing transport: " + msg.getDescription());
                 }
+                lastMsgQueued = msg;
                 transportQueue.add(msg);
                 transportQueueBytes += (msg).getMessageSize();
                 if (QueueManager.QUEUE_DEBUG_LOGGING) {

@@ -1,4 +1,4 @@
-package edu.washington.cs.oneswarm.test.servicesharing;
+package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
@@ -36,6 +36,13 @@ import edu.washington.cs.oneswarm.test.util.MessageStreamDecoderTestImpl;
 import edu.washington.cs.oneswarm.test.util.OneSwarmTestBase;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 
+/**
+ * Tests ClientServiceConnection, verifying that data put into its NetworkConnection
+ * makes its way to one of its FriendConnections.
+ * 
+ * @author Krysta
+ *
+ */
 public class ClientServiceConnectionTest extends OneSwarmTestBase {
 
     private static Logger logger = Logger.getLogger(ServiceSharingClientTest.class.getName());

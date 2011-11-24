@@ -25,6 +25,7 @@ import edu.washington.cs.oneswarm.f2f.network.SearchManager;
 import edu.washington.cs.oneswarm.f2f.servicesharing.AbstractServiceConnection;
 import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage;
 import edu.washington.cs.oneswarm.f2f.servicesharing.EchoServer;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceChannelEndpoint;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingLoopback;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
 import edu.washington.cs.oneswarm.planetlab.ping.ExperimentalSearchManager;
@@ -59,6 +60,7 @@ public class ServiceSharingSingleProcessTest extends OneSwarmTestBase {
         logFinest(ServiceSharingLoopback.logger);
         logFinest(ServiceSharingManager.logger);
         logFinest(AbstractServiceConnection.logger);
+        logFinest(ServiceChannelEndpoint.logger);
         logFinest(SearchManager.logger);
     }
 
