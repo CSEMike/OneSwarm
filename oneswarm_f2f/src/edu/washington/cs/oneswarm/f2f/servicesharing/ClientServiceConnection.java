@@ -1,17 +1,14 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
-import org.gudy.azureus2.core3.util.DirectByteBufferPool;
 
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
 
-import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
@@ -22,6 +19,7 @@ public class ClientServiceConnection extends AbstractServiceConnection {
 
     final ClientService clientService;
     private final NetworkConnection clientConnection;
+    private boolean clientConnected = false;
 
     public ClientServiceConnection(ClientService service, NetworkConnection clientConnection) {
         super();
@@ -79,13 +77,8 @@ public class ClientServiceConnection extends AbstractServiceConnection {
                 clientConnection.enableEnhancedMessageProcessing(true);
                 clientConnection.getOutgoingMessageQueue().registerQueueListener(
                         new LowLatencyMessageWriter(clientConnection));
-                synchronized (bufferedServiceMessages) {
-                    for (OSF2FChannelDataMsg msg : bufferedServiceMessages) {
-                        logger.finest("sending queued message: " + msg.getDescription());
-                        writeMessageToClientConnection(msg.getPayload());
-                    }
-                    bufferedServiceMessages.clear();
-                }
+                clientConnected = true;
+                writeMessageToServiceConnection();
             }
 
             @Override
@@ -102,7 +95,7 @@ public class ClientServiceConnection extends AbstractServiceConnection {
 
     @Override
     public boolean isStarted() {
-        return clientConnection.isConnected();
+        return clientConnected;
     }
 
     @Override
@@ -116,23 +109,34 @@ public class ClientServiceConnection extends AbstractServiceConnection {
                 clientService.toString();
     }
 
-    @Override
-    public void writeMessageToServiceConnection(OSF2FChannelDataMsg msg) {
-        writeMessageToClientConnection(msg.getPayload());
-    }
-
     protected void writeMessageToClientConnection(DirectByteBuffer directByteBuffer) {
-        DirectByteBuffer deliveryBuffer = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG,
-                directByteBuffer.capacity((byte) 0));
-        deliveryBuffer.put((byte) 0, directByteBuffer);
-        deliveryBuffer.flip((byte) 0);
-        DataMessage msg = new DataMessage(deliveryBuffer);
+        /*
+         * DirectByteBuffer deliveryBuffer =
+         * DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG,
+         * directByteBuffer.capacity((byte) 0));
+         * deliveryBuffer.put((byte) 0, directByteBuffer);
+         * deliveryBuffer.flip((byte) 0);
+         */
+        DataMessage msg = new DataMessage(directByteBuffer); // deliveryBuffer);
         if (logger.isLoggable(Level.FINEST)) {
             logger.finest("writing message to server queue: " + msg.getDescription());
         }
-        DirectByteBuffer data = msg.getPayload();
-        int pos = data.position((byte) 0);
-        data.position((byte) 0, pos);
         clientConnection.getOutgoingMessageQueue().addMessage(msg, false);
+    }
+
+    @Override
+    void writeMessageToServiceConnection() {
+        if (!clientConnected) {
+            return;
+        }
+
+        synchronized (bufferedServiceMessages) {
+            while (bufferedServiceMessages[serviceSequenceNumber & (SERVICE_MSG_BUFFER_SIZE - 1)] != null) {
+                writeMessageToClientConnection(bufferedServiceMessages[serviceSequenceNumber
+                        & (SERVICE_MSG_BUFFER_SIZE - 1)]);
+                bufferedServiceMessages[serviceSequenceNumber & (SERVICE_MSG_BUFFER_SIZE - 1)] = null;
+                serviceSequenceNumber++;
+            }
+        }
     }
 }

@@ -1,20 +1,14 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
-import com.aelitis.azureus.core.networkmanager.OutgoingMessageQueue;
-import com.aelitis.azureus.core.networkmanager.IncomingMessageQueue.MessageQueueListener;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
-import com.aelitis.azureus.core.peermanager.messaging.Message;
-import com.google.common.collect.Iterators;
 
-import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
@@ -81,14 +75,8 @@ public class ServerServiceConnection extends AbstractServiceConnection {
 
                 serverConnection.getIncomingMessageQueue().registerQueueListener(
                         new ServerIncomingMessageListener());
-                synchronized(bufferedServiceMessages) {
-                    for (OSF2FChannelDataMsg msg : bufferedServiceMessages) {
-                        logger.finest("sending queued message: " + msg.getDescription());
-                        ServerServiceConnection.this.writeMessageToServerConnection(msg.getPayload());
-                    }
-                    bufferedServiceMessages.clear();
-                }
                 serviceConnected = true;
+                writeMessageToServiceConnection();
             }
 
             @Override
@@ -115,7 +103,6 @@ public class ServerServiceConnection extends AbstractServiceConnection {
         if (serverConnection != null) {
             final NetworkConnection conn = serverConnection;
             serverConnection = null;
-            final OutgoingMessageQueue outgoingMessageQueue = conn.getOutgoingMessageQueue();
             // if (outgoingMessageQueue.getTotalSize() == 0) {
             logger.fine("closing connection: " + getDescription());
             conn.close();
@@ -123,13 +110,16 @@ public class ServerServiceConnection extends AbstractServiceConnection {
     }
 
     @Override
-    public void writeMessageToServiceConnection(OSF2FChannelDataMsg msg) {
-        if (serviceConnected) {
-            writeMessageToServerConnection(msg.getPayload());
-        } else {
-            super.writeMessageToServiceConnection(msg);
-            if (serverConnection == null) {
-                start();
+    void writeMessageToServiceConnection() {
+        if (!serviceConnected) {
+            return;
+        }
+        synchronized (bufferedServiceMessages) {
+            while (bufferedServiceMessages[serviceSequenceNumber & (SERVICE_MSG_BUFFER_SIZE - 1)] != null) {
+                writeMessageToServerConnection(bufferedServiceMessages[serviceSequenceNumber
+                        & (SERVICE_MSG_BUFFER_SIZE - 1)]);
+                bufferedServiceMessages[serviceSequenceNumber & (SERVICE_MSG_BUFFER_SIZE - 1)] = null;
+                serviceSequenceNumber++;
             }
         }
     }
