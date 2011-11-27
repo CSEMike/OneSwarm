@@ -317,8 +317,8 @@ public abstract class OverlayEndpoint implements EndpointInterface {
     protected long writeMessageToFriendConnection(DirectByteBuffer msgBuffer) {
         OSF2FChannelDataMsg msg = new OSF2FChannelDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,
                 msgBuffer);
-        this.writeMessage(msg);
         long totalWritten = msgBuffer.remaining(DirectByteBuffer.SS_MSG);
+        this.writeMessage(msg);
         bytesOut += totalWritten;
         return totalWritten;
     }

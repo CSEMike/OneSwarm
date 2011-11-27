@@ -96,6 +96,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         // the buffer won't be returned while the packet is in the queue.
         try {
           OSF2FServiceDataMsg newMessage = OSF2FServiceDataMsg.fromChannelMessage(msg);
+            logger.fine("Received msg with sequence number " + newMessage.getSequenceNumber());
             serviceAggregator.writeMessageToServiceBuffer(newMessage);
         } catch(MessageException m) {
             return;
@@ -107,9 +108,9 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         this.outstandingBytes += buffer.remaining(ss);
         OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,
                 num.getNum(), buffer);
-        super.writeMessage(msg);
-
         long totalWritten = buffer.remaining(DirectByteBuffer.SS_MSG);
+        logger.fine("Wrote msg to network with sequence number " + num.getNum());
+        super.writeMessage(msg);
         bytesOut += totalWritten;
     }
 
