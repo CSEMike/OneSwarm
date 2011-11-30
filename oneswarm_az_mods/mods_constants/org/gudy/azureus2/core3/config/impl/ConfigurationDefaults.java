@@ -650,6 +650,7 @@ public class ConfigurationDefaults {
 
         // NOTE(willscott): service sharing network settings.
         def.put("SERVICE_CLIENT_channels", new Long(4));
+        def.put("SERVICE_CLIENT_MULTIPLEX_QUEUE", "weighted");
 }
 
   protected

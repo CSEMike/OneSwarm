@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.logging.Logger;
 
+import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 
 import com.aelitis.azureus.core.networkmanager.IncomingMessageQueue.MessageQueueListener;
@@ -21,6 +22,7 @@ import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 public abstract class AbstractServiceConnection implements EndpointInterface {
     public static final Logger logger = Logger.getLogger(AbstractServiceConnection.class.getName());
 
+    static final String SERVICE_PRIORITY_KEY = "SERVICE_CLIENT_MULTIPLEX_QUEUE";
     static final int SERVICE_MSG_BUFFER_SIZE = 2^6;
     protected int serviceSequenceNumber;
     protected final DirectByteBuffer[] bufferedServiceMessages = new DirectByteBuffer[SERVICE_MSG_BUFFER_SIZE];
@@ -35,7 +37,17 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     protected final PriorityQueue<ServiceChannelEndpoint> connections;
 
     public AbstractServiceConnection() {
-		this.connections = new PriorityQueue<ServiceChannelEndpoint>(1, new ChannelComparator());
+        String channelScheme = COConfigurationManager.getStringParameter(SERVICE_PRIORITY_KEY);
+        if (channelScheme == "roundrobin") {
+            this.connections = new PriorityQueue<ServiceChannelEndpoint>(1,
+                    new FairChannelComparator());
+        } else if (channelScheme == "random") {
+            this.connections = new PriorityQueue<ServiceChannelEndpoint>(1,
+                    new RandomChannelComparator());
+        } else {
+            this.connections = new PriorityQueue<ServiceChannelEndpoint>(1,
+                    new WeightedChannelComparator());
+        }
         this.serviceSequenceNumber = 0;
  		this.bufferedNetworkMessages = new LinkedList<DirectByteBuffer>();
         this.mmt = new MessageStreamMultiplexer();
@@ -284,7 +296,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         }
     }
     
-    private class ChannelComparator implements Comparator<ServiceChannelEndpoint> {
+    private class WeightedChannelComparator implements Comparator<ServiceChannelEndpoint> {
         static final int CHANNEL_BUFFER = 1024;
 
         @Override
@@ -302,6 +314,20 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                 // If neither available, prioritize closed channels so they get started.
                 return first.isStarted() ? (second.isStarted() ? 0 : 1): -1;
             }
+        }
+    }
+
+    private class RandomChannelComparator implements Comparator<ServiceChannelEndpoint> {
+        @Override
+        public int compare(ServiceChannelEndpoint first, ServiceChannelEndpoint second) {
+            return Math.random() < 0.5 ? -1 : 1;
+        }
+    }
+
+    private class FairChannelComparator implements Comparator<ServiceChannelEndpoint> {
+        @Override
+        public int compare(ServiceChannelEndpoint first, ServiceChannelEndpoint second) {
+            return (int) (first.getBytesOut() - second.getBytesOut());
         }
     }
 
