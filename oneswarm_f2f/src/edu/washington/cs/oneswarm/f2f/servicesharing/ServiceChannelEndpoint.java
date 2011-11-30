@@ -107,7 +107,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         this.sentMessages.put(num, buffer);
         this.outstandingBytes += buffer.remaining(ss);
         OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,
-                num.getNum(), buffer);
+                num.getNum(), (short) 0, new int[0], buffer);
         long totalWritten = buffer.remaining(DirectByteBuffer.SS_MSG);
         logger.fine("Wrote msg to network with sequence number " + num.getNum());
         super.writeMessage(msg);

@@ -647,6 +647,9 @@ public class ConfigurationDefaults {
     // for a value of 20, the added delay for overlay transports connections will be 20-40ms
     def.put("f2f_overlay_emulate_link_latency_max", new Long(20));
       //*********************************************************************
+
+        // NOTE(willscott): service sharing network settings.
+        def.put("SERVICE_CLIENT_channels", new Long(4));
 }
 
   protected
@@ -836,7 +839,8 @@ public class ConfigurationDefaults {
   IPVerifier
   	implements COConfigurationManager.ParameterVerifier
   {
-	public boolean
+	@Override
+    public boolean
 	  verify(
 		String	parameter,
 		Object	_value )

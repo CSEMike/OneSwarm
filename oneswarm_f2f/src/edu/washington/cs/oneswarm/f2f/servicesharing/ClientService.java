@@ -2,7 +2,6 @@ package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.util.Debug;
@@ -26,10 +25,12 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
     boolean active = false;
     private PortMatcher matcher;
     final long serverSearchKey;
+    final int serviceChannels;
 
     public ClientService(long key) {
         this.serverSearchKey = key;
         COConfigurationManager.setParameter(getEnabledKey(), false);
+        this.serviceChannels = COConfigurationManager.getIntParameter(getChannelsKey());
         IncomingSocketChannelManager incomingSocketChannelManager = new IncomingSocketChannelManager(
                 getPortKey(), getEnabledKey());
         try {
@@ -88,6 +89,10 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
                 @Override
                 public void searchResponseReceived(OSF2FHashSearch search, FriendConnection source,
                         OSF2FHashSearchResp msg) {
+                    // Limit number of multiplexed channels.
+                    if (connection.getChannelId().length >= serviceChannels) {
+                        return;
+                    }
                     connection.addChannel(source, search, msg);
 
                     // register it with the friendConnection
@@ -145,6 +150,10 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
         return CONFIGURATION_PREFIX + serverSearchKey + "_port";
     }
 
+    private String getChannelsKey() {
+        return CONFIGURATION_PREFIX + "channels";
+    }
+
     public void setName(String name) {
         COConfigurationManager.setParameter(getNameKey(), name);
     }
@@ -157,6 +166,7 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
         return new ClientServiceDTO(getName(), Long.toHexString(serverSearchKey), getPort());
     }
 
+    @Override
     public String toString() {
         return "Service: " + getName() + " port=" + getPort() + " key=" + serverSearchKey;
     }
