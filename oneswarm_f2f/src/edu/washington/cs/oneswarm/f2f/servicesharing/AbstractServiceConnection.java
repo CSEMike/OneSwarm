@@ -1,17 +1,15 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.logging.Logger;
 
+import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
-import org.gudy.azureus2.ui.swt.maketorrent.NewTorrentWizard;
 
-import com.aelitis.azureus.core.networkmanager.NetworkConnection;
-import com.aelitis.azureus.core.networkmanager.NetworkManager;
 import com.aelitis.azureus.core.networkmanager.IncomingMessageQueue.MessageQueueListener;
+import com.aelitis.azureus.core.networkmanager.NetworkManager;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 
 import edu.washington.cs.oneswarm.f2f.Friend;
@@ -20,14 +18,18 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.network.EndpointInterface;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
-import edu.washington.cs.oneswarm.f2f.network.OverlayEndpoint;
 
 public abstract class AbstractServiceConnection implements EndpointInterface {
     public static final Logger logger = Logger.getLogger(AbstractServiceConnection.class.getName());
 
-    protected final LinkedList<OSF2FChannelDataMsg> bufferedServiceMessages;
+    static final String SERVICE_PRIORITY_KEY = "SERVICE_CLIENT_MULTIPLEX_QUEUE";
+    static final int SERVICE_MSG_BUFFER_SIZE = 2^6;
+    protected int serviceSequenceNumber;
+    protected final DirectByteBuffer[] bufferedServiceMessages = new DirectByteBuffer[SERVICE_MSG_BUFFER_SIZE];
     protected final LinkedList<DirectByteBuffer> bufferedNetworkMessages;
+    private final MessageStreamMultiplexer mmt;
 
+    @Override
     public abstract boolean isOutgoing();
 
     public abstract void addChannel(FriendConnection channel, OSF2FHashSearch search, OSF2FHashSearchResp response);
@@ -35,9 +37,20 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     protected final PriorityQueue<ServiceChannelEndpoint> connections;
 
     public AbstractServiceConnection() {
-		this.connections = new PriorityQueue<ServiceChannelEndpoint>(1, new ChannelComparator());
-		this.bufferedServiceMessages = new LinkedList<OSF2FChannelDataMsg>();
+        String channelScheme = COConfigurationManager.getStringParameter(SERVICE_PRIORITY_KEY);
+        if (channelScheme == "roundrobin") {
+            this.connections = new PriorityQueue<ServiceChannelEndpoint>(1,
+                    new FairChannelComparator());
+        } else if (channelScheme == "random") {
+            this.connections = new PriorityQueue<ServiceChannelEndpoint>(1,
+                    new RandomChannelComparator());
+        } else {
+            this.connections = new PriorityQueue<ServiceChannelEndpoint>(1,
+                    new WeightedChannelComparator());
+        }
+        this.serviceSequenceNumber = 0;
  		this.bufferedNetworkMessages = new LinkedList<DirectByteBuffer>();
+        this.mmt = new MessageStreamMultiplexer();
     }
 
     @Override
@@ -59,8 +72,10 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         }
  
         synchronized (bufferedServiceMessages) {
-            while (bufferedServiceMessages.size() > 0) {
-                bufferedServiceMessages.removeFirst().destroy();
+            for (int i = 0; i < SERVICE_MSG_BUFFER_SIZE; i++) {
+                if (bufferedServiceMessages[i] != null) {
+                    bufferedServiceMessages[i].returnToPool();
+                }
             }
         }
         
@@ -215,13 +230,37 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         return true;
     }
     
-    void writeMessageToServiceConnection(OSF2FChannelDataMsg message) {
+    void writeMessageToServiceBuffer(OSF2FServiceDataMsg message) {
         synchronized(bufferedServiceMessages) {
-            bufferedServiceMessages.add(message);
+            if (message.getSequenceNumber() >= serviceSequenceNumber + SERVICE_MSG_BUFFER_SIZE) {
+                // Throw out to prevent buffer overflow.
+                logger.warning("Incoming service message dropped, exceeded message buffer.");
+                return;
+            } else {
+                bufferedServiceMessages[message.getSequenceNumber() & (SERVICE_MSG_BUFFER_SIZE - 1)] = message
+                        .transferPayload();
+            }
         }
+        // Handle acknowledgments.
+        for (ServiceChannelEndpoint s : this.connections) {
+            if (s.getChannelId()[0] == message.getChannelId()) {
+                mmt.onAck(message, s);
+            }
+        }
+
+        writeMessageToServiceConnection();
     }
 
+    abstract void writeMessageToServiceConnection();
+
     void removeChannel(ServiceChannelEndpoint channel) {
+        // TODO(willscott): Get retransmission working.
+        if (mmt.hasOutstanding(channel)) {
+            synchronized (bufferedNetworkMessages) {
+                bufferedNetworkMessages.addAll(mmt.getOutstanding(channel));
+            }
+        }
+        mmt.removeChannel(channel);
         this.connections.remove(channel);
     }
     
@@ -229,13 +268,12 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     	logger.info("ASC routing service message to a channel.");
         ServiceChannelEndpoint channel = this.connections.peek();
         if (!channel.isStarted()) {
-            System.out.println("Unstarted channel prioritized, msg buffered");
+            logger.fine("Unstarted channel prioritized, msg buffered");
             synchronized(bufferedNetworkMessages) {
                 bufferedNetworkMessages.add(msg);
             }
         } else {
-            System.out.println("Msg written to available channel.");
-            channel.writeMessage(msg);
+            channel.writeMessage(mmt.nextMsg(channel), msg);
         }
     }
     
@@ -265,7 +303,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         }
     }
     
-    private class ChannelComparator implements Comparator<ServiceChannelEndpoint> {
+    private class WeightedChannelComparator implements Comparator<ServiceChannelEndpoint> {
         static final int CHANNEL_BUFFER = 1024;
 
         @Override
@@ -286,6 +324,20 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         }
     }
 
+    private class RandomChannelComparator implements Comparator<ServiceChannelEndpoint> {
+        @Override
+        public int compare(ServiceChannelEndpoint first, ServiceChannelEndpoint second) {
+            return Math.random() < 0.5 ? -1 : 1;
+        }
+    }
+
+    private class FairChannelComparator implements Comparator<ServiceChannelEndpoint> {
+        @Override
+        public int compare(ServiceChannelEndpoint first, ServiceChannelEndpoint second) {
+            return (int) (first.getBytesOut() - second.getBytesOut());
+        }
+    }
+
     public void channelReady(ServiceChannelEndpoint channel) {
         if (!this.connections.contains(channel)) {
             System.out.println("bad channel.");
@@ -299,7 +351,8 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         synchronized(bufferedNetworkMessages) {
             if (bufferedNetworkMessages.size() > 0) {
                 System.out.println("Buffered message written to ready channel.");
-                this.connections.peek().writeMessage(bufferedNetworkMessages.pop());
+                ServiceChannelEndpoint ready = this.connections.peek();
+                ready.writeMessage(mmt.nextMsg(ready), bufferedNetworkMessages.pop());
             }
         }
     }

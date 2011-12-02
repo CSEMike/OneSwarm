@@ -305,6 +305,34 @@ public class FriendConnection {
             }
         }
     }
+    
+    /**
+     * Used in ClientServiceConnection and ServerServiceConnection unit tests.
+     * Creates a minimal FriendConnection marked as having received a handshake
+     * so it thinks it's been started and will try to send data. 
+     */
+    public static FriendConnection createStubForTests(QueueManager _queueManager, NetworkConnection _conn, Friend _remoteFriend) {
+    	return new FriendConnection(_queueManager, _conn, _remoteFriend);
+    }
+    
+    private FriendConnection(QueueManager _queueManager, NetworkConnection _conn, Friend _remoteFriend) {
+        // Setting handShakeReceived = true tells AbstractServiceChannelEndpoint
+        // that this connection has been started
+        this.handShakeReceived = true;
+        this.remoteFriend = _remoteFriend;
+        this.queueManager = _queueManager;
+        this.connection = _conn;
+        this.friendConnectionQueue = queueManager
+            .registerConnectionForQueueHandling(FriendConnection.this);
+    	this.outgoing = false;
+    	this.metaInfoRequestHandler = null;
+    	this.listener = null;
+    	this.filelistManager = null;
+    	this.debugMessageLog = null;
+    	this.connectionTime = 0;
+    	this.stats = null;
+    }
+
 
     /**
      * creates a new incoming connection
@@ -650,6 +678,11 @@ public class FriendConnection {
 
     public long getLastMessageSentTime() {
         return friendConnectionQueue.getLastMessageSentTime();
+    }
+    
+    // Used for unit testing of ClientServiceConnection and ServerServiceConnection
+    public OSF2FMessage getLastMessageQueued() {
+        return friendConnectionQueue.getLastMessageQueued();
     }
 
     NetworkConnection getNetworkConnection() {

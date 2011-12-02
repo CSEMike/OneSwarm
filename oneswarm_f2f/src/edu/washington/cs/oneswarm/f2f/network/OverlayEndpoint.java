@@ -33,7 +33,7 @@ public abstract class OverlayEndpoint implements EndpointInterface {
 
     private long bytesIn = 0;
 
-    private long bytesOut = 0;
+    protected long bytesOut = 0;
     protected boolean started = false;
 
     protected final int channelId;
@@ -318,6 +318,12 @@ public abstract class OverlayEndpoint implements EndpointInterface {
         OSF2FChannelDataMsg msg = new OSF2FChannelDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,
                 msgBuffer);
         long totalWritten = msgBuffer.remaining(DirectByteBuffer.SS_MSG);
+        this.writeMessage(msg);
+        bytesOut += totalWritten;
+        return totalWritten;
+    }
+
+    protected void writeMessage(OSF2FChannelDataMsg msg) {
         msg.setForward(false);
         msg.setByteInChannel(bytesOut);
         SetupPacketListener setupPacketListener = friendConnection.getSetupPacketListener();
@@ -326,7 +332,5 @@ public abstract class OverlayEndpoint implements EndpointInterface {
                     outgoing, msg);
         }
         friendConnection.sendChannelMsg(msg, true);
-        bytesOut += totalWritten;
-        return totalWritten;
     }
 }
