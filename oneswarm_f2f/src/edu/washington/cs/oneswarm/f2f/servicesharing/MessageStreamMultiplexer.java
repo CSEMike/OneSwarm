@@ -31,8 +31,13 @@ public class MessageStreamMultiplexer {
         return numChannels++;
     }
 
-    public void onAck(SequenceNumber[] n) {
-        // channelMap.remove(channel.getChannelId()[0], n);
+    public void onAck(OSF2FServiceDataMsg message, ServiceChannelEndpoint channel) {
+        // TODO(willscott): Use packet to check off received packets once UDP is
+        // used.
+        for (SequenceNumber s : channelMap.get(message.getChannelId())) {
+            channel.forgetMessage(s);
+        }
+        channelMap.removeAll(message.getChannelId());
     }
 
     public SequenceNumber nextMsg(ServiceChannelEndpoint channel) {

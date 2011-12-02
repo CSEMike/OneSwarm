@@ -121,4 +121,8 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     public DirectByteBuffer getMessage(SequenceNumber num) {
         return this.sentMessages.get(num);
     }
+
+    public void forgetMessage(SequenceNumber num) {
+        this.sentMessages.remove(num);
+    }
 }

@@ -241,6 +241,13 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                         .transferPayload();
             }
         }
+        // Handle acknowledgments.
+        for (ServiceChannelEndpoint s : this.connections) {
+            if (s.getChannelId()[0] == message.getChannelId()) {
+                mmt.onAck(message, s);
+            }
+        }
+
         writeMessageToServiceConnection();
     }
 
