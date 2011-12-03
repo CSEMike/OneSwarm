@@ -41,7 +41,7 @@ public class Win32TransferTypes extends ByteArrayTransfer {
 
         TransferData[] data = event.dataTypes;
         for (int i = 0; i < data.length; i++) {
-          int id = data[i].type;
+          int id = (int)data[i].type;
           String name = getNameFromId(id);
           System.out.println("Data type is " + id + " " + name);
         }
@@ -51,7 +51,7 @@ public class Win32TransferTypes extends ByteArrayTransfer {
       }
       public void drop(DropTargetEvent event) {
         System.out.println("URL dropped: " + event.data);
-        System.out.println("Data type is " + event.currentDataType.type + " " + getNameFromId(event.currentDataType.type));
+        System.out.println("Data type is " + event.currentDataType.type + " " + getNameFromId((int)event.currentDataType.type));
       }
     });
 
