@@ -340,19 +340,20 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
     public void channelReady(ServiceChannelEndpoint channel) {
         if (!this.connections.contains(channel)) {
-            System.out.println("bad channel.");
             logger.warning("Unregistered channel attempted to provide service transit.");
             return;
         }
+
+        // Re-order the channel.
         this.connections.remove(channel);
         this.connections.add(channel);
 
         // At least one message can be written, since a channel just indicated readyness.
         synchronized(bufferedNetworkMessages) {
-            if (bufferedNetworkMessages.size() > 0) {
-                System.out.println("Buffered message written to ready channel.");
-                ServiceChannelEndpoint ready = this.connections.peek();
-                ready.writeMessage(mmt.nextMsg(ready), bufferedNetworkMessages.pop());
+            while (bufferedNetworkMessages.size() > 0) {
+                ServiceChannelEndpoint next = this.connections.poll();
+                next.writeMessage(mmt.nextMsg(next), bufferedNetworkMessages.pop());
+                this.connections.add(next);
             }
         }
     }
