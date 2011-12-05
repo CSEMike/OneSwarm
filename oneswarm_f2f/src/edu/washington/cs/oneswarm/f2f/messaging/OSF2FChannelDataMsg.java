@@ -10,7 +10,7 @@ import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 
 public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
 
-    private static final int BASE_LENGHT = 4;
+    private static final int BASE_LENGTH = 4;
     private String description = null;
     private byte version;
     private int channelID;
@@ -27,9 +27,9 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
 
     private void updateMessageLength() {
         if (buffer[1] != null) {
-            messageLength = BASE_LENGHT + buffer[1].remaining(DirectByteBuffer.SS_MSG);
+            messageLength = BASE_LENGTH + buffer[1].remaining(DirectByteBuffer.SS_MSG);
         } else {
-            messageLength = BASE_LENGHT;
+            messageLength = BASE_LENGTH;
         }
     }
 
@@ -42,9 +42,9 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
             throw new MessageException("[" + getID() + "] decode error: data == null");
         }
 
-        if (data.remaining(DirectByteBuffer.SS_MSG) < BASE_LENGHT) {
+        if (data.remaining(DirectByteBuffer.SS_MSG) < BASE_LENGTH) {
             throw new MessageException("[" + getID() + "] decode error: payload.remaining["
-                    + data.remaining(DirectByteBuffer.SS_MSG) + "] < " + BASE_LENGHT);
+                    + data.remaining(DirectByteBuffer.SS_MSG) + "] < " + BASE_LENGTH);
         }
 
         int channelID = data.getInt(DirectByteBuffer.SS_MSG);
@@ -99,7 +99,7 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
 
     public DirectByteBuffer[] getData() {
         if (buffer[0] == null) {
-            buffer[0] = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG, BASE_LENGHT);
+            buffer[0] = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG, BASE_LENGTH);
             buffer[0].putInt(DirectByteBuffer.SS_MSG, channelID);
             buffer[0].flip(DirectByteBuffer.SS_MSG);
         }

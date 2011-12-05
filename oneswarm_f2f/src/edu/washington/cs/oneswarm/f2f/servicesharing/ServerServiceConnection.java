@@ -1,22 +1,38 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.nio.ByteBuffer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.gudy.azureus2.core3.util.DirectByteBuffer;
+
+import com.aelitis.azureus.core.networkmanager.NetworkConnection;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
 
-import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.LowLatencyMessageWriter;
 
-public class ServerServiceConnection extends ServiceConnection {
-    private final SharedService serverService;
+public class ServerServiceConnection extends AbstractServiceConnection {
+    public static final Logger logger = Logger.getLogger(ServerServiceConnection.class.getName());
 
-    public ServerServiceConnection(SharedService service, FriendConnection connection,
-            OSF2FHashSearch search, OSF2FHashSearchResp response) {
-        super(connection, search, response, false);
+    private final SharedService serverService;
+    protected NetworkConnection serverConnection;
+    private boolean serviceConnected = false;
+
+    public ServerServiceConnection(SharedService service) {
+        super();
+        logger.info("Server Service Connection created.");
         this.serverService = service;
+    }
+    
+    @Override
+    public void addChannel(FriendConnection channel,
+            OSF2FHashSearch search, OSF2FHashSearchResp response) {
+    	logger.info("Server Service Connection channel added.");
+        this.connections.add(new ServiceChannelEndpoint(
+                this, channel, search, response, false));
     }
 
     @Override
@@ -24,23 +40,18 @@ public class ServerServiceConnection extends ServiceConnection {
         return super.getDescription() + " server service: " + serverService.toString();
     }
 
-    /**
-     * Currently we connect to the server when we get the first message data.
-     */
-    // TODO (isdal): connect to the server on incoming search message and send
-    // reply on successful connect?
+    @Override
+    public boolean isOutgoing() {
+        return false;
+    }
+
     @Override
     public void start() {
-        logger.fine(getDescription() + " starting");
-        if (isStarted()) {
-            logger.warning("Tried to start already started service");
-            return;
-        }
         if (!serverService.isEnabled()) {
             logger.fine("Tried to start disabled connection");
             return;
         }
-        started = true;
+
         serverConnection = serverService.createConnection();
         serverService.connect(serverConnection, new ConnectionListener() {
             @Override
@@ -64,13 +75,8 @@ public class ServerServiceConnection extends ServiceConnection {
 
                 serverConnection.getIncomingMessageQueue().registerQueueListener(
                         new ServerIncomingMessageListener());
-                synchronized (bufferedMessages) {
-                    for (OSF2FChannelDataMsg msg : bufferedMessages) {
-                        logger.finest("sending queued message: " + msg.getDescription());
-                        writeMessageToServerConnection(msg.getPayload());
-                    }
-                    bufferedMessages.clear();
-                }
+                serviceConnected = true;
+                writeMessageToServiceConnection();
             }
 
             @Override
@@ -86,5 +92,43 @@ public class ServerServiceConnection extends ServiceConnection {
                 return ServerServiceConnection.this.getDescription() + " connect listener";
             }
         });
+    }
+
+    @Override
+    public boolean isStarted() {
+        return serviceConnected;
+    }
+    
+    public void cleanup() {
+        if (serverConnection != null) {
+            final NetworkConnection conn = serverConnection;
+            serverConnection = null;
+            // if (outgoingMessageQueue.getTotalSize() == 0) {
+            logger.fine("closing connection: " + getDescription());
+            conn.close();
+        }
+    }
+
+    @Override
+    void writeMessageToServiceConnection() {
+        if (!serviceConnected) {
+            return;
+        }
+        synchronized (bufferedServiceMessages) {
+            while (bufferedServiceMessages[serviceSequenceNumber & (SERVICE_MSG_BUFFER_SIZE - 1)] != null) {
+                writeMessageToServerConnection(bufferedServiceMessages[serviceSequenceNumber
+                        & (SERVICE_MSG_BUFFER_SIZE - 1)]);
+                bufferedServiceMessages[serviceSequenceNumber & (SERVICE_MSG_BUFFER_SIZE - 1)] = null;
+                serviceSequenceNumber++;
+            }
+        }
+    }
+
+    protected void writeMessageToServerConnection(DirectByteBuffer directByteBuffer) {
+        DataMessage msg = new DataMessage(directByteBuffer);
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.finest("writing message to server queue: " + msg.getDescription());
+        }
+        serverConnection.getOutgoingMessageQueue().addMessage(msg, false);
     }
 }

@@ -19,6 +19,7 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 
 public class DataMessage implements OSF2FMessage {
     private static final byte SS = DirectByteBuffer.SS_MSG;
+    public final static int MAX_SERVICE_PAYLOAD_SIZE = 1024;
 
     private DirectByteBuffer buffer = null;
     private static String ID = "RAW_MESSAGE";
@@ -36,30 +37,37 @@ public class DataMessage implements OSF2FMessage {
         return size;
     }
 
+    @Override
     public String getID() {
         return ID;
     }
 
+    @Override
     public byte[] getIDBytes() {
         return ID.getBytes();
     }
 
+    @Override
     public String getFeatureID() {
         return (null);
     }
 
+    @Override
     public int getFeatureSubID() {
         return (0);
     }
 
+    @Override
     public int getType() {
         return (TYPE_DATA_PAYLOAD);
     }
 
+    @Override
     public String getDescription() {
         return desc;
     }
 
+    @Override
     public byte getVersion() {
         return (1);
     }
@@ -68,14 +76,17 @@ public class DataMessage implements OSF2FMessage {
         return (buffer);
     }
 
+    @Override
     public DirectByteBuffer[] getData() {
         return new DirectByteBuffer[] { buffer };
     }
 
+    @Override
     public Message deserialize(DirectByteBuffer data, byte version) throws MessageException {
         throw (new MessageException("not implemented"));
     }
 
+    @Override
     public void destroy() {
         if (buffer != null) {
             buffer.returnToPool();
@@ -111,7 +122,7 @@ public class DataMessage implements OSF2FMessage {
         private boolean paused = false;
         private IOException pendingException;
 
-        private ArrayList<Message> messages_last_read = new ArrayList<Message>();
+        private final ArrayList<Message> messages_last_read = new ArrayList<Message>();
 
         @Override
         public void resumeDecoding() {
@@ -136,7 +147,7 @@ public class DataMessage implements OSF2FMessage {
             int bytes_left = max_bytes;
             while (bytes_left > 0) {
                 if (payload_buffer == null) {
-                    payload_buffer = DirectByteBufferPool.getBuffer(SS, MAX_PAYLOAD_SIZE);
+                    payload_buffer = DirectByteBufferPool.getBuffer(SS, MAX_SERVICE_PAYLOAD_SIZE);
                 }
                 if (paused) {
                     break;
@@ -185,7 +196,7 @@ public class DataMessage implements OSF2FMessage {
 
         @Override
         public int getPercentDoneOfCurrentMessage() {
-            return (int) (getDataBytesDecoded() * 100.0 / MAX_PAYLOAD_SIZE);
+            return (int) (getDataBytesDecoded() * 100.0 / MAX_SERVICE_PAYLOAD_SIZE);
         }
 
         @Override

@@ -59,7 +59,7 @@ import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExec
 import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExecutor;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayRegistrationError;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServerServiceConnection;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceConnection;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceChannelEndpoint;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
 import edu.washington.cs.oneswarm.f2f.servicesharing.SharedService;
 import edu.washington.cs.oneswarm.f2f.share.ShareManagerTools;
@@ -144,6 +144,7 @@ public class SearchManager {
 
     private final RotatingBloomFilter recentSearches;
     private final HashMap<Integer, SentSearch> sentSearches;
+    private final HashMap<Integer, ServiceSearch> serviceSearches;
     private final GlobalManagerStats stats;
     private final TextSearchManager textSearchManager;
 
@@ -162,6 +163,7 @@ public class SearchManager {
         this.sentSearches = new HashMap<Integer, SentSearch>();
         this.forwardedSearches = new HashMap<Integer, ForwardedSearch>();
         this.canceledSearches = new HashMap<Integer, Long>();
+        this.serviceSearches = new HashMap<Integer, ServiceSearch>();
         this.filelistManager = filelistManager;
         this.randomnessManager = randomnessManager;
         this.textSearchManager = new TextSearchManager();
@@ -267,6 +269,14 @@ public class SearchManager {
                     } else if (sentSearch.getSearch() instanceof OSF2FTextSearch) {
                         textSearchStats.add(sentSearch.getResponseNum());
                     }
+                }
+            }
+
+            for (Iterator<ServiceSearch> iterator = serviceSearches.values().iterator(); iterator
+                    .hasNext();) {
+                ServiceSearch serviceSearch = iterator.next();
+                if (serviceSearch.isTimedOut()) {
+                    iterator.remove();
                 }
             }
 
@@ -533,12 +543,15 @@ public class SearchManager {
                         .getInfohashhash());
                 final OSF2FHashSearchResp response = new OSF2FHashSearchResp(
                         OSF2FMessage.CURRENT_VERSION, msg.getSearchID(), newChannelId, pathID);
-                // TODO: only allow a single path. For now: allow multiple
-                // parallel channels to simplify debugging.
                 response.updatePathID(random.nextInt());
-                ServiceConnection conn = new ServerServiceConnection(service, source, msg, response);
-                // register it with the friendConnection
-                source.registerOverlayTransport(conn);
+                if (serviceSearches.containsKey(msg.getSearchID())) {
+                    ServiceSearch search = serviceSearches.get(msg.getSearchID());
+                    search.addSource(source, response);
+                } else {
+                    ServiceSearch search = new ServiceSearch(service, msg);
+                    search.addSource(source, response);
+                    serviceSearches.put(msg.getSearchID(), search);
+                }
                 // send the channel setup message
                 source.sendChannelSetup(response, false);
             } catch (OverlayRegistrationError e) {
@@ -1529,6 +1542,46 @@ public class SearchManager {
 
         public boolean isTimedOut() {
             return getAge() > MAX_SEARCH_AGE;
+        }
+    }
+    
+    class ServiceSearch {
+        private final OSF2FHashSearch search;
+        private final List<FriendConnection> sources;
+        private final long time;
+        private final ServerServiceConnection conn;
+    
+        public ServiceSearch(SharedService service, OSF2FHashSearch search) {
+            this.time = System.currentTimeMillis();
+            this.search = search;
+            this.sources = new LinkedList<FriendConnection>();
+            this.conn = new ServerServiceConnection(service);
+        }
+
+        public OSF2FSearch getSearch() {
+            return search;
+        }
+        
+        public int getSearchId() {
+            return search.getSearchID();
+        }
+        
+        public void addSource(FriendConnection source, OSF2FHashSearchResp response)
+                throws OverlayRegistrationError {
+            sources.add(source);
+            conn.addChannel(source, search, response);
+            // register it with the friendConnection
+            source.registerOverlayTransport(conn);
+
+            Debug.out("Aggregated a channel for a service search. (now " + sources.size() + ").");
+        }
+        
+        public List<FriendConnection> getSources() {
+            return sources;
+        }
+        
+        public boolean isTimedOut() {
+            return (System.currentTimeMillis() - time) > MAX_SEARCH_AGE;
         }
     }
 

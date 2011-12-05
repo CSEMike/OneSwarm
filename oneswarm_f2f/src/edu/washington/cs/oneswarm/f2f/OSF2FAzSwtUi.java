@@ -30,6 +30,7 @@ import org.gudy.azureus2.ui.swt.plugins.UISWTView;
 import org.gudy.azureus2.ui.swt.plugins.UISWTViewEvent;
 import org.gudy.azureus2.ui.swt.plugins.UISWTViewEventListener;
 
+import edu.washington.cs.oneswarm.f2f.network.EndpointInterface;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayForward;
 import edu.washington.cs.oneswarm.f2f.network.OverlayEndpoint;
@@ -224,7 +225,7 @@ public class OSF2FAzSwtUi {
                     cell.setText("");
                     return;
                 }
-                OverlayEndpoint tr = (OverlayEndpoint) peer.getPEPeer().getData(
+                EndpointInterface tr = (EndpointInterface) peer.getPEPeer().getData(
                         KEY_OVERLAY_TRANSPORT);
                 if (tr == null) {
                     cell.setText("");
@@ -298,7 +299,7 @@ public class OSF2FAzSwtUi {
                     cell.setText("");
                     return;
                 }
-                Integer f = tr.getPathID();
+                Integer f = tr.getPathID()[0];
                 if (f == null) {
                     cell.setText("");
 
@@ -605,9 +606,9 @@ public class OSF2FAzSwtUi {
                         f.getSourceMessage().getDescription() });
             }
 
-            Map<Integer, OverlayEndpoint> transports = sel.getOverlayTransports();
+            Map<Integer, EndpointInterface> transports = sel.getOverlayTransports();
             for (Integer id : transports.keySet()) {
-                OverlayEndpoint f = transports.get(id);
+                EndpointInterface f = transports.get(id);
                 TableItem item = new TableItem(overlayConnectionTable, SWT.NONE);
                 item.setText(new String[] { "transport", f.getPathID() + "", "Me", "N/A",
                         sel.getRemoteFriend().getNick(),

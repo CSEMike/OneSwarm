@@ -2,7 +2,6 @@ package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.util.Debug;
@@ -26,10 +25,12 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
     boolean active = false;
     private PortMatcher matcher;
     final long serverSearchKey;
+    final int serviceChannels;
 
     public ClientService(long key) {
         this.serverSearchKey = key;
         COConfigurationManager.setParameter(getEnabledKey(), false);
+        this.serviceChannels = COConfigurationManager.getIntParameter(getChannelsKey());
         IncomingSocketChannelManager incomingSocketChannelManager = new IncomingSocketChannelManager(
                 getPortKey(), getEnabledKey());
         try {
@@ -71,10 +72,10 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
     @Override
     public void connectionRouted(final NetworkConnection incomingConnection, Object routing_data) {
         ServiceSharingManager.logger.fine("connection routed");
-        // Check if local
-        final AtomicInteger responseCount = new AtomicInteger(0);
+      	final ClientServiceConnection connection = new ClientServiceConnection(ClientService.this, incomingConnection);
         final SharedService sharedService = ServiceSharingManager.getInstance().getSharedService(
                 serverSearchKey);
+        // Check if local
         if (sharedService != null) {
             ServiceSharingManager.logger.finer("got request for local service, doing loopback");
             ServiceSharingLoopback loopback = new ServiceSharingLoopback(sharedService,
@@ -88,20 +89,18 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
                 @Override
                 public void searchResponseReceived(OSF2FHashSearch search, FriendConnection source,
                         OSF2FHashSearchResp msg) {
-                    // TODO Handle multiple responses
-                    int count = responseCount.incrementAndGet();
-                    if (count > 1) {
+                    // Limit number of multiplexed channels.
+                    if (connection.getChannelId().length >= serviceChannels) {
                         return;
                     }
-                    ClientServiceConnection serviceConnection = new ClientServiceConnection(
-                            ClientService.this, incomingConnection, source, search, msg);
+                    connection.addChannel(source, search, msg);
 
                     // register it with the friendConnection
                     try {
-                        source.registerOverlayTransport(serviceConnection);
+                        source.registerOverlayTransport(connection);
                         // safe to start it since we know that the other
                         // party is interested
-                        serviceConnection.start();
+                        connection.start();
                     } catch (OverlayRegistrationError e) {
                         Debug.out("got an error when registering outgoing transport: "
                                 + e.getMessage());
@@ -151,6 +150,10 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
         return CONFIGURATION_PREFIX + serverSearchKey + "_port";
     }
 
+    private String getChannelsKey() {
+        return CONFIGURATION_PREFIX + "channels";
+    }
+
     public void setName(String name) {
         COConfigurationManager.setParameter(getNameKey(), name);
     }
@@ -163,6 +166,7 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
         return new ClientServiceDTO(getName(), Long.toHexString(serverSearchKey), getPort());
     }
 
+    @Override
     public String toString() {
         return "Service: " + getName() + " port=" + getPort() + " key=" + serverSearchKey;
     }

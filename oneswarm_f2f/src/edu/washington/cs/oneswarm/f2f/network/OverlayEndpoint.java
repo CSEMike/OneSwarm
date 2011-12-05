@@ -23,7 +23,7 @@ import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExec
  * @author isdal
  * 
  */
-public abstract class OverlayEndpoint {
+public abstract class OverlayEndpoint implements EndpointInterface {
     private final static Logger logger = Logger.getLogger(OverlayEndpoint.class.getName());
     /*
      * max number of ms that a message can be delivered earlier than
@@ -33,7 +33,7 @@ public abstract class OverlayEndpoint {
 
     private long bytesIn = 0;
 
-    private long bytesOut = 0;
+    protected long bytesOut = 0;
     protected boolean started = false;
 
     protected final int channelId;
@@ -77,6 +77,10 @@ public abstract class OverlayEndpoint {
 
     protected abstract void cleanup();
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#isOutgoing()
+     */
+    @Override
     public boolean isOutgoing() {
         return outgoing;
     }
@@ -87,10 +91,10 @@ public abstract class OverlayEndpoint {
         cleanup();
     }
 
-    /**
-     * This method is called "from above", when the peer connection is
-     * terminated, send a reset to other side
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#close(java.lang.String)
      */
+    @Override
     public void close(String reason) {
         if (!closed) {
             closeReason = "peer - " + reason;
@@ -105,11 +109,10 @@ public abstract class OverlayEndpoint {
         deregister();
     }
 
-    /**
-     * this method is called from below when a reset is received
-     * 
-     * @param reason
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#closeChannelReset()
      */
+    @Override
     public void closeChannelReset() {
         if (sentReset) {
             // ok, this is the response to our previous close
@@ -127,11 +130,10 @@ public abstract class OverlayEndpoint {
         }
     }
 
-    /**
-     * this method is called from below if the friend connection dies
-     * 
-     * @param reason
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#closeConnectionClosed(java.lang.String)
      */
+    @Override
     public void closeConnectionClosed(String reason) {
         closeReason = reason;
         logger.fine(getDescription() + ": OverlayTransport closed, reason:" + closeReason);
@@ -142,26 +144,52 @@ public abstract class OverlayEndpoint {
 
     protected abstract void destroyBufferedMessages();
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getAge()
+     */
+    @Override
     public long getAge() {
         return System.currentTimeMillis() - startTime;
     }
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getArtificialDelay()
+     */
+    @Override
     public long getArtificialDelay() {
         return overlayDelayMs;
     }
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getBytesIn()
+     */
+    @Override
     public long getBytesIn() {
         return bytesIn;
     }
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getBytesOut()
+     */
+    @Override
     public long getBytesOut() {
         return bytesOut;
     }
 
-    public int getChannelId() {
-        return channelId;
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getChannelId()
+     */
+    @Override
+    public int[] getChannelId() {
+        int[] channels = new int[1];
+        channels[0] = channelId;
+        return channels;
     }
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getDescription()
+     */
+    @Override
     public String getDescription() {
         if (desc == null) {
             desc = NetworkManager.OSF2F_TRANSPORT_PREFIX + ": "
@@ -171,32 +199,62 @@ public abstract class OverlayEndpoint {
         return desc;
     }
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getDownloadRate()
+     */
+    @Override
     public int getDownloadRate() {
         return (int) downloadRateAverage.getAverage();
     }
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getLastMsgTime()
+     */
+    @Override
     public long getLastMsgTime() {
         return System.currentTimeMillis() - lastMsgTime;
     }
 
-    public int getPathID() {
-        return pathID;
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getPathID()
+     */
+    @Override
+    public int[] getPathID() {
+        int[] paths = new int[1];
+        paths[0] = pathID;
+        return paths;
     }
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getRemoteFriend()
+     */
+    @Override
     public Friend getRemoteFriend() {
         return friendConnection.getRemoteFriend();
     }
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getRemoteIP()
+     */
+    @Override
     public String getRemoteIP() {
         return friendConnection.getRemoteIp().getHostAddress();
     }
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getUploadRate()
+     */
+    @Override
     public int getUploadRate() {
         return (int) uploadRateAverage.getAverage();
     }
 
     protected abstract void handleDelayedOverlayMessage(final OSF2FChannelDataMsg msg);
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#incomingOverlayMsg(edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg)
+     */
+    @Override
     public void incomingOverlayMsg(final OSF2FChannelDataMsg msg) {
         lastMsgTime = System.currentTimeMillis();
         msg.setByteInChannel(bytesIn);
@@ -220,14 +278,26 @@ public abstract class OverlayEndpoint {
                 });
     }
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#isLANLocal()
+     */
+    @Override
     public boolean isLANLocal() {
         return friendConnection.getNetworkConnection().isLANLocal();
     }
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#isStarted()
+     */
+    @Override
     public boolean isStarted() {
         return started;
     }
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#isTimedOut()
+     */
+    @Override
     public boolean isTimedOut() {
         return System.currentTimeMillis() - lastMsgTime > TIMEOUT;
     }
@@ -238,12 +308,22 @@ public abstract class OverlayEndpoint {
                 channelId));
     }
 
+    /* (non-Javadoc)
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#start()
+     */
+    @Override
     public abstract void start();
 
     protected long writeMessageToFriendConnection(DirectByteBuffer msgBuffer) {
         OSF2FChannelDataMsg msg = new OSF2FChannelDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,
                 msgBuffer);
         long totalWritten = msgBuffer.remaining(DirectByteBuffer.SS_MSG);
+        this.writeMessage(msg);
+        bytesOut += totalWritten;
+        return totalWritten;
+    }
+
+    protected void writeMessage(OSF2FChannelDataMsg msg) {
         msg.setForward(false);
         msg.setByteInChannel(bytesOut);
         SetupPacketListener setupPacketListener = friendConnection.getSetupPacketListener();
@@ -252,7 +332,5 @@ public abstract class OverlayEndpoint {
                     outgoing, msg);
         }
         friendConnection.sendChannelMsg(msg, true);
-        bytesOut += totalWritten;
-        return totalWritten;
     }
 }
