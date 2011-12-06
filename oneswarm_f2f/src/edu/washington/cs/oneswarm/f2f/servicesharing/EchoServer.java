@@ -53,6 +53,13 @@ public class EchoServer implements Runnable {
                         e.printStackTrace();
                     }
                 }
+                
+                try {
+					client.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
             }
         }
     }
