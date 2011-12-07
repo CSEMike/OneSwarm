@@ -23,12 +23,12 @@ public class ByteManip {
         int c = Integer.parseInt(toks[2]);
         int d = Integer.parseInt(toks[3]);
 
-        return (int) ((a << 24) | (b << 16) | (c << 8) | d);
+        return ((a << 24) | (b << 16) | (c << 8) | d);
     }
 
     public static long btol(byte[] b) {
         long l = 0;
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < b.length; i++) {
             l <<= 8;
             l ^= (long) b[i] & 0xFF;
         }

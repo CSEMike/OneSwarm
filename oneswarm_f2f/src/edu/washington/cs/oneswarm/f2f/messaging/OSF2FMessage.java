@@ -60,7 +60,15 @@ public interface OSF2FMessage extends Message {
     public static final byte[] ID_OS_DHT_LOCATION_BYTES = ID_OS_DHT_LOCATION.getBytes();
     public static final byte SUBID_OS_DHT_LOCATION = 11 + 64;
 
-    public static final byte LAST_ID = SUBID_OS_DHT_LOCATION;
+    public static final String ID_OS_DATAGRAM_INIT = "OS_DATAGRAM_INIT";
+    public static final byte[] ID_OS_DATAGRAM_INIT_BYTES = ID_OS_DATAGRAM_INIT.getBytes();
+    public static final byte SUBID_OS_DATAGRAM_INIT = 12 + 64;
+
+    public static final String ID_OS_DATAGRAM_OK = "OS_DATAGRAM_OK";
+    public static final byte[] ID_OS_DATAGRAM_OK_BYTES = ID_OS_DATAGRAM_OK.getBytes();
+    public static final byte SUBID_OS_DATAGRAM_OK = 13 + 64;
+
+    public static final byte LAST_ID = SUBID_OS_DATAGRAM_OK;
 
     public final byte METAINFO_TYPE_BITTORRENT = 0;
     public final byte METAINFO_TYPE_THUMBNAIL = 1;

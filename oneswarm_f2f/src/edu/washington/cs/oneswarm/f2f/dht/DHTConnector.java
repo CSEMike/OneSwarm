@@ -258,6 +258,10 @@ public class DHTConnector {
         return true;
     }
 
+    public int getTcpListenPort() {
+        return tcpListeningPort;
+    }
+
     private boolean connectAttemptAllowed(Friend friend) {
 
         /*

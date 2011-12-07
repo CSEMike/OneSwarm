@@ -19,6 +19,9 @@ public abstract class OSF2FChannelMsg implements OSF2FMessage {
     // keeping)
     private long byteInChannel;
 
+    // Set tag if the packet is received over udp.
+    private boolean datagram = false;
+
     protected OSF2FChannelMsg(int channelID) {
         this.channelID = channelID;
         this.createdTime = System.currentTimeMillis();
@@ -36,6 +39,7 @@ public abstract class OSF2FChannelMsg implements OSF2FMessage {
         return channelID;
     }
 
+    @Override
     public abstract int getMessageSize();
 
     public final long getCreatedTime() {
@@ -48,6 +52,14 @@ public abstract class OSF2FChannelMsg implements OSF2FMessage {
 
     public boolean isForward() {
         return forward;
+    }
+
+    public boolean isDatagram() {
+        return datagram;
+    }
+
+    public void setDatagram(boolean datagram) {
+        this.datagram = true;
     }
 
 }

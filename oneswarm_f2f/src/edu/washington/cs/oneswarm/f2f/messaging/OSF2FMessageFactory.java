@@ -63,6 +63,13 @@ public class OSF2FMessageFactory {
         legacy_data.put(OSF2FMessage.ID_OS_DHT_LOCATION, new LegacyData(RawMessage.PRIORITY_NORMAL,
                 NO_DELAY, null, OSF2FMessage.SUBID_OS_DHT_LOCATION));
         id_to_name[OSF2FMessage.SUBID_OS_DHT_LOCATION] = OSF2FMessage.ID_OS_DHT_LOCATION;
+
+        legacy_data.put(OSF2FMessage.ID_OS_DATAGRAM_INIT, new LegacyData(RawMessage.PRIORITY_HIGH,
+                NO_DELAY, null, OSF2FMessage.SUBID_OS_DATAGRAM_INIT));
+        id_to_name[OSF2FMessage.SUBID_OS_DATAGRAM_INIT] = OSF2FMessage.ID_OS_DATAGRAM_INIT;
+        legacy_data.put(OSF2FMessage.ID_OS_DATAGRAM_OK, new LegacyData(RawMessage.PRIORITY_HIGH,
+                NO_DELAY, null, OSF2FMessage.SUBID_OS_DATAGRAM_OK));
+        id_to_name[OSF2FMessage.SUBID_OS_DATAGRAM_OK] = OSF2FMessage.ID_OS_DATAGRAM_OK;
     }
 
     /**
@@ -104,6 +111,9 @@ public class OSF2FMessageFactory {
                     new OSF2FChat(OSF2FChat.CURRENT_VERSION, null));
             MessageManager.getSingleton().registerMessageType(
                     new OSF2FDhtLocation(OSF2FDhtLocation.CURRENT_VERSION, null, null));
+            MessageManager.getSingleton().registerMessageType(
+                    new OSF2FDatagramInit(OSF2FDatagramInit.CURRENT_VERSION, null, null, null, 0));
+            MessageManager.getSingleton().registerMessageType(new OSF2FDatagramOk());
 
         } catch (MessageException me) {
             me.printStackTrace();
@@ -184,6 +194,14 @@ public class OSF2FMessageFactory {
             return MessageManager.getSingleton().createMessage(
                     OSF2FMessage.ID_OS_DHT_LOCATION_BYTES, stream_payload,
                     OSF2FMessage.CURRENT_VERSION);
+        case OSF2FMessage.SUBID_OS_DATAGRAM_INIT:
+            return MessageManager.getSingleton().createMessage(
+                    OSF2FMessage.ID_OS_DATAGRAM_INIT_BYTES, stream_payload,
+                    OSF2FMessage.CURRENT_VERSION);
+        case OSF2FMessage.SUBID_OS_DATAGRAM_OK:
+            return MessageManager.getSingleton().createMessage(
+                    OSF2FMessage.ID_OS_DATAGRAM_OK_BYTES, stream_payload,
+                    OSF2FMessage.CURRENT_VERSION);
         default: {
             System.out.println("Unknown OSF2F message id [" + id + "]");
             throw new MessageException("Unknown OSF2F message id [" + id + "]");
@@ -204,7 +222,7 @@ public class OSF2FMessageFactory {
             return (RawMessage) base_message;
         }
 
-        LegacyData ld = (LegacyData) legacy_data.get(base_message.getID());
+        LegacyData ld = legacy_data.get(base_message.getID());
 
         if (ld == null) {
             Debug.out("legacy message type id not found for [" + base_message.getID() + "]");

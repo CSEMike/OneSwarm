@@ -12,9 +12,9 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
 
     private static final int BASE_LENGTH = 4;
     private String description = null;
-    private byte version;
-    private int channelID;
-    private DirectByteBuffer[] buffer = new DirectByteBuffer[2];
+    private final byte version;
+    private final int channelID;
+    private final DirectByteBuffer[] buffer = new DirectByteBuffer[2];
     private int messageLength;
 
     public OSF2FChannelDataMsg(byte _version, int channelID, DirectByteBuffer data) {
@@ -37,6 +37,7 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
         return buffer[1];
     }
 
+    @Override
     public Message deserialize(DirectByteBuffer data, byte version) throws MessageException {
         if (data == null) {
             throw new MessageException("[" + getID() + "] decode error: data == null");
@@ -54,30 +55,37 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
         return new OSF2FChannelDataMsg(version, channelID, data);
     }
 
+    @Override
     public String getID() {
         return OSF2FMessage.ID_OS_CHANNEL_DATA_MSG;
     }
 
+    @Override
     public byte[] getIDBytes() {
         return OSF2FMessage.ID_OS_CHANNEL_DATA_MSG_BYTES;
     }
 
+    @Override
     public String getFeatureID() {
         return OSF2FMessage.OS_FEATURE_ID;
     }
 
+    @Override
     public int getFeatureSubID() {
         return OSF2FMessage.SUBID_OS_CHANNEL_DATA_MSG;
     }
 
+    @Override
     public int getType() {
         return Message.TYPE_DATA_PAYLOAD;
     }
 
+    @Override
     public byte getVersion() {
         return version;
     };
 
+    @Override
     public String getDescription() {
         if (description == null) {
             description = OSF2FMessage.ID_OS_CHANNEL_DATA_MSG + "\tchannel=" + channelID
@@ -89,6 +97,7 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
         return description;
     }
 
+    @Override
     public void destroy() {
         for (int i = 0; i < buffer.length; i++) {
             if (buffer[i] != null) {
@@ -97,6 +106,7 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
         }
     }
 
+    @Override
     public DirectByteBuffer[] getData() {
         if (buffer[0] == null) {
             buffer[0] = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG, BASE_LENGTH);
@@ -113,6 +123,7 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
     }
 
     // used to remove all messages for a given channel from the queue
+    @Override
     public boolean equals(Object obj) {
         if (obj == null) {
             return false;
@@ -128,6 +139,7 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
         return false;
     }
 
+    @Override
     public int getMessageSize() {
         return messageLength;
     }

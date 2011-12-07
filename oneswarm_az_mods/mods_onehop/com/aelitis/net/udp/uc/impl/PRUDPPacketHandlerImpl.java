@@ -26,12 +26,40 @@ package com.aelitis.net.udp.uc.impl;
  *
  */
 
-import java.util.*;
-import java.io.*;
-import java.net.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.PasswordAuthentication;
+import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
-import org.gudy.azureus2.core3.logging.*;
-import org.gudy.azureus2.core3.util.*;
+import org.bouncycastle.util.encoders.Base64;
+import org.gudy.azureus2.core3.logging.LogAlert;
+import org.gudy.azureus2.core3.logging.LogEvent;
+import org.gudy.azureus2.core3.logging.LogIDs;
+import org.gudy.azureus2.core3.logging.Logger;
+import org.gudy.azureus2.core3.util.AEMonitor;
+import org.gudy.azureus2.core3.util.AESemaphore;
+import org.gudy.azureus2.core3.util.AEThread;
+import org.gudy.azureus2.core3.util.Debug;
+import org.gudy.azureus2.core3.util.SHA1Hasher;
+import org.gudy.azureus2.core3.util.SimpleTimer;
+import org.gudy.azureus2.core3.util.SystemTime;
+import org.gudy.azureus2.core3.util.TimerEvent;
+import org.gudy.azureus2.core3.util.TimerEventPerformer;
+import org.gudy.azureus2.core3.util.TimerEventPeriodic;
 
 import com.aelitis.azureus.core.impl.AzureusCoreImpl;
 import com.aelitis.azureus.core.networkmanager.admin.NetworkAdmin;
@@ -47,8 +75,7 @@ import com.aelitis.net.udp.uc.PRUDPPrimordialHandler;
 import com.aelitis.net.udp.uc.PRUDPRequestHandler;
 
 import edu.uw.cse.netlab.reputation.UpdatePacketHandler;
-
-import org.bouncycastle.util.encoders.Base64;
+import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnectionManager;
 
 public class 
 PRUDPPacketHandlerImpl
@@ -56,12 +83,12 @@ PRUDPPacketHandlerImpl
 {	
 	private static final LogIDs LOGID = LogIDs.NET;
 	
-	private boolean			TRACE_REQUESTS	= false;
+	private final boolean			TRACE_REQUESTS	= false;
 	
 	private static final long	MAX_SEND_QUEUE_DATA_SIZE	= 2*1024*1024;
 	private static final long	MAX_RECV_QUEUE_DATA_SIZE	= 1*1024*1024;
 	
-	private int				port;
+	private final int				port;
 	private DatagramSocket	socket;
 	
 	// TODO: who needs encapsulation?
@@ -70,23 +97,23 @@ PRUDPPacketHandlerImpl
 	private PRUDPPrimordialHandler	primordial_handler;
 	private PRUDPRequestHandler		request_handler;
 	
-	private PRUDPPacketHandlerStatsImpl	stats = new PRUDPPacketHandlerStatsImpl( this );
+	private final PRUDPPacketHandlerStatsImpl	stats = new PRUDPPacketHandlerStatsImpl( this );
 	
 	
-	private Map			requests = new HashMap();
-	private AEMonitor	requests_mon	= new AEMonitor( "PRUDPPH:req" );
+	private final Map			requests = new HashMap();
+	private final AEMonitor	requests_mon	= new AEMonitor( "PRUDPPH:req" );
 	
 	
-	private AEMonitor	send_queue_mon	= new AEMonitor( "PRUDPPH:sd" );
+	private final AEMonitor	send_queue_mon	= new AEMonitor( "PRUDPPH:sd" );
 	private long		send_queue_data_size;
-	private List[]		send_queues		= new List[]{ new LinkedList(),new LinkedList(),new LinkedList()};
-	private AESemaphore	send_queue_sem	= new AESemaphore( "PRUDPPH:sq" );
+	private final List[]		send_queues		= new List[]{ new LinkedList(),new LinkedList(),new LinkedList()};
+	private final AESemaphore	send_queue_sem	= new AESemaphore( "PRUDPPH:sq" );
 	private AEThread	send_thread;
 	
-	private AEMonitor	recv_queue_mon	= new AEMonitor( "PRUDPPH:rq" );
+	private final AEMonitor	recv_queue_mon	= new AEMonitor( "PRUDPPH:rq" );
 	private long		recv_queue_data_size;
-	private List		recv_queue		= new ArrayList();
-	private AESemaphore	recv_queue_sem	= new AESemaphore( "PRUDPPH:rq" );
+	private final List		recv_queue		= new ArrayList();
+	private final AESemaphore	recv_queue_sem	= new AESemaphore( "PRUDPPH:rq" );
 	private AEThread	recv_thread;
 	
 	private int			send_delay				= 0;
@@ -98,7 +125,7 @@ PRUDPPacketHandlerImpl
 	private long		total_replies;
 	private long		last_error_report;
 	
-	private AEMonitor	bind_address_mon	= new AEMonitor( "PRUDPPH:bind" );
+	private final AEMonitor	bind_address_mon	= new AEMonitor( "PRUDPPH:bind" );
 
 	private InetAddress				default_bind_ip;
 	private InetAddress				explicit_bind_ip;
@@ -108,7 +135,7 @@ PRUDPPacketHandlerImpl
 	
 	private volatile boolean		failed;
 	private volatile boolean		destroyed;
-	private AESemaphore destroy_sem = new AESemaphore("PRUDPPacketHandler:destroy");
+	private final AESemaphore destroy_sem = new AESemaphore("PRUDPPacketHandler:destroy");
 
 	private Throwable 	init_error;
 	
@@ -128,7 +155,8 @@ PRUDPPacketHandlerImpl
 		
 		Thread t = new AEThread( "PRUDPPacketReciever:".concat(String.valueOf(port)))
 			{
-				public void
+				@Override
+                public void
 				runSupport()
 				{
 					receiveLoop(init_sem);
@@ -147,7 +175,8 @@ PRUDPPacketHandlerImpl
 				5000,
 				new TimerEventPerformer()
 				{
-					public void
+					@Override
+                    public void
 					perform(
 						TimerEvent	event )
 					{
@@ -164,7 +193,8 @@ PRUDPPacketHandlerImpl
 		init_sem.reserve();
 	}
 	
-	public void
+	@Override
+    public void
 	setPrimordialHandler(
 		PRUDPPrimordialHandler	handler )
 	{
@@ -176,7 +206,8 @@ PRUDPPacketHandlerImpl
 		primordial_handler	= handler;
 	}
 	
-	public void
+	@Override
+    public void
 	setRequestHandler(
 		PRUDPRequestHandler		_request_handler )
 	{
@@ -195,13 +226,15 @@ PRUDPPacketHandlerImpl
 		request_handler	= _request_handler;
 	}
 	
-	public PRUDPRequestHandler
+	@Override
+    public PRUDPRequestHandler
 	getRequestHandler()
 	{
 		return( request_handler );
 	}
 	
-	public int
+	@Override
+    public int
 	getPort()
 	{
 		return( port );
@@ -224,7 +257,8 @@ PRUDPPacketHandlerImpl
 		}
 	}
 	
-	public void
+	@Override
+    public void
 	setExplicitBindAddress(
 		InetAddress	address )
 	{
@@ -285,7 +319,8 @@ PRUDPPacketHandlerImpl
 		NetworkAdminPropertyChangeListener prop_listener = 
 			new NetworkAdminPropertyChangeListener()
 	    	{
-	    		public void
+	    		@Override
+                public void
 	    		propertyChanged(
 	    			String		property )
 	    		{
@@ -397,6 +432,9 @@ PRUDPPacketHandlerImpl
 								{
 									if( UpdatePacketHandler.get().packetReceived( packet ) )
 										buffer = null;
+                                    else if (DatagramConnectionManager.get().packetRecieved(
+                                            packet))
+                                        buffer = null;
 								}
 							}
 							
@@ -661,7 +699,8 @@ PRUDPPacketHandlerImpl
 								recv_thread = 
 									new AEThread( "PRUDPPacketHandler:receiver" )
 									{
-										public void
+										@Override
+                                        public void
 										runSupport()
 										{
 											while( true ){
@@ -792,7 +831,8 @@ PRUDPPacketHandlerImpl
 		return( sendAndReceive( null,request_packet, destination_address ));
 	}
 	
-	public PRUDPPacket
+	@Override
+    public PRUDPPacket
 	sendAndReceive(
 		PasswordAuthentication	auth,
 		PRUDPPacket				request_packet,
@@ -803,7 +843,8 @@ PRUDPPacketHandlerImpl
 		return( sendAndReceive( auth, request_packet, destination_address, PRUDPPacket.DEFAULT_UDP_TIMEOUT ));
 	}
 	
-	public PRUDPPacket
+	@Override
+    public PRUDPPacket
 	sendAndReceive(
 		PasswordAuthentication	auth,
 		PRUDPPacket				request_packet,
@@ -818,7 +859,8 @@ PRUDPPacketHandlerImpl
 		return( request.getReply());
 	}
 	
-	public PRUDPPacket
+	@Override
+    public PRUDPPacket
 	sendAndReceive(
 		PasswordAuthentication	auth,
 		PRUDPPacket				request_packet,
@@ -834,7 +876,8 @@ PRUDPPacketHandlerImpl
 		return( request.getReply());
 	}
 	
-	public void
+	@Override
+    public void
 	sendAndReceive(
 		PRUDPPacket					request_packet,
 		InetSocketAddress			destination_address,
@@ -992,7 +1035,8 @@ PRUDPPacketHandlerImpl
 								send_thread = 
 									new AEThread( "PRUDPPacketHandler:sender" )
 									{
-										public void
+										@Override
+                                        public void
 										runSupport()
 										{
 											int[]		consecutive_sends = new int[send_queues.length];
@@ -1148,7 +1192,8 @@ PRUDPPacketHandlerImpl
 		}
 	}
 	
-	public void
+	@Override
+    public void
 	send(
 		PRUDPPacket				request_packet,
 		InetSocketAddress		destination_address )
@@ -1220,7 +1265,8 @@ PRUDPPacketHandlerImpl
 		}
 	}
 	
-	public void
+	@Override
+    public void
 	setDelays(
 		int		_send_delay,
 		int		_receive_delay,
@@ -1255,7 +1301,8 @@ PRUDPPacketHandlerImpl
 		return( recv_queue.size());
 	}
 	
-	public void
+	@Override
+    public void
 	primordialSend(
 		byte[]				buffer,
 		InetSocketAddress	target )
@@ -1284,7 +1331,8 @@ PRUDPPacketHandlerImpl
 		}
 	}
 	
-	public PRUDPPacketHandlerStats
+	@Override
+    public PRUDPPacketHandlerStats
 	getStats()
 	{
 		return( stats );

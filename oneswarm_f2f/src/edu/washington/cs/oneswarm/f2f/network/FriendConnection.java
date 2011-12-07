@@ -14,6 +14,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -38,6 +39,7 @@ import com.aelitis.azureus.core.networkmanager.impl.osssl.OneSwarmSslTransportHe
 import com.aelitis.azureus.core.networkmanager.impl.tcp.ProtocolEndpointTCP;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 import com.aelitis.azureus.core.peermanager.messaging.bittorrent.BTKeepAlive;
+import com.google.gwt.dev.util.collect.HashSet;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 import edu.washington.cs.oneswarm.f2f.BigFatLock;
@@ -46,10 +48,14 @@ import edu.washington.cs.oneswarm.f2f.FileListManager;
 import edu.washington.cs.oneswarm.f2f.Friend;
 import edu.washington.cs.oneswarm.f2f.OSF2FMain;
 import edu.washington.cs.oneswarm.f2f.chat.ChatDAO;
+import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnection;
+import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnectionManager;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelReset;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChat;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDatagramInit;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDatagramOk;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDhtLocation;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHandshake;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
@@ -186,6 +192,9 @@ public class FriendConnection {
 
     private SetupPacketListener setupPacketListener;
 
+    DatagramConnectionManager udpManager = DatagramConnectionManager.get();
+    DatagramConnection udpConnection;
+
     /**
      * outgoing
      * 
@@ -305,17 +314,19 @@ public class FriendConnection {
             }
         }
     }
-    
+
     /**
      * Used in ClientServiceConnection and ServerServiceConnection unit tests.
      * Creates a minimal FriendConnection marked as having received a handshake
-     * so it thinks it's been started and will try to send data. 
+     * so it thinks it's been started and will try to send data.
      */
-    public static FriendConnection createStubForTests(QueueManager _queueManager, NetworkConnection _conn, Friend _remoteFriend) {
-    	return new FriendConnection(_queueManager, _conn, _remoteFriend);
+    public static FriendConnection createStubForTests(QueueManager _queueManager,
+            NetworkConnection _conn, Friend _remoteFriend) {
+        return new FriendConnection(_queueManager, _conn, _remoteFriend);
     }
-    
-    private FriendConnection(QueueManager _queueManager, NetworkConnection _conn, Friend _remoteFriend) {
+
+    private FriendConnection(QueueManager _queueManager, NetworkConnection _conn,
+            Friend _remoteFriend) {
         // Setting handShakeReceived = true tells AbstractServiceChannelEndpoint
         // that this connection has been started
         this.handShakeReceived = true;
@@ -323,16 +334,15 @@ public class FriendConnection {
         this.queueManager = _queueManager;
         this.connection = _conn;
         this.friendConnectionQueue = queueManager
-            .registerConnectionForQueueHandling(FriendConnection.this);
-    	this.outgoing = false;
-    	this.metaInfoRequestHandler = null;
-    	this.listener = null;
-    	this.filelistManager = null;
-    	this.debugMessageLog = null;
-    	this.connectionTime = 0;
-    	this.stats = null;
+                .registerConnectionForQueueHandling(FriendConnection.this);
+        this.outgoing = false;
+        this.metaInfoRequestHandler = null;
+        this.listener = null;
+        this.filelistManager = null;
+        this.debugMessageLog = null;
+        this.connectionTime = 0;
+        this.stats = null;
     }
-
 
     /**
      * creates a new incoming connection
@@ -514,6 +524,10 @@ public class FriendConnection {
         listener.disconnected(FriendConnection.this);
 
         fileListRequestHandler.close();
+        if (udpConnection != null) {
+            udpConnection.close();
+            udpConnection = null;
+        }
         // updateFriendConnectionLog(true, "network connection closed");
 
     }
@@ -608,11 +622,10 @@ public class FriendConnection {
                     continue;
                 }
                 if (overlayPathLogger.isEnabled()) {
-                    overlayPathLogger
-                            .log(System.currentTimeMillis() + ", deregistered_transport, "
-                                    + exists.getChannelId() + ", " + exists.getBytesIn() + ", "
-                                    + exists.getBytesOut() + ", " + exists.getAge() + ", "
-                                    + exists.getPathID());
+                    overlayPathLogger.log(System.currentTimeMillis() + ", deregistered_transport, "
+                            + exists.getChannelId() + ", " + exists.getBytesIn() + ", "
+                            + exists.getBytesOut() + ", " + exists.getAge() + ", "
+                            + exists.getPathID());
                 }
             }
             if (removed) {
@@ -627,6 +640,9 @@ public class FriendConnection {
         if (friendConnectionQueue.getLastMessageSentTime() > KEEP_ALIVE_FREQ) {
             connection.getOutgoingMessageQueue().addMessage(
                     new BTKeepAlive(OSF2FMessage.CURRENT_VERSION), false);
+        }
+        if (udpConnection != null && udpConnection.getLastMessageSentTime() > KEEP_ALIVE_FREQ) {
+            udpConnection.sendKeepAlive();
         }
     }
 
@@ -679,8 +695,9 @@ public class FriendConnection {
     public long getLastMessageSentTime() {
         return friendConnectionQueue.getLastMessageSentTime();
     }
-    
-    // Used for unit testing of ClientServiceConnection and ServerServiceConnection
+
+    // Used for unit testing of ClientServiceConnection and
+    // ServerServiceConnection
     public OSF2FMessage getLastMessageQueued() {
         return friendConnectionQueue.getLastMessageQueued();
     }
@@ -853,6 +870,9 @@ public class FriendConnection {
             if (this.hasExtendedDHTKeyNegotiationSupport()) {
                 extras += "(dht loc)";
             }
+            if (this.hasUdpSupport()) {
+                extras += "(udp)";
+            }
 
             /*
              * check that we still are connected, if we are mark friends
@@ -875,6 +895,18 @@ public class FriendConnection {
                 // if we are outgoing, send the dht location
                 updateFriendConnectionLog(true, "proposing dht location");
                 sendDhtLocation();
+            }
+
+            // If the remote side supports UDP, send over the keys
+            if (this.hasUdpSupport()) {
+                try {
+                    udpConnection = udpManager.createConnection(this);
+                    updateFriendConnectionLog(true, "sending over udp crypto key");
+                    sendMessage(udpConnection.createInitMessage(), true);
+                } catch (Exception e) {
+                    logger.warning("Unable to create udp connection");
+                    e.printStackTrace();
+                }
             }
 
             if (remoteFriend.isRequestFileList()) {
@@ -959,6 +991,14 @@ public class FriendConnection {
         }
 
         return (remoteFlags[0] & OSF2FHandshake.SUPPORTS_DHT_LOCATION_HS) == OSF2FHandshake.SUPPORTS_DHT_LOCATION_HS;
+    }
+
+    public boolean hasUdpSupport() {
+        if (remoteFlags == null) {
+            return false;
+        }
+
+        return (remoteFlags[0] & OSF2FHandshake.SUPPORTS_UDP) == OSF2FHandshake.SUPPORTS_UDP;
     }
 
     public int getImageMetaInfoQueueSize() {
@@ -1297,26 +1337,27 @@ public class FriendConnection {
         }
     }
 
-    public void registerOverlayTransport(EndpointInterface transport) throws OverlayRegistrationError {
+    public void registerOverlayTransport(EndpointInterface transport)
+            throws OverlayRegistrationError {
         lock.lock();
         try {
             for (int channelId : transport.getChannelId()) {
                 if (overlayTransports.containsKey(channelId)) {
                     Debug.out(getDescription() + "tried to register existing channel id, "
                             + "this should _never_ happen " + this);
-                    throw new FriendConnection.OverlayRegistrationError(getRemoteFriend().getNick(),
-                            channelId, "existing channel id");
+                    throw new FriendConnection.OverlayRegistrationError(
+                            getRemoteFriend().getNick(), channelId, "existing channel id");
 
                 }
-                overlayTransports.put(channelId, transport);                
+                overlayTransports.put(channelId, transport);
             }
             for (int pathID : transport.getPathID()) {
                 if (overlayTransportPathsId.containsKey(pathID)) {
                     Debug.out(getDescription() + "tried to register existing path id, "
                             + "this should _never_ happen " + this);
                     // TODO(willscott): determine appropriate channelID here.
-                    throw new FriendConnection.OverlayRegistrationError(getRemoteFriend().getNick(),
-                            0, "existing path id");
+                    throw new FriendConnection.OverlayRegistrationError(
+                            getRemoteFriend().getNick(), 0, "existing path id");
                 }
                 overlayTransportPathsId.put(pathID, true);
             }
@@ -1328,6 +1369,10 @@ public class FriendConnection {
     }
 
     void sendChannelMsg(OSF2FChannelMsg message, boolean transport) {
+        if (udpConnection != null && message.isDatagram() && udpConnection.isSendingActive()) {
+            sendUdpPacket(message);
+            return;
+        }
         if (debugMessageLog != null) {
             debugMessageLog.messageQueuedChannel(message.getDescription());
         }
@@ -1834,7 +1879,7 @@ public class FriendConnection {
     }
 
     private class IncomingQueueListener implements MessageQueueListener {
-        private long packetNum = 0;
+        private final long packetNum = 0;
 
         @Override
         public void dataBytesReceived(int byte_count) {
@@ -1885,6 +1930,12 @@ public class FriendConnection {
                 handleChat(message);
             } else if (message.getID().equals(OSF2FMessage.ID_OS_DHT_LOCATION)) {
                 handleDhtLocationMessage((OSF2FDhtLocation) message);
+            } else if (message.getID().equals(OSF2FMessage.ID_OS_DATAGRAM_INIT)) {
+                if (udpConnection != null)
+                    udpConnection.initMessageReceived((OSF2FDatagramInit) message);
+            } else if (message.getID().equals(OSF2FMessage.ID_OS_DATAGRAM_OK)) {
+                if (udpConnection != null)
+                    udpConnection.okMessageReceived();
             } else {
                 Debug.out(getDescription() + "unknown message: " + message.getDescription());
             }
@@ -2386,5 +2437,46 @@ public class FriendConnection {
 
     SetupPacketListener getSetupPacketListener() {
         return setupPacketListener;
+    }
+
+    private final static Set<String> UDP_ENABLED_MESSAGES = new HashSet<String>();
+    static {
+        UDP_ENABLED_MESSAGES.add(OSF2FMessage.ID_OS_CHANNEL_DATA_MSG);
+        UDP_ENABLED_MESSAGES.add(OSF2FMessage.ID_OS_DATAGRAM_OK);
+    }
+
+    public void datagramDecoded(Message message, int size) {
+        if (!UDP_ENABLED_MESSAGES.contains(message.getID())) {
+            logger.warning("Got invalid message type from udp channel on friendconnection: "
+                    + toString());
+            return;
+        }
+        if (message.getType() == Message.TYPE_DATA_PAYLOAD) {
+            incomingListener.dataBytesReceived(size);
+            stats.dataBytesReceived(size, isLanLocal());
+        } else {
+            incomingListener.protocolBytesReceived(size);
+            stats.protocolBytesReceived(size, isLanLocal());
+        }
+        incomingListener.messageReceived(message);
+    }
+
+    private void sendUdpPacket(OSF2FChannelMsg message) {
+        if (!UDP_ENABLED_MESSAGES.contains(message.getID())) {
+            logger.warning("Got invalid message type from udp channel on friendconnection: "
+                    + toString());
+            return;
+        }
+        int size = message.getMessageSize();
+        if (message.getType() == Message.TYPE_DATA_PAYLOAD) {
+            stats.dataBytesSent(size, isLanLocal());
+        } else {
+            stats.protocolBytesSent(size, isLanLocal());
+        }
+        udpConnection.sendMessage(message);
+    }
+
+    public void sendDatagramOk(OSF2FDatagramOk osf2fDatagramOk) {
+        sendMessage(osf2fDatagramOk, true);
     }
 }

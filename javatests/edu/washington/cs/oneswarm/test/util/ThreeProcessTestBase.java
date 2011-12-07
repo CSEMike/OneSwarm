@@ -126,11 +126,20 @@ public class ThreeProcessTestBase extends OneSwarmTestBase {
         f2fMain.getDHTConnector().connectToFriend(f);
 
         // Add us and node B to node A
-        processA.getCoordinator().addCommand("addkey TEST " + localKey + " true true");
-        processA.getCoordinator().addCommand("addkey TEST " + processBKey + " true true");
+        processA.getCoordinator().addCommand(
+                "addkey TEST " + localKey + " true true 127.0.0.1 "
+                        + f2fMain.getDHTConnector().getTcpListenPort());
+        processA.getCoordinator().addCommand(
+                "addkey TEST " + processBKey + " true true 127.0.0.1 "
+                        + processB.getCoordinator().getPort());
 
         // Add node A to node B
-        processB.getCoordinator().addCommand("addkey TEST " + processAKey + " true true");
+        processB.getCoordinator().addCommand(
+                "addkey TEST " + processAKey + " true true 127.0.0.1 "
+                        + processA.getCoordinator().getPort());
+
+        // Tell A to force connect to all
+        processA.getCoordinator().addCommand("forceall");
 
         // Wait for the connections to be established
         processB.waitForOnlineFriends(1);
