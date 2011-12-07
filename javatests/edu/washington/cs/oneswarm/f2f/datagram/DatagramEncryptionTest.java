@@ -32,8 +32,9 @@ public class DatagramEncryptionTest extends OneSwarmTestBase {
         int SIZE = 1024;
         int NUM = 102400;
         byte[] payload = new byte[SIZE];
-        new Random().nextBytes(payload);
+
         for (int i = 0; i < NUM; i++) {
+            new Random().nextBytes(payload);
             payload[0] = (byte) i;
             payloadBuffer.clear();
             EncryptedPacket p = encr.encrypt(ByteBuffer.wrap(payload), payloadBuffer);
@@ -44,7 +45,8 @@ public class DatagramEncryptionTest extends OneSwarmTestBase {
         }
         double mb = SIZE * NUM / (1024 * 1024.0);
         double elapsed = (System.currentTimeMillis() - time) / 1000.0;
-        System.out.println(String.format("done: time=%.2fs speed=%.2fmb/s", elapsed, mb / elapsed));
+        System.out.println(String.format("done: time=%.2fs speed=%.2fmb/s ,%.2fkpps", elapsed, mb
+                / elapsed, NUM / elapsed / 1000));
 
         Assert.assertTrue(mb / elapsed > 10);
     }

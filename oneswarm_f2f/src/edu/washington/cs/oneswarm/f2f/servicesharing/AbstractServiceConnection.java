@@ -265,10 +265,10 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     }
     
     void routeMessageToChannel(DirectByteBuffer msg) {
-    	logger.info("ASC routing service message to a channel.");
+        logger.finest("ASC routing service message to a channel.");
         ServiceChannelEndpoint channel = this.connections.peek();
         if (!channel.isStarted()) {
-            logger.fine("Unstarted channel prioritized, msg buffered");
+            logger.finer("Unstarted channel prioritized, msg buffered");
             synchronized(bufferedNetworkMessages) {
                 bufferedNetworkMessages.add(msg);
             }
@@ -285,7 +285,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
         @Override
         public boolean messageReceived(Message message) {
-        	logger.info("ASC Service message recieved.");
+            logger.finest("ASC Service message recieved.");
 
         	if (!(message instanceof DataMessage)) {
                 String msg = "got wrong message type from server: ";

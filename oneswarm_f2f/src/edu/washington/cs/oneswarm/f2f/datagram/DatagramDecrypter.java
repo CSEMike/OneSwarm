@@ -23,8 +23,6 @@ public class DatagramDecrypter extends DatagramEncrytionBase {
     public DatagramDecrypter(byte[] encryptionKey, byte[] iv, byte[] hmacKey)
             throws InvalidKeyException, InvalidAlgorithmParameterException,
             NoSuchAlgorithmException, NoSuchPaddingException {
-        System.out.println("key=" + encryptionKey.length + " iv=" + iv.length + " hmac="
-                + hmacKey.length);
         ivSpec = new IvParameterSpec(iv);
         key = new SecretKeySpec(encryptionKey, "AES");
         cipher = Cipher.getInstance(ENCR_ALGO);

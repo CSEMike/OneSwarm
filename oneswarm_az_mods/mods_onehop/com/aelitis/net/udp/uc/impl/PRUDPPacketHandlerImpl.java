@@ -415,8 +415,14 @@ PRUDPPacketHandlerImpl
 						
 						PRUDPPrimordialHandler prim_hand = primordial_handler;
 						
-						if ( prim_hand != null ){
-							
+                        if (AzureusCoreImpl.isCoreAvailable()) {
+                            // Check if the packet is an encrypted udp friend
+                            // connection.
+                            if (DatagramConnectionManager.get().packetRecieved(packet))
+                                buffer = null;
+                            else if (UpdatePacketHandler.get().packetReceived(packet))
+                                buffer = null;
+                        } else if (prim_hand != null) {
 							if ( prim_hand.packetReceived( packet )){
 						
 									// primordial handlers get their own buffer as we can't guarantee
@@ -425,19 +431,7 @@ PRUDPPacketHandlerImpl
 								buffer	= null;
 								
 								stats.primordialPacketReceived( packet.getLength());
-							}
-							else
-							{
-								if( AzureusCoreImpl.isCoreAvailable() )
-								{
-									if( UpdatePacketHandler.get().packetReceived( packet ) )
-										buffer = null;
-                                    else if (DatagramConnectionManager.get().packetRecieved(
-                                            packet))
-                                        buffer = null;
-								}
-							}
-							
+                            }
 						}
 						
 						if ( buffer != null ){

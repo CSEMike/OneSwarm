@@ -39,24 +39,38 @@ public class DatagramEncrypter extends DatagramEncrytionBase {
         logger.fine("DatagramEncrypter created");
     }
 
-    public EncryptedPacket encrypt(ByteBuffer input, ByteBuffer payloadBuffer)
+    public EncryptedPacket encrypt(ByteBuffer unencryptedPayload, ByteBuffer payloadBuffer)
+            throws ShortBufferException, IllegalBlockSizeException, BadPaddingException,
+            IllegalStateException, InvalidKeyException, InvalidAlgorithmParameterException {
+        return encrypt(new ByteBuffer[] { unencryptedPayload }, payloadBuffer);
+    }
+
+    public EncryptedPacket encrypt(ByteBuffer[] unencryptedPayload, ByteBuffer payloadBuffer)
             throws ShortBufferException, IllegalBlockSizeException, BadPaddingException,
             IllegalStateException, InvalidKeyException, InvalidAlgorithmParameterException {
         packetCount++;
-        int inputBytes = input.remaining();
+        int inputBytes = 0;
         // Update the iv
         ivSpec = setSequenceNumber(packetCount, ivSpec.getIV());
         cipher.init(Cipher.ENCRYPT_MODE, key, ivSpec);
-
-        // Save the read position so it can be reused for the mac computation.
-        int oldPos = input.position();
-        cipher.update(input, payloadBuffer);
-
-        // Restore the read position.
-        input.position(oldPos);
         mac.init(macKey);
-        mac.update(input);
+
+        for (int i = 0; i < unencryptedPayload.length; i++) {
+            ByteBuffer b = unencryptedPayload[i];
+            inputBytes += b.remaining();
+            // Save the read position so it can be reused for the mac
+            // computation.
+            int oldPos = b.position();
+            cipher.update(b, payloadBuffer);
+            // Restore the read position.
+            b.position(oldPos);
+            // Update the mac.
+            mac.update(b);
+        }
+        // Add the mac to the end and encrypt.
         cipher.update(ByteBuffer.wrap(mac.doFinal(), 0, mac.getMacLength()), payloadBuffer);
+
+        // Prepare for reading.
         payloadBuffer.flip();
         EncryptedPacket packet = new EncryptedPacket(packetCount, payloadBuffer);
 

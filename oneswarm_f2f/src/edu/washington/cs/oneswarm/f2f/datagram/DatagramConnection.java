@@ -24,6 +24,15 @@ import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage;
 
 /**
+ * Connection used in parallel to the standard SSL connection between 2 friends.
+ * 
+ * * Wire level packet format:
+ * [Unencrypted]
+ * 8 bytes sequence number.
+ * [Encrypted]
+ * 1 byte message type.
+ * x bytes payload
+ * 20 bytes hmac
  * 
  * @author isdal
  * 
@@ -82,15 +91,17 @@ public class DatagramConnection {
         ACTIVE, CLOSED, INIT_SENT, KEEPALIVE_SENT, NEW
     }
 
-    final static byte AL = DirectByteBuffer.AL_NET_CRYPT;
+    private final static byte AL = DirectByteBuffer.AL_NET_CRYPT;
 
     public final static Logger logger = Logger.getLogger(DatagramConnection.class.getName());
 
-    final static byte SS = DirectByteBuffer.SS_MSG;
+    private final static byte SS = DirectByteBuffer.SS_MSG;
+
+    private final static int MAX_UNACKED_KEEPALIVES = 10;
 
     private final long createdAt = System.currentTimeMillis();
-    private DatagramDecrypter decrypter;
 
+    private DatagramDecrypter decrypter;
     private final DatagramEncrypter encrypter;
 
     private final FriendConnection friendConnection;
@@ -99,13 +110,12 @@ public class DatagramConnection {
 
     private long lastPacketSent;
     private final DatagramConnectionManager manager;
-    private final int MAX_UNACKED_KEEPALIVES = 10;
     private DatagramConnection.ReceiveState receiveState = ReceiveState.NEW;
     private int remotePort;
 
     private DatagramConnection.SendState sendState = SendState.NEW;
 
-    private final ByteBuffer tempSerializationBuffer;
+    private final ByteBuffer typeBuffer;
 
     public DatagramConnection(DatagramConnectionManager manager, FriendConnection friendConnection)
             throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException,
@@ -113,7 +123,7 @@ public class DatagramConnection {
         this.friendConnection = friendConnection;
         this.encrypter = new DatagramEncrypter();
         this.manager = manager;
-        this.tempSerializationBuffer = ByteBuffer.allocateDirect(2 * DataMessage.MAX_PAYLOAD_SIZE);
+        this.typeBuffer = ByteBuffer.allocate(1);
     }
 
     public void close() {
@@ -158,49 +168,52 @@ public class DatagramConnection {
         return sendState == SendState.ACTIVE;
     }
 
-    synchronized boolean messageReceived(DatagramPacket packet) {
+    boolean messageReceived(DatagramPacket packet) {
         if (decrypter == null) {
             logger.fine("Got unknown packet");
             return false;
         }
-        if (receiveState == ReceiveState.CLOSED) {
-            logger.finest("Got packet on closed connection");
-            return false;
-        }
-        try {
-            DirectByteBuffer decryptBuffer = DirectByteBufferPool.getBuffer(AL,
-                    2 * DataMessage.MAX_PAYLOAD_SIZE);
-            byte[] data = packet.getData();
-
-            if (!decrypter.decrypt(data, packet.getOffset(), packet.getLength(),
-                    decryptBuffer.getBuffer(AL))) {
-                logger.finer("DatagramDecryption error: " + friendConnection + " packet=" + packet);
+        synchronized (decrypter) {
+            if (receiveState == ReceiveState.CLOSED) {
+                logger.finest("Got packet on closed connection");
                 return false;
             }
-            Message message = OSF2FMessageFactory.createOSF2FMessage(decryptBuffer);
-            if (message instanceof OSF2FChannelMsg) {
-                ((OSF2FChannelMsg) message).setDatagram(true);
+            try {
+                DirectByteBuffer decryptBuffer = DirectByteBufferPool.getBuffer(AL,
+                        2 * DataMessage.MAX_PAYLOAD_SIZE);
+                byte[] data = packet.getData();
+
+                if (!decrypter.decrypt(data, packet.getOffset(), packet.getLength(),
+                        decryptBuffer.getBuffer(AL))) {
+                    logger.finer("DatagramDecryption error: " + friendConnection + " packet="
+                            + packet);
+                    return false;
+                }
+                Message message = OSF2FMessageFactory.createOSF2FMessage(decryptBuffer);
+                if (message instanceof OSF2FChannelMsg) {
+                    ((OSF2FChannelMsg) message).setDatagram(true);
+                }
+                logger.finest("packet decrypted: " + message.getDescription());
+                if (receiveState == ReceiveState.OK_SENT) {
+                    // First packet received, set state to active and tell
+                    // friend connection to send ok.
+                    friendConnection.sendDatagramOk(new OSF2FDatagramOk());
+                    receiveState = ReceiveState.ACTIVE;
+                }
+                lastPacketReceived = System.currentTimeMillis();
+                friendConnection.datagramDecoded(message, data.length);
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
             }
-            logger.finest("packet decrypted: " + message.getDescription());
-            if (receiveState == ReceiveState.OK_SENT) {
-                // First packet received, set state to active and tell
-                // friend connection to send ok.
-                friendConnection.sendDatagramOk(new OSF2FDatagramOk());
-                receiveState = ReceiveState.ACTIVE;
-            }
-            lastPacketReceived = System.currentTimeMillis();
-            friendConnection.datagramDecoded(message, data.length);
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
         }
     }
 
     public void okMessageReceived() {
-        logger.fine("OK message received, state=" + sendState);
         if (sendState == SendState.KEEPALIVE_SENT) {
             sendState = SendState.ACTIVE;
+            logger.fine("OK message received, state=" + sendState);
         } else if (sendState == SendState.INIT_SENT) {
             sendKeepAlive();
             sendState = SendState.KEEPALIVE_SENT;
@@ -223,56 +236,65 @@ public class DatagramConnection {
         return;
     }
 
-    public synchronized void sendMessage(OSF2FMessage message) {
-        try {
-            lastPacketSent = System.currentTimeMillis();
-            int size = 0;
+    /**
+     * Send a message over this UDP connection.
+     * 
+     * @param message
+     */
+    public void sendMessage(OSF2FMessage message) {
+        synchronized (encrypter) {
+            try {
+                lastPacketSent = System.currentTimeMillis();
+                int size = 0;
 
-            // Prepare the serialization buffer for writing.
-            tempSerializationBuffer.clear();
+                // Write the message type and prepare for reading.
+                typeBuffer.clear();
+                typeBuffer.put((byte) message.getFeatureSubID());
+                typeBuffer.flip();
+                size += 1;
 
-            // Write the message type.
-            tempSerializationBuffer.put((byte) message.getFeatureSubID());
-            size += 1;
+                // Get the message data.
+                DirectByteBuffer[] data = message.getData();
 
-            // Serialize the message into a temporary buffer.
-            DirectByteBuffer[] data = message.getData();
-            for (DirectByteBuffer buf : data) {
-                ByteBuffer bb = buf.getBuffer(SS);
-                size += bb.remaining();
-                tempSerializationBuffer.put(bb);
+                // Collect the buffers in one array.
+                ByteBuffer[] unencryptedPayload = new ByteBuffer[data.length + 1];
+                unencryptedPayload[0] = typeBuffer;
+                for (int i = 0; i < data.length; i++) {
+                    ByteBuffer bb = data[i].getBuffer(SS);
+                    unencryptedPayload[i + 1] = bb;
+                    size += bb.remaining();
+                }
+
+                // Allocate the byte[] to be used by the udp packet.
+                // Add room for 8 byte sequence number and 20 byte HMAC.
+                byte[] encryptedBuf = new byte[size + 8 + DatagramEncrypter.HMAC_KEY_LENGTH];
+                logger.finest("encrypting " + size + " bytes, total message size="
+                        + encryptedBuf.length);
+
+                // Wrap in a ByteBuffer for convenience.
+                ByteBuffer encryptedBB = ByteBuffer.wrap(encryptedBuf);
+
+                // Set position to 8 to make room for the sequence number.
+                encryptedBB.position(8);
+                // Encrypt the serialized payload into the payload buffer.
+                EncryptedPacket encrypted = encrypter.encrypt(unencryptedPayload, encryptedBB);
+
+                // Return the incoming message buffers to the pool.
+                message.destroy();
+
+                // Set the position back to 0 before writing the sequence
+                // number.
+                encryptedBB.position(0);
+                encryptedBB.putLong(encrypted.getSequenceNumber());
+
+                // Create and send the packet.
+                DatagramPacket packet = new DatagramPacket(encryptedBuf, 0, encryptedBuf.length,
+                        friendConnection.getRemoteIp(), remotePort);
+                manager.send(packet);
+            } catch (Exception e) {
+                e.printStackTrace();
+                sendState = SendState.CLOSED;
             }
-            // Return the message buffers to the pool.
-            message.destroy();
-
-            // Prepare the serialization buffer for reading.
-            tempSerializationBuffer.flip();
-
-            // Allocate the byte[] to be used by the udp packet.
-            // Add room for 8 byte sequence number and 20 byte HMAC.
-            byte[] encryptedBuf = new byte[size + 8 + DatagramEncrypter.HMAC_KEY_LENGTH];
-            logger.finest("encrypting " + size + " bytes, total message size="
-                    + encryptedBuf.length);
-
-            // Wrap in a ByteBuffer for convenience.
-            ByteBuffer payloadBuffer = ByteBuffer.wrap(encryptedBuf);
-
-            // Set position to 8 to make room for the sequence number.
-            payloadBuffer.position(8);
-            // Encrypt the serialized payload into the payload buffer.
-            EncryptedPacket encrypted = encrypter.encrypt(tempSerializationBuffer, payloadBuffer);
-
-            // Set the position back to 0 before writing the sequence number.
-            payloadBuffer.position(0);
-            payloadBuffer.putLong(encrypted.getSequenceNumber());
-
-            // Create and send the packet.
-            DatagramPacket packet = new DatagramPacket(encryptedBuf, 0, encryptedBuf.length,
-                    friendConnection.getRemoteIp(), remotePort);
-            manager.send(packet);
-        } catch (Exception e) {
-            e.printStackTrace();
-            sendState = SendState.CLOSED;
         }
     }
 }
