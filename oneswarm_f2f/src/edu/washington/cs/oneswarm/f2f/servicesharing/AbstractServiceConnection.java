@@ -1,8 +1,10 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.config.COConfigurationManager;
@@ -34,19 +36,23 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
     public abstract void addChannel(FriendConnection channel, OSF2FHashSearch search, OSF2FHashSearchResp response);
 
-    protected final PriorityBlockingQueue<ServiceChannelEndpoint> connections;
+    protected final List<ServiceChannelEndpoint> connections = Collections
+            .synchronizedList(new ArrayList());
+
+    private enum SCPolicy {
+        ROUNDROBIN, RANDOM, WEIGHTED
+    };
+
+    final SCPolicy policy;
 
     public AbstractServiceConnection() {
         	String channelScheme = COConfigurationManager.getStringParameter(SERVICE_PRIORITY_KEY);
         	if (channelScheme == "roundrobin") {
-            this.connections = new PriorityBlockingQueue<ServiceChannelEndpoint>(1,
-        	            new FairChannelComparator());
+            policy = SCPolicy.ROUNDROBIN;
         	} else if (channelScheme == "random") {
-            this.connections = new PriorityBlockingQueue<ServiceChannelEndpoint>(1,
-        	            new RandomChannelComparator());
+            policy = SCPolicy.RANDOM;
         	} else {
-            this.connections = new PriorityBlockingQueue<ServiceChannelEndpoint>(1,
-        	            new WeightedChannelComparator());
+            policy = SCPolicy.WEIGHTED;
         }
         this.serviceSequenceNumber = 0;
  		this.bufferedNetworkMessages = new LinkedList<DirectByteBuffer>();
@@ -57,7 +63,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     public String getDescription() {
         String connectionInfo = "";
         if (this.connections.size() > 0) {
-            connectionInfo = " via: " + this.connections.peek().getRemoteFriend().getNick();
+            connectionInfo = " via: " + this.connections.get(0).getRemoteFriend().getNick();
         }
         if (this.connections.size() > 1) {
             connectionInfo += " and " + (this.connections.size() - 1) + " others.";
@@ -116,7 +122,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     @Override
     public long getArtificialDelay() {
         if (this.connections.size() > 0) {
-            return this.connections.peek().getArtificialDelay();
+            return this.connections.get(0).getArtificialDelay();
         }
         return 0;
     }
@@ -268,8 +274,26 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     }
     
     void routeMessageToChannel(DirectByteBuffer msg) {
-        logger.info("ASC routing service message to a channel.");
-        ServiceChannelEndpoint channel = this.connections.peek();
+        // logger.info("ASC routing service message to a channel.");
+        ServiceChannelEndpoint channel = null;
+        if (policy == SCPolicy.RANDOM) {
+            int id = (int) (Math.random() * connections.size());
+            channel = this.connections.get(id);
+        } else if (policy == SCPolicy.ROUNDROBIN) {
+            channel = this.connections.remove(0);
+            this.connections.add(channel);
+        } else {
+            for(ServiceChannelEndpoint c : connections) {
+                if (channel == null) {
+                    channel = c;
+                    continue;
+                }
+            }
+        }
+        if (channel == null) {
+            logger.warning("No channel selected by policy.  data lost.");
+            return;
+        }
         if (!channel.isStarted()) {
             logger.fine("Unstarted channel prioritized, msg buffered");
             synchronized (bufferedNetworkMessages) {
@@ -288,7 +312,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
         @Override
         public boolean messageReceived(Message message) {
-        	logger.info("ASC Service message recieved.");
+            // logger.info("ASC Service message recieved.");
 
         	if (!(message instanceof DataMessage)) {
                 String msg = "got wrong message type from server: ";
@@ -327,36 +351,16 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         }
     }
 
-    private class RandomChannelComparator implements Comparator<ServiceChannelEndpoint> {
-        @Override
-        public int compare(ServiceChannelEndpoint first, ServiceChannelEndpoint second) {
-            return Math.random() < 0.5 ? -1 : 1;
-        }
-    }
-
-    private class FairChannelComparator implements Comparator<ServiceChannelEndpoint> {
-        @Override
-        public int compare(ServiceChannelEndpoint first, ServiceChannelEndpoint second) {
-            return (int) (first.getBytesOut() - second.getBytesOut());
-        }
-    }
-
     public void channelReady(ServiceChannelEndpoint channel) {
         if (!this.connections.contains(channel)) {
             logger.warning("Unregistered channel attempted to provide service transit.");
             return;
         }
 
-        // Re-order the channel.
-        this.connections.remove(channel);
-        this.connections.add(channel);
-
         // At least one message can be written, since a channel just indicated readyness.
         synchronized (bufferedNetworkMessages) {
             while (bufferedNetworkMessages.size() > 0) {
-                ServiceChannelEndpoint next = this.connections.poll();
-                next.writeMessage(mmt.nextMsg(next), bufferedNetworkMessages.pop());
-                this.connections.add(next);
+                routeMessageToChannel(bufferedNetworkMessages.pop());
             }
         }
     }
