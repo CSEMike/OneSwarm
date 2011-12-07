@@ -22,6 +22,7 @@ public class EchoServer implements Runnable {
 
         @Override
         public void run() {
+            int transfered = 0;
             InputStream in = null;
             OutputStream out = null;
             try {
@@ -31,12 +32,16 @@ public class EchoServer implements Runnable {
 
                 int read;
                 while ((read = in.read(buffer)) != -1) {
+                    transfered += read;
                     out.write(buffer, 0, read);
                     logger.finest("echoed " + read + " bytes");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
+                logger.fine("echo server connection closed after echoing " + transfered
+                        + " bytes, remote host: "
+                        + client.getInetAddress().getHostAddress() + ":" + client.getPort());
                 if (in != null) {
                     try {
                         in.close();
@@ -110,7 +115,7 @@ public class EchoServer implements Runnable {
             started.release();
             while (true) {
                 Socket client = ss.accept();
-                logger.info("connection from: " + client.getRemoteSocketAddress());
+                logger.fine("connection from: " + client.getRemoteSocketAddress());
                 Thread t = new Thread(new EchoServerHandler(client));
                 t.setDaemon(true);
                 t.setName("EchoServer_" + port);

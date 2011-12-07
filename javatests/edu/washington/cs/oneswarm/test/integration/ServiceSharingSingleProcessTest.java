@@ -130,7 +130,7 @@ public class ServiceSharingSingleProcessTest extends OneSwarmTestBase {
         // TODO testRandom(s, 2 * DataMessage.MAX_PAYLOAD_SIZE + 1);
 
         // test a megabyte
-        testRandom(s, 1024 * 1024);
+        // testRandom(s, 1024 * 1024);
     }
 
     private static void testRandom(Socket s, int numBytes) throws IOException {
