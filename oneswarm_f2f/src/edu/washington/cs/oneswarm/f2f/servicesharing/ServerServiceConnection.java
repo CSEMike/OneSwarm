@@ -30,9 +30,12 @@ public class ServerServiceConnection extends AbstractServiceConnection {
     @Override
     public void addChannel(FriendConnection channel,
             OSF2FHashSearch search, OSF2FHashSearchResp response) {
-    	logger.info("Server Service Connection channel added.");
-        this.connections.add(new ServiceChannelEndpoint(
+        synchronized (this.connections) {
+            this.connections
+                    .add(new ServiceChannelEndpoint(
                 this, channel, search, response, false));
+            logger.info("Server Service Connection channel added.");
+        }
     }
 
     @Override

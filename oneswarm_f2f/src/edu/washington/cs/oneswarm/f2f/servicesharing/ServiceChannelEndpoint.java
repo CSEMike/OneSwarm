@@ -123,6 +123,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     }
 
     public void forgetMessage(SequenceNumber num) {
-        this.sentMessages.remove(num);
+        DirectByteBuffer msg = this.sentMessages.remove(num);
+        // this.outstandingBytes -= msg.
     }
 }

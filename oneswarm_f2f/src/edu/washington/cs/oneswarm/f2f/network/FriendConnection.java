@@ -1834,7 +1834,7 @@ public class FriendConnection {
     }
 
     private class IncomingQueueListener implements MessageQueueListener {
-        private long packetNum = 0;
+        private final long packetNum = 0;
 
         @Override
         public void dataBytesReceived(int byte_count) {
