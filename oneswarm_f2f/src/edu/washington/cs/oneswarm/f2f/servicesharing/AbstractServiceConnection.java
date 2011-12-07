@@ -24,7 +24,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     public static final Logger logger = Logger.getLogger(AbstractServiceConnection.class.getName());
 
     static final String SERVICE_PRIORITY_KEY = "SERVICE_CLIENT_MULTIPLEX_QUEUE";
-    static final int SERVICE_MSG_BUFFER_SIZE = 64;
+    static final int SERVICE_MSG_BUFFER_SIZE = 1024;
 
     private static final int CHANNEL_BUFFER = 1024 * 4;
     protected int serviceSequenceNumber;
