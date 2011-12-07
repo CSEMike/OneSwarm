@@ -32,7 +32,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     public final static Logger logger = Logger.getLogger(ServiceChannelEndpoint.class.getName());
     private static final byte ss = 0;
     protected AbstractServiceConnection serviceAggregator;
-    protected final Hashtable<SequenceNumber, DirectByteBuffer> sentMessages;
+    protected final Hashtable<SequenceNumber, sentMessage> sentMessages;
     private int outstandingBytes;
 
     public ServiceChannelEndpoint(AbstractServiceConnection aggregator,
@@ -42,7 +42,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         logger.info("Service Channel Endpoint Created.");
         this.serviceAggregator = aggregator;
 
-        this.sentMessages = new Hashtable<SequenceNumber, DirectByteBuffer>();
+        this.sentMessages = new Hashtable<SequenceNumber, sentMessage>();
         this.outstandingBytes = 0;
 
         this.started = true;
@@ -67,8 +67,8 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     @Override
     protected void destroyBufferedMessages() {
         // No buffered messages to destroy.
-        for (DirectByteBuffer b : this.sentMessages.values()) {
-            b.returnToPool();
+        for (sentMessage b : this.sentMessages.values()) {
+            b.msg.returnToPool();
         }
         this.sentMessages.clear();
         this.outstandingBytes = 0;
@@ -105,8 +105,9 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     }
 
     public void writeMessage(SequenceNumber num, DirectByteBuffer buffer) {
-        this.sentMessages.put(num, buffer);
-        this.outstandingBytes += buffer.remaining(ss);
+        int length = buffer.remaining(ss);
+        this.sentMessages.put(num, new sentMessage(buffer, length));
+        this.outstandingBytes += length;
         OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,
                 num.getNum(), (short) 0, new int[0], buffer);
         long totalWritten = buffer.remaining(DirectByteBuffer.SS_MSG);
@@ -121,11 +122,21 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     }
 
     public DirectByteBuffer getMessage(SequenceNumber num) {
-        return this.sentMessages.get(num);
+        return this.sentMessages.get(num).msg;
     }
 
     public void forgetMessage(SequenceNumber num) {
-        DirectByteBuffer msg = this.sentMessages.remove(num);
-        // this.outstandingBytes -= msg.
+        sentMessage msg = this.sentMessages.remove(num);
+        this.outstandingBytes -= msg.length;
+    }
+
+    private class sentMessage {
+        public DirectByteBuffer msg;
+        public int length;
+
+        public sentMessage(DirectByteBuffer msg, int length) {
+            this.msg = msg;
+            this.length = length;
+        }
     }
 }

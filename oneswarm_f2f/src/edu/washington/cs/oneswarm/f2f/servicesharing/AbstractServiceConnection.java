@@ -2,7 +2,6 @@ package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -26,6 +25,8 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
     static final String SERVICE_PRIORITY_KEY = "SERVICE_CLIENT_MULTIPLEX_QUEUE";
     static final int SERVICE_MSG_BUFFER_SIZE = 2^6;
+
+    private static final int CHANNEL_BUFFER = 1024 * 4;
     protected int serviceSequenceNumber;
     protected final DirectByteBuffer[] bufferedServiceMessages = new DirectByteBuffer[SERVICE_MSG_BUFFER_SIZE];
     protected final LinkedList<DirectByteBuffer> bufferedNetworkMessages;
@@ -37,7 +38,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     public abstract void addChannel(FriendConnection channel, OSF2FHashSearch search, OSF2FHashSearchResp response);
 
     protected final List<ServiceChannelEndpoint> connections = Collections
-            .synchronizedList(new ArrayList());
+            .synchronizedList(new ArrayList<ServiceChannelEndpoint>());
 
     private enum SCPolicy {
         ROUNDROBIN, RANDOM, WEIGHTED
@@ -288,12 +289,38 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                     channel = c;
                     continue;
                 }
+                if (!c.isStarted() && channel.isStarted()) {
+                    if (channel.getOutstanding() > CHANNEL_BUFFER) {
+                        channel = c;
+                    }
+                    continue;
+                } else if (!c.isStarted() && !channel.isStarted()) {
+                    continue;
+                } else if (c.isStarted() && !channel.isStarted()) {
+                    if (c.getOutstanding() < CHANNEL_BUFFER) {
+                        channel = c;
+                    }
+                    continue;
+                } else if (c.isStarted() && channel.isStarted()) {
+                    if (c.getBytesOut() / c.getAge() > channel.getBytesOut() / channel.getAge()
+                            && c.getOutstanding() < CHANNEL_BUFFER) {
+                        channel = c;
+                    } else if (channel.getOutstanding() > CHANNEL_BUFFER
+                            && c.getOutstanding() < channel.getOutstanding()) {
+                        channel = c;
+                    }
+                }
             }
         }
         if (channel == null) {
             logger.warning("No channel selected by policy.  data lost.");
             return;
         }
+        // logger.warning("channel status:" + channel.getBytesIn() + "/" +
+        // channel.getBytesOut()
+        // + "; " + channel.getDownloadRate() + " / " + channel.getUploadRate()
+        // + "; "
+        // + channel.getOutstanding());
         if (!channel.isStarted()) {
             logger.fine("Unstarted channel prioritized, msg buffered");
             synchronized (bufferedNetworkMessages) {
@@ -327,27 +354,6 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
         @Override
         public void protocolBytesReceived(int byte_count) {
-        }
-    }
-    
-    private class WeightedChannelComparator implements Comparator<ServiceChannelEndpoint> {
-        static final int CHANNEL_BUFFER = 1024;
-
-        @Override
-        public int compare(ServiceChannelEndpoint first, ServiceChannelEndpoint second) {
-            boolean firstReady = first.isStarted() && first.getOutstanding() < CHANNEL_BUFFER;
-            boolean secondReady = second.isStarted() && second.getOutstanding() < CHANNEL_BUFFER;
-            if (firstReady && secondReady) {
-                // If both available, go with the faster one.
-                return second.getUploadRate() - first.getUploadRate();
-            } else if (firstReady) {
-                return -1;
-            } else if (secondReady) {
-                return 1;
-            } else {
-                // If neither available, prioritize closed channels so they get started.
-                return first.isStarted() ? (second.isStarted() ? 0 : 1): -1;
-            }
         }
     }
 
