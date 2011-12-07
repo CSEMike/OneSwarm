@@ -47,8 +47,7 @@ public class ClientServiceConnection extends AbstractServiceConnection {
     @Override
     public void addChannel(FriendConnection channel,
             OSF2FHashSearch search, OSF2FHashSearchResp response) {
-        this.connections.add(new ServiceChannelEndpoint(
-                this, channel, search, response, false));
+        this.connections.add(new ServiceChannelEndpoint(this, channel, search, response, true));
         logger.info("ASC Client channel added. (now " + this.connections.size() + ")");
     }
 

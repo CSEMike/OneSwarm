@@ -57,10 +57,16 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
     @Override
     public void start() {
+        if (!this.outgoing) {
+            // TODO(willscott): allow server to open channels.
+        }
     }
 
     @Override
     public boolean isStarted() {
+        if (!this.outgoing) {
+            return this.getBytesIn() > 0;
+        }
         return friendConnection.isHandshakeReceived();
     }
 
@@ -88,7 +94,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         if (closed) {
             return;
         }
-        if (!started) {
+        if (this.isStarted()) {
             start();
         }
         // logger.fine("Service channel msg recieved.");

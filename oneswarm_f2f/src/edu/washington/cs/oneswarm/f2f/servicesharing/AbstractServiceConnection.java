@@ -278,13 +278,33 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         // logger.info("ASC routing service message to a channel.");
         ServiceChannelEndpoint channel = null;
         if (policy == SCPolicy.RANDOM) {
-            int id = (int) (Math.random() * connections.size());
-            channel = this.connections.get(id);
+            while (true) {
+                int id = (int) (Math.random() * connections.size());
+                channel = this.connections.get(id);
+
+                // Assume some channel is 'started'
+                if (!channel.isStarted() && !channel.isOutgoing()) {
+                    continue;
+                }
+                break;
+            }
         } else if (policy == SCPolicy.ROUNDROBIN) {
-            channel = this.connections.remove(0);
-            this.connections.add(channel);
+            while (true) {
+                channel = this.connections.remove(0);
+                this.connections.add(channel);
+
+                // Assume some channel is 'started'
+                if (!channel.isStarted() && !channel.isOutgoing()) {
+                    continue;
+                }
+                break;
+            }
         } else {
             for(ServiceChannelEndpoint c : connections) {
+                // Don't allow questionable paths to be opened by the server.
+                if (!c.isStarted() && !c.isOutgoing()) {
+                    continue;
+                }
                 if (channel == null) {
                     channel = c;
                     continue;
@@ -316,11 +336,9 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             logger.warning("No channel selected by policy.  data lost.");
             return;
         }
-        // logger.warning("channel status:" + channel.getBytesIn() + "/" +
-        // channel.getBytesOut()
-        // + "; " + channel.getDownloadRate() + " / " + channel.getUploadRate()
-        // + "; "
-        // + channel.getOutstanding());
+        logger.warning("channel status:" + channel.getBytesIn() + "/" + channel.getBytesOut()
+                + "; " + channel.getDownloadRate() + " / " + channel.getUploadRate() + "; "
+                + channel.getOutstanding());
         if (!channel.isStarted()) {
             logger.fine("Unstarted channel prioritized, msg buffered");
             synchronized (bufferedNetworkMessages) {
