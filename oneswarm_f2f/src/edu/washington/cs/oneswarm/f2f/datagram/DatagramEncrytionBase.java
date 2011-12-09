@@ -9,7 +9,6 @@ import java.security.SecureRandom;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
-import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
@@ -18,7 +17,7 @@ import org.gudy.azureus2.core3.util.SHA1Hasher;
 public abstract class DatagramEncrytionBase {
     public final static String ENCR_STD = "AES";
     public final static String ENCR_ALGO = "AES/CTR/PKCS5Padding";
-    public final static String HMAC_ALGO = "HmacSHA1";
+    // public final static String HMAC_ALGO = "HmacSHA1";
     public static final int HMAC_SIZE = 20;
 
     // Using sha1 instead of hmac-sha1.
@@ -27,14 +26,19 @@ public abstract class DatagramEncrytionBase {
     public final static int BLOCK_SIZE = AES_KEY_LENGTH / 8;
     public final static int SEQUENCE_NUMBER_BYTES = 8;
 
+    public static int TYPE_AES_CRT_128__SHA1 = 0;
+
     protected final SHA1Hasher sha1;
 
     public DatagramEncrytionBase() {
         sha1 = new SHA1Hasher();
     }
 
-    protected Mac mac;
-    protected Key macKey;
+    public int getCryptoAlgo() {
+        return TYPE_AES_CRT_128__SHA1;
+    }
+
+    protected byte[] hmac_key;
 
     protected IvParameterSpec ivSpec;
     protected Key key;

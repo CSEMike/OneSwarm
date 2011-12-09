@@ -23,22 +23,23 @@ import edu.washington.cs.oneswarm.f2f.datagram.DatagramEncrytionBase;
  * 
  */
 public class OSF2FDatagramInit implements OSF2FMessage {
-
     private final byte version;
 
     private String description;
     private DirectByteBuffer buffer;
-    private final static int MESSAGE_LENGTH = DatagramEncrytionBase.HMAC_KEY_LENGTH + 2
+    private final static int MESSAGE_LENGTH = 4 + DatagramEncrytionBase.HMAC_KEY_LENGTH + 2
             * DatagramEncrytionBase.BLOCK_SIZE + 4;
 
     private final byte[] encryptionKey;
     private final byte[] iv;
     private final byte[] hmacKey;
     private final int localPort;
+    private final int cryptoAlgo;
 
-    public OSF2FDatagramInit(byte version, byte[] encryptionKey, byte[] iv, byte[] hmacKey,
-            int localPort) {
+    public OSF2FDatagramInit(byte version, int cryptoAlgo, byte[] encryptionKey, byte[] iv,
+            byte[] hmacKey, int localPort) {
         this.version = version;
+        this.cryptoAlgo = cryptoAlgo;
         this.encryptionKey = encryptionKey;
         this.iv = iv;
         this.hmacKey = hmacKey;
@@ -104,6 +105,7 @@ public class OSF2FDatagramInit implements OSF2FMessage {
     public DirectByteBuffer[] getData() {
         if (buffer == null) {
             buffer = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG, MESSAGE_LENGTH);
+            buffer.putInt(SS_MSG, cryptoAlgo);
             buffer.put(DirectByteBuffer.SS_MSG, encryptionKey);
             buffer.put(DirectByteBuffer.SS_MSG, iv);
             buffer.put(DirectByteBuffer.SS_MSG, hmacKey);
@@ -123,6 +125,9 @@ public class OSF2FDatagramInit implements OSF2FMessage {
             throw new MessageException("[" + getID() + "] decode error: payload.remaining["
                     + data.remaining(DirectByteBuffer.SS_MSG) + "] != " + MESSAGE_LENGTH);
         }
+
+        int cryptoAlgo = data.getInt(SS_MSG);
+
         byte[] eKey = new byte[DatagramEncrytionBase.BLOCK_SIZE];
         data.get(SS_MSG, eKey);
 
@@ -134,7 +139,7 @@ public class OSF2FDatagramInit implements OSF2FMessage {
 
         int localport = data.getInt(SS_MSG);
         data.returnToPool();
-        return new OSF2FDatagramInit(version, eKey, initVector, hKey, localport);
+        return new OSF2FDatagramInit(version, cryptoAlgo, eKey, initVector, hKey, localport);
     }
 
     @Override

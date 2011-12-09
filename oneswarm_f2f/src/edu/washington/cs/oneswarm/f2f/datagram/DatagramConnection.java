@@ -136,7 +136,8 @@ public class DatagramConnection {
     public OSF2FDatagramInit createInitMessage() {
         sendState = SendState.INIT_SENT;
         OSF2FDatagramInit initMessage = new OSF2FDatagramInit(OSF2FMessage.CURRENT_VERSION,
-                encrypter.getKey(), encrypter.getIv(), encrypter.getHmac(), manager.getPort());
+                encrypter.getCryptoAlgo(), encrypter.getKey(), encrypter.getIv(),
+                encrypter.getHmac(), manager.getPort());
         logger.fine("Init message created: " + initMessage.getDescription());
         return initMessage;
     }

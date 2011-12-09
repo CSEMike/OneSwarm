@@ -13,10 +13,8 @@ import java.util.logging.Logger;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.Mac;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
-import javax.crypto.spec.SecretKeySpec;
 
 public class DatagramEncrypter extends DatagramEncrytionBase {
     public final static Logger logger = Logger.getLogger(DatagramEncrypter.class.getName());
@@ -35,12 +33,9 @@ public class DatagramEncrypter extends DatagramEncrytionBase {
         cipher = Cipher.getInstance(ENCR_ALGO);
         cipher.init(Cipher.ENCRYPT_MODE, key, ivSpec);
 
-        // Create the mac key and mac
-        byte[] hmac_key = new byte[HMAC_KEY_LENGTH];
+        // Create the mac key
+        hmac_key = new byte[HMAC_KEY_LENGTH];
         random.nextBytes(hmac_key);
-        mac = Mac.getInstance(HMAC_ALGO);
-        macKey = new SecretKeySpec(hmac_key, HMAC_ALGO);
-        mac.init(macKey);
 
         paddingBB = ByteBuffer.wrap(paddingBuffer);
         logger.fine("DatagramEncrypter created");
@@ -87,7 +82,7 @@ public class DatagramEncrypter extends DatagramEncrytionBase {
 
         // Calculate the sha1 digest.
         sha1.reset();
-        sha1.update(macKey.getEncoded());
+        sha1.update(hmac_key);
         sha1.update(payloadBuffer);
 
         // Add the sha1 digest
@@ -130,6 +125,6 @@ public class DatagramEncrypter extends DatagramEncrytionBase {
     }
 
     public byte[] getHmac() {
-        return macKey.getEncoded();
+        return hmac_key;
     }
 }
