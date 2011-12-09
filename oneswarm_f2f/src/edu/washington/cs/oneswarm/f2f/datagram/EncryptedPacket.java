@@ -3,14 +3,13 @@ package edu.washington.cs.oneswarm.f2f.datagram;
 import java.nio.ByteBuffer;
 
 class EncryptedPacket {
-    public EncryptedPacket(long sequenceNumber, ByteBuffer payload) {
-        super();
+    public EncryptedPacket(long sequenceNumber) {
         this.sequenceNumber = sequenceNumber;
-        this.payload = payload;
     }
 
     final long sequenceNumber;
-    final ByteBuffer payload;
+    ByteBuffer payload;
+    int length;
 
     public long getSequenceNumber() {
         return sequenceNumber;
@@ -20,5 +19,9 @@ class EncryptedPacket {
     public String toString() {
         return "EncryptedPacket: sequence=" + sequenceNumber + " payload: " + payload.remaining()
                 + " bytes";
+    }
+
+    public int getLength() {
+        return length;
     }
 }

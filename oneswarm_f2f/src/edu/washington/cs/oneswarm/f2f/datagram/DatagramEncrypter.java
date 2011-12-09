@@ -6,6 +6,8 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.crypto.BadPaddingException;
@@ -19,12 +21,14 @@ import javax.crypto.spec.SecretKeySpec;
 public class DatagramEncrypter extends DatagramEncrytionBase {
     public final static Logger logger = Logger.getLogger(DatagramEncrypter.class.getName());
 
-    private long packetCount = 0;
+    private long ctrRoundCount = 0;
+    private final byte[] paddingBuffer = new byte[BLOCK_SIZE];
+    private final ByteBuffer paddingBB;
 
     public DatagramEncrypter() throws NoSuchAlgorithmException, NoSuchProviderException,
             NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
         SecureRandom random = new SecureRandom();
-        ivSpec = createCtrIvForAES(packetCount, random);
+        ivSpec = createCtrIvForAES(ctrRoundCount, random);
 
         // Create the encryption key and the cipher.
         key = createKeyForAES(AES_KEY_LENGTH, random);
@@ -36,47 +40,85 @@ public class DatagramEncrypter extends DatagramEncrytionBase {
         random.nextBytes(hmac_key);
         mac = Mac.getInstance(HMAC_ALGO);
         macKey = new SecretKeySpec(hmac_key, HMAC_ALGO);
-        logger.fine("DatagramEncrypter created");
-    }
-
-    public EncryptedPacket encrypt(ByteBuffer unencryptedPayload, ByteBuffer payloadBuffer)
-            throws ShortBufferException, IllegalBlockSizeException, BadPaddingException,
-            IllegalStateException, InvalidKeyException, InvalidAlgorithmParameterException {
-        return encrypt(new ByteBuffer[] { unencryptedPayload }, payloadBuffer);
-    }
-
-    public EncryptedPacket encrypt(ByteBuffer[] unencryptedPayload, ByteBuffer payloadBuffer)
-            throws ShortBufferException, IllegalBlockSizeException, BadPaddingException,
-            IllegalStateException, InvalidKeyException, InvalidAlgorithmParameterException {
-        packetCount++;
-        int inputBytes = 0;
-        // Update the iv
-        ivSpec = setSequenceNumber(packetCount, ivSpec.getIV());
-        cipher.init(Cipher.ENCRYPT_MODE, key, ivSpec);
         mac.init(macKey);
 
+        paddingBB = ByteBuffer.wrap(paddingBuffer);
+        logger.fine("DatagramEncrypter created");
+
+    }
+
+    public EncryptedPacket encrypt(ByteBuffer unencryptedPayload, byte[] destination)
+            throws ShortBufferException, IllegalBlockSizeException, BadPaddingException,
+            IllegalStateException, InvalidKeyException, InvalidAlgorithmParameterException {
+        return encrypt(new ByteBuffer[] { unencryptedPayload }, destination);
+    }
+
+    public EncryptedPacket encrypt(ByteBuffer[] unencryptedPayload, byte[] destination)
+            throws ShortBufferException, IllegalBlockSizeException, BadPaddingException,
+            IllegalStateException, InvalidKeyException, InvalidAlgorithmParameterException {
+
+        EncryptedPacket packet = new EncryptedPacket(ctrRoundCount);
+
+        ByteBuffer payloadBuffer = ByteBuffer.wrap(destination);
+
+        // Write the counter value for decoding the packet.
+        payloadBuffer.putLong(ctrRoundCount);
+        int packetLength = SEQUENCE_NUMBER_BYTES;
+
+        int inputBytes = 0;
+        // Encrypt the payload.
         for (int i = 0; i < unencryptedPayload.length; i++) {
-            ByteBuffer b = unencryptedPayload[i];
-            inputBytes += b.remaining();
-            // Save the read position so it can be reused for the mac
-            // computation.
-            int oldPos = b.position();
-            cipher.update(b, payloadBuffer);
-            // Restore the read position.
-            b.position(oldPos);
-            // Update the mac.
-            mac.update(b);
+            inputBytes += cipher.update(unencryptedPayload[i], payloadBuffer);
         }
-        // Add the mac to the end and encrypt.
-        cipher.update(ByteBuffer.wrap(mac.doFinal(), 0, mac.getMacLength()), payloadBuffer);
+
+        // Add the padding for this packet.
+        preparePaddingBB(inputBytes);
+
+        // Encrypt the padding into the packet.
+        inputBytes += cipher.update(paddingBB, payloadBuffer);
+
+        // Keep the counter field in sync with the aes internal counter.
+        assert (inputBytes % BLOCK_SIZE == 0);
+        ctrRoundCount += inputBytes / BLOCK_SIZE;
+        packetLength += inputBytes;
+
+        // Prepare the buffer for reading the current content.
+        payloadBuffer.flip();
+
+        // Calculate the sha1 digest.
+        sha1.reset();
+        sha1.update(macKey.getEncoded());
+        sha1.update(payloadBuffer);
+
+        // Add the sha1 digest
+        payloadBuffer.limit(packetLength + HMAC_SIZE);
+        payloadBuffer.position(packetLength);
+        byte[] digestBytes = sha1.getDigest();
+        payloadBuffer.put(digestBytes);
+        packetLength += digestBytes.length;
 
         // Prepare for reading.
-        payloadBuffer.flip();
-        EncryptedPacket packet = new EncryptedPacket(packetCount, payloadBuffer);
+        payloadBuffer.rewind();
+        packet.payload = payloadBuffer;
+        packet.length = packetLength;
 
-        logger.finest(String.format("Packet encrypted, in_bytes=%d, out_bytes=%d, packetnum=%d",
-                inputBytes, payloadBuffer.remaining(), packetCount));
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.finest(String.format(
+                    "Packet encrypted, in_bytes=%d, out_bytes=%d, packetnum=%d", inputBytes,
+                    payloadBuffer.remaining(), packet.getSequenceNumber()));
+        }
+
         return packet;
+    }
+
+    private void preparePaddingBB(int inputBytes) {
+        byte paddingLen = (byte) (BLOCK_SIZE - inputBytes % BLOCK_SIZE);
+        if (paddingLen == 0) {
+            paddingLen = BLOCK_SIZE;
+        }
+        Arrays.fill(paddingBuffer, 0, paddingLen, paddingLen);
+        paddingBB.clear();
+        paddingBB.limit(paddingLen);
     }
 
     public byte[] getKey() {

@@ -21,7 +21,6 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDatagramOk;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessageFactory;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
-import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage;
 
 /**
  * Connection used in parallel to the standard SSL connection between 2 friends.
@@ -117,6 +116,8 @@ public class DatagramConnection {
 
     private final ByteBuffer typeBuffer;
 
+    private final byte[] outgoingPacketBuf = new byte[2048];
+
     public DatagramConnection(DatagramConnectionManager manager, FriendConnection friendConnection)
             throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException,
             NoSuchPaddingException, InvalidAlgorithmParameterException {
@@ -179,9 +180,8 @@ public class DatagramConnection {
                 return false;
             }
             try {
-                DirectByteBuffer decryptBuffer = DirectByteBufferPool.getBuffer(AL,
-                        2 * DataMessage.MAX_PAYLOAD_SIZE);
                 byte[] data = packet.getData();
+                DirectByteBuffer decryptBuffer = DirectByteBufferPool.getBuffer(AL, data.length);
 
                 if (!decrypter.decrypt(data, packet.getOffset(), packet.getLength(),
                         decryptBuffer.getBuffer(AL))) {
@@ -265,31 +265,18 @@ public class DatagramConnection {
                     size += bb.remaining();
                 }
 
-                // Allocate the byte[] to be used by the udp packet.
-                // Add room for 8 byte sequence number and 20 byte HMAC.
-                byte[] encryptedBuf = new byte[size + 8 + DatagramEncrypter.HMAC_KEY_LENGTH];
-                logger.finest("encrypting " + size + " bytes, total message size="
-                        + encryptedBuf.length);
+                logger.finest("encrypting " + size + " bytes");
 
-                // Wrap in a ByteBuffer for convenience.
-                ByteBuffer encryptedBB = ByteBuffer.wrap(encryptedBuf);
-
-                // Set position to 8 to make room for the sequence number.
-                encryptedBB.position(8);
                 // Encrypt the serialized payload into the payload buffer.
-                EncryptedPacket encrypted = encrypter.encrypt(unencryptedPayload, encryptedBB);
+                EncryptedPacket encrypted = encrypter
+                        .encrypt(unencryptedPayload, outgoingPacketBuf);
 
                 // Return the incoming message buffers to the pool.
                 message.destroy();
 
-                // Set the position back to 0 before writing the sequence
-                // number.
-                encryptedBB.position(0);
-                encryptedBB.putLong(encrypted.getSequenceNumber());
-
                 // Create and send the packet.
-                DatagramPacket packet = new DatagramPacket(encryptedBuf, 0, encryptedBuf.length,
-                        friendConnection.getRemoteIp(), remotePort);
+                DatagramPacket packet = new DatagramPacket(outgoingPacketBuf, 0,
+                        encrypted.getLength(), friendConnection.getRemoteIp(), remotePort);
                 manager.send(packet);
             } catch (Exception e) {
                 e.printStackTrace();

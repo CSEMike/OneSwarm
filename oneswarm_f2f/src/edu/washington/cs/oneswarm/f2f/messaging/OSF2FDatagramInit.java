@@ -29,7 +29,7 @@ public class OSF2FDatagramInit implements OSF2FMessage {
     private String description;
     private DirectByteBuffer buffer;
     private final static int MESSAGE_LENGTH = DatagramEncrytionBase.HMAC_KEY_LENGTH + 2
-            * (DatagramEncrytionBase.AES_KEY_LENGTH / 8) + 4;
+            * DatagramEncrytionBase.BLOCK_SIZE + 4;
 
     private final byte[] encryptionKey;
     private final byte[] iv;
@@ -123,10 +123,10 @@ public class OSF2FDatagramInit implements OSF2FMessage {
             throw new MessageException("[" + getID() + "] decode error: payload.remaining["
                     + data.remaining(DirectByteBuffer.SS_MSG) + "] != " + MESSAGE_LENGTH);
         }
-        byte[] eKey = new byte[DatagramEncrytionBase.AES_KEY_LENGTH / 8];
+        byte[] eKey = new byte[DatagramEncrytionBase.BLOCK_SIZE];
         data.get(SS_MSG, eKey);
 
-        byte[] initVector = new byte[DatagramEncrytionBase.AES_KEY_LENGTH / 8];
+        byte[] initVector = new byte[DatagramEncrytionBase.BLOCK_SIZE];
         data.get(SS_MSG, initVector);
 
         byte[] hKey = new byte[DatagramEncrytionBase.HMAC_KEY_LENGTH];

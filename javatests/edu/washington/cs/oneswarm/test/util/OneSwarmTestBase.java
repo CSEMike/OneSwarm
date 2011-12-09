@@ -1,6 +1,7 @@
 package edu.washington.cs.oneswarm.test.util;
 
 import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -12,7 +13,10 @@ public class OneSwarmTestBase {
         ConsoleHandler handler = new ConsoleHandler();
         handler.setFormatter(new ConciseLogFormatterWithTime());
         handler.setLevel(Level.ALL);
-        // logger.addHandler(handler);
+        for (Handler h : logger.getHandlers()) {
+            logger.removeHandler(h);
+        }
+        logger.addHandler(handler);
 
     }
 
@@ -29,6 +33,11 @@ public class OneSwarmTestBase {
     protected void logFine(Logger logger) {
         enableLogging(logger);
         logger.setLevel(Level.FINE);
+    }
+
+    protected void logInfo(Logger logger) {
+        enableLogging(logger);
+        logger.setLevel(Level.INFO);
     }
 
 }
