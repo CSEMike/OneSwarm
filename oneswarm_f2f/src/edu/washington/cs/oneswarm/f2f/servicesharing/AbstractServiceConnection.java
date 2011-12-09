@@ -11,6 +11,7 @@ import org.gudy.azureus2.core3.util.DirectByteBuffer;
 
 import com.aelitis.azureus.core.networkmanager.IncomingMessageQueue.MessageQueueListener;
 import com.aelitis.azureus.core.networkmanager.NetworkManager;
+import com.aelitis.azureus.core.networkmanager.impl.RateHandler;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 
 import edu.washington.cs.oneswarm.f2f.Friend;
@@ -74,7 +75,9 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
     @Override
     public void close(String reason) {
-        for (ServiceChannelEndpoint conn : this.connections) {
+        ServiceChannelEndpoint[] channels = this.connections.toArray(new ServiceChannelEndpoint[0]);
+        this.connections.clear();
+        for (ServiceChannelEndpoint conn : channels) {
             conn.close(reason);
         }
 
@@ -89,8 +92,6 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         synchronized (bufferedNetworkMessages) {
             bufferedNetworkMessages.clear();
         }
-
-        this.connections.clear();
     }
 
     @Override
@@ -297,6 +298,10 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     abstract void writeMessageToServiceConnection();
 
     void removeChannel(ServiceChannelEndpoint channel) {
+        if (!this.connections.contains(channel)) {
+            return;
+        }
+
         // TODO(willscott): Get retransmission working.
         if (mmt.hasOutstanding(channel)) {
             synchronized (bufferedNetworkMessages) {
@@ -307,8 +312,21 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         mmt.removeChannel(channel);
         this.connections.remove(channel);
     }
+
+    private int getAvailableBytes() {
+        int response = 0;
+        synchronized (this.connections) {
+            for (ServiceChannelEndpoint c : connections) {
+                if (!c.isStarted() && !c.isOutgoing()) {
+                    continue;
+                }
+                response += Math.max(CHANNEL_BUFFER - c.getOutstanding(), 0);
+            }
+        }
+        return response;
+    }
     
-    void routeMessageToChannel(DirectByteBuffer msg) {
+    boolean routeMessageToChannel(DirectByteBuffer msg) {
         // logger.info("ASC routing service message to a channel.");
         ServiceChannelEndpoint channel = null;
         if (policy == SCPolicy.RANDOM) {
@@ -337,42 +355,36 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             }
         } else {
             synchronized (this.connections) {
-            for(ServiceChannelEndpoint c : connections) {
-                // Don't allow questionable paths to be opened by the server.
-                if (!c.isStarted() && !c.isOutgoing()) {
-                    continue;
-                }
-                if (channel == null) {
-                    channel = c;
-                    continue;
-                }
-                if (!c.isStarted() && channel.isStarted()) {
-                    if (channel.getOutstanding() > CHANNEL_BUFFER) {
-                        channel = c;
+                for (ServiceChannelEndpoint c : connections) {
+                    // Don't allow questionable paths to be opened by the
+                    // server.
+                    if (!c.isStarted() && !c.isOutgoing()) {
+                        continue;
                     }
-                    continue;
-                } else if (!c.isStarted() && !channel.isStarted()) {
-                    continue;
-                } else if (c.isStarted() && !channel.isStarted()) {
-                    if (c.getOutstanding() < CHANNEL_BUFFER) {
-                        channel = c;
+
+                    // Don't allow full paths to get greedy.
+                    if (c.isStarted() && c.getOutstanding() > CHANNEL_BUFFER) {
+                        continue;
                     }
-                    continue;
-                } else if (c.isStarted() && channel.isStarted()) {
-                    if (c.getBytesOut() / c.getAge() > channel.getBytesOut() / channel.getAge()
-                            && c.getOutstanding() < CHANNEL_BUFFER) {
+
+                    if (channel == null) {
                         channel = c;
-                    } else if (channel.getOutstanding() > CHANNEL_BUFFER
-                            && c.getOutstanding() < channel.getOutstanding()) {
-                        channel = c;
+                        continue;
+                    }
+
+                    if (c.isStarted()) {
+                        if (!channel.isStarted()) {
+                            channel = c;
+                        } else if (c.getBytesOut() / c.getAge() > channel.getBytesOut() / channel.getAge()) {
+                            channel = c;
+                        }
                     }
                 }
-            }
             }
         }
         if (channel == null) {
-            logger.warning("No channel selected by policy.  data lost.");
-            return;
+            logger.warning("not accepting more data from client, no available channel.");
+            return false;
         }
         logger.warning("channel status:" + channel.getBytesIn() + "/" + channel.getBytesOut()
                 + "; " + channel.getDownloadRate() + " / " + channel.getUploadRate() + "; "
@@ -380,10 +392,15 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         if (!channel.isStarted()) {
             logger.fine("Unstarted channel prioritized, msg buffered");
             synchronized (bufferedNetworkMessages) {
-                bufferedNetworkMessages.add(msg);
+                if (bufferedNetworkMessages.size() < SERVICE_MSG_BUFFER_SIZE) {
+                    bufferedNetworkMessages.add(msg);
+                    return true;
+                }
+                return false;
             }
         } else {
             channel.writeMessage(mmt.nextMsg(channel), msg);
+            return true;
         }
     }
     
@@ -404,8 +421,8 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                 return false;
             }
             DataMessage dataMessage = (DataMessage) message;
-            AbstractServiceConnection.this.routeMessageToChannel(dataMessage.transferPayload());
-            return true;
+            return AbstractServiceConnection.this.routeMessageToChannel(dataMessage
+                    .transferPayload());
         }
 
         @Override
@@ -425,5 +442,24 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                 routeMessageToChannel(bufferedNetworkMessages.pop());
             }
         }
+    }
+
+    protected class ServiceRateHandler implements RateHandler {
+        private final AbstractServiceConnection connection;
+
+        ServiceRateHandler(AbstractServiceConnection c) {
+            this.connection = c;
+        }
+
+        @Override
+        public int getCurrentNumBytesAllowed() {
+            return this.connection.getAvailableBytes();
+        }
+
+        @Override
+        public void bytesProcessed(int num_bytes_processed) {
+            return;
+        }
+
     }
 }

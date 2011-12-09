@@ -633,7 +633,7 @@ public class FriendConnection {
     public void enableFastMessageProcessing(boolean enable) {
         logger.finer(getDescription() + ": setting fast message processing=" + enable);
         if (enable) {
-            NetworkManager.getSingleton().upgradeTransferProcessing(connection);
+            NetworkManager.getSingleton().upgradeTransferProcessing(connection, null);
             connection.getOutgoingMessageQueue().registerQueueListener(
                     new LowLatencyMessageWriter(this.connection));
         } else {

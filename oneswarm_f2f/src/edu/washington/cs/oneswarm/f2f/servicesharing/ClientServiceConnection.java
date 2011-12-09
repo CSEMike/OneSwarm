@@ -8,6 +8,7 @@ import org.gudy.azureus2.core3.util.DirectByteBuffer;
 
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
+import com.aelitis.azureus.core.networkmanager.NetworkManager;
 
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
@@ -73,7 +74,8 @@ public class ClientServiceConnection extends AbstractServiceConnection {
                 clientConnection.getIncomingMessageQueue().registerQueueListener(
                         new ServerIncomingMessageListener());
                 clientConnection.startMessageProcessing();
-                clientConnection.enableEnhancedMessageProcessing(true);
+                NetworkManager.getSingleton().upgradeTransferProcessing(clientConnection,
+                        new ServiceRateHandler(ClientServiceConnection.this));
                 clientConnection.getOutgoingMessageQueue().registerQueueListener(
                         new LowLatencyMessageWriter(clientConnection));
                 clientConnected = true;

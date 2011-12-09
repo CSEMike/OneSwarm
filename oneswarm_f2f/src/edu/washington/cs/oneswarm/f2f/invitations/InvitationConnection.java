@@ -378,7 +378,7 @@ public class InvitationConnection {
     public void enableFastMessageProcessing(boolean enable) {
         logger.finer(this + ": setting fast message processing=" + enable);
         if (enable) {
-            NetworkManager.getSingleton().upgradeTransferProcessing(connection);
+            NetworkManager.getSingleton().upgradeTransferProcessing(connection, null);
         } else {
 
             // always enable this
