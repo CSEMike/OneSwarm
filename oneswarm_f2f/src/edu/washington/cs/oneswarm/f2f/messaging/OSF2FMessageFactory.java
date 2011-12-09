@@ -111,8 +111,10 @@ public class OSF2FMessageFactory {
                     new OSF2FChat(OSF2FChat.CURRENT_VERSION, null));
             MessageManager.getSingleton().registerMessageType(
                     new OSF2FDhtLocation(OSF2FDhtLocation.CURRENT_VERSION, null, null));
-            MessageManager.getSingleton().registerMessageType(
-                    new OSF2FDatagramInit(OSF2FDatagramInit.CURRENT_VERSION, null, null, null, 0));
+            MessageManager.getSingleton()
+                    .registerMessageType(
+                            new OSF2FDatagramInit(OSF2FDatagramInit.CURRENT_VERSION, 0, null, null,
+                                    null, 0));
             MessageManager.getSingleton().registerMessageType(new OSF2FDatagramOk());
 
         } catch (MessageException me) {

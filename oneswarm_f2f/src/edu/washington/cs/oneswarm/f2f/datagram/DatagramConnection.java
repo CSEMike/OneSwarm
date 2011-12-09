@@ -6,6 +6,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
 import javax.crypto.NoSuchPaddingException;
@@ -94,9 +95,9 @@ public class DatagramConnection {
 
     public final static Logger logger = Logger.getLogger(DatagramConnection.class.getName());
 
-    private final static byte SS = DirectByteBuffer.SS_MSG;
-
     private final static int MAX_UNACKED_KEEPALIVES = 10;
+
+    private final static byte SS = DirectByteBuffer.SS_MSG;
 
     private final long createdAt = System.currentTimeMillis();
 
@@ -109,14 +110,15 @@ public class DatagramConnection {
 
     private long lastPacketSent;
     private final DatagramConnectionManager manager;
+    private final byte[] outgoingPacketBuf = new byte[2048];
     private DatagramConnection.ReceiveState receiveState = ReceiveState.NEW;
+
     private int remotePort;
 
     private DatagramConnection.SendState sendState = SendState.NEW;
 
     private final ByteBuffer typeBuffer;
-
-    private final byte[] outgoingPacketBuf = new byte[2048];
+    private final DatagramSendThread sendThread;
 
     public DatagramConnection(DatagramConnectionManager manager, FriendConnection friendConnection)
             throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException,
@@ -125,12 +127,19 @@ public class DatagramConnection {
         this.encrypter = new DatagramEncrypter();
         this.manager = manager;
         this.typeBuffer = ByteBuffer.allocate(1);
+        sendThread = new DatagramSendThread();
+        sendThread.start();
     }
 
     public void close() {
         sendState = SendState.CLOSED;
         receiveState = ReceiveState.CLOSED;
         manager.deregister(this);
+        sendThread.interupt();
+    }
+
+    public long getAge() {
+        return System.currentTimeMillis() - createdAt;
     }
 
     public OSF2FDatagramInit createInitMessage() {
@@ -221,6 +230,10 @@ public class DatagramConnection {
         }
     }
 
+    public void sendMessage(OSF2FMessage message) {
+        sendThread.queueMessage(message);
+    }
+
     public void sendKeepAlive() {
         // We need to have received the remote init packet to be able to send.
         if (!(receiveState == ReceiveState.OK_SENT || receiveState == ReceiveState.ACTIVE)) {
@@ -238,47 +251,90 @@ public class DatagramConnection {
     }
 
     /**
-     * Send a message over this UDP connection.
+     * Sending enrypted udp packets is cpu intensive and potentially blocking.
+     * Each connection is sending
      * 
-     * @param message
+     * @author isdal
+     * 
      */
-    public void sendMessage(OSF2FMessage message) {
-        synchronized (encrypter) {
+    class DatagramSendThread implements Runnable {
+        private final LinkedBlockingQueue<OSF2FMessage> messageQueue;
+        private final Thread thread;
+
+        public DatagramSendThread() {
+            messageQueue = new LinkedBlockingQueue<OSF2FMessage>();
+            thread = new Thread(this);
+            thread.setName("DatagramSendThread-" + friendConnection.toString());
+            thread.setDaemon(true);
+        }
+
+        public void interupt() {
+            thread.interrupt();
+        }
+
+        public void start() {
+            thread.start();
+        }
+
+        public void queueMessage(OSF2FMessage message) {
+            messageQueue.add(message);
+        }
+
+        @Override
+        public void run() {
             try {
-                lastPacketSent = System.currentTimeMillis();
-                int size = 0;
-
-                // Write the message type and prepare for reading.
-                typeBuffer.clear();
-                typeBuffer.put((byte) message.getFeatureSubID());
-                typeBuffer.flip();
-                size += 1;
-
-                // Get the message data.
-                DirectByteBuffer[] data = message.getData();
-
-                // Collect the buffers in one array.
-                ByteBuffer[] unencryptedPayload = new ByteBuffer[data.length + 1];
-                unencryptedPayload[0] = typeBuffer;
-                for (int i = 0; i < data.length; i++) {
-                    ByteBuffer bb = data[i].getBuffer(SS);
-                    unencryptedPayload[i + 1] = bb;
-                    size += bb.remaining();
+                while (true) {
+                    OSF2FMessage message = messageQueue.take();
+                    sendMessage(message);
                 }
+            } catch (InterruptedException e) {
+                logger.fine("Datagram send thread closed: " + friendConnection.toString());
+            }
+        }
 
-                logger.finest("encrypting " + size + " bytes");
+        /**
+         * Send a message over this UDP connection.
+         * 
+         * @param message
+         */
+        private void sendMessage(OSF2FMessage message) {
+            try {
+                synchronized (encrypter) {
+                    lastPacketSent = System.currentTimeMillis();
+                    int size = 0;
 
-                // Encrypt the serialized payload into the payload buffer.
-                EncryptedPacket encrypted = encrypter
-                        .encrypt(unencryptedPayload, outgoingPacketBuf);
+                    // Write the message type and prepare for reading.
+                    typeBuffer.clear();
+                    typeBuffer.put((byte) message.getFeatureSubID());
+                    typeBuffer.flip();
+                    size += 1;
 
-                // Return the incoming message buffers to the pool.
-                message.destroy();
+                    // Get the message data.
+                    DirectByteBuffer[] data = message.getData();
 
-                // Create and send the packet.
-                DatagramPacket packet = new DatagramPacket(outgoingPacketBuf, 0,
-                        encrypted.getLength(), friendConnection.getRemoteIp(), remotePort);
-                manager.send(packet);
+                    // Collect the buffers in one array.
+                    ByteBuffer[] unencryptedPayload = new ByteBuffer[data.length + 1];
+                    unencryptedPayload[0] = typeBuffer;
+                    for (int i = 0; i < data.length; i++) {
+                        ByteBuffer bb = data[i].getBuffer(SS);
+                        unencryptedPayload[i + 1] = bb;
+                        size += bb.remaining();
+                    }
+
+                    logger.finest("encrypting " + size + " bytes");
+
+                    // Encrypt the serialized payload into the payload buffer.
+                    EncryptedPacket encrypted = encrypter.encrypt(unencryptedPayload,
+                            outgoingPacketBuf);
+
+                    // Return the incoming message buffers to the pool.
+                    message.destroy();
+
+                    // Create and send the packet.
+                    DatagramPacket packet = new DatagramPacket(outgoingPacketBuf, 0,
+                            encrypted.getLength(), friendConnection.getRemoteIp(), remotePort);
+                    manager.send(packet);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 sendState = SendState.CLOSED;

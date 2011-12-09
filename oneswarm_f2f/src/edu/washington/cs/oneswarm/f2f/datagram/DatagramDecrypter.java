@@ -10,7 +10,6 @@ import java.util.logging.Logger;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.Mac;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 import javax.crypto.spec.IvParameterSpec;
@@ -29,9 +28,7 @@ public class DatagramDecrypter extends DatagramEncrytionBase {
         cipher = Cipher.getInstance(ENCR_ALGO);
         cipher.init(Cipher.DECRYPT_MODE, key, ivSpec);
 
-        mac = Mac.getInstance(HMAC_ALGO);
-        macKey = new SecretKeySpec(hmacKey, HMAC_ALGO);
-        mac.init(macKey);
+        this.hmac_key = hmacKey;
 
         logger.finest("DatagramDecrypter created");
     }
@@ -49,7 +46,7 @@ public class DatagramDecrypter extends DatagramEncrytionBase {
 
         // Check the sha1 digest.
         sha1.reset();
-        sha1.update(macKey.getEncoded());
+        sha1.update(hmac_key);
         sha1.update(sequnceNumber);
         sha1.update(payload);
         byte[] caclulatedDigest = sha1.getDigest();

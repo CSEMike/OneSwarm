@@ -9,8 +9,6 @@ import java.util.Random;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.gudy.azureus2.core3.util.Base32;
@@ -37,7 +35,7 @@ public class DatagramEncryptionTest extends OneSwarmTestBase {
                 + input.getBytes().length);
         DatagramEncrypter encr = new DatagramEncrypter();
         DatagramDecrypter decr = new DatagramDecrypter(encr.key.getEncoded(), encr.ivSpec.getIV(),
-                encr.macKey.getEncoded());
+                encr.hmac_key);
 
         EncryptedPacket p = encr.encrypt(ByteBuffer.wrap(input.getBytes()), payloadBuffer);
         System.out.println("encrypted: " + p.sequenceNumber + " " + p.length + " bytes ");
@@ -60,7 +58,7 @@ public class DatagramEncryptionTest extends OneSwarmTestBase {
         System.out.println("input : " + input + "\t" + new String(Base32.encode(input.getBytes())));
         DatagramEncrypter encr = new DatagramEncrypter();
         DatagramDecrypter decr = new DatagramDecrypter(encr.key.getEncoded(), encr.ivSpec.getIV(),
-                encr.macKey.getEncoded());
+                encr.hmac_key);
 
         for (int i = 0; i < 4; i++) {
             EncryptedPacket p = encr.encrypt(ByteBuffer.wrap(input.getBytes()), payloadBuffer);
@@ -84,7 +82,7 @@ public class DatagramEncryptionTest extends OneSwarmTestBase {
     public void testDamagedPayload() throws Exception {
         DatagramEncrypter encr = new DatagramEncrypter();
         DatagramDecrypter decr = new DatagramDecrypter(encr.key.getEncoded(), encr.ivSpec.getIV(),
-                encr.macKey.getEncoded());
+                encr.hmac_key);
 
         byte[] packet1Buffer = new byte[1500];
         EncryptedPacket packet1 = encr
@@ -107,7 +105,7 @@ public class DatagramEncryptionTest extends OneSwarmTestBase {
 
         DatagramEncrypter encr = new DatagramEncrypter();
         DatagramDecrypter decr = new DatagramDecrypter(encr.key.getEncoded(), encr.ivSpec.getIV(),
-                encr.macKey.getEncoded());
+                encr.hmac_key);
 
         System.out.println("===doing size test===");
         Random random = new Random(12345);
@@ -137,7 +135,7 @@ public class DatagramEncryptionTest extends OneSwarmTestBase {
 
         DatagramEncrypter encr = new DatagramEncrypter();
         DatagramDecrypter decr = new DatagramDecrypter(encr.key.getEncoded(), encr.ivSpec.getIV(),
-                encr.macKey.getEncoded());
+                encr.hmac_key);
 
         System.out.println("===doing rand test===");
         Random random = new Random(12345);
@@ -155,7 +153,7 @@ public class DatagramEncryptionTest extends OneSwarmTestBase {
     public void testOutOfOrderDrop() throws Exception {
         DatagramEncrypter encr = new DatagramEncrypter();
         DatagramDecrypter decr = new DatagramDecrypter(encr.key.getEncoded(), encr.ivSpec.getIV(),
-                encr.macKey.getEncoded());
+                encr.hmac_key);
 
         // // Encrypt packet 1
         byte[] packet1Buffer = new byte[1500];
@@ -202,7 +200,7 @@ public class DatagramEncryptionTest extends OneSwarmTestBase {
 
         DatagramEncrypter encr = new DatagramEncrypter();
         DatagramDecrypter decr = new DatagramDecrypter(encr.key.getEncoded(), encr.ivSpec.getIV(),
-                encr.macKey.getEncoded());
+                encr.hmac_key);
 
         System.out.println("===doing perf test===");
         long time = System.currentTimeMillis();
@@ -297,8 +295,6 @@ public class DatagramEncryptionTest extends OneSwarmTestBase {
             // Create the mac key and mac
             byte[] hmac_key = new byte[HMAC_KEY_LENGTH];
             random.nextBytes(hmac_key);
-            mac = Mac.getInstance(HMAC_ALGO);
-            macKey = new SecretKeySpec(hmac_key, HMAC_ALGO);
         }
 
         public String encrypt(byte[] data) throws IllegalBlockSizeException, BadPaddingException {

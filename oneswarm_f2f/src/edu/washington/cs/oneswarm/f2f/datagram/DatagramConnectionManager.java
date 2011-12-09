@@ -84,14 +84,8 @@ public class DatagramConnectionManager extends CoreWaiter {
         connections.put(key, connection);
     }
 
-    void send(DatagramPacket packet) {
-        try {
-            // logger.finest("Sending packet: " + packet);
-            socket.send(packet);
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+    void send(DatagramPacket packet) throws IOException {
+        socket.send(packet);
     }
 
     void deregister(DatagramConnection conn) {
