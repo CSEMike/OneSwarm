@@ -460,7 +460,7 @@ public class FriendConnection {
         }
 
         for (Integer key : timedOutIds) {
-            overlayTransports.get(key).closeConnectionClosed("channel timed out");
+            overlayTransports.get(key).closeConnectionClosed(this, "channel timed out");
         }
     }
 
@@ -499,7 +499,7 @@ public class FriendConnection {
         List<EndpointInterface> transports = new LinkedList<EndpointInterface>(
                 overlayTransports.values());
         for (EndpointInterface overlayTransport : transports) {
-            overlayTransport.closeConnectionClosed("friend closed connection");
+            overlayTransport.closeConnectionClosed(this, "friend closed connection");
         }
 
         // and all forwards

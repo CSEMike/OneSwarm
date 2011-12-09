@@ -70,15 +70,15 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
 
     private int posInHandshake = 0;
 
-    private List<EventWaiter> readWaiter = new LinkedList<EventWaiter>();
+    private final List<EventWaiter> readWaiter = new LinkedList<EventWaiter>();
 
-    private byte[] remoteHandshakeInfoHashBytes = new byte[20];
+    private final byte[] remoteHandshakeInfoHashBytes = new byte[20];
 
     private volatile boolean remoteHandshakeRecieved;
 
     private int transport_mode;
 
-    private List<EventWaiter> writeWaiter = new LinkedList<EventWaiter>();
+    private final List<EventWaiter> writeWaiter = new LinkedList<EventWaiter>();
 
     public OverlayTransport(FriendConnection connection, byte[] infohash, int pathID,
             boolean outgoing, long overlayDelayMs, OSF2FHashSearch search,
@@ -95,6 +95,7 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
         // not used.
     }
 
+    @Override
     public void connectedInbound() {
         throw new RuntimeException("not implemented");
     }
@@ -103,6 +104,7 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
         throw new RuntimeException("not implemented");
     }
 
+    @Override
     public void connectOutbound(ByteBuffer initial_data, ConnectListener listener,
             boolean high_priority) {
         throw new RuntimeException("not implemented");
@@ -116,7 +118,7 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
 
         if (!allowed) {
             Debug.out("denied request to create a peer");
-            this.closeConnectionClosed("access denied when creating overlay");
+            this.closeConnectionClosed(null, "access denied when creating overlay");
             return;
         }
 
@@ -138,6 +140,7 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
         pt.setData(OSF2FAzSwtUi.KEY_OVERLAY_TRANSPORT, this);
     }
 
+    @Override
     protected void destroyBufferedMessages() {
         synchronized (bufferedMessages) {
             while (bufferedMessages.size() > 0) {
@@ -158,18 +161,22 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
         return peerId;
     }
 
+    @Override
     public String getEncryption() {
         return ("FriendToFriend over SSL");
     }
 
+    @Override
     public int getMssSize() {
         return OSF2FMessage.MAX_MESSAGE_SIZE;
     }
 
+    @Override
     public TransportEndpoint getTransportEndpoint() {
 
         return new TransportEndpoint() {
 
+            @Override
             public ProtocolEndpoint getProtocolEndpoint() {
 
                 final ProtocolEndpoint p = new OverlayProtocolEndpoint();
@@ -179,10 +186,12 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
         };
     }
 
+    @Override
     public int getTransportMode() {
         return transport_mode;
     }
 
+    @Override
     protected void handleDelayedOverlayMessage(final OSF2FChannelDataMsg msg) {
         synchronized (bufferedMessages) {
             bufferedMessages.add(msg);
@@ -197,10 +206,12 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
         }
     }
 
+    @Override
     public boolean isEncrypted() {
         return (true);
     }
 
+    @Override
     public boolean isReadyForRead(EventWaiter waiter) {
         // we need the layers above to get the exception
         if (closed) {
@@ -221,6 +232,7 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
         }
     }
 
+    @Override
     public boolean isReadyForWrite(final EventWaiter waiter) {
 
         // if this is an incoming connection, we to wait
@@ -236,6 +248,7 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
             return false;
         }
         if (!friendConnection.isReadyForWrite(new WriteQueueWaiter() {
+            @Override
             public void readyForWrite() {
                 if (waiter != null) {
                     logger.finest(getDescription() + ": connection ready, notifying waiter");
@@ -250,6 +263,7 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
         return true;
     }
 
+    @Override
     public boolean isTCP() {
         return true;
     }
@@ -386,6 +400,7 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
         return copied;
     }
 
+    @Override
     public long read(ByteBuffer[] buffers, int array_offset, int length) throws IOException {
 
         int totalRead = 0;
@@ -430,6 +445,7 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
         return totalRead;
     }
 
+    @Override
     public void setAlreadyRead(ByteBuffer bytes_already_read) {
         if (data_already_read != null) {
             Debug.out("push back already performed");
@@ -439,18 +455,22 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
         }
     }
 
+    @Override
     public void setReadyForRead() {
         throw new RuntimeException("not implemented");
     }
 
+    @Override
     public void setTrace(boolean on) {
         throw new RuntimeException("not implemented");
     }
 
+    @Override
     public void setTransportMode(int mode) {
         this.transport_mode = mode;
     }
 
+    @Override
     public void start() {
 
         logger.fine("Starting overlay transport");
@@ -465,12 +485,14 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
 
     private void startDownloadManager(final DownloadManager downloadManager) {
         DownloadManagerStarter.startDownload(downloadManager, new DownloadManagerStartListener() {
+            @Override
             public void downloadStarted() {
                 createPeerTransport(downloadManager);
             }
         });
     }
 
+    @Override
     public long write(ByteBuffer[] buffers, int array_offset, int length) throws IOException {
         if (closed) {
             // when closed just ignore the write requests
@@ -556,6 +578,7 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
             connectionEndpoint = new ConnectionEndpoint(getRandomAddr());
         }
 
+        @Override
         public Transport connectOutbound(boolean connect_with_crypto, boolean allow_fallback,
                 byte[][] shared_secrets, ByteBuffer initial_data, boolean high_priority,
                 ConnectListener listener) {
@@ -569,18 +592,22 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
             throw new RuntimeException("not implemented");
         }
 
+        @Override
         public ConnectionEndpoint getConnectionEndpoint() {
             return connectionEndpoint;
         }
 
+        @Override
         public String getDescription() {
             return "PROTOCOL_TCP";
         }
 
+        @Override
         public int getType() {
             return PROTOCOL_TCP;
         }
 
+        @Override
         public void setConnectionEndpoint(ConnectionEndpoint ce) {
             this.connectionEndpoint = ce;
         }

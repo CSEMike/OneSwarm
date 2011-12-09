@@ -48,11 +48,11 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
     public AbstractServiceConnection() {
         	String channelScheme = COConfigurationManager.getStringParameter(SERVICE_PRIORITY_KEY);
-        	if (channelScheme == "roundrobin") {
+        if (channelScheme.equals("roundrobin")) {
             policy = SCPolicy.ROUNDROBIN;
-        	} else if (channelScheme == "random") {
+        } else if (channelScheme.equals("random")) {
             policy = SCPolicy.RANDOM;
-        	} else {
+        } else {
             policy = SCPolicy.WEIGHTED;
         }
         this.serviceSequenceNumber = 0;
@@ -95,27 +95,33 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
     @Override
     public void closeChannelReset() {
-        for (ServiceChannelEndpoint conn : this.connections) {
+        ServiceChannelEndpoint[] channels = this.connections.toArray(new ServiceChannelEndpoint[0]);
+        for (ServiceChannelEndpoint conn : channels) {
+            this.removeChannel(conn);
             conn.closeChannelReset();
         }
-        this.connections.clear();
     }
 
     @Override
-    public void closeConnectionClosed(String reason) {
-        for (ServiceChannelEndpoint conn : this.connections) {
-            logger.info("ASC closed, channel " + conn.getChannelId()[0] + " had total "
-                    + conn.getBytesOut() + "/" + conn.getBytesIn());
-            conn.closeConnectionClosed(reason);
+    public void closeConnectionClosed(FriendConnection f, String reason) {
+        ServiceChannelEndpoint[] channels = this.connections.toArray(new ServiceChannelEndpoint[0]);
+        for (ServiceChannelEndpoint conn : channels) {
+            if (f == null || conn.getRemoteFriend() == f.getRemoteFriend()) {
+                logger.info("Service channel " + conn.getChannelId()[0] + " closed with total "
+                        + conn.getBytesOut() + "/" + conn.getBytesIn());
+                this.removeChannel(conn);
+                conn.closeConnectionClosed(f, reason);
+            }
         }
-        this.connections.clear();
     }
 
     @Override
     public long getAge() {
         long time = 0;
-        for (ServiceChannelEndpoint conn : this.connections) {
-            time = Math.max(time, conn.getAge());
+        synchronized (this.connections) {
+            for (ServiceChannelEndpoint conn : this.connections) {
+                time = Math.max(time, conn.getAge());
+            }
         }
         return time;
     }
@@ -131,8 +137,10 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     @Override
     public long getBytesIn() {
         long in = 0;
-        for (ServiceChannelEndpoint conn : this.connections) {
-            in += conn.getBytesIn();
+        synchronized (this.connections) {
+            for (ServiceChannelEndpoint conn : this.connections) {
+                in += conn.getBytesIn();
+            }
         }
         return in;
     }
@@ -140,28 +148,36 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     @Override
     public long getBytesOut() {
         long out = 0;
-        for (ServiceChannelEndpoint conn : this.connections) {
-            out += conn.getBytesOut();
+        synchronized (this.connections) {
+            for (ServiceChannelEndpoint conn : this.connections) {
+                out += conn.getBytesOut();
+            }
         }
         return out;
     }
 
     @Override
     public int[] getChannelId() {
-        int[] channels = new int[this.connections.size()];
-        int i = 0;
-        for (ServiceChannelEndpoint conn : this.connections) {
-            channels[i++] = conn.getChannelId()[0];
+        int[] channels;
+        synchronized (this.connections) {
+            channels = new int[this.connections.size()];
+            int i = 0;
+            for (ServiceChannelEndpoint conn : this.connections) {
+                channels[i++] = conn.getChannelId()[0];
+            }
         }
         return channels;
     }
 
     @Override
     public int[] getPathID() {
-        int[] paths = new int[this.connections.size()];
-        int i = 0;
-        for (ServiceChannelEndpoint conn : this.connections) {
-            paths[i++] = conn.getPathID()[0];
+        int[] paths;
+        synchronized (this.connections) {
+            paths = new int[this.connections.size()];
+            int i = 0;
+            for (ServiceChannelEndpoint conn : this.connections) {
+                paths[i++] = conn.getPathID()[0];
+            }
         }
         return paths;
     }
@@ -169,8 +185,10 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     @Override
     public int getDownloadRate() {
         int rate = 0;
-        for (ServiceChannelEndpoint conn : this.connections) {
-            rate += conn.getDownloadRate();
+        synchronized (this.connections) {
+            for (ServiceChannelEndpoint conn : this.connections) {
+                rate += conn.getDownloadRate();
+            }
         }
         return rate;
     }
@@ -178,8 +196,10 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     @Override
     public int getUploadRate() {
         int rate = 0;
-        for (ServiceChannelEndpoint conn : this.connections) {
-            rate += conn.getUploadRate();
+        synchronized (this.connections) {
+            for (ServiceChannelEndpoint conn : this.connections) {
+                rate += conn.getUploadRate();
+            }
         }
         return rate;
     }
@@ -187,26 +207,32 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     @Override
     public long getLastMsgTime() {
         long time = 0;
-        for (ServiceChannelEndpoint conn : this.connections) {
-            time = Math.max(time, conn.getLastMsgTime());
+        synchronized (this.connections) {
+            for (ServiceChannelEndpoint conn : this.connections) {
+                time = Math.max(time, conn.getLastMsgTime());
+            }
         }
         return time;
     }
 
     @Override
     public Friend getRemoteFriend() {
-        for (ServiceChannelEndpoint conn : this.connections) {
-            if (conn.isStarted())
-                return conn.getRemoteFriend();
+        synchronized (this.connections) {
+            for (ServiceChannelEndpoint conn : this.connections) {
+                if (conn.isStarted())
+                    return conn.getRemoteFriend();
+            }
         }
         return null;
     }
 
     @Override
     public String getRemoteIP() {
-        for (ServiceChannelEndpoint conn : this.connections) {
-            if (conn.isStarted())
-                return conn.getRemoteIP();
+        synchronized (this.connections) {
+            for (ServiceChannelEndpoint conn : this.connections) {
+                if (conn.isStarted())
+                    return conn.getRemoteIP();
+            }
         }
         return null;
     }
@@ -214,27 +240,33 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     @Override
     public void incomingOverlayMsg(OSF2FChannelDataMsg msg) {
         int channelId = msg.getChannelId();
-        for (ServiceChannelEndpoint conn : this.connections) {
-            if (conn.getChannelId()[0] == channelId) {
-                conn.incomingOverlayMsg(msg);
+        synchronized (this.connections) {
+            for (ServiceChannelEndpoint conn : this.connections) {
+                if (conn.getChannelId()[0] == channelId) {
+                    conn.incomingOverlayMsg(msg);
+                }
             }
         }
     }
 
     @Override
     public boolean isLANLocal() {
-        for (ServiceChannelEndpoint conn : this.connections) {
-            if (conn.isLANLocal())
-                return true;
+        synchronized (this.connections) {
+            for (ServiceChannelEndpoint conn : this.connections) {
+                if (conn.isLANLocal())
+                    return true;
+            }
         }
         return false;
     }
 
     @Override
     public boolean isTimedOut() {
-        for (ServiceChannelEndpoint conn : this.connections) {
-            if (!conn.isTimedOut())
-                return false;
+        synchronized (this.connections) {
+            for (ServiceChannelEndpoint conn : this.connections) {
+                if (!conn.isTimedOut())
+                    return false;
+            }
         }
         return true;
     }
@@ -251,9 +283,11 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             }
         }
         // Handle acknowledgments.
-        for (ServiceChannelEndpoint s : this.connections) {
-            if (s.getChannelId()[0] == message.getChannelId()) {
-                mmt.onAck(message, s);
+        synchronized (this.connections) {
+            for (ServiceChannelEndpoint s : this.connections) {
+                if (s.getChannelId()[0] == message.getChannelId()) {
+                    mmt.onAck(message, s);
+                }
             }
         }
 
@@ -279,8 +313,10 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         ServiceChannelEndpoint channel = null;
         if (policy == SCPolicy.RANDOM) {
             while (true) {
-                int id = (int) (Math.random() * connections.size());
-                channel = this.connections.get(id);
+                synchronized (this.connections) {
+                    int id = (int) (Math.random() * connections.size());
+                    channel = this.connections.get(id);
+                }
 
                 // Assume some channel is 'started'
                 if (!channel.isStarted() && !channel.isOutgoing()) {
@@ -300,6 +336,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                 break;
             }
         } else {
+            synchronized (this.connections) {
             for(ServiceChannelEndpoint c : connections) {
                 // Don't allow questionable paths to be opened by the server.
                 if (!c.isStarted() && !c.isOutgoing()) {
@@ -330,6 +367,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                         channel = c;
                     }
                 }
+            }
             }
         }
         if (channel == null) {
