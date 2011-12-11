@@ -75,6 +75,8 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
     @Override
     public void close(String reason) {
+        logger.info("Service Connection closed");
+
         ServiceChannelEndpoint[] channels = this.connections.toArray(new ServiceChannelEndpoint[0]);
         this.connections.clear();
         for (ServiceChannelEndpoint conn : channels) {
@@ -311,6 +313,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
         mmt.removeChannel(channel);
         this.connections.remove(channel);
+        channelReady(null);
     }
 
     private int getAvailableBytes() {
@@ -327,7 +330,6 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     }
     
     boolean routeMessageToChannel(DirectByteBuffer msg) {
-        // logger.info("ASC routing service message to a channel.");
         ServiceChannelEndpoint channel = null;
         if (policy == SCPolicy.RANDOM) {
             while (true) {
@@ -383,12 +385,10 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             }
         }
         if (channel == null) {
-            logger.warning("not accepting more data from client, no available channel.");
+            logger.fine("not accepting more data from client, no available channel.");
             return false;
         }
-        logger.warning("channel status:" + channel.getBytesIn() + "/" + channel.getBytesOut()
-                + "; " + channel.getDownloadRate() + " / " + channel.getUploadRate() + "; "
-                + channel.getOutstanding());
+
         if (!channel.isStarted()) {
             logger.fine("Unstarted channel prioritized, msg buffered");
             synchronized (bufferedNetworkMessages) {
@@ -431,15 +431,19 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     }
 
     public void channelReady(ServiceChannelEndpoint channel) {
-        if (!this.connections.contains(channel)) {
+        if (channel != null && !this.connections.contains(channel)) {
             logger.warning("Unregistered channel attempted to provide service transit.");
             return;
         }
 
-        // At least one message can be written, since a channel just indicated readyness.
         synchronized (bufferedNetworkMessages) {
-            while (bufferedNetworkMessages.size() > 0) {
+            int size = bufferedNetworkMessages.size();
+            while (size > 0) {
                 routeMessageToChannel(bufferedNetworkMessages.pop());
+                if (bufferedNetworkMessages.size() == size) {
+                    break;
+                }
+                size = bufferedNetworkMessages.size();
             }
         }
     }
