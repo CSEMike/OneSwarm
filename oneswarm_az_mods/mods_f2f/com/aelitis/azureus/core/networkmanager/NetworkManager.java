@@ -33,6 +33,7 @@ import org.gudy.azureus2.core3.util.Debug;
 import com.aelitis.azureus.core.AzureusCoreFactory;
 import com.aelitis.azureus.core.networkmanager.impl.IncomingConnectionManager;
 import com.aelitis.azureus.core.networkmanager.impl.RateControlledEntity;
+import com.aelitis.azureus.core.networkmanager.impl.RateHandler;
 import com.aelitis.azureus.core.networkmanager.impl.ReadController;
 import com.aelitis.azureus.core.networkmanager.impl.TransferProcessor;
 import com.aelitis.azureus.core.networkmanager.impl.TransportHelper;
@@ -98,7 +99,8 @@ public class NetworkManager {
   										"Use Request Limiting"},
   										
     		new ParameterListener()	{
-    			 public void  parameterChanged(	String ignore ) {
+    			 @Override
+                public void  parameterChanged(	String ignore ) {
     				 REQUIRE_CRYPTO_HANDSHAKE				= COConfigurationManager.getBooleanParameter("network.transport.encrypted.require");
     				 INCOMING_HANDSHAKE_FALLBACK_ALLOWED	= COConfigurationManager.getBooleanParameter("network.transport.encrypted.fallback.incoming");
     				 OUTGOING_HANDSHAKE_FALLBACK_ALLOWED	= COConfigurationManager.getBooleanParameter("network.transport.encrypted.fallback.outgoing");
@@ -121,7 +123,7 @@ public class NetworkManager {
     				 seeding_only_mode_allowed = COConfigurationManager.getBooleanParameter( "enable.seedingonly.upload.rate" );
     			
     				 
-    				 external_max_download_rate_bps = max_download_rate_bps = (int)(COConfigurationManager.getIntParameter( "Max Download Speed KBs" ) * 1024); // leave 5KiB/s room for the request limiting  
+    				 external_max_download_rate_bps = max_download_rate_bps = (COConfigurationManager.getIntParameter( "Max Download Speed KBs" ) * 1024); // leave 5KiB/s room for the request limiting  
     				 if( max_download_rate_bps < 1024 || max_download_rate_bps > UNLIMITED_RATE)
     					 max_download_rate_bps = UNLIMITED_RATE;
     				 else if(USE_REQUEST_LIMITING && FeatureAvailability.isRequestLimitingEnabled())
@@ -143,33 +145,41 @@ public class NetworkManager {
 
   
   private final TransferProcessor upload_processor = new TransferProcessor( TransferProcessor.TYPE_UPLOAD, new LimitedRateGroup(){
+    @Override
     public int getRateLimitBytesPerSecond() {  return max_upload_rate_bps;  }
   });
   private final TransferProcessor download_processor = new TransferProcessor( TransferProcessor.TYPE_DOWNLOAD, new LimitedRateGroup(){
+    @Override
     public int getRateLimitBytesPerSecond() {  return max_download_rate_bps;  }
   });
   
   
   private final TransferProcessor lan_upload_processor = new TransferProcessor( TransferProcessor.TYPE_UPLOAD, new LimitedRateGroup(){
+    @Override
     public int getRateLimitBytesPerSecond() {  return max_lan_upload_rate_bps;  }
   });
   private final TransferProcessor lan_download_processor = new TransferProcessor( TransferProcessor.TYPE_DOWNLOAD, new LimitedRateGroup(){
+    @Override
     public int getRateLimitBytesPerSecond() {  return max_lan_download_rate_bps;  }
   });
   
   //*************************************
   // added a overlay processor to handle overlay transports
   private final TransferProcessor overlay_upload_processor = new TransferProcessor( TransferProcessor.TYPE_UPLOAD, new LimitedRateGroup(){
+    @Override
     public int getRateLimitBytesPerSecond() {  return Math.round(0.96f * max_upload_rate_bps);  }
   });
   private final TransferProcessor overlay_download_processor = new TransferProcessor( TransferProcessor.TYPE_DOWNLOAD, new LimitedRateGroup(){
+    @Override
     public int getRateLimitBytesPerSecond() {  return Math.round(0.96f * max_download_rate_bps);  }
   });
   
   private final TransferProcessor lan_overlay_upload_processor = new TransferProcessor( TransferProcessor.TYPE_UPLOAD, new LimitedRateGroup(){
+    @Override
     public int getRateLimitBytesPerSecond() {  return Math.round(0.96f * max_lan_upload_rate_bps);  }
   });
   private final TransferProcessor lan_overlay_download_processor = new TransferProcessor( TransferProcessor.TYPE_DOWNLOAD, new LimitedRateGroup(){
+    @Override
     public int getRateLimitBytesPerSecond() {  return Math.round(0.96f * max_lan_download_rate_bps);  }
   });
   //*************************************
@@ -180,7 +190,7 @@ public class NetworkManager {
 	  return( lan_rate_enabled );
   }
   
-  private NetworkManagerStats	stats = new NetworkManagerStats();
+  private final NetworkManagerStats	stats = new NetworkManagerStats();
   
   
   private NetworkManager() {
@@ -261,12 +271,17 @@ public class NetworkManager {
 	HTTPNetworkManager.getSingleton();  
 	   
     AzureusCoreFactory.getSingleton().getGlobalManager().addListener( new GlobalManagerListener() {
-      public void downloadManagerAdded( DownloadManager dm ){}
-      public void downloadManagerRemoved( DownloadManager dm ){}
-      public void destroyInitiated(){}
-      public void destroyed(){}
+      @Override
+    public void downloadManagerAdded( DownloadManager dm ){}
+      @Override
+    public void downloadManagerRemoved( DownloadManager dm ){}
+      @Override
+    public void destroyInitiated(){}
+      @Override
+    public void destroyed(){}
 
-      public void seedingStatusChanged( boolean seeding_only ) {
+      @Override
+    public void seedingStatusChanged( boolean seeding_only ) {
         seeding_only_mode = seeding_only;
         refreshRates();
       }
@@ -309,12 +324,14 @@ public class NetworkManager {
 	final MessageStreamFactory 	factory )
   {
 	  IncomingConnectionManager.getSingleton().registerMatchBytes( matcher, new IncomingConnectionManager.MatchListener() {
-      public boolean
+      @Override
+    public boolean
       autoCryptoFallback()
       {
     	return( listener.autoCryptoFallback());
       }
-      public void connectionMatched( Transport	transport, Object routing_data ) {
+      @Override
+    public void connectionMatched( Transport	transport, Object routing_data ) {
         listener.connectionRouted( NetworkConnectionFactory.create( transport, factory.createEncoder(), factory.createDecoder() ), routing_data );
       }
     });
@@ -440,27 +457,34 @@ public class NetworkManager {
   }
   
   
-  /**
-   * Upgrade the given connection to high-speed network transfer handling.
-   * @param peer_connection to upgrade
-   */
-  public void upgradeTransferProcessing( NetworkConnectionBase peer_connection ) {
+    /**
+     * Upgrade the given connection to high-speed network transfer handling.
+     * 
+     * @param peer_connection
+     *            to upgrade
+     * @param overrideHandler
+     *            an additional rate handler for the connection.
+     * @param overrideHandler
+     *            TODO
+     */
+    public void upgradeTransferProcessing(NetworkConnectionBase peer_connection,
+            final RateHandler overrideHandler) {
   	// **********************************
   	if( overlay_upload_processor.isRegistered( peer_connection )) {
-  		overlay_upload_processor.upgradePeerConnection( peer_connection );
-  		overlay_download_processor.upgradePeerConnection( peer_connection );
+            overlay_upload_processor.upgradePeerConnection(peer_connection, overrideHandler);
+            overlay_download_processor.upgradePeerConnection(peer_connection, overrideHandler);
   	} else if( lan_overlay_upload_processor.isRegistered( peer_connection )) {
-  		lan_overlay_upload_processor.upgradePeerConnection( peer_connection );
-  		lan_overlay_download_processor.upgradePeerConnection( peer_connection );
+            lan_overlay_upload_processor.upgradePeerConnection(peer_connection, overrideHandler);
+            lan_overlay_download_processor.upgradePeerConnection(peer_connection, overrideHandler);
   	} else 
   	// **********************************
   	if( lan_upload_processor.isRegistered( peer_connection )) {
-  		lan_upload_processor.upgradePeerConnection( peer_connection );
-  		lan_download_processor.upgradePeerConnection( peer_connection );
+            lan_upload_processor.upgradePeerConnection(peer_connection, overrideHandler);
+            lan_download_processor.upgradePeerConnection(peer_connection, overrideHandler);
   	}
   	else if (upload_processor.isRegistered(peer_connection)){
-  		upload_processor.upgradePeerConnection( peer_connection );
-  		download_processor.upgradePeerConnection( peer_connection );
+            upload_processor.upgradePeerConnection(peer_connection, overrideHandler);
+            download_processor.upgradePeerConnection(peer_connection, overrideHandler);
   	} else {
 			// **********************************
 			System.err.println("tried to upgrade peer connection, but it is not registered!!!");

@@ -8,6 +8,7 @@ import org.gudy.azureus2.core3.util.DirectByteBuffer;
 
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
 import com.aelitis.azureus.core.networkmanager.NetworkConnection.ConnectionListener;
+import com.aelitis.azureus.core.networkmanager.NetworkManager;
 
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
@@ -30,9 +31,8 @@ public class ServerServiceConnection extends AbstractServiceConnection {
     @Override
     public void addChannel(FriendConnection channel,
             OSF2FHashSearch search, OSF2FHashSearchResp response) {
-    	logger.info("Server Service Connection channel added.");
-        this.connections.add(new ServiceChannelEndpoint(
-                this, channel, search, response, false));
+        this.connections.add(new ServiceChannelEndpoint(this, channel, search, response, false));
+        logger.info("Server Service Connection channel added.");
     }
 
     @Override
@@ -69,7 +69,8 @@ public class ServerServiceConnection extends AbstractServiceConnection {
             public void connectSuccess(ByteBuffer remaining_initial_data) {
                 logger.fine(ServerServiceConnection.this.getDescription() + " connected");
                 serverConnection.startMessageProcessing();
-                serverConnection.enableEnhancedMessageProcessing(true);
+                NetworkManager.getSingleton().upgradeTransferProcessing(serverConnection,
+                        new ServiceRateHandler(ServerServiceConnection.this));
                 serverConnection.getOutgoingMessageQueue().registerQueueListener(
                         new LowLatencyMessageWriter(serverConnection));
 

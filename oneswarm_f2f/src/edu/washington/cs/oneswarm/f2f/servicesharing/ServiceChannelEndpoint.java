@@ -5,6 +5,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
+import org.gudy.azureus2.core3.util.ReferenceCountedDirectByteBuffer;
 
 import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 
@@ -32,7 +33,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     public final static Logger logger = Logger.getLogger(ServiceChannelEndpoint.class.getName());
     private static final byte ss = 0;
     protected AbstractServiceConnection serviceAggregator;
-    protected final Hashtable<SequenceNumber, DirectByteBuffer> sentMessages;
+    protected final Hashtable<SequenceNumber, sentMessage> sentMessages;
     private int outstandingBytes;
 
     public ServiceChannelEndpoint(AbstractServiceConnection aggregator,
@@ -42,7 +43,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         logger.info("Service Channel Endpoint Created.");
         this.serviceAggregator = aggregator;
 
-        this.sentMessages = new Hashtable<SequenceNumber, DirectByteBuffer>();
+        this.sentMessages = new Hashtable<SequenceNumber, sentMessage>();
         this.outstandingBytes = 0;
 
         this.started = true;
@@ -57,18 +58,24 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
     @Override
     public void start() {
+        if (!this.outgoing) {
+            // TODO(willscott): allow server to open channels.
+        }
     }
 
     @Override
     public boolean isStarted() {
+        if (!this.outgoing) {
+            return this.getBytesIn() > 0;
+        }
         return friendConnection.isHandshakeReceived();
     }
 
     @Override
     protected void destroyBufferedMessages() {
         // No buffered messages to destroy.
-        for (DirectByteBuffer b : this.sentMessages.values()) {
-            b.returnToPool();
+        for (sentMessage b : this.sentMessages.values()) {
+            b.msg.returnToPool();
         }
         this.sentMessages.clear();
         this.outstandingBytes = 0;
@@ -82,21 +89,22 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     @Override
     protected void handleDelayedOverlayMessage(OSF2FChannelDataMsg msg) {
         if (logger.isLoggable(Level.FINEST)) {
-            logger.finest("incoming message: " + msg.getDescription());
+            // logger.finest("incoming message: " + msg.getDescription());
         }
 
         if (closed) {
             return;
         }
-        if (!started) {
+        if (this.isStarted()) {
             start();
         }
-        logger.fine("Service channel msg recieved.");
+        // logger.fine("Service channel msg recieved.");
         // We need to create a new message here and transfer the payload over so
         // the buffer won't be returned while the packet is in the queue.
         try {
           OSF2FServiceDataMsg newMessage = OSF2FServiceDataMsg.fromChannelMessage(msg);
-            logger.fine("Received msg with sequence number " + newMessage.getSequenceNumber());
+            // logger.fine("Received msg with sequence number " +
+            // newMessage.getSequenceNumber());
             serviceAggregator.writeMessageToServiceBuffer(newMessage);
         } catch(MessageException m) {
             return;
@@ -104,15 +112,18 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     }
 
     public void writeMessage(SequenceNumber num, DirectByteBuffer buffer) {
-        this.sentMessages.put(num, buffer);
-        this.outstandingBytes += buffer.remaining(ss);
+        int length = buffer.remaining(ss);
+        ReferenceCountedDirectByteBuffer copy = buffer.getReferenceCountedBuffer();
+        this.sentMessages.put(num, new sentMessage(copy, length));
+        this.outstandingBytes += length;
         OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,
-                num.getNum(), (short) 0, new int[0], buffer);
+                num.getNum(), (short) 0, new int[0], copy);
         // Set datagram flag to allow the packet to be sent over UDP.
         msg.setDatagram(true);
 
         long totalWritten = buffer.remaining(DirectByteBuffer.SS_MSG);
-        logger.fine("Wrote msg to network with sequence number " + num.getNum());
+        // logger.fine("Wrote msg to network with sequence number " +
+        // num.getNum());
         super.writeMessage(msg);
         bytesOut += totalWritten;
     }
@@ -122,10 +133,23 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     }
 
     public DirectByteBuffer getMessage(SequenceNumber num) {
-        return this.sentMessages.get(num);
+        return this.sentMessages.get(num).msg;
     }
 
     public void forgetMessage(SequenceNumber num) {
-        this.sentMessages.remove(num);
+        sentMessage msg = this.sentMessages.remove(num);
+        msg.msg.returnToPool();
+        this.outstandingBytes -= msg.length;
+    }
+
+    private class sentMessage {
+        public ReferenceCountedDirectByteBuffer msg;
+        public int length;
+
+        public sentMessage(ReferenceCountedDirectByteBuffer msg, int length) {
+            this.msg = msg;
+            msg.incrementReferenceCount();
+            this.length = length;
+        }
     }
 }

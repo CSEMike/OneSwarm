@@ -258,7 +258,7 @@ public class OSF2FSpeedChecker {
                 }
 
                 public void connectSuccess(ByteBuffer remainingInitialData) {
-                    NetworkManager.getSingleton().upgradeTransferProcessing(connection);
+                    NetworkManager.getSingleton().upgradeTransferProcessing(connection, null);
                     logger.finest("incoming speed check connected: " + getRemoteIp());
                 }
 

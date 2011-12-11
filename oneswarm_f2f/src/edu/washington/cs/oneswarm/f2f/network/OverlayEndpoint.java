@@ -134,7 +134,7 @@ public abstract class OverlayEndpoint implements EndpointInterface {
      * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#closeConnectionClosed(java.lang.String)
      */
     @Override
-    public void closeConnectionClosed(String reason) {
+    public void closeConnectionClosed(FriendConnection f, String reason) {
         closeReason = reason;
         logger.fine(getDescription() + ": OverlayTransport closed, reason:" + closeReason);
 

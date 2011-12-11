@@ -118,7 +118,7 @@ public class ServiceSharingManager {
                     CLIENT_SERVICE_CONFIG_KEY, new LinkedList<Long>());
             services.remove(Long.valueOf(searchKey));
             COConfigurationManager.setParameter(CLIENT_SERVICE_CONFIG_KEY, services);
-            ClientService cs = clientServices.get(searchKey);
+            ClientService cs = clientServices.remove(searchKey);
             if (cs != null) {
                 cs.deactivate();
             }

@@ -612,8 +612,10 @@ public class OverlayManager {
                 shouldSend = shouldForwardSearch(search, conn);
             }
             if (shouldSend) {
+                logger.finer("About to send a search to " + conn.getRemoteFriend().getNick());
                 conn.sendSearch(search.clone(), skipQueue);
                 numSent++;
+                logger.finer("Sent a search to " + conn.getRemoteFriend().getNick());
             }
             if (search instanceof OSF2FHashSearch) {
                 OSF2FHashSearch hs = (OSF2FHashSearch) search;

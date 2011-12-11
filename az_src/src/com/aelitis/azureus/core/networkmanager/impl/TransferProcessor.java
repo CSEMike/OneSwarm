@@ -22,7 +22,7 @@
 
 package com.aelitis.azureus.core.networkmanager.impl;
 
-import java.util.*;
+import java.util.HashMap;
 
 import org.gudy.azureus2.core3.util.AEMonitor;
 import org.gudy.azureus2.core3.util.Debug;
@@ -64,14 +64,16 @@ public class TransferProcessor {
     main_bucket = new ByteBucket( max_rate.getRateLimitBytesPerSecond() ); 
 
     main_controller = new EntityHandler( processor_type, new RateHandler() {
-      public int getCurrentNumBytesAllowed() {
+      @Override
+    public int getCurrentNumBytesAllowed() {
         if( main_bucket.getRate() != max_rate.getRateLimitBytesPerSecond() ) { //sync rate
           main_bucket.setRate( max_rate.getRateLimitBytesPerSecond() );
         }
         return main_bucket.getAvailableByteCount();
       }
       
-      public void bytesProcessed( int num_bytes_written ) {
+      @Override
+    public void bytesProcessed( int num_bytes_written ) {
         main_bucket.setBytesUsed( num_bytes_written );
       }
     });
@@ -287,8 +289,10 @@ public class TransferProcessor {
   /**
    * Upgrade the given connection to a high-speed transfer handler.
    * @param connection to upgrade
+ * @param overrideHandler TODO
    */
-  public void upgradePeerConnection( final NetworkConnectionBase connection ) {
+    public void upgradePeerConnection(final NetworkConnectionBase connection,
+            final RateHandler overrideHandler) {
     ConnectionData connection_data = null;
     
     try{ connections_mon.enter();
@@ -300,6 +304,7 @@ public class TransferProcessor {
       final ConnectionData conn_data = connection_data;
       
       main_controller.upgradePeerConnection( connection, new RateHandler() {
+        @Override
         public int getCurrentNumBytesAllowed() {          
           // sync global rate
           if( main_bucket.getRate() != max_rate.getRateLimitBytesPerSecond() ) {
@@ -346,10 +351,14 @@ public class TransferProcessor {
 	        	  }
 	          }
           }
-                  	            
-           return allowed;
+                    if (overrideHandler != null) {
+                        return Math.min(overrideHandler.getCurrentNumBytesAllowed(), allowed);
+                    } else {
+                        return allowed;
+                    }
         }
 
+        @Override
         public void bytesProcessed( int num_bytes_written ) {
           if ( !( connection.isLANLocal() && NetworkManager.isLANRateEnabled())){
 	          for (int i=0;i<conn_data.group_datas.length;i++){

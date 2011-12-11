@@ -471,7 +471,7 @@ public class FriendConnection implements DatagramListener {
         }
 
         for (Integer key : timedOutIds) {
-            overlayTransports.get(key).closeConnectionClosed("channel timed out");
+            overlayTransports.get(key).closeConnectionClosed(this, "channel timed out");
         }
     }
 
@@ -510,7 +510,7 @@ public class FriendConnection implements DatagramListener {
         List<EndpointInterface> transports = new LinkedList<EndpointInterface>(
                 overlayTransports.values());
         for (EndpointInterface overlayTransport : transports) {
-            overlayTransport.closeConnectionClosed("friend closed connection");
+            overlayTransport.closeConnectionClosed(this, "friend closed connection");
         }
 
         // and all forwards
@@ -650,9 +650,9 @@ public class FriendConnection implements DatagramListener {
     public void enableFastMessageProcessing(boolean enable) {
         logger.finer(getDescription() + ": setting fast message processing=" + enable);
         if (enable) {
-            NetworkManager.getSingleton().upgradeTransferProcessing(connection);
-            // connection.getOutgoingMessageQueue().registerQueueListener(
-            // new LowLatencyMessageWriter(this.connection));
+            NetworkManager.getSingleton().upgradeTransferProcessing(connection, null);
+            connection.getOutgoingMessageQueue().registerQueueListener(
+                    new LowLatencyMessageWriter(this.connection));
         } else {
 
             // always enable this

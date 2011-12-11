@@ -234,7 +234,7 @@ NetworkConnectionImpl
   
   public void enableEnhancedMessageProcessing( boolean enable ) {
     if( enable ) {
-    	NetworkManager.getSingleton().upgradeTransferProcessing( this );
+    	NetworkManager.getSingleton().upgradeTransferProcessing( this, null );
     }
     else {
       NetworkManager.getSingleton().downgradeTransferProcessing( this );

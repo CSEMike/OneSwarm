@@ -25,7 +25,7 @@ public interface EndpointInterface {
      * 
      * @param reason
      */
-    public abstract void closeConnectionClosed(String reason);
+    public abstract void closeConnectionClosed(FriendConnection friend, String reason);
 
     public abstract long getAge();
 
