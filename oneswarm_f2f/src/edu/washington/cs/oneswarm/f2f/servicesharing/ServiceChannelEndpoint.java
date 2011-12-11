@@ -5,6 +5,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
+import org.gudy.azureus2.core3.util.ReferenceCountedDirectByteBuffer;
 
 import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 
@@ -112,10 +113,11 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
     public void writeMessage(SequenceNumber num, DirectByteBuffer buffer) {
         int length = buffer.remaining(ss);
-        this.sentMessages.put(num, new sentMessage(buffer, length));
+        ReferenceCountedDirectByteBuffer copy = buffer.getReferenceCountedBuffer();
+        this.sentMessages.put(num, new sentMessage(copy, length));
         this.outstandingBytes += length;
         OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,
-                num.getNum(), (short) 0, new int[0], buffer);
+                num.getNum(), (short) 0, new int[0], copy);
         long totalWritten = buffer.remaining(DirectByteBuffer.SS_MSG);
         // logger.fine("Wrote msg to network with sequence number " +
         // num.getNum());
@@ -133,15 +135,17 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
     public void forgetMessage(SequenceNumber num) {
         sentMessage msg = this.sentMessages.remove(num);
+        msg.msg.returnToPool();
         this.outstandingBytes -= msg.length;
     }
 
     private class sentMessage {
-        public DirectByteBuffer msg;
+        public ReferenceCountedDirectByteBuffer msg;
         public int length;
 
-        public sentMessage(DirectByteBuffer msg, int length) {
+        public sentMessage(ReferenceCountedDirectByteBuffer msg, int length) {
             this.msg = msg;
+            msg.incrementReferenceCount();
             this.length = length;
         }
     }
