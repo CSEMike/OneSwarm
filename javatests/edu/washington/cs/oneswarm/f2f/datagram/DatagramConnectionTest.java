@@ -300,12 +300,13 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
                 / elapsed, packets / elapsed / 1000));
     }
 
-    @Test
     /**
-     * received 89.2 percent
-     * done: time=13.16s speed=18.07MB/s ,15.20kpps
+     * received 96.8 percent
+     * done: time=12.77s speed=20.22MB/s ,15.66kpps
+     * 
      * @throws Exception
      */
+    @Test
     public void testReceivePerformance() throws Exception {
         logInfo(DatagramEncrypter.logger);
         logInfo(DatagramDecrypter.logger);
