@@ -49,7 +49,8 @@ import edu.washington.cs.oneswarm.f2f.Friend;
 import edu.washington.cs.oneswarm.f2f.OSF2FMain;
 import edu.washington.cs.oneswarm.f2f.chat.ChatDAO;
 import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnection;
-import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnectionManager;
+import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnectionManagerImpl;
+import edu.washington.cs.oneswarm.f2f.datagram.DatagramListener;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelReset;
@@ -76,7 +77,7 @@ import edu.washington.cs.oneswarm.f2f.network.OverlayTransport.WriteQueueWaiter;
 import edu.washington.cs.oneswarm.f2f.network.QueueManager.QueueBuckets;
 import edu.washington.cs.oneswarm.plugins.PluginCallback;
 
-public class FriendConnection {
+public class FriendConnection implements DatagramListener {
 
     private static BigFatLock lock = OverlayManager.lock;
 
@@ -98,9 +99,9 @@ public class FriendConnection {
     // we are a bit more aggressive with the keep alives
     // a keepalive has to be sent every 5 s
     // if nothing has been received in 60 s we disconnect
-    private static final int KEEP_ALIVE_FREQ = 5 * 1000;
+    public static final int KEEP_ALIVE_FREQ = 5 * 1000;
 
-    private static final int KEEP_ALIVE_TIMEOUT = 65 * 1000;
+    public static final int KEEP_ALIVE_TIMEOUT = 65 * 1000;
 
     private static final int TIMOUT_FILELIST = 2 * 60 * 1000;
 
@@ -192,7 +193,7 @@ public class FriendConnection {
 
     private SetupPacketListener setupPacketListener;
 
-    DatagramConnectionManager udpManager = DatagramConnectionManager.get();
+    DatagramConnectionManagerImpl udpManager = DatagramConnectionManagerImpl.get();
     DatagramConnection udpConnection;
 
     /**
@@ -642,7 +643,7 @@ public class FriendConnection {
                     new BTKeepAlive(OSF2FMessage.CURRENT_VERSION), false);
         }
         if (udpConnection != null && udpConnection.getLastMessageSentTime() > KEEP_ALIVE_FREQ) {
-            udpConnection.sendKeepAlive();
+            udpConnection.sendUpdOK();
         }
     }
 
@@ -726,6 +727,7 @@ public class FriendConnection {
         return remoteFriend;
     }
 
+    @Override
     public InetAddress getRemoteIp() {
         return connection.getEndpoint().getNotionalAddress().getAddress();
     }
@@ -2445,6 +2447,7 @@ public class FriendConnection {
         UDP_ENABLED_MESSAGES.add(OSF2FMessage.ID_OS_DATAGRAM_OK);
     }
 
+    @Override
     public void datagramDecoded(Message message, int size) {
         if (!UDP_ENABLED_MESSAGES.contains(message.getID())) {
             logger.warning("Got invalid message type from udp channel on friendconnection: "
@@ -2476,6 +2479,7 @@ public class FriendConnection {
         udpConnection.sendMessage(message);
     }
 
+    @Override
     public void sendDatagramOk(OSF2FDatagramOk osf2fDatagramOk) {
         sendMessage(osf2fDatagramOk, true);
     }

@@ -67,8 +67,10 @@ public class DatagramDecrypter extends DatagramEncrytionBase {
                     currentAesCounter, sequenceNumber));
             return false;
         } else if (sequenceNumber != currentAesCounter) {
-            logger.finer(String.format("lost packet(s), expected=%s, received=%s",
-                    currentAesCounter, sequenceNumber));
+            if (logger.isLoggable(Level.FINER)) {
+                logger.finer(String.format("lost packet(s), expected=%s, received=%s",
+                        currentAesCounter, sequenceNumber));
+            }
             // Update the iv
             ivSpec = setSequenceNumber(sequenceNumber, ivSpec.getIV());
             cipher.init(Cipher.ENCRYPT_MODE, key, ivSpec);
@@ -101,7 +103,7 @@ public class DatagramDecrypter extends DatagramEncrytionBase {
         if (logger.isLoggable(Level.FINEST)) {
             logger.finest(String.format(
                     "Packet decrypted, in_bytes=%d, out_bytes=%d, packet_sequence_num=%d", length,
-                    decryptBuffer.remaining(), currentAesCounter));
+                    decryptBuffer.remaining(), sequenceNumber));
         }
         return true;
     }

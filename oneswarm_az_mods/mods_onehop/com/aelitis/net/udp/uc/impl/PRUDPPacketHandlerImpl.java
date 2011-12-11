@@ -75,7 +75,7 @@ import com.aelitis.net.udp.uc.PRUDPPrimordialHandler;
 import com.aelitis.net.udp.uc.PRUDPRequestHandler;
 
 import edu.uw.cse.netlab.reputation.UpdatePacketHandler;
-import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnectionManager;
+import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnectionManagerImpl;
 
 public class 
 PRUDPPacketHandlerImpl
@@ -418,7 +418,7 @@ PRUDPPacketHandlerImpl
                         if (AzureusCoreImpl.isCoreAvailable()) {
                             // Check if the packet is an encrypted udp friend
                             // connection.
-                            if (DatagramConnectionManager.get().packetRecieved(packet))
+                            if (DatagramConnectionManagerImpl.get().packetRecieved(packet))
                                 buffer = null;
                             else if (UpdatePacketHandler.get().packetReceived(packet))
                                 buffer = null;

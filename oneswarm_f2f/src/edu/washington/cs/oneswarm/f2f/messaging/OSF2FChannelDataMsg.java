@@ -10,7 +10,7 @@ import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 
 public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
 
-    private static final int BASE_LENGTH = 4;
+    public static final int BASE_LENGTH = 4;
     private String description = null;
     private final byte version;
     private final int channelID;

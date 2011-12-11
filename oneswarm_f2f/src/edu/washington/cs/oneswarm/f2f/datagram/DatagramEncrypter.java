@@ -45,10 +45,10 @@ public class DatagramEncrypter extends DatagramEncrytionBase {
     public EncryptedPacket encrypt(ByteBuffer unencryptedPayload, byte[] destination)
             throws ShortBufferException, IllegalBlockSizeException, BadPaddingException,
             IllegalStateException, InvalidKeyException, InvalidAlgorithmParameterException {
-        return encrypt(new ByteBuffer[] { unencryptedPayload }, destination);
+        return encrypt(new ByteBuffer[] { unencryptedPayload }, 1, destination);
     }
 
-    public EncryptedPacket encrypt(ByteBuffer[] unencryptedPayload, byte[] destination)
+    public EncryptedPacket encrypt(ByteBuffer[] unencryptedPayload, int buffers, byte[] destination)
             throws ShortBufferException, IllegalBlockSizeException, BadPaddingException,
             IllegalStateException, InvalidKeyException, InvalidAlgorithmParameterException {
 
@@ -60,19 +60,20 @@ public class DatagramEncrypter extends DatagramEncrytionBase {
         payloadBuffer.putLong(ctrRoundCount);
         int packetLength = SEQUENCE_NUMBER_BYTES;
 
-        int inputBytes = 0;
+        int dataBytes = 0;
         // Encrypt the payload.
-        for (int i = 0; i < unencryptedPayload.length; i++) {
-            inputBytes += cipher.update(unencryptedPayload[i], payloadBuffer);
+        for (int i = 0; i < buffers; i++) {
+            dataBytes += cipher.update(unencryptedPayload[i], payloadBuffer);
         }
 
         // Add the padding for this packet.
-        preparePaddingBB(inputBytes);
+        preparePaddingBB(dataBytes);
 
         // Encrypt the padding into the packet.
-        inputBytes += cipher.update(paddingBB, payloadBuffer);
+        int paddingBytes = cipher.update(paddingBB, payloadBuffer);
 
         // Keep the counter field in sync with the aes internal counter.
+        int inputBytes = dataBytes + paddingBytes;
         assert (inputBytes % BLOCK_SIZE == 0);
         ctrRoundCount += inputBytes / BLOCK_SIZE;
         packetLength += inputBytes;
@@ -98,8 +99,8 @@ public class DatagramEncrypter extends DatagramEncrytionBase {
         packet.length = packetLength;
 
         if (logger.isLoggable(Level.FINEST)) {
-            logger.finest(String.format(
-                    "Packet encrypted, in_bytes=%d, out_bytes=%d, packetnum=%d", inputBytes,
+            logger.finest(String.format("Packet encrypted, data_bytes=%d, padding_bytes=%d, "
+                    + "out_bytes=%d, packet_sequence_num=%d", dataBytes, paddingBytes,
                     payloadBuffer.remaining(), packet.getSequenceNumber()));
         }
 

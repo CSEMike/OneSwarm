@@ -115,7 +115,7 @@ public class OSF2FMessageFactory {
                     .registerMessageType(
                             new OSF2FDatagramInit(OSF2FDatagramInit.CURRENT_VERSION, 0, null, null,
                                     null, 0));
-            MessageManager.getSingleton().registerMessageType(new OSF2FDatagramOk());
+            MessageManager.getSingleton().registerMessageType(new OSF2FDatagramOk(0));
 
         } catch (MessageException me) {
             me.printStackTrace();

@@ -73,5 +73,4 @@ public abstract class DatagramEncrytionBase {
         buf.position(8); // Counter is the last 8 bytes
         return buf.getLong();
     }
-
 }
