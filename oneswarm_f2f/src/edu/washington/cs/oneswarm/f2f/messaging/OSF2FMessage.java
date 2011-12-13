@@ -81,6 +81,10 @@ public interface OSF2FMessage extends Message {
     public final byte[] FILE_LIST_TYPES = { FILE_LIST_TYPE_COMPLETE, FILE_LIST_TYPE_BLOOM,
             FILE_LIST_TYPE_PARTIAL };
 
+    // 4 for the length field
+    // 1 for the type field
+    public final static int MESSAGE_HEADER_LEN = 4 + 1;
+
     public final static int MAX_MESSAGE_SIZE = 16384;
 
     // save 16 bytes for headers and stuff, this ensures that the

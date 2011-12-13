@@ -28,6 +28,7 @@ import org.gudy.azureus2.core3.util.ByteFormatter;
 import com.aelitis.net.udp.uc.PRUDPPacketHandler;
 import com.aelitis.net.udp.uc.PRUDPPacketHandlerFactory;
 import com.aelitis.net.udp.uc.impl.PRUDPPacketHandlerImpl;
+import com.aelitis.net.udp.uc.impl.ExternalUdpPacketHandler;
 
 import edu.uw.cse.netlab.reputation.messages.Attestation;
 import edu.uw.cse.netlab.reputation.storage.Receipt;
@@ -86,7 +87,8 @@ class SentUpdate
 		this.attest_id = attest_id.longValue();
 	}
 	
-	public boolean equals( Object rhs )
+	@Override
+    public boolean equals( Object rhs )
 	{
 		if( rhs instanceof SentUpdate )
 		{
@@ -100,7 +102,7 @@ class SentUpdate
 	}
 }
 
-public class UpdatePacketHandler extends CoreWaiter
+public class UpdatePacketHandler extends CoreWaiter implements ExternalUdpPacketHandler
 {
 	public static final byte [] MAGIC = new byte[]{(byte)0, (byte)0, (byte)0, (byte)211, (byte)23};
 	
@@ -130,7 +132,8 @@ public class UpdatePacketHandler extends CoreWaiter
 		super();
 	}
 	
-	protected void init()
+	@Override
+    protected void init()
 	{
 		logger.info("update packet handler init()");
 		
@@ -138,7 +141,8 @@ public class UpdatePacketHandler extends CoreWaiter
 		
 		mUpdateScanner = new AEThread2("update scanner", true)
 		{
-			public void run()
+			@Override
+            public void run()
 			{
 				ReputationDAO rep = ReputationDAO.get();
 				long last_packet = System.currentTimeMillis();
@@ -248,7 +252,8 @@ public class UpdatePacketHandler extends CoreWaiter
 								// no need to try this 3 times and lodge 3 dht lookups
 								outstanding_updates.remove(update);
 								rep.getSoftStateSync().refreshRemoteID(update_shadow.intermediary, new SoftStateListener(){
-										public void refresh_complete( PublicKey inID ) 
+										@Override
+                                        public void refresh_complete( PublicKey inID ) 
 										{
 											// promote update to the front of the list
 											synchronized(outstanding_updates)
@@ -306,6 +311,7 @@ public class UpdatePacketHandler extends CoreWaiter
 		
 		// Get the socket for the udp.listen.port
 		PRUDPPacketHandlerImpl handler = (PRUDPPacketHandlerImpl)(PRUDPPacketHandlerFactory.getHandler(COConfigurationManager.getIntParameter("UDP.Listen.Port")));
+        handler.addExternalHandler(this);
 		mSocket = handler.getSocket();
 		
 		logger.finest("got handler on port: " + mSocket.getLocalPort() + " sock is: " + mSocket);
@@ -321,7 +327,8 @@ public class UpdatePacketHandler extends CoreWaiter
 	 * @param packet the packet to check
 	 * @return true if this was an update packet that we processed, false otherwise
 	 */
-	public boolean packetReceived( DatagramPacket packet ) 
+	@Override
+    public boolean packetReceived( DatagramPacket packet ) 
 	{
 		byte [] data = packet.getData();
 		
@@ -502,4 +509,9 @@ public class UpdatePacketHandler extends CoreWaiter
 		fis.read(b);
 		p.packetReceived(new DatagramPacket(b, b.length));
 	}
+
+    @Override
+    public void socketUpdated(DatagramSocket socket) {
+        this.mSocket = socket;
+    }
 }

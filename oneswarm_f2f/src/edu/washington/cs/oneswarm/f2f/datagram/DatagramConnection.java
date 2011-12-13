@@ -98,23 +98,21 @@ public class DatagramConnection {
 
     public final static Logger logger = Logger.getLogger(DatagramConnection.class.getName());
 
-    // 4 for the length field
-    // 1 for the type field
-    final static int MESSAGE_HEADER_LEN = 4 + 1;
-
     // According to netalyzr more than 98% of hosts have a path MTU of 1450
-    // bytes. Set max size to 1436 to be on the safer side.
+    // bytes. Set max size to 1410 to be on the safer side. (room for 8 byte UDP
+    // header and 20 byte ip header).
     // (MAX_DATAGRAM_SIZE - HMAC_SIZE - SEQUENCE_NUMBER_BYTES % BLOCK_SIZE) == 0
     // must be 0;
-    public static final int MAX_DATAGRAM_SIZE = 1436;
+    public static final int MAX_DATAGRAM_SIZE = 1410;
     // The actual payload we can use is a bit less.
     // -4 for length field
     // -1 for type field
     // -8 for sequence number
     // -1 for minimum padding
     // -20 for sha1 digest
-    public static final int MAX_DATAGRAM_PAYLOAD_SIZE = MAX_DATAGRAM_SIZE - MESSAGE_HEADER_LEN
-            - DatagramEncrypter.SEQUENCE_NUMBER_BYTES - 1 - DatagramEncrypter.HMAC_SIZE;
+    public static final int MAX_DATAGRAM_PAYLOAD_SIZE = MAX_DATAGRAM_SIZE
+            - OSF2FMessage.MESSAGE_HEADER_LEN - DatagramEncrypter.SEQUENCE_NUMBER_BYTES - 1
+            - DatagramEncrypter.HMAC_SIZE;
 
     private final static int MAX_UNACKED_UDP_OKs = 10;
 
@@ -146,6 +144,8 @@ public class DatagramConnection {
     private final InetAddress remoteIp;
     private final ByteBuffer decryptBuffer;
 
+    private boolean registered;
+
     public DatagramConnection(DatagramConnectionManager manager, DatagramListener friendConnection)
             throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException,
             NoSuchPaddingException, InvalidAlgorithmParameterException {
@@ -162,7 +162,7 @@ public class DatagramConnection {
     public void close() {
         sendState = SendState.CLOSED;
         receiveState = ReceiveState.CLOSED;
-        manager.deregister(this);
+        deregister();
         sendThread.quit();
     }
 
@@ -194,13 +194,26 @@ public class DatagramConnection {
             decrypter = new DatagramDecrypter(message.getEncryptionKey(), message.getIv(),
                     message.getHmacKey());
             receiveState = ReceiveState.OK_SENT;
-            manager.register(this);
+            register();
             friendConnection.sendDatagramOk(new OSF2FDatagramOk(0));
         } catch (Exception e) {
             e.printStackTrace();
             sendState = SendState.CLOSED;
             return;
         }
+    }
+
+    private void register() {
+        if (registered) {
+            manager.deregister(this);
+        }
+        manager.register(this);
+        this.registered = true;
+    }
+
+    private void deregister() {
+        manager.deregister(this);
+        this.registered = false;
     }
 
     public boolean isSendingActive() {
@@ -271,7 +284,7 @@ public class DatagramConnection {
                         friendConnection.sendDatagramOk(new OSF2FDatagramOk(0));
                         receiveState = ReceiveState.ACTIVE;
                     }
-                    friendConnection.datagramDecoded(message, data.length);
+                    friendConnection.datagramDecoded(message, messageLength);
                 }
                 return true;
             } catch (Exception e) {
@@ -395,7 +408,8 @@ public class DatagramConnection {
                     OSF2FMessage message = messageQueue.take();
                     synchronized (encrypter) {
                         do {
-                            datagramSize += message.getMessageSize() + MESSAGE_HEADER_LEN;
+                            datagramSize += message.getMessageSize()
+                                    + OSF2FMessage.MESSAGE_HEADER_LEN;
                             messageBuffer[packetNum++] = OSF2FMessageFactory
                                     .createOSF2FRawMessage(message);
                             if (logger.isLoggable(Level.FINEST)) {
@@ -460,5 +474,13 @@ public class DatagramConnection {
                 sendState = SendState.CLOSED;
             }
         }
+    }
+
+    public void reInitialize() {
+        if (sendState == SendState.CLOSED) {
+            logger.warning("tried to reinitialize closed connection");
+            return;
+        }
+        friendConnection.initDatagramConnection();
     }
 }

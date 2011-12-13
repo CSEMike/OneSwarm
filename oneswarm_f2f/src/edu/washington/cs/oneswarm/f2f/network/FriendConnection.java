@@ -903,8 +903,7 @@ public class FriendConnection implements DatagramListener {
             if (this.hasUdpSupport()) {
                 try {
                     udpConnection = udpManager.createConnection(this);
-                    updateFriendConnectionLog(true, "sending over udp crypto key");
-                    sendMessage(udpConnection.createInitMessage(), true);
+                    initDatagramConnection();
                 } catch (Exception e) {
                     logger.warning("Unable to create udp connection");
                     e.printStackTrace();
@@ -929,6 +928,13 @@ public class FriendConnection implements DatagramListener {
             }
         } else {
             Debug.out("handleHandshake got non " + "handshake message: " + message.getDescription());
+        }
+    }
+
+    public void initDatagramConnection() {
+        if (udpConnection != null) {
+            updateFriendConnectionLog(true, "sending over udp crypto key");
+            sendMessage(udpConnection.createInitMessage(), true);
         }
     }
 
@@ -2454,6 +2460,7 @@ public class FriendConnection implements DatagramListener {
                     + toString());
             return;
         }
+        stats.protocolBytesReceived(OSF2FMessage.MESSAGE_HEADER_LEN, isLanLocal());
         if (message.getType() == Message.TYPE_DATA_PAYLOAD) {
             incomingListener.dataBytesReceived(size);
             stats.dataBytesReceived(size, isLanLocal());
@@ -2470,6 +2477,7 @@ public class FriendConnection implements DatagramListener {
                     + toString());
             return;
         }
+        stats.protocolBytesSent(OSF2FMessage.MESSAGE_HEADER_LEN, isLanLocal());
         int size = message.getMessageSize();
         if (message.getType() == Message.TYPE_DATA_PAYLOAD) {
             stats.dataBytesSent(size, isLanLocal());

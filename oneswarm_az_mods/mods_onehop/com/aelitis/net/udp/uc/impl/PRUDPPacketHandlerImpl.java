@@ -74,9 +74,6 @@ import com.aelitis.net.udp.uc.PRUDPPacketRequest;
 import com.aelitis.net.udp.uc.PRUDPPrimordialHandler;
 import com.aelitis.net.udp.uc.PRUDPRequestHandler;
 
-import edu.uw.cse.netlab.reputation.UpdatePacketHandler;
-import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnectionManagerImpl;
-
 public class 
 PRUDPPacketHandlerImpl
 	implements PRUDPPacketHandler
@@ -139,6 +136,8 @@ PRUDPPacketHandlerImpl
 
 	private Throwable 	init_error;
 	
+    private final LinkedList<ExternalUdpPacketHandler> externalHandlers = new LinkedList<ExternalUdpPacketHandler>();
+
 	protected
 	PRUDPPacketHandlerImpl(
 		int				_port,
@@ -193,6 +192,10 @@ PRUDPPacketHandlerImpl
 		init_sem.reserve();
 	}
 	
+    public void addExternalHandler(ExternalUdpPacketHandler handler) {
+        this.externalHandlers.add(handler);
+    }
+
 	@Override
     public void
 	setPrimordialHandler(
@@ -378,6 +381,10 @@ PRUDPPacketHandlerImpl
 				
 				current_bind_ip	= target_bind_ip;
 								
+                // Notify other handlers
+                for (ExternalUdpPacketHandler handler : externalHandlers) {
+                    handler.socketUpdated(socket);
+                }
 				init_sem.release();
 				
 				if (Logger.isEnabled())
@@ -389,6 +396,7 @@ PRUDPPacketHandlerImpl
 				long	successful_accepts 	= 0;
 				long	failed_accepts		= 0;
 				
+                packet:
 				while( !( failed || destroyed )){
 					
 					if ( current_bind_ip != target_bind_ip ){
@@ -414,15 +422,16 @@ PRUDPPacketHandlerImpl
 						failed_accepts = 0;
 						
 						PRUDPPrimordialHandler prim_hand = primordial_handler;
-						
                         if (AzureusCoreImpl.isCoreAvailable()) {
                             // Check if the packet is an encrypted udp friend
-                            // connection.
-                            if (DatagramConnectionManagerImpl.get().packetRecieved(packet))
-                                buffer = null;
-                            else if (UpdatePacketHandler.get().packetReceived(packet))
-                                buffer = null;
-                        } else if (prim_hand != null) {
+                            // connection or a one-hop reputation packet.
+                            for (ExternalUdpPacketHandler handler : externalHandlers) {
+                                if (handler.packetReceived(packet)) {
+                                    continue packet;
+                                }
+                            }
+                        }
+                        if (buffer != null && prim_hand != null) {
 							if ( prim_hand.packetReceived( packet )){
 						
 									// primordial handlers get their own buffer as we can't guarantee

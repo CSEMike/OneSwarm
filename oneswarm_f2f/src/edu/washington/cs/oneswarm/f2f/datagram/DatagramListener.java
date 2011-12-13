@@ -13,4 +13,6 @@ public interface DatagramListener {
     public void datagramDecoded(Message message, int size);
 
     public void sendDatagramOk(OSF2FDatagramOk osf2fDatagramOk);
+
+    public void initDatagramConnection();
 }
