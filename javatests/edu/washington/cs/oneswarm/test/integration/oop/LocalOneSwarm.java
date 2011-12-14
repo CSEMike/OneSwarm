@@ -226,7 +226,6 @@ public class LocalOneSwarm {
                 GWT + "gwt/gwt-servlet.jar",
                 GWT + "gwt/gwt-dev.jar",
                 // GWT Libs
-                GWT + "gwt-incubator/gwt-incubator.jar",
                 GWT + "gwt-dnd/gwt-dnd-2.6.5.jar",
                 // TODO(piatek): Move this?
                 GWT + "jaudiotagger.jar",
