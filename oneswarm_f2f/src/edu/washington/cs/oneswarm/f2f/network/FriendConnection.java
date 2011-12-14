@@ -97,9 +97,9 @@ public class FriendConnection implements DatagramListener {
     private final Average outgoingSearchRate = Average.getInstance(1000, 10);
 
     // we are a bit more aggressive with the keep alives
-    // a keepalive has to be sent every 5 s
+    // a keepalive has to be sent every 15 s
     // if nothing has been received in 60 s we disconnect
-    public static final int KEEP_ALIVE_FREQ = 5 * 1000;
+    public static final int KEEP_ALIVE_FREQ = 15 * 1000;
 
     public static final int KEEP_ALIVE_TIMEOUT = 65 * 1000;
 
