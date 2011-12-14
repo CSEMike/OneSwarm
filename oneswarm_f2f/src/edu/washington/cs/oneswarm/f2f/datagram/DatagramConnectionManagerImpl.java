@@ -16,6 +16,8 @@ import javax.crypto.NoSuchPaddingException;
 
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 
+import com.aelitis.azureus.core.networkmanager.NetworkManager;
+import com.aelitis.azureus.core.networkmanager.impl.RateHandler;
 import com.aelitis.net.udp.uc.PRUDPPacketHandlerFactory;
 import com.aelitis.net.udp.uc.impl.PRUDPPacketHandlerImpl;
 import com.aelitis.net.udp.uc.impl.ExternalUdpPacketHandler;
@@ -47,6 +49,9 @@ public class DatagramConnectionManagerImpl extends CoreWaiter implements Datagra
         return new DatagramConnection(this, connection);
     }
 
+    private RateHandler lanUploadRateHandler;
+    private RateHandler uploadRateHandler;
+
     @Override
     protected void init() {
         // Get the socket for the udp.listen.port
@@ -54,6 +59,10 @@ public class DatagramConnectionManagerImpl extends CoreWaiter implements Datagra
                 .getHandler(COConfigurationManager.getIntParameter("UDP.Listen.Port")));
         handler.addExternalHandler(this);
         socket = handler.getSocket();
+        this.lanUploadRateHandler = NetworkManager.getSingleton().getUploadRateHandler(
+                DatagramConnection.MAX_DATAGRAM_PAYLOAD_SIZE, true);
+        this.uploadRateHandler = NetworkManager.getSingleton().getUploadRateHandler(
+                DatagramConnection.MAX_DATAGRAM_PAYLOAD_SIZE, false);
     }
 
     @Override
@@ -89,15 +98,20 @@ public class DatagramConnectionManagerImpl extends CoreWaiter implements Datagra
     }
 
     @Override
-    public void send(DatagramPacket packet) throws IOException {
+    public void send(DatagramPacket packet, boolean lanLocal) throws IOException {
         socket.send(packet);
+        if (lanLocal) {
+            lanUploadRateHandler.bytesProcessed(packet.getLength());
+        } else {
+            uploadRateHandler.bytesProcessed(packet.getLength());
+        }
     }
 
     @Override
     public void deregister(DatagramConnection conn) {
         String key = conn.getKey();
         DatagramConnection registered = connections.get(key);
-        if (registered.equals(conn)) {
+        if (registered != null && registered.equals(conn)) {
             connections.remove(key);
         }
     }

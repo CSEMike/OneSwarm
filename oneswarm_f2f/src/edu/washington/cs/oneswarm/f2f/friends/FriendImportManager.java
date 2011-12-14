@@ -53,6 +53,7 @@ public class FriendImportManager {
         this.friendManager = friendManager;
         COConfigurationManager.addParameterListener(OSF2F_ENABLE_FRIEND_NOTIFICATIONS,
                 new ParameterListener() {
+                    @Override
                     public void parameterChanged(String parameterName) {
                         boolean enabled = isNotificationsEnabled();
                         if (enabled) {
@@ -63,15 +64,15 @@ public class FriendImportManager {
                     }
                 });
 
-        TimerTask timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                checkForNewFriends();
-            }
-        };
-        Timer t = new Timer("FriendImportManager", true);
-
-        t.schedule(timerTask, 20 * 1000, CHECK_PERIOD);
+        // TimerTask timerTask = new TimerTask() {
+        // @Override
+        // public void run() {
+        // checkForNewFriends();
+        // }
+        // };
+        // Timer t = new Timer("FriendImportManager", true);
+        //
+        // t.schedule(timerTask, 20 * 1000, CHECK_PERIOD);
     }
 
     private synchronized void checkForNewFriends() {
@@ -112,14 +113,17 @@ public class FriendImportManager {
                 SSL_HOSTNAME, SSL_PORT, Base64.decode(SSL_PUBLIC_KEY_publickey_cs_washington_edu),
                 new CryptoHandler() {
 
+                    @Override
                     public PublicKey getPublicKey() {
                         return OneSwarmSslKeyManager.getInstance().getOwnPublicKey();
                     }
 
+                    @Override
                     public SSLContext getSSLContext() throws Exception {
                         return OneSwarmSslKeyManager.getInstance().getSSLContext();
                     }
 
+                    @Override
                     public byte[] sign(byte[] data) throws Exception {
                         return null;
                     }
@@ -161,14 +165,17 @@ public class FriendImportManager {
             final PublicKeyXmppClient client = new PublicKeyXmppClient(tempImportFile, knownKeys,
                     net, username, password, machineName, new CryptoHandler() {
 
+                        @Override
                         public PublicKey getPublicKey() {
                             return OneSwarmSslKeyManager.getInstance().getOwnPublicKey();
                         }
 
+                        @Override
                         public SSLContext getSSLContext() throws Exception {
                             return OneSwarmSslKeyManager.getInstance().getSSLContext();
                         }
 
+                        @Override
                         public byte[] sign(byte[] data) throws Exception {
                             return OneSwarmSslKeyManager.getInstance().sign(data);
                         }
@@ -183,6 +190,7 @@ public class FriendImportManager {
              * using an object and a manager later
              */
             Thread t = new Thread(new Runnable() {
+                @Override
                 public void run() {
                     try {
                         for (int i = 0; i < 30; i++) {

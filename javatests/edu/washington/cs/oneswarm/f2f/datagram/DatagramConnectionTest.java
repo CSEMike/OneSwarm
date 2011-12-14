@@ -45,7 +45,7 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
         }
 
         @Override
-        public void send(DatagramPacket packet) throws IOException {
+        public void send(DatagramPacket packet, boolean lan) throws IOException {
             // System.out.println(desc + ": sending packet: " +
             // packet.getSocketAddress());
             socket.send(packet);
@@ -147,6 +147,11 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
                 OSF2FDatagramInit init1 = conn1.createInitMessage();
                 conn2.initMessageReceived(init1);
             }
+
+            @Override
+            public boolean isLanLocal() {
+                return false;
+            }
         });
         manager2 = new MockDatagramConnectionManager("2");
         conn2Incoming = new LinkedList<Message>();
@@ -179,6 +184,11 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
             public void initDatagramConnection() {
                 OSF2FDatagramInit init2 = conn2.createInitMessage();
                 conn1.initMessageReceived(init2);
+            }
+
+            @Override
+            public boolean isLanLocal() {
+                return false;
             }
         });
 

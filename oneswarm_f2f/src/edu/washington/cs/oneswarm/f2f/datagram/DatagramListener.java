@@ -15,4 +15,6 @@ public interface DatagramListener {
     public void sendDatagramOk(OSF2FDatagramOk osf2fDatagramOk);
 
     public void initDatagramConnection();
+
+    public boolean isLanLocal();
 }

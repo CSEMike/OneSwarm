@@ -102,7 +102,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         // We need to create a new message here and transfer the payload over so
         // the buffer won't be returned while the packet is in the queue.
         try {
-          OSF2FServiceDataMsg newMessage = OSF2FServiceDataMsg.fromChannelMessage(msg);
+            OSF2FServiceDataMsg newMessage = OSF2FServiceDataMsg.fromChannelMessage(msg);
             // logger.fine("Received msg with sequence number " +
             if (!newMessage.isAck()) {
                 logger.info("ack enqueued for " + newMessage.getSequenceNumber());
@@ -110,7 +110,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
                         channelId, (short) 0, new int[] { newMessage.getSequenceNumber() }));
             }
             serviceAggregator.writeMessageToServiceBuffer(newMessage);
-        } catch(MessageException m) {
+        } catch (MessageException m) {
             return;
         }
     }
@@ -126,8 +126,9 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         msg.setDatagram(true);
 
         long totalWritten = buffer.remaining(DirectByteBuffer.SS_MSG);
-        // logger.fine("Wrote msg to network with sequence number " +
-        // num.getNum());
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.finest("Wrote msg to network with sequence number " + num.getNum());
+        }
         super.writeMessage(msg);
         bytesOut += totalWritten;
     }
