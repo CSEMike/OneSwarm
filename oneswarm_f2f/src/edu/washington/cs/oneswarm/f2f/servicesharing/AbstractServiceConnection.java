@@ -275,6 +275,11 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     }
     
     void writeMessageToServiceBuffer(OSF2FServiceDataMsg message) {
+        if (message.isAck()) {
+            mmt.onAck(message);
+            return;
+        }
+
         synchronized(bufferedServiceMessages) {
             if (message.getSequenceNumber() >= serviceSequenceNumber + SERVICE_MSG_BUFFER_SIZE) {
                 // Throw out to prevent buffer overflow.
@@ -283,14 +288,6 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             } else {
                 bufferedServiceMessages[message.getSequenceNumber() & (SERVICE_MSG_BUFFER_SIZE - 1)] = message
                         .transferPayload();
-            }
-        }
-        // Handle acknowledgments.
-        synchronized (this.connections) {
-            for (ServiceChannelEndpoint s : this.connections) {
-                if (s.getChannelId()[0] == message.getChannelId()) {
-                    mmt.onAck(message, s);
-                }
             }
         }
 

@@ -14,15 +14,19 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
      * [sequence number_______________________]
      * [options____________________________...]
      * [data_______________________________...]
-     * Control byte holds [length*4 reserved*4]
+     * Control byte holds [length*4 ack reserved*3]
+     * When the ack bit is set, 'sequence number' + all data words
+     * are interpreted as acknowledgments.
      */
     private final byte version;
+    private byte control = 0;
     private final int[] options;
     private final short window;
     private final int sequenceNumber;
     // private final byte[] options;
     private DirectByteBuffer serviceHeader;
     private static final byte VERSION_NUM = 42;
+    private static final byte ss = 1;
 
     public OSF2FServiceDataMsg(byte _version, int channelID, int sequenceNumber, short window,
             int[] options,
@@ -32,6 +36,25 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
         this.window = window;
         this.options = options;
         this.sequenceNumber = sequenceNumber;
+    }
+
+    private OSF2FServiceDataMsg(byte _version, int channelID, int sequenceNumber, short window,
+            int[] options, DirectByteBuffer data, byte control) {
+        this(_version, channelID, sequenceNumber, window, options, data);
+        this.control = control;
+    }
+
+    static OSF2FServiceDataMsg acknowledge(byte _version, int channelID, short window,
+            int[] acknowledgements) {
+        int payloadSize = acknowledgements.length - 1;
+        DirectByteBuffer data = DirectByteBufferPool.getBuffer(ss, 4 * payloadSize);
+        for (int i = 0; i < payloadSize; i++) {
+            data.putInt(ss, acknowledgements[i + 1]);
+        }
+        data.flip(ss);
+        OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(_version, channelID, acknowledgements[0],
+                window, new int[0], data, (byte) 8);
+        return msg;
     }
 
     @Override
@@ -48,7 +71,7 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
             int length = 2 + options.length;
             serviceHeader = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG, 4 * length);
             serviceHeader.put(DirectByteBuffer.SS_MSG, version);
-            byte control = 0;
+            byte control = this.control;
             control += length << 4;
             serviceHeader.put(DirectByteBuffer.SS_MSG, control);
             serviceHeader.putShort(DirectByteBuffer.SS_MSG, window);
@@ -99,6 +122,10 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
             options[i] = payload.getInt(SS_MSG);
         }
         return new OSF2FServiceDataMsg(msg.getVersion(), msg.getChannelId(), num, window, options,
-                payload);
+                payload, control);
+    }
+
+    public boolean isAck() {
+        return (this.control & 8) == 8;
     }
 }
