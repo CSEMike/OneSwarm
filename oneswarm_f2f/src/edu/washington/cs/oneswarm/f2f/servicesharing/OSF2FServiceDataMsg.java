@@ -47,11 +47,12 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
     static OSF2FServiceDataMsg acknowledge(byte _version, int channelID, short window,
             int[] acknowledgements) {
         int payloadSize = acknowledgements.length - 1;
-        DirectByteBuffer data = DirectByteBufferPool.getBuffer(ss, 4 * payloadSize);
-        for (int i = 0; i < payloadSize; i++) {
-            data.putInt(ss, acknowledgements[i + 1]);
-        }
+        DirectByteBuffer data = null;
         if (payloadSize > 0) {
+            data = DirectByteBufferPool.getBuffer(ss, 4 * payloadSize);
+            for (int i = 0; i < payloadSize; i++) {
+                data.putInt(ss, acknowledgements[i + 1]);
+            }
             data.flip(ss);
         }
         OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(_version, channelID, acknowledgements[0],
@@ -67,7 +68,13 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
     @Override
     public DirectByteBuffer[] getData() {
         DirectByteBuffer[] channelmsg = super.getData();
-        DirectByteBuffer[] fullmsg = new DirectByteBuffer[3];
+        DirectByteBuffer[] fullmsg;
+        if (channelmsg[1] == null) {
+            fullmsg = new DirectByteBuffer[2];
+        } else {
+            fullmsg = new DirectByteBuffer[3];
+            fullmsg[2] = channelmsg[1];
+        }
 
         if (serviceHeader == null) {
             int length = 2 + options.length;
@@ -86,7 +93,6 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
 
         fullmsg[0] = channelmsg[0];
         fullmsg[1] = serviceHeader;
-        fullmsg[2] = channelmsg[1];
         return fullmsg;
     }
 
