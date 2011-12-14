@@ -51,7 +51,9 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
         for (int i = 0; i < payloadSize; i++) {
             data.putInt(ss, acknowledgements[i + 1]);
         }
-        data.flip(ss);
+        if (payloadSize > 0) {
+            data.flip(ss);
+        }
         OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(_version, channelID, acknowledgements[0],
                 window, new int[0], data, (byte) 8);
         return msg;
