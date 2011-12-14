@@ -931,6 +931,7 @@ public class FriendConnection implements DatagramListener {
         }
     }
 
+    @Override
     public void initDatagramConnection() {
         if (udpConnection != null) {
             updateFriendConnectionLog(true, "sending over udp crypto key");
@@ -1261,6 +1262,7 @@ public class FriendConnection implements DatagramListener {
         return filelistReceived;
     }
 
+    @Override
     public boolean isLanLocal() {
         return connection.isLANLocal();
     }

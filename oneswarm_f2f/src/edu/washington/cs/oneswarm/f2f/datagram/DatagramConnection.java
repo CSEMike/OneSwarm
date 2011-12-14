@@ -309,6 +309,7 @@ public class DatagramConnection {
 
     public void sendMessage(OSF2FMessage message) {
         if (sendState == SendState.CLOSED) {
+            logger.finest("Tried to send packet on a closed connection");
             return;
         }
         if (isTimedOut()) {
