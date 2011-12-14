@@ -97,7 +97,7 @@ public class DatagramConnectionManagerImpl extends CoreWaiter implements Datagra
     public void deregister(DatagramConnection conn) {
         String key = conn.getKey();
         DatagramConnection registered = connections.get(key);
-        if (registered.equals(conn)) {
+        if (registered != null && registered.equals(conn)) {
             connections.remove(key);
         }
     }
