@@ -15,7 +15,7 @@ interface DatagramConnectionManager {
 
     void deregister(DatagramConnection conn);
 
-    void send(DatagramPacket packet) throws IOException;
+    void send(DatagramPacket packet, boolean lanLocal) throws IOException;
 
     void register(DatagramConnection connection);
 

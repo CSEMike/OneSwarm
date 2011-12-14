@@ -16,7 +16,9 @@ import javax.crypto.NoSuchPaddingException;
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 import org.gudy.azureus2.core3.util.DirectByteBufferPool;
 
+import com.aelitis.azureus.core.networkmanager.NetworkManager;
 import com.aelitis.azureus.core.networkmanager.RawMessage;
+import com.aelitis.azureus.core.networkmanager.impl.RateHandler;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelMsg;
@@ -352,6 +354,18 @@ public class DatagramConnection {
         return System.currentTimeMillis() - lastPacketReceived > FriendConnection.KEEP_ALIVE_TIMEOUT;
     }
 
+    public void reInitialize() {
+        if (sendState == SendState.CLOSED) {
+            logger.warning("tried to reinitialize closed connection");
+            return;
+        }
+        friendConnection.initDatagramConnection();
+    }
+
+    public int getQueueLength() {
+        return sendThread.queueLength;
+    }
+
     /**
      * Sending enrypted udp packets is cpu intensive and potentially blocking.
      * Each connection is sending
@@ -371,6 +385,8 @@ public class DatagramConnection {
         private final byte[] outgoingPacketBuf = new byte[2048];
         private volatile boolean quit = false;
 
+        private volatile int queueLength = 0;
+
         public DatagramSendThread() {
             messageQueue = new LinkedBlockingQueue<OSF2FMessage>(1024);
             thread = new Thread(this);
@@ -389,10 +405,12 @@ public class DatagramConnection {
         }
 
         public void queueMessage(OSF2FMessage message) throws InterruptedException {
-            if (message.getMessageSize() > MAX_DATAGRAM_PAYLOAD_SIZE) {
-                logger.warning("tried to send too large datagram: " + message.getMessageSize());
+            int messageSize = message.getMessageSize();
+            if (messageSize > MAX_DATAGRAM_PAYLOAD_SIZE) {
+                logger.warning("tried to send too large datagram: " + messageSize);
                 return;
             }
+            queueLength += messageSize;
             messageQueue.put(message);
         }
 
@@ -408,14 +426,16 @@ public class DatagramConnection {
                     OSF2FMessage message = messageQueue.take();
                     synchronized (encrypter) {
                         do {
-                            datagramSize += message.getMessageSize()
-                                    + OSF2FMessage.MESSAGE_HEADER_LEN;
+                            final int messageSize = message.getMessageSize();
+                            datagramSize += messageSize + OSF2FMessage.MESSAGE_HEADER_LEN;
                             messageBuffer[packetNum++] = OSF2FMessageFactory
                                     .createOSF2FRawMessage(message);
                             if (logger.isLoggable(Level.FINEST)) {
                                 logger.finest(String.format("Adding message, packets=%d, size=%d",
                                         packetNum, datagramSize));
                             }
+                            // This is going to get sent, update the queue size
+                            queueLength -= messageSize;
                             // Check if we can fit more packets in there.
                         } while ((message = messageQueue.peek()) != null
                                 && datagramSize + message.getMessageSize() <= MAX_DATAGRAM_PAYLOAD_SIZE
@@ -468,19 +488,11 @@ public class DatagramConnection {
                 // Create and send the packet.
                 DatagramPacket packet = new DatagramPacket(outgoingPacketBuf, 0,
                         encrypted.getLength(), remoteIp, remotePort);
-                manager.send(packet);
+                manager.send(packet, friendConnection.isLanLocal());
             } catch (Exception e) {
                 e.printStackTrace();
                 sendState = SendState.CLOSED;
             }
         }
-    }
-
-    public void reInitialize() {
-        if (sendState == SendState.CLOSED) {
-            logger.warning("tried to reinitialize closed connection");
-            return;
-        }
-        friendConnection.initDatagramConnection();
     }
 }

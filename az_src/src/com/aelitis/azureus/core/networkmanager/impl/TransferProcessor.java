@@ -285,6 +285,37 @@ public class TransferProcessor {
 	   } 
   }
   
+    /**
+     * Used to allow datagram connections to obey the global rate limit.
+     * 
+     * @param connection
+     */
+    public RateHandler getMainUploadRateHandler(final int mss) {
+        return new RateHandler() {
+
+            @Override
+            public int getCurrentNumBytesAllowed() {
+                // sync global rate
+                if (main_bucket.getRate() != max_rate.getRateLimitBytesPerSecond()) {
+                    main_bucket.setRate(max_rate.getRateLimitBytesPerSecond());
+                }
+
+                int allowed = main_bucket.getAvailableByteCount();
+
+                // reserve bandwidth for the general pool
+                allowed -= mss;
+
+                if (allowed < 0)
+                    allowed = 0;
+                return allowed;
+            }
+
+            @Override
+            public void bytesProcessed(int num_bytes_processed) {
+                main_bucket.setBytesUsed(num_bytes_processed);
+            }
+        };
+    }
 
   /**
    * Upgrade the given connection to a high-speed transfer handler.

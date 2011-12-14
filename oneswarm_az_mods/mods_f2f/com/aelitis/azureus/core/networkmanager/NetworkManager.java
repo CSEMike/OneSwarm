@@ -393,10 +393,18 @@ public class NetworkManager {
     read_controller.removeReadEntity( entity );
   }  
   
-  
-  
-
- 
+    /**
+     * Returns a global upload rate handler for either lan or internet traffic.
+     * 
+     * @param connection
+     */
+    public RateHandler getUploadRateHandler(int mss, boolean lanLocal) {
+        if (lanLocal && lan_rate_enabled) {
+            return lan_upload_processor.getMainUploadRateHandler(mss);
+        } else {
+            return upload_processor.getMainUploadRateHandler(mss);
+        }
+    }
   
   /**
    * Register peer connection for network upload and download handling.
