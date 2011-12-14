@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.config.COConfigurationManager;
@@ -32,11 +33,13 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     protected final DirectByteBuffer[] bufferedServiceMessages = new DirectByteBuffer[SERVICE_MSG_BUFFER_SIZE];
     protected final LinkedList<DirectByteBuffer> bufferedNetworkMessages;
     private final MessageStreamMultiplexer mmt;
+    private final Random random;
 
     @Override
     public abstract boolean isOutgoing();
 
-    public abstract void addChannel(FriendConnection channel, OSF2FHashSearch search, OSF2FHashSearchResp response);
+    public abstract void addChannel(FriendConnection channel, OSF2FHashSearch search,
+            OSF2FHashSearchResp response);
 
     protected final List<ServiceChannelEndpoint> connections = Collections
             .synchronizedList(new ArrayList<ServiceChannelEndpoint>());
@@ -48,7 +51,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     final SCPolicy policy;
 
     public AbstractServiceConnection() {
-        	String channelScheme = COConfigurationManager.getStringParameter(SERVICE_PRIORITY_KEY);
+        String channelScheme = COConfigurationManager.getStringParameter(SERVICE_PRIORITY_KEY);
         if (channelScheme.equals("roundrobin")) {
             policy = SCPolicy.ROUNDROBIN;
         } else if (channelScheme.equals("random")) {
@@ -56,8 +59,9 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         } else {
             policy = SCPolicy.WEIGHTED;
         }
+        this.random = new Random();
         this.serviceSequenceNumber = 0;
- 		this.bufferedNetworkMessages = new LinkedList<DirectByteBuffer>();
+        this.bufferedNetworkMessages = new LinkedList<DirectByteBuffer>();
         this.mmt = new MessageStreamMultiplexer();
     }
 
@@ -90,7 +94,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                 }
             }
         }
-        
+
         synchronized (bufferedNetworkMessages) {
             bufferedNetworkMessages.clear();
         }
@@ -273,14 +277,14 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         }
         return true;
     }
-    
+
     void writeMessageToServiceBuffer(OSF2FServiceDataMsg message) {
         if (message.isAck()) {
             mmt.onAck(message);
             return;
         }
 
-        synchronized(bufferedServiceMessages) {
+        synchronized (bufferedServiceMessages) {
             if (message.getSequenceNumber() >= serviceSequenceNumber + SERVICE_MSG_BUFFER_SIZE) {
                 // Throw out to prevent buffer overflow.
                 logger.warning("Incoming service message dropped, exceeded message buffer.");
@@ -325,14 +329,13 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         }
         return response;
     }
-    
+
     boolean routeMessageToChannel(DirectByteBuffer msg) {
         ServiceChannelEndpoint channel = null;
         if (policy == SCPolicy.RANDOM) {
             while (true) {
                 synchronized (this.connections) {
-                    int id = (int) (Math.random() * connections.size());
-                    channel = this.connections.get(id);
+                    channel = this.connections.get(random.nextInt(connections.size()));
                 }
 
                 // Assume some channel is 'started'
@@ -374,7 +377,8 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                     if (c.isStarted()) {
                         if (!channel.isStarted()) {
                             channel = c;
-                        } else if (c.getBytesOut() / c.getAge() > channel.getBytesOut() / channel.getAge()) {
+                        } else if (c.getBytesOut() / c.getAge() > channel.getBytesOut()
+                                / channel.getAge()) {
                             channel = c;
                         }
                     }
@@ -400,7 +404,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             return true;
         }
     }
-    
+
     protected class ServerIncomingMessageListener implements MessageQueueListener {
 
         @Override
@@ -409,9 +413,9 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
         @Override
         public boolean messageReceived(Message message) {
-            // logger.info("ASC Service message recieved.");
+            logger.finest("ASC Service message recieved.");
 
-        	if (!(message instanceof DataMessage)) {
+            if (!(message instanceof DataMessage)) {
                 String msg = "got wrong message type from server: ";
                 logger.warning(msg + message.getDescription());
                 AbstractServiceConnection.this.close(msg);
