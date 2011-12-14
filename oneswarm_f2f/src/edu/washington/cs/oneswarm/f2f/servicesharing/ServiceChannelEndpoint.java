@@ -104,7 +104,11 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         try {
           OSF2FServiceDataMsg newMessage = OSF2FServiceDataMsg.fromChannelMessage(msg);
             // logger.fine("Received msg with sequence number " +
-            // newMessage.getSequenceNumber());
+            if (!newMessage.isAck()) {
+                logger.info("ack enqueued for " + newMessage.getSequenceNumber());
+                super.writeMessage(OSF2FServiceDataMsg.acknowledge(OSF2FMessage.CURRENT_VERSION,
+                        channelId, (short) 0, new int[] { newMessage.getSequenceNumber() }));
+            }
             serviceAggregator.writeMessageToServiceBuffer(newMessage);
         } catch(MessageException m) {
             return;
