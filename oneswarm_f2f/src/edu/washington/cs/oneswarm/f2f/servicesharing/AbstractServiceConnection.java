@@ -31,7 +31,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     protected int serviceSequenceNumber;
     protected final DirectByteBuffer[] bufferedServiceMessages = new DirectByteBuffer[SERVICE_MSG_BUFFER_SIZE];
     protected final LinkedList<DirectByteBuffer> bufferedNetworkMessages;
-    private final MessageStreamMultiplexer mmt;
+    protected final MessageStreamMultiplexer mmt;
 
     @Override
     public abstract boolean isOutgoing();

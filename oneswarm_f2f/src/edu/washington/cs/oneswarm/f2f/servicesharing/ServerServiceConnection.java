@@ -31,7 +31,10 @@ public class ServerServiceConnection extends AbstractServiceConnection {
     @Override
     public void addChannel(FriendConnection channel,
             OSF2FHashSearch search, OSF2FHashSearchResp response) {
-        this.connections.add(new ServiceChannelEndpoint(this, channel, search, response, false));
+        ServiceChannelEndpoint chan = new ServiceChannelEndpoint(this, channel, search, response,
+                false);
+        this.connections.add(chan);
+        this.mmt.addChannel(chan);
         logger.info("Server Service Connection channel added.");
     }
 
@@ -113,10 +116,12 @@ public class ServerServiceConnection extends AbstractServiceConnection {
     @Override
     void writeMessageToServiceConnection() {
         if (!serviceConnected) {
+            logger.info("wmtsc failed - not connected");
             return;
         }
         synchronized (bufferedServiceMessages) {
             while (bufferedServiceMessages[serviceSequenceNumber & (SERVICE_MSG_BUFFER_SIZE - 1)] != null) {
+                logger.info("message taken from service message buffer");
                 writeMessageToServerConnection(bufferedServiceMessages[serviceSequenceNumber
                         & (SERVICE_MSG_BUFFER_SIZE - 1)]);
                 bufferedServiceMessages[serviceSequenceNumber & (SERVICE_MSG_BUFFER_SIZE - 1)] = null;

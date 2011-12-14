@@ -12,12 +12,18 @@ package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 class SequenceNumber {
     private final int number;
+    private final int channelid;
 
-    protected SequenceNumber(int n) {
+    protected SequenceNumber(int n, int channelid) {
         this.number = n;
+        this.channelid = channelid;
     }
 
     public int getNum() {
         return number;
+    }
+
+    public int getChannel() {
+        return channelid;
     }
 }
