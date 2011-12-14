@@ -95,15 +95,18 @@ public class DatagramConnectionManagerImpl extends CoreWaiter implements Datagra
             existing.close();
         }
         connections.put(key, connection);
+        logger.fine("Registering " + key);
     }
 
     @Override
     public void send(DatagramPacket packet, boolean lanLocal) throws IOException {
+        int length = packet.getLength();
         socket.send(packet);
+        logger.finest("Packet sent, length=" + length);
         if (lanLocal) {
-            lanUploadRateHandler.bytesProcessed(packet.getLength());
+            lanUploadRateHandler.bytesProcessed(length);
         } else {
-            uploadRateHandler.bytesProcessed(packet.getLength());
+            uploadRateHandler.bytesProcessed(length);
         }
     }
 
@@ -113,6 +116,7 @@ public class DatagramConnectionManagerImpl extends CoreWaiter implements Datagra
         DatagramConnection registered = connections.get(key);
         if (registered != null && registered.equals(conn)) {
             connections.remove(key);
+            logger.fine("Deregistering " + key);
         }
     }
 
