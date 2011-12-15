@@ -7,6 +7,8 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -16,9 +18,7 @@ import javax.crypto.NoSuchPaddingException;
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 import org.gudy.azureus2.core3.util.DirectByteBufferPool;
 
-import com.aelitis.azureus.core.networkmanager.NetworkManager;
 import com.aelitis.azureus.core.networkmanager.RawMessage;
-import com.aelitis.azureus.core.networkmanager.impl.RateHandler;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelMsg;
@@ -147,6 +147,7 @@ public class DatagramConnection {
     private final ByteBuffer decryptBuffer;
 
     private boolean registered;
+    private final HashSet<String> remoteIpPorts = new HashSet<String>();
 
     public DatagramConnection(DatagramConnectionManager manager, DatagramListener friendConnection)
             throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException,
@@ -181,8 +182,8 @@ public class DatagramConnection {
         return initMessage;
     }
 
-    String getKey() {
-        return DatagramConnectionManagerImpl.getKey(remoteIp, remotePort);
+    Set<String> getKeys() {
+        return remoteIpPorts;
     }
 
     public long getLastMessageSentTime() {
@@ -192,6 +193,7 @@ public class DatagramConnection {
     public void initMessageReceived(OSF2FDatagramInit message) {
         logger.fine(toString() + "Got init message: " + message.getDescription());
         this.remotePort = message.getLocalPort();
+        this.remoteIpPorts.add(DatagramConnectionManagerImpl.getKey(remoteIp, remotePort));
         try {
             decrypter = new DatagramDecrypter(message.getEncryptionKey(), message.getIv(),
                     message.getHmacKey());
@@ -294,6 +296,12 @@ public class DatagramConnection {
                 return false;
             }
         }
+    }
+
+    public String addRemoteIpPort(InetAddress ip, int port) {
+        String key = DatagramConnectionManagerImpl.getKey(ip, port);
+        this.remoteIpPorts.add(key);
+        return key;
     }
 
     public void okMessageReceived() {
@@ -498,5 +506,9 @@ public class DatagramConnection {
                 sendState = SendState.CLOSED;
             }
         }
+    }
+
+    public int getRemotePort() {
+        return remotePort;
     }
 }

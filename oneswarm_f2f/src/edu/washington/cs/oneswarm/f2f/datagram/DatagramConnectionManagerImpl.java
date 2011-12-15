@@ -10,6 +10,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.crypto.NoSuchPaddingException;
@@ -19,14 +21,15 @@ import org.gudy.azureus2.core3.config.COConfigurationManager;
 import com.aelitis.azureus.core.networkmanager.NetworkManager;
 import com.aelitis.azureus.core.networkmanager.impl.RateHandler;
 import com.aelitis.net.udp.uc.PRUDPPacketHandlerFactory;
-import com.aelitis.net.udp.uc.impl.PRUDPPacketHandlerImpl;
 import com.aelitis.net.udp.uc.impl.ExternalUdpPacketHandler;
+import com.aelitis.net.udp.uc.impl.PRUDPPacketHandlerImpl;
 
 import edu.uw.cse.netlab.utils.CoreWaiter;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 
 public class DatagramConnectionManagerImpl extends CoreWaiter implements DatagramConnectionManager,
         ExternalUdpPacketHandler {
+    private static final int MIN_MULTIHOME_KEY_CHECK_PERIOD = 60 * 1000;
     private static DatagramConnectionManagerImpl instance = new DatagramConnectionManagerImpl();
     public final static Logger logger = Logger.getLogger(DatagramConnectionManagerImpl.class
             .getName());
@@ -36,6 +39,8 @@ public class DatagramConnectionManagerImpl extends CoreWaiter implements Datagra
     }
 
     private final HashMap<String, DatagramConnection> connections = new HashMap<String, DatagramConnection>();
+
+    private final HashMap<String, Long> unknownIncomingConnections = new HashMap<String, Long>();
 
     private DatagramSocket socket;
 
@@ -67,12 +72,16 @@ public class DatagramConnectionManagerImpl extends CoreWaiter implements Datagra
 
     @Override
     public boolean packetReceived(DatagramPacket packet) {
-        String key = getKey(packet.getAddress(), packet.getPort());
+        int port = packet.getPort();
+        InetAddress address = packet.getAddress();
+        String key = getKey(address, port);
         logger.finest("checking udp packet match: " + key);
         DatagramConnection conn = connections.get(key);
         if (conn == null) {
-            logger.finest("no match found");
-            return false;
+            if (logger.isLoggable(Level.FINEST)) {
+                logger.finest("no match found, keys=" + connections.keySet());
+            }
+            return doMultihomeCheck(packet, port, address, key);
         }
         if (!conn.messageReceived(packet)) {
             logger.finest("matched packet failed decryption");
@@ -81,21 +90,48 @@ public class DatagramConnectionManagerImpl extends CoreWaiter implements Datagra
         return true;
     }
 
+    private boolean doMultihomeCheck(DatagramPacket packet, int port, InetAddress address,
+            String key) {
+        Long lastChecked = unknownIncomingConnections.get(key);
+        if (lastChecked == null
+                || System.currentTimeMillis() - lastChecked > MIN_MULTIHOME_KEY_CHECK_PERIOD) {
+            unknownIncomingConnections.put(key, System.currentTimeMillis());
+            logger.finest("checking if multihomed source");
+
+            LinkedList<DatagramConnection> conns = new LinkedList<DatagramConnection>(
+                    connections.values());
+            for (DatagramConnection c : conns) {
+                // Only check connections on the same port.
+                if (c.getRemotePort() == port) {
+                    if (c.messageReceived(packet)) {
+                        logger.fine("Found multihomed friend, adding remote address to datagram connection: "
+                                + address);
+                        String newKey = c.addRemoteIpPort(address, port);
+                        connections.put(newKey, c);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     static String getKey(InetAddress address, int port) {
         return address.getHostAddress() + ":" + port;
     }
 
     @Override
     public void register(DatagramConnection connection) {
-        String key = connection.getKey();
-        logger.fine("registering connection to key: " + key);
-        DatagramConnection existing = connections.get(key);
-        if (existing != null) {
-            logger.warning("Registered udp connection but one is already there!");
-            existing.close();
+        Set<String> keys = connection.getKeys();
+        for (String key : keys) {
+            logger.fine("registering connection to key: " + key);
+            DatagramConnection existing = connections.get(key);
+            if (existing != null) {
+                logger.warning("Registered udp connection but one is already there!");
+                existing.close();
+            }
+            connections.put(key, connection);
         }
-        connections.put(key, connection);
-        logger.fine("Registering " + key);
     }
 
     @Override
@@ -112,11 +148,13 @@ public class DatagramConnectionManagerImpl extends CoreWaiter implements Datagra
 
     @Override
     public void deregister(DatagramConnection conn) {
-        String key = conn.getKey();
-        DatagramConnection registered = connections.get(key);
-        if (registered != null && registered.equals(conn)) {
-            connections.remove(key);
-            logger.fine("Deregistering " + key);
+        Set<String> keys = conn.getKeys();
+        for (String key : keys) {
+            DatagramConnection registered = connections.get(key);
+            if (registered != null && registered.equals(conn)) {
+                connections.remove(key);
+                logger.fine("Deregistering " + key);
+            }
         }
     }
 
