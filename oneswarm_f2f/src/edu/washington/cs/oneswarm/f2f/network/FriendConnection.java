@@ -207,7 +207,6 @@ public class FriendConnection implements DatagramListener {
     public FriendConnection(GlobalManagerStats stats, QueueManager _queueManager,
             ConnectionEndpoint remoteFriendAddr, Friend _remoteFriend,
             FileListManager _filelistManager, FriendConnectionListener _listener) {
-        new Exception().printStackTrace();
         remoteFriendAddr
                 .addProtocol(new ProtocolEndpointTCP(remoteFriendAddr.getNotionalAddress()));
         if (COConfigurationManager.getBooleanParameter("oneswarm.beta.updates")) {
