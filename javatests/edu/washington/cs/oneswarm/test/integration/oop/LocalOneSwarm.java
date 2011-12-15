@@ -323,6 +323,10 @@ public class LocalOneSwarm {
         experimentalConfig.println("name " + config.getLabel());
         experimentalConfig.println("register http://127.0.0.1:" + coordinator.getServerPort()
                 + "/s");
+        // Disable lan-, cht-, dht-friend connect
+        experimentalConfig.println("booleanSetting OSF2F.Use@DHT@Proxy false");
+        experimentalConfig.println("booleanSetting OSF2F.LanFriendFinder false");
+        experimentalConfig.println("booleanSetting dht.enabled false");
         experimentalConfig.close();
 
         // Add the appropriate config properties
