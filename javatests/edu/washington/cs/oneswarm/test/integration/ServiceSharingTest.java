@@ -7,13 +7,15 @@ import java.util.logging.Logger;
 import org.junit.Before;
 import org.junit.Test;
 
+import edu.washington.cs.oneswarm.f2f.OSF2FMain;
 import edu.washington.cs.oneswarm.f2f.servicesharing.EchoServer;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
+import edu.washington.cs.oneswarm.planetlab.ping.ExperimentalSearchManager;
+import edu.washington.cs.oneswarm.planetlab.ping.SetupPacketTraceRoute;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 import edu.washington.cs.oneswarm.test.util.TwoProcessTestBase;
 
 public class ServiceSharingTest extends TwoProcessTestBase {
-    private static final int SEARCH_KEY = ServiceSharingSingleProcessTest.SEARCH_KEY;
     private final static int ECHO_PORT = ServiceSharingSingleProcessTest.ECHO_PORT;
     private final static int CLIENT_PORT = ServiceSharingSingleProcessTest.CLIENT_PORT;
     private final static String LOCALHOST = ServiceSharingSingleProcessTest.LOCALHOST;
@@ -50,10 +52,17 @@ public class ServiceSharingTest extends TwoProcessTestBase {
          */
 
         try {
-            tellRemoteToShareService("echo", SEARCH_KEY, LOCALHOST, ECHO_PORT);
+            long searchKey = ExperimentalSearchManager.createSpecialSearch(0,
+                    ExperimentalSearchManager.TYPE_SERVICE_PING, new byte[3]).getInfohashhash();
+
+            tellRemoteToShareService("echo", searchKey, LOCALHOST, ECHO_PORT);
             // Register the client service
             ServiceSharingManager.getInstance().registerClientService("echoclient", CLIENT_PORT,
-                    SEARCH_KEY);
+                    searchKey);
+            // Add traceroute
+            SetupPacketTraceRoute tracerouteListener = new SetupPacketTraceRoute();
+            OSF2FMain.getSingelton().getOverlayManager().setSetupPacketListener(tracerouteListener);
+
             Thread.sleep(5000);
             ServiceSharingSingleProcessTest.doEchoTest();
         } catch (Exception e) {
