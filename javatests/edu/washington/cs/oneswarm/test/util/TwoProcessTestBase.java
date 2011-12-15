@@ -12,7 +12,7 @@ import com.thoughtworks.selenium.Selenium;
 
 import edu.washington.cs.oneswarm.test.integration.oop.LocalOneSwarm;
 
-public class TwoProcessTestBase extends OneSwarmTestBase {
+public class TwoProcessTestBase extends LocalProcessesTestBase {
 
     private static Logger logger = Logger.getLogger(TwoProcessTestBase.class.getName());
 
@@ -43,7 +43,7 @@ public class TwoProcessTestBase extends OneSwarmTestBase {
         }
 
         // Start a local client in this JVM
-        TestUtils.awaitJVMOneSwarmStart();
+        startLocalInstance();
 
         // One additional remote client with which we'll chat
         localOneSwarm = TestUtils.spawnOneSwarmInstance(connectPeers, experimentalInstance);

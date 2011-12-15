@@ -27,7 +27,7 @@ import edu.washington.cs.oneswarm.test.integration.oop.LocalOneSwarm;
  * @author isdal
  * 
  */
-public class ThreeProcessTestBase extends OneSwarmTestBase {
+public class ThreeProcessTestBase extends LocalProcessesTestBase {
 
     private static Logger logger = Logger.getLogger(ThreeProcessTestBase.class.getName());
 
@@ -63,7 +63,7 @@ public class ThreeProcessTestBase extends OneSwarmTestBase {
         }
 
         // Start a local client in this JVM
-        TestUtils.awaitJVMOneSwarmStart();
+        startLocalInstance();
 
         // Fire up the other instances
         startInstances();

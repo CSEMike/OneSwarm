@@ -32,6 +32,7 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FSearchResp;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FTextSearch;
 import edu.washington.cs.oneswarm.f2f.network.OverlayTransport.WriteQueueWaiter;
 import edu.washington.cs.oneswarm.f2f.network.QueueManager.QueueBuckets;
+import edu.washington.cs.oneswarm.f2f.servicesharing.OSF2FServiceDataMsg;
 
 class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
 
@@ -141,6 +142,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
         }
     }
 
+    @Override
     public int compareTo(FriendConnectionQueue o) {
         if (friendScore > o.getFriendScore(false)) {
             return 1;
@@ -511,8 +513,9 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
      * @param message
      */
     protected void setupListenerNotify(OSF2FMessage message) {
-        if (setupPacketListener != null && (message instanceof OSF2FChannelMsg)) {
-            OSF2FChannelMsg channelMessage = (OSF2FChannelMsg) message;
+        if (setupPacketListener != null && (message instanceof OSF2FServiceDataMsg)) {
+            OSF2FChannelMsg channelMessage = (OSF2FServiceDataMsg) message;
+            logger.info("NOTIFY, bytes=" + channelMessage.getByteInChannel());
             if (channelMessage.getByteInChannel() == 0) {
                 setupPacketListener.packetReadyForAzureusQueue(channelMessage);
             }
@@ -757,6 +760,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
          * -----------------------------
          */
 
+        @Override
         public void dataBytesSent(int byte_count) {
             dataBytesUploaded += byte_count;
             friend.updateUploaded(byte_count);
@@ -772,9 +776,11 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
             }
         }
 
+        @Override
         public void flush() {
         }
 
+        @Override
         public boolean messageAdded(Message message) {
             int len = getMessageLen(message);
             queueManager.messageQueued(len);
@@ -797,9 +803,11 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
             return (true);
         }
 
+        @Override
         public void messageQueued(Message message) {
         }
 
+        @Override
         public void messageRemoved(Message message) {
             /*
              * check if we need to reregister
@@ -816,6 +824,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
             accountingQueueLength -= len;
         }
 
+        @Override
         public void messageSent(Message message) {
             /*
              * check if we need to reregister
@@ -895,6 +904,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
                     + " searchQueueLen=" + searchQueue.size());
         }
 
+        @Override
         public void protocolBytesSent(int byte_count) {
             protocolBytesUploaded += byte_count;
             friend.updateUploaded(byte_count);

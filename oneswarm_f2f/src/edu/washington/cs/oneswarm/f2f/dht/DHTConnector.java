@@ -338,7 +338,8 @@ public class DHTConnector {
             if (chtClientUDP != null && isChtEnabled()) {
                 chtLookupAndConnect(friend, triedIps, key, "secret loc");
             }
-            if (allowDht && getDht().isAvailable()) {
+            if (allowDht && getDht().isAvailable()
+                    && COConfigurationManager.getBooleanParameter("dht.enabled")) {
                 dhtLookupAndConnect(friend, triedIps, key, "secret loc");
             } else {
                 friend.updateConnectionLog(true, "DHT not available");
@@ -569,7 +570,9 @@ public class DHTConnector {
             @Override
             public void valueReceived(byte[] key, byte[] value) {
                 try {
-                    decryptAndConnect(triedIps, friend, value, "UDP:CHT (" + locSource + ")");
+                    if (isChtEnabled()) {
+                        decryptAndConnect(triedIps, friend, value, "UDP:CHT (" + locSource + ")");
+                    }
                 } catch (Exception e) {
                     friend.updateConnectionLog(true, "UDP cht value error: " + e.getMessage());
                     e.printStackTrace();

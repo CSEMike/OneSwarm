@@ -29,10 +29,10 @@ import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceChannelEndpoint;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingLoopback;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
 import edu.washington.cs.oneswarm.planetlab.ping.ExperimentalSearchManager;
-import edu.washington.cs.oneswarm.test.util.OneSwarmTestBase;
+import edu.washington.cs.oneswarm.test.util.LocalProcessesTestBase;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 
-public class ServiceSharingSingleProcessTest extends OneSwarmTestBase {
+public class ServiceSharingSingleProcessTest extends LocalProcessesTestBase {
 
     static final int SEARCH_KEY = 12345;
     static Logger logger = Logger.getLogger(ServiceSharingSingleProcessTest.class.getName());
@@ -43,7 +43,7 @@ public class ServiceSharingSingleProcessTest extends OneSwarmTestBase {
 
     @BeforeClass
     public static void setupClass() {
-        TestUtils.awaitJVMOneSwarmStart();
+        startLocalInstance();
     }
 
     @Before

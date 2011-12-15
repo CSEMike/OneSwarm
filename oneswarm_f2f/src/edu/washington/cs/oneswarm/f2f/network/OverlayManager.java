@@ -194,6 +194,16 @@ public class OverlayManager {
     }
 
     public void createOutgoingConnection(ConnectionEndpoint remoteFriendAddr, Friend friend) {
+        for (FriendConnection connection : connections.values()) {
+            if (connection.getRemoteFriend().equals(friend)) {
+                String address = remoteFriendAddr.getNotionalAddress().getAddress()
+                        .getHostAddress();
+                if (connection.getRemoteIp().getHostAddress().equals(address)) {
+                    logger.fine("Skipping friend connection, already connected to target address");
+                    return;
+                }
+            }
+        }
         final FriendConnection fc = new FriendConnection(stats, queueManager, remoteFriendAddr,
                 friend, filelistManager, new FriendConnectionListener());
         /*

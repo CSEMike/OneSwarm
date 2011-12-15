@@ -155,6 +155,6 @@ public class OSF2FChannelDataMsg extends OSF2FChannelMsg {
             buffer[1].returnToPool();
         }
         buffer[1] = newPayload;
-        // updateMessageLength();
+        updateMessageLength();
     }
 }

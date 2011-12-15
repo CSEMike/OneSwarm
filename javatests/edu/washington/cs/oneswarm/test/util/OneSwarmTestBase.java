@@ -17,7 +17,6 @@ public class OneSwarmTestBase {
             logger.removeHandler(h);
         }
         logger.addHandler(handler);
-
     }
 
     protected void logFinest(Logger logger) {

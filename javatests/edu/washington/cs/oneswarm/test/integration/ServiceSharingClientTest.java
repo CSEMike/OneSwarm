@@ -24,6 +24,7 @@ import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingLoopback;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
 import edu.washington.cs.oneswarm.planetlab.ping.ExperimentalSearchManager;
 import edu.washington.cs.oneswarm.test.util.ConditionWaiter;
+import edu.washington.cs.oneswarm.test.util.LocalProcessesTestBase;
 import edu.washington.cs.oneswarm.test.util.OneSwarmTestBase;
 import edu.washington.cs.oneswarm.test.util.TestReceivedServer;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
@@ -33,9 +34,9 @@ import edu.washington.cs.oneswarm.test.util.TestUtils;
  * ServiceSharingSingleProcessTest but only sends data in one direction.
  * 
  * @author Krysta Yousoufian
- *
+ * 
  */
-public class ServiceSharingClientTest extends OneSwarmTestBase {
+public class ServiceSharingClientTest extends LocalProcessesTestBase {
 
     static final int SEARCH_KEY = 12345;
     static Logger logger = Logger.getLogger(ServiceSharingClientTest.class.getName());
@@ -49,7 +50,7 @@ public class ServiceSharingClientTest extends OneSwarmTestBase {
 
     @BeforeClass
     public static void setupClass() {
-        TestUtils.awaitJVMOneSwarmStart();
+        startLocalInstance();
     }
 
     @Before
@@ -71,27 +72,27 @@ public class ServiceSharingClientTest extends OneSwarmTestBase {
 
     @Test
     public void testLocalServiceClient() throws Exception {
-    	/*
-    	 * Verify that data can be sent from client to server
-    	 * 
-    	 * Test plan:
+        /*
+         * Verify that data can be sent from client to server
+         * 
+         * Test plan:
          * * Start OneSwarm (done in setupClass())
          * * Start local server
          * * Register one server service
          * * Register one client service
          * * Send bytes from client to server
          * * Verify that server receives bytes
-    	 */
-    	
+         */
+
         try {
             // Register the server service
             ServiceSharingManager.getInstance().registerSharedService(SEARCH_KEY, "testReceived",
                     new InetSocketAddress(LOCALHOST, SERVICE_PORT));
 
             // Register the client service
-            ServiceSharingManager.getInstance().registerClientService("testReceivedClient", CLIENT_PORT,
-                    SEARCH_KEY);
-            
+            ServiceSharingManager.getInstance().registerClientService("testReceivedClient",
+                    CLIENT_PORT, SEARCH_KEY);
+
             // Create the server and open the client socket
             server = new TestReceivedServer(SERVICE_PORT);
             server.startDaemonThread(true);
@@ -99,16 +100,16 @@ public class ServiceSharingClientTest extends OneSwarmTestBase {
 
             // Send the traceroute number
             testDataSent(ByteManip.itob(ExperimentalSearchManager.MAGIC_NUMBER));
-            
+
             // test 1 byte
             testDataSent("t".getBytes("UTF-8"));
 
             // test a couple of bytes
             testDataSent("hellš".getBytes("UTF-8"));
-            
-            // Send 
+
+            // Send
             testRandomDataSent(DataMessage.MAX_PAYLOAD_SIZE);
-            
+
         } catch (Exception e) {
             e.printStackTrace();
             logger.severe(e.toString());
@@ -118,18 +119,18 @@ public class ServiceSharingClientTest extends OneSwarmTestBase {
         }
 
     }
-    
+
     private void testRandomDataSent(int numBytes) {
         byte[] out = new byte[numBytes];
         random.nextBytes(out);
     }
-    
-    private void testDataSent(byte[] out) throws IOException {        
-    	// Send data
+
+    private void testDataSent(byte[] out) throws IOException {
+        // Send data
         long startTime = System.currentTimeMillis();
         OutputStream outStream = clientSocket.getOutputStream();
         outStream.write(out);
-        
+
         // Wait for data to be received
         new ConditionWaiter(new ConditionWaiter.Predicate() {
             @Override
@@ -137,7 +138,7 @@ public class ServiceSharingClientTest extends OneSwarmTestBase {
                 return server.hasData();
             }
         }, 1000 * 1000).await();
-        
+
         assertTrue(server.hasData());
         assertEquals(out, server.getLatestData());
         server.clearData();

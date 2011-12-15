@@ -9,7 +9,7 @@ import com.aelitis.azureus.ui.UIFunctionsManager;
 import com.thoughtworks.selenium.DefaultSelenium;
 import com.thoughtworks.selenium.Selenium;
 
-public class SingleProcessTestBase {
+public class SingleProcessTestBase extends LocalProcessesTestBase {
 
     /** The locally running selenium test server. */
     static Process seleniumServer;
@@ -20,7 +20,7 @@ public class SingleProcessTestBase {
     @BeforeClass
     public static void setUpClass() throws Exception {
         seleniumServer = TestUtils.startSeleniumServer((new File(".").getAbsolutePath()));
-        TestUtils.awaitJVMOneSwarmStart();
+        startLocalInstance();
 
         selenium = new DefaultSelenium("127.0.0.1", 4444, "*firefox", TestUtils.JVM_INSTANCE_WEB_UI) {
             // Fix for bug:

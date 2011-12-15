@@ -75,6 +75,7 @@ import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExec
 import edu.washington.cs.oneswarm.f2f.network.OverlayManager.FriendConnectionListener;
 import edu.washington.cs.oneswarm.f2f.network.OverlayTransport.WriteQueueWaiter;
 import edu.washington.cs.oneswarm.f2f.network.QueueManager.QueueBuckets;
+import edu.washington.cs.oneswarm.f2f.servicesharing.OSF2FServiceDataMsg;
 import edu.washington.cs.oneswarm.plugins.PluginCallback;
 
 public class FriendConnection implements DatagramListener {
@@ -206,6 +207,7 @@ public class FriendConnection implements DatagramListener {
     public FriendConnection(GlobalManagerStats stats, QueueManager _queueManager,
             ConnectionEndpoint remoteFriendAddr, Friend _remoteFriend,
             FileListManager _filelistManager, FriendConnectionListener _listener) {
+        new Exception().printStackTrace();
         remoteFriendAddr
                 .addProtocol(new ProtocolEndpointTCP(remoteFriendAddr.getNotionalAddress()));
         if (COConfigurationManager.getBooleanParameter("oneswarm.beta.updates")) {
@@ -1379,8 +1381,9 @@ public class FriendConnection implements DatagramListener {
     }
 
     void sendChannelMsg(OSF2FChannelMsg message, boolean transport) {
-        if (udpConnection != null && message.isDatagram() && udpConnection.isSendingActive()) {
-            sendUdpPacket(message);
+        if (udpConnection != null && message.isDatagram() && udpConnection.isSendingActive()
+                && message instanceof OSF2FServiceDataMsg) {
+            sendUdpPacket((OSF2FServiceDataMsg) message);
             return;
         }
         if (debugMessageLog != null) {
@@ -2473,12 +2476,14 @@ public class FriendConnection implements DatagramListener {
         incomingListener.messageReceived(message);
     }
 
-    private void sendUdpPacket(OSF2FChannelMsg message) {
+    private void sendUdpPacket(OSF2FServiceDataMsg message) {
         if (!UDP_ENABLED_MESSAGES.contains(message.getID())) {
             logger.warning("Got invalid message type from udp channel on friendconnection: "
                     + toString());
             return;
         }
+        // Notify the setup packet listener
+        friendConnectionQueue.setupListenerNotify(message);
         stats.protocolBytesSent(OSF2FMessage.MESSAGE_HEADER_LEN, isLanLocal());
         int size = message.getMessageSize();
         if (message.getType() == Message.TYPE_DATA_PAYLOAD) {
@@ -2486,6 +2491,7 @@ public class FriendConnection implements DatagramListener {
         } else {
             stats.protocolBytesSent(size, isLanLocal());
         }
+
         udpConnection.sendMessage(message);
     }
 

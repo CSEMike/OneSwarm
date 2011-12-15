@@ -77,8 +77,11 @@ public abstract class OverlayEndpoint implements EndpointInterface {
 
     protected abstract void cleanup();
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#isOutgoing()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#isOutgoing()
      */
     @Override
     public boolean isOutgoing() {
@@ -91,8 +94,12 @@ public abstract class OverlayEndpoint implements EndpointInterface {
         cleanup();
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#close(java.lang.String)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#close(java.lang
+     * .String)
      */
     @Override
     public void close(String reason) {
@@ -109,8 +116,12 @@ public abstract class OverlayEndpoint implements EndpointInterface {
         deregister();
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#closeChannelReset()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#closeChannelReset
+     * ()
      */
     @Override
     public void closeChannelReset() {
@@ -130,8 +141,11 @@ public abstract class OverlayEndpoint implements EndpointInterface {
         }
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#closeConnectionClosed(java.lang.String)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#
+     * closeConnectionClosed(java.lang.String)
      */
     @Override
     public void closeConnectionClosed(FriendConnection f, String reason) {
@@ -144,7 +158,9 @@ public abstract class OverlayEndpoint implements EndpointInterface {
 
     protected abstract void destroyBufferedMessages();
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getAge()
      */
     @Override
@@ -152,32 +168,45 @@ public abstract class OverlayEndpoint implements EndpointInterface {
         return System.currentTimeMillis() - startTime;
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getArtificialDelay()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getArtificialDelay
+     * ()
      */
     @Override
     public long getArtificialDelay() {
         return overlayDelayMs;
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getBytesIn()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getBytesIn()
      */
     @Override
     public long getBytesIn() {
         return bytesIn;
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getBytesOut()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getBytesOut()
      */
     @Override
     public long getBytesOut() {
         return bytesOut;
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getChannelId()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getChannelId()
      */
     @Override
     public int[] getChannelId() {
@@ -186,8 +215,11 @@ public abstract class OverlayEndpoint implements EndpointInterface {
         return channels;
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getDescription()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getDescription()
      */
     @Override
     public String getDescription() {
@@ -199,23 +231,32 @@ public abstract class OverlayEndpoint implements EndpointInterface {
         return desc;
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getDownloadRate()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getDownloadRate
+     * ()
      */
     @Override
     public int getDownloadRate() {
         return (int) downloadRateAverage.getAverage();
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getLastMsgTime()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getLastMsgTime()
      */
     @Override
     public long getLastMsgTime() {
         return System.currentTimeMillis() - lastMsgTime;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getPathID()
      */
     @Override
@@ -225,24 +266,34 @@ public abstract class OverlayEndpoint implements EndpointInterface {
         return paths;
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getRemoteFriend()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getRemoteFriend
+     * ()
      */
     @Override
     public Friend getRemoteFriend() {
         return friendConnection.getRemoteFriend();
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getRemoteIP()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getRemoteIP()
      */
     @Override
     public String getRemoteIP() {
         return friendConnection.getRemoteIp().getHostAddress();
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getUploadRate()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getUploadRate()
      */
     @Override
     public int getUploadRate() {
@@ -251,8 +302,12 @@ public abstract class OverlayEndpoint implements EndpointInterface {
 
     protected abstract void handleDelayedOverlayMessage(final OSF2FChannelDataMsg msg);
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#incomingOverlayMsg(edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#incomingOverlayMsg
+     * (edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg)
      */
     @Override
     public void incomingOverlayMsg(final OSF2FChannelDataMsg msg) {
@@ -278,15 +333,20 @@ public abstract class OverlayEndpoint implements EndpointInterface {
                 });
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#isLANLocal()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#isLANLocal()
      */
     @Override
     public boolean isLANLocal() {
         return friendConnection.getNetworkConnection().isLANLocal();
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#isStarted()
      */
     @Override
@@ -294,8 +354,11 @@ public abstract class OverlayEndpoint implements EndpointInterface {
         return started;
     }
 
-    /* (non-Javadoc)
-     * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#isTimedOut()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#isTimedOut()
      */
     @Override
     public boolean isTimedOut() {
@@ -308,7 +371,9 @@ public abstract class OverlayEndpoint implements EndpointInterface {
                 channelId));
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see edu.washington.cs.oneswarm.f2f.network.EndpointInterface#start()
      */
     @Override
