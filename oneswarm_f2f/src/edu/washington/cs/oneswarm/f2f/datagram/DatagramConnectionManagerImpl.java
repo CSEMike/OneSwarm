@@ -92,28 +92,30 @@ public class DatagramConnectionManagerImpl extends CoreWaiter implements Datagra
 
     private boolean doMultihomeCheck(DatagramPacket packet, int port, InetAddress address,
             String key) {
-        Long lastChecked = unknownIncomingConnections.get(key);
-        if (lastChecked == null
-                || System.currentTimeMillis() - lastChecked > MIN_MULTIHOME_KEY_CHECK_PERIOD) {
-            unknownIncomingConnections.put(key, System.currentTimeMillis());
-            logger.finest("checking if multihomed source");
+        synchronized (connections) {
+            Long lastChecked = unknownIncomingConnections.get(key);
+            if (lastChecked == null
+                    || System.currentTimeMillis() - lastChecked > MIN_MULTIHOME_KEY_CHECK_PERIOD) {
+                logger.finest("checking if multihomed source");
 
-            LinkedList<DatagramConnection> conns = new LinkedList<DatagramConnection>(
-                    connections.values());
-            for (DatagramConnection c : conns) {
-                // Only check connections on the same port.
-                if (c.getRemotePort() == port) {
-                    if (c.messageReceived(packet)) {
-                        logger.fine("Found multihomed friend, adding remote address to datagram connection: "
-                                + address);
-                        String newKey = c.addRemoteIpPort(address, port);
-                        connections.put(newKey, c);
-                        return true;
+                LinkedList<DatagramConnection> conns = new LinkedList<DatagramConnection>(
+                        connections.values());
+                for (DatagramConnection c : conns) {
+                    // Only check connections on the same port.
+                    if (c.getRemotePort() == port) {
+                        unknownIncomingConnections.put(key, System.currentTimeMillis());
+                        if (c.messageReceived(packet)) {
+                            logger.fine("Found multihomed friend, adding remote address to datagram connection: "
+                                    + address);
+                            String newKey = c.addRemoteIpPort(address, port);
+                            connections.put(newKey, c);
+                            return true;
+                        }
                     }
                 }
             }
+            return false;
         }
-        return false;
     }
 
     static String getKey(InetAddress address, int port) {
@@ -122,15 +124,17 @@ public class DatagramConnectionManagerImpl extends CoreWaiter implements Datagra
 
     @Override
     public void register(DatagramConnection connection) {
-        Set<String> keys = connection.getKeys();
-        for (String key : keys) {
-            logger.fine("registering connection to key: " + key);
-            DatagramConnection existing = connections.get(key);
-            if (existing != null) {
-                logger.warning("Registered udp connection but one is already there!");
-                existing.close();
+        synchronized (connections) {
+            Set<String> keys = connection.getKeys();
+            for (String key : keys) {
+                logger.fine("registering connection to key: " + key);
+                DatagramConnection existing = connections.get(key);
+                if (existing != null) {
+                    logger.warning("Registered udp connection but one is already there!");
+                    existing.close();
+                }
+                connections.put(key, connection);
             }
-            connections.put(key, connection);
         }
     }
 
@@ -148,12 +152,16 @@ public class DatagramConnectionManagerImpl extends CoreWaiter implements Datagra
 
     @Override
     public void deregister(DatagramConnection conn) {
-        Set<String> keys = conn.getKeys();
-        for (String key : keys) {
-            DatagramConnection registered = connections.get(key);
-            if (registered != null && registered.equals(conn)) {
-                connections.remove(key);
-                logger.fine("Deregistering " + key);
+        synchronized (connections) {
+
+            Set<String> keys = conn.getKeys();
+            for (String key : keys) {
+                DatagramConnection registered = connections.get(key);
+                if (registered != null && registered.equals(conn)) {
+                    connections.remove(key);
+                    unknownIncomingConnections.remove(key);
+                    logger.fine("Deregistering " + key);
+                }
             }
         }
     }
