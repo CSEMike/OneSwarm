@@ -15,6 +15,7 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService;
+import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExecutor;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.OverlayEndpoint;
 import edu.washington.cs.oneswarm.f2f.network.OverlayTransport;
@@ -36,6 +37,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     private static final byte ss = 0;
     private static final double EWMA = 0.25;
     private static final double RETRANSMISSION_PERIOD = 2;
+    private final DelayedExecutor delayedExecutor;
     protected AbstractServiceConnection serviceAggregator;
     protected final Hashtable<SequenceNumber, sentMessage> sentMessages;
     private int outstandingBytes;
@@ -51,6 +53,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
         this.sentMessages = new Hashtable<SequenceNumber, sentMessage>();
         this.outstandingBytes = 0;
+        this.delayedExecutor = DelayedExecutorService.getInstance().getVariableDelayExecutor();
 
         this.started = true;
         friendConnection.isReadyForWrite(new OverlayTransport.WriteQueueWaiter() {
@@ -124,7 +127,8 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     public void writeMessage(final SequenceNumber num, DirectByteBuffer buffer) {
         int length = buffer.remaining(ss);
         ReferenceCountedDirectByteBuffer copy = buffer.getReferenceCountedBuffer();
-        this.sentMessages.put(num, new sentMessage(copy, length));
+        sentMessage sent = new sentMessage(num, copy, length);
+        this.sentMessages.put(num, sent);
         this.outstandingBytes += length;
         OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,
                 num.getNum(), (short) 0, new int[0], copy);
@@ -139,20 +143,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         bytesOut += totalWritten;
 
         // Remember the message may need to be retransmitted.
-        DelayedExecutorService des = DelayedExecutorService.getInstance();
-        des.getVariableDelayExecutor().queue(2 * this.latency, new TimerTask() {
-            @Override
-            public void run() {
-                sentMessage m = sentMessages.get(num);
-                if (m != null) {
-                    outstandingBytes -= m.length;
-                    sentMessages.remove(num);
-                    writeMessage(num, m.msg);
-                    // Decrement the reference count for the lost message.
-                    m.msg.returnToPool();
-                }
-            }
-        });
+        delayedExecutor.queue((long) (RETRANSMISSION_PERIOD * this.latency), sent);
     }
 
     public int getOutstanding() {
@@ -177,25 +168,50 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
     public void forgetMessage(SequenceNumber num) {
         sentMessage msg = this.sentMessages.remove(num);
-        msg.msg.returnToPool();
+        msg.cancel();
         this.outstandingBytes -= msg.length;
         long sample = System.currentTimeMillis() - msg.creation;
         this.latency = (long) (this.latency * (1 - EWMA) + sample * EWMA);
         if (sample < minLatency) {
             minLatency = sample;
         }
+
+        // Assume pending messages sent before this one were lost.
+        for (sentMessage m : this.sentMessages.values()) {
+            if (m.creation < msg.creation) {
+                m.run();
+            }
+        }
     }
 
-    private class sentMessage {
+    private class sentMessage extends TimerTask {
         public ReferenceCountedDirectByteBuffer msg;
         public int length;
         public long creation;
+        private final SequenceNumber num;
 
-        public sentMessage(ReferenceCountedDirectByteBuffer msg, int length) {
+        public sentMessage(SequenceNumber num, ReferenceCountedDirectByteBuffer msg, int length) {
             this.creation = System.currentTimeMillis();
             this.msg = msg;
             msg.incrementReferenceCount();
             this.length = length;
+            this.num = num;
+        }
+
+        @Override
+        public void run() {
+            if (sentMessages.remove(num) != null) {
+                outstandingBytes -= length;
+                writeMessage(num, msg);
+                // Decrement the reference count for the lost message.
+                msg.returnToPool();
+            }
+        }
+
+        @Override
+        public boolean cancel() {
+            msg.returnToPool();
+            return super.cancel();
         }
     }
 }
