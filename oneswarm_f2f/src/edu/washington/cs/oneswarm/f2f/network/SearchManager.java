@@ -608,7 +608,7 @@ public class SearchManager {
         }
 
         if (!allowed) {
-            logger.warning("got search match for torrent " + "that does not allow osf2f peers");
+            logger.finer("got search match for torrent " + "that does not allow osf2f peers");
             return true;
         }
 
