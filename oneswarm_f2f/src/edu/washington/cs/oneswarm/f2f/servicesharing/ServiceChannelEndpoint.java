@@ -32,9 +32,11 @@ import edu.washington.cs.oneswarm.f2f.network.OverlayTransport;
 public class ServiceChannelEndpoint extends OverlayEndpoint {
     public final static Logger logger = Logger.getLogger(ServiceChannelEndpoint.class.getName());
     private static final byte ss = 0;
+    private static final double EWMA = 0.25;
     protected AbstractServiceConnection serviceAggregator;
     protected final Hashtable<SequenceNumber, sentMessage> sentMessages;
     private int outstandingBytes;
+    private long latency;
 
     public ServiceChannelEndpoint(AbstractServiceConnection aggregator,
             FriendConnection connection, OSF2FHashSearch search, OSF2FHashSearchResp response,
@@ -137,6 +139,18 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         return this.outstandingBytes;
     }
 
+    /**
+     * Get the recent latency experienced on the channel. Latency is recorded as
+     * an exponentially weighted moving average. Each acknowledgment is weighted
+     * as some fraction of the total latency, and previous samples are decayed
+     * accordingly.
+     * 
+     * @return Channel latency estimate.
+     */
+    public long getLatency() {
+        return this.latency;
+    }
+
     public DirectByteBuffer getMessage(SequenceNumber num) {
         return this.sentMessages.get(num).msg;
     }
@@ -145,13 +159,21 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         sentMessage msg = this.sentMessages.remove(num);
         msg.msg.returnToPool();
         this.outstandingBytes -= msg.length;
+        long sample = System.currentTimeMillis() - msg.creation;
+        if (this.latency == 0) {
+            this.latency = sample;
+        } else {
+            this.latency = (long) (this.latency * (1 - EWMA) + sample * EWMA);
+        }
     }
 
     private class sentMessage {
         public ReferenceCountedDirectByteBuffer msg;
         public int length;
+        public long creation;
 
         public sentMessage(ReferenceCountedDirectByteBuffer msg, int length) {
+            this.creation = System.currentTimeMillis();
             this.msg = msg;
             msg.incrementReferenceCount();
             this.length = length;
