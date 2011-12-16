@@ -1,6 +1,7 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.util.Hashtable;
+import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -13,6 +14,7 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
+import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.OverlayEndpoint;
 import edu.washington.cs.oneswarm.f2f.network.OverlayTransport;
@@ -33,10 +35,12 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     public final static Logger logger = Logger.getLogger(ServiceChannelEndpoint.class.getName());
     private static final byte ss = 0;
     private static final double EWMA = 0.25;
+    private static final double RETRANSMISSION_PERIOD = 2;
     protected AbstractServiceConnection serviceAggregator;
     protected final Hashtable<SequenceNumber, sentMessage> sentMessages;
     private int outstandingBytes;
-    private long latency;
+    private long latency = 1000;
+    private long minLatency = Long.MAX_VALUE;
 
     public ServiceChannelEndpoint(AbstractServiceConnection aggregator,
             FriendConnection connection, OSF2FHashSearch search, OSF2FHashSearchResp response,
@@ -117,7 +121,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         }
     }
 
-    public void writeMessage(SequenceNumber num, DirectByteBuffer buffer) {
+    public void writeMessage(final SequenceNumber num, DirectByteBuffer buffer) {
         int length = buffer.remaining(ss);
         ReferenceCountedDirectByteBuffer copy = buffer.getReferenceCountedBuffer();
         this.sentMessages.put(num, new sentMessage(copy, length));
@@ -133,6 +137,22 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         }
         super.writeMessage(msg);
         bytesOut += totalWritten;
+
+        // Remember the message may need to be retransmitted.
+        DelayedExecutorService des = DelayedExecutorService.getInstance();
+        des.getVariableDelayExecutor().queue(2 * this.latency, new TimerTask() {
+            @Override
+            public void run() {
+                sentMessage m = sentMessages.get(num);
+                if (m != null) {
+                    outstandingBytes -= m.length;
+                    sentMessages.remove(num);
+                    writeMessage(num, m.msg);
+                    // Decrement the reference count for the lost message.
+                    m.msg.returnToPool();
+                }
+            }
+        });
     }
 
     public int getOutstanding() {
@@ -160,10 +180,9 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         msg.msg.returnToPool();
         this.outstandingBytes -= msg.length;
         long sample = System.currentTimeMillis() - msg.creation;
-        if (this.latency == 0) {
-            this.latency = sample;
-        } else {
-            this.latency = (long) (this.latency * (1 - EWMA) + sample * EWMA);
+        this.latency = (long) (this.latency * (1 - EWMA) + sample * EWMA);
+        if (sample < minLatency) {
+            minLatency = sample;
         }
     }
 
