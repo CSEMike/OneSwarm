@@ -27,7 +27,9 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDatagramInit;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDatagramOk;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessageFactory;
+import edu.washington.cs.oneswarm.test.integration.ServiceSharingFourProcessTest;
 import edu.washington.cs.oneswarm.test.util.OneSwarmTestBase;
+import edu.washington.cs.oneswarm.test.util.TestUtils;
 
 public class DatagramConnectionTest extends OneSwarmTestBase {
     public static final byte AL = DirectByteBuffer.AL_MSG;
@@ -391,5 +393,10 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
         Assert.assertTrue(percentReceived > 0.8,
                 String.format("high packet loss (%.1f) percent", percentReceived));
 
+    }
+
+    /** Boilerplate code for running as executable. */
+    public static void main(String[] args) throws Exception {
+        TestUtils.swtCompatibleTestRunner(DatagramConnectionTest.class);
     }
 }

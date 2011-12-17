@@ -1,6 +1,8 @@
 package edu.washington.cs.oneswarm.test.integration;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -22,10 +24,8 @@ import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceChannelEndpoint;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingLoopback;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
-import edu.washington.cs.oneswarm.planetlab.ping.ExperimentalSearchManager;
 import edu.washington.cs.oneswarm.test.util.ConditionWaiter;
 import edu.washington.cs.oneswarm.test.util.LocalProcessesTestBase;
-import edu.washington.cs.oneswarm.test.util.OneSwarmTestBase;
 import edu.washington.cs.oneswarm.test.util.TestReceivedServer;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 
@@ -97,9 +97,6 @@ public class ServiceSharingClientTest extends LocalProcessesTestBase {
             server = new TestReceivedServer(SERVICE_PORT);
             server.startDaemonThread(true);
             clientSocket = new Socket(LOCALHOST, CLIENT_PORT);
-
-            // Send the traceroute number
-            testDataSent(ByteManip.itob(ExperimentalSearchManager.MAGIC_NUMBER));
 
             // test 1 byte
             testDataSent("t".getBytes("UTF-8"));

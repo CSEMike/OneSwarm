@@ -28,7 +28,6 @@ import edu.washington.cs.oneswarm.f2f.servicesharing.EchoServer;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceChannelEndpoint;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingLoopback;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
-import edu.washington.cs.oneswarm.planetlab.ping.ExperimentalSearchManager;
 import edu.washington.cs.oneswarm.test.util.LocalProcessesTestBase;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 
@@ -96,6 +95,11 @@ public class ServiceSharingSingleProcessTest extends LocalProcessesTestBase {
         }
     }
 
+    static void doEchoTest() throws UnknownHostException, IOException,
+            UnsupportedEncodingException, InterruptedException {
+        doEchoTest(null);
+    }
+
     /**
      * Helper method for testing sharing of an echo service.
      * 
@@ -104,7 +108,7 @@ public class ServiceSharingSingleProcessTest extends LocalProcessesTestBase {
      * @throws UnsupportedEncodingException
      * @throws InterruptedException
      */
-    static void doEchoTest() throws UnknownHostException, IOException,
+    static void doEchoTest(Integer initialPayload) throws UnknownHostException, IOException,
             UnsupportedEncodingException, InterruptedException {
         // Echo server.
         EchoServer echoServer = new EchoServer(ECHO_PORT);
@@ -112,8 +116,11 @@ public class ServiceSharingSingleProcessTest extends LocalProcessesTestBase {
 
         Socket s = new Socket(LOCALHOST, CLIENT_PORT);
 
-        // add the traceroute magic number
-        writeReadVerify(ByteManip.itob(ExperimentalSearchManager.MAGIC_NUMBER), s);
+        // Send the initial payload if supplied
+        if (initialPayload != null) {
+            writeReadVerify(ByteManip.itob(initialPayload), s);
+        }
+
         // test 1 byte
         writeReadVerify("t".getBytes("UTF-8"), s);
 
