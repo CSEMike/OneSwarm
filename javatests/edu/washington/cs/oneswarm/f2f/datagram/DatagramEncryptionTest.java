@@ -17,6 +17,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import edu.washington.cs.oneswarm.test.util.OneSwarmTestBase;
+import edu.washington.cs.oneswarm.test.util.TestUtils;
 
 public class DatagramEncryptionTest extends OneSwarmTestBase {
 
@@ -280,7 +281,7 @@ public class DatagramEncryptionTest extends OneSwarmTestBase {
         }
     }
 
-    class IvTest extends DatagramEncrytionBase {
+    static class IvTest extends DatagramEncrytionBase {
         int bytecount = 0;
 
         public IvTest() throws Exception {
@@ -314,7 +315,10 @@ public class DatagramEncryptionTest extends OneSwarmTestBase {
             initCounter = num;
             ivSpec = setSequenceNumber(num, ivSpec.getIV());
             cipher.init(Cipher.ENCRYPT_MODE, key, ivSpec);
+        }
 
+        public static void main(String[] args) throws Exception {
+            // NOP
         }
     }
 
@@ -352,6 +356,11 @@ public class DatagramEncryptionTest extends OneSwarmTestBase {
             b.append(s);
         }
         return b.toString();
+    }
+
+    /** Boilerplate code for running as executable. */
+    public static void main(String[] args) throws Exception {
+        TestUtils.swtCompatibleTestRunner(DatagramEncryptionTest.class);
     }
 
 }

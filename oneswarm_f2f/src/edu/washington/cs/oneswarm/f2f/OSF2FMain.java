@@ -121,7 +121,7 @@ public class OSF2FMain {
                                     num++;
                                 }
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                System.err.println("class not found: " + e.getMessage());
                             }
                         }
 
@@ -188,15 +188,18 @@ public class OSF2FMain {
                 logWithTime("starting protocol matcher thread)", Level.FINE);
                 Thread t = new Thread(new Runnable() {
 
+                    @Override
                     public void run() {
                         logWithTime("Protocol matcher thread started", Level.FINE);
                         OsProtocolMatcher osMatcher = new OsProtocolMatcher(true);
                         NetworkManager.getSingleton().requestIncomingConnectionRouting(osMatcher,
                                 new OsNetworkRouterListener(), new MessageStreamFactory() {
+                                    @Override
                                     public MessageStreamDecoder createDecoder() {
                                         return new OSF2FMessageDecoder();
                                     }
 
+                                    @Override
                                     public MessageStreamEncoder createEncoder() {
                                         return new OSF2FMessageEncoder();
                                     }
@@ -206,10 +209,12 @@ public class OSF2FMain {
                         NetworkManager.getSingleton().requestIncomingConnectionRouting(
                                 osAuthMatcher, new OsAuthRouterListener(),
                                 new MessageStreamFactory() {
+                                    @Override
                                     public MessageStreamDecoder createDecoder() {
                                         return new OSF2FAuthMessageDecoder();
                                     }
 
+                                    @Override
                                     public MessageStreamEncoder createEncoder() {
                                         return new OSF2FAuthMessageEncoder();
                                     }
@@ -222,6 +227,7 @@ public class OSF2FMain {
                 t.start();
 
                 pIf.addListener(new PluginListener() {
+                    @Override
                     public void initializationComplete() {
                         AEThread2 t = new AEThread2("OSF2F::dhtConnect", true) {
                             @Override
@@ -244,9 +250,11 @@ public class OSF2FMain {
                         t.start();
                     }
 
+                    @Override
                     public void closedownInitiated() {
                     }
 
+                    @Override
                     public void closedownComplete() {
                     }
                 });
@@ -260,15 +268,19 @@ public class OSF2FMain {
                 logWithTime("loading sha1 matcher", Level.INFO);
                 sha1DownloadManager = new Sha1DownloadManager();
                 sha1DownloadManager.addHashJobListener(new Sha1HashJobListener() {
+                    @Override
                     public Sha1CalcListener jobAdded(String name) {
                         return new Sha1CalcListener() {
+                            @Override
                             public void completed(Sha1Result result) {
                                 fileListManager.scheduleFileListRefresh();
                             }
 
+                            @Override
                             public void errorOccured(Throwable cause) {
                             }
 
+                            @Override
                             public void progress(double fraction) {
                             }
                         };
@@ -365,10 +377,12 @@ public class OSF2FMain {
     }
 
     private class OsNetworkRouterListener implements NetworkManager.RoutingListener {
+        @Override
         public boolean autoCryptoFallback() {
             return (false);
         }
 
+        @Override
         public void connectionRouted(NetworkConnection connection, Object routing_data) {
 
             if (!connection.getTransport().getEncryption()
@@ -408,10 +422,12 @@ public class OSF2FMain {
     }
 
     private class OsAuthRouterListener implements NetworkManager.RoutingListener {
+        @Override
         public boolean autoCryptoFallback() {
             return (false);
         }
 
+        @Override
         public void connectionRouted(NetworkConnection connection, Object routing_data) {
 
             if (!connection.getTransport().getEncryption()
@@ -467,14 +483,17 @@ public class OSF2FMain {
             }
         }
 
+        @Override
         public byte[][] getSharedSecrets() {
             return null;
         }
 
+        @Override
         public int getSpecificPort() {
             return (-1);
         }
 
+        @Override
         public Object matches(TransportHelper transport, ByteBuffer to_compare, int port) {
 
             // System.out.println("incoming connection to match: "
@@ -497,18 +516,22 @@ public class OSF2FMain {
             return obj;
         }
 
+        @Override
         public int matchThisSizeOrBigger() {
             return (maxSize());
         }
 
+        @Override
         public int maxSize() {
             return size;
         }
 
+        @Override
         public Object minMatches(TransportHelper transport, ByteBuffer to_compare, int port) {
             return (matches(transport, to_compare, port));
         }
 
+        @Override
         public int minSize() {
             return maxSize();
         }

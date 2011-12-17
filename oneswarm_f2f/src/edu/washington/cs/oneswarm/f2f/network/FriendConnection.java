@@ -2292,6 +2292,8 @@ public class FriendConnection implements DatagramListener {
         }
 
         public void forwardMessage(OSF2FChannelMsg message) {
+            logger.finest("Packet to be forwarded: " + message.getDescription() + " forwarded="
+                    + bytesForwarded);
             message.setByteInChannel(bytesForwarded);
             if (setupPacketListener != null && bytesForwarded == 0) {
                 setupPacketListener.packetAddedToForwardQueue(FriendConnection.this, conn,
