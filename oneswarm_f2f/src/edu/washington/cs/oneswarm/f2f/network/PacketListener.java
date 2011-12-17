@@ -7,9 +7,9 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FSearchResp;
 
-public interface SetupPacketListener {
+public interface PacketListener {
 
-    public void packetReadyForAzureusQueue(OSF2FChannelMsg message);
+    public boolean packetReadyForAzureusQueue(OSF2FChannelMsg message);
 
     public void packetAddedToForwardQueue(FriendConnection source, FriendConnection destination,
             OSF2FSearch sourceMessage, OSF2FSearchResp setupMessage, boolean searcherSide,

@@ -109,7 +109,7 @@ public class OverlayManager {
     private boolean stopped = false;
     private final Timer t = new Timer("FriendConnectionInitialChecker", true);
 
-    private SetupPacketListener setupPacketListener;
+    private PacketListener packetListener;
 
     public OverlayManager(FriendManager _friendManager, PublicKey _ownPublicKey,
             FileListManager _fileListManager, GlobalManagerStats _stats) {
@@ -515,7 +515,7 @@ public class OverlayManager {
             if (isConnectionAllowed(connection.getNetworkConnection(),
                     connection.getRemotePublicKey())) {
                 connections.put(connection.hashCode(), connection);
-                connection.setSetupPacketListener(setupPacketListener);
+                connection.setPacketListener(packetListener);
                 /*
                  * don't mark remote friend as connected until after the
                  * oneswarm handshake message is received
@@ -544,15 +544,15 @@ public class OverlayManager {
         stopped = false;
     }
 
-    public void setSetupPacketListener(SetupPacketListener listener) {
-        this.setupPacketListener = listener;
+    public void setPacketListener(PacketListener listener) {
+        this.packetListener = listener;
         for (FriendConnection conn : connections.values()) {
-            conn.setSetupPacketListener(listener);
+            conn.setPacketListener(listener);
         }
     }
 
-    public SetupPacketListener getSetupPacketListener() {
-        return this.setupPacketListener;
+    public PacketListener getPacketListener() {
+        return this.packetListener;
     }
 
     public void sendChatMessage(int connectionId, String inPlaintextMessage) {

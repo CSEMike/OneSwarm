@@ -192,7 +192,7 @@ public class FriendConnection implements DatagramListener {
 
     private boolean mClosing;
 
-    private SetupPacketListener setupPacketListener;
+    private PacketListener setupPacketListener;
 
     DatagramConnectionManagerImpl udpManager = DatagramConnectionManagerImpl.get();
     DatagramConnection udpConnection;
@@ -294,9 +294,9 @@ public class FriendConnection implements DatagramListener {
         });
     }
 
-    public void setSetupPacketListener(SetupPacketListener listener) {
+    public void setPacketListener(PacketListener listener) {
         this.setupPacketListener = listener;
-        friendConnectionQueue.setSetupPacketListener(listener);
+        friendConnectionQueue.setPacketListener(listener);
     }
 
     private void addQueueListener() {
@@ -2447,7 +2447,7 @@ public class FriendConnection implements DatagramListener {
         return mClosing;
     }
 
-    SetupPacketListener getSetupPacketListener() {
+    PacketListener getSetupPacketListener() {
         return setupPacketListener;
     }
 
@@ -2482,7 +2482,9 @@ public class FriendConnection implements DatagramListener {
             return;
         }
         // Notify the setup packet listener
-        friendConnectionQueue.setupListenerNotify(message);
+        if (!friendConnectionQueue.packetListenerNotify(message)) {
+            return;
+        }
         stats.protocolBytesSent(OSF2FMessage.MESSAGE_HEADER_LEN, isLanLocal());
         int size = message.getMessageSize();
         if (message.getType() == Message.TYPE_DATA_PAYLOAD) {

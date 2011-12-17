@@ -91,7 +91,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
     private final ConcurrentLinkedQueue<WriteQueueWaiter> transportWaiters = new ConcurrentLinkedQueue<WriteQueueWaiter>();
     private final Average uploadAverage = Average.getInstance(1000, 10);
 
-    private SetupPacketListener setupPacketListener;
+    private PacketListener packetListener;
     
     /* Used in ClientServiceConnection and ServerServiceConnection unit tests */
     private OSF2FMessage lastMsgQueued;
@@ -462,7 +462,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
             }
             OSF2FMessage forwardedMessage = forwardQueue.remove();
 
-            setupListenerNotify(forwardedMessage);
+            packetListenerNotify(forwardedMessage);
 
             nc.getOutgoingMessageQueue().addMessage(forwardedMessage, true);
             packetSent = true;
@@ -507,19 +507,18 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
     }
 
     /**
-     * Notifies the packet setup listener if this is the first packet that is
-     * sent in a channel.
+     * Notifies the packet listener on channel messages.
      * 
      * @param message
+     * @return false if the packet has been handled.
      */
-    protected void setupListenerNotify(OSF2FMessage message) {
-        if (setupPacketListener != null && (message instanceof OSF2FServiceDataMsg)) {
+    protected boolean packetListenerNotify(OSF2FMessage message) {
+        if (packetListener != null && (message instanceof OSF2FServiceDataMsg)) {
             OSF2FChannelMsg channelMessage = (OSF2FServiceDataMsg) message;
             logger.info("NOTIFY, bytes=" + channelMessage.getByteInChannel());
-            if (channelMessage.getByteInChannel() == 0) {
-                setupPacketListener.packetReadyForAzureusQueue(channelMessage);
-            }
+            return packetListener.packetReadyForAzureusQueue(channelMessage);
         }
+        return true;
     }
 
     /**
@@ -636,7 +635,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
                     logger.finest(getDescription() + "sending packet from transport queue");
                 }
                 OSF2FMessage msg = transportQueue.remove();
-                setupListenerNotify(msg);
+                packetListenerNotify(msg);
                 nc.getOutgoingMessageQueue().addMessage(msg, true);
                 packetSent = true;
                 transportQueueBytes -= msg.getMessageSize();
@@ -1002,7 +1001,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
         return queueListener.accountingQueueLength;
     }
 
-    public void setSetupPacketListener(SetupPacketListener listener) {
-        this.setupPacketListener = listener;
+    public void setPacketListener(PacketListener listener) {
+        this.packetListener = listener;
     }
 }

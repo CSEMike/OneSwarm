@@ -322,7 +322,7 @@ public abstract class OverlayEndpoint implements EndpointInterface {
                 new TimerTask() {
                     @Override
                     public void run() {
-                        SetupPacketListener setupPacketListener = friendConnection
+                        PacketListener setupPacketListener = friendConnection
                                 .getSetupPacketListener();
                         if (setupPacketListener != null && msg.getByteInChannel() == 0) {
                             setupPacketListener.packetArrivedAtFinalDestination(friendConnection,
@@ -391,7 +391,7 @@ public abstract class OverlayEndpoint implements EndpointInterface {
     protected void writeMessage(OSF2FChannelDataMsg msg) {
         msg.setForward(false);
         msg.setByteInChannel(bytesOut);
-        SetupPacketListener setupPacketListener = friendConnection.getSetupPacketListener();
+        PacketListener setupPacketListener = friendConnection.getSetupPacketListener();
         if (setupPacketListener != null && msg.getByteInChannel() == 0) {
             setupPacketListener.packetAddedToTransportQueue(friendConnection, search, response,
                     outgoing, msg);
