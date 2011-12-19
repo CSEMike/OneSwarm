@@ -108,7 +108,7 @@ public class ServiceSharingSingleProcessTest extends LocalProcessesTestBase {
      * @throws UnsupportedEncodingException
      * @throws InterruptedException
      */
-    static void doEchoTest(Integer initialPayload) throws UnknownHostException, IOException,
+    static Socket doEchoTest(Integer initialPayload) throws UnknownHostException, IOException,
             UnsupportedEncodingException, InterruptedException {
         // Echo server.
         EchoServer echoServer = new EchoServer(ECHO_PORT);
@@ -138,9 +138,10 @@ public class ServiceSharingSingleProcessTest extends LocalProcessesTestBase {
 
         // test a megabyte
         // testRandom(s, 1024 * 1024);
+        return s;
     }
 
-    private static void testRandom(Socket s, int numBytes) throws IOException {
+    static void testRandom(Socket s, int numBytes) throws IOException {
         byte[] randomData = new byte[numBytes];
         random.nextBytes(randomData);
         writeReadVerify(randomData, s);

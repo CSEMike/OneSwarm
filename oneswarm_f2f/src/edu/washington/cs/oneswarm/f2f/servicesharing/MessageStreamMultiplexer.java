@@ -47,9 +47,11 @@ public class MessageStreamMultiplexer {
         }
 
         for (SequenceNumber s : numbers) {
-            this.channels.get(s.getChannel()).forgetMessage(s);
-            channelOutstanding.remove(s.getChannel(), s);
-            outstandingMessages.remove(s.getNum());
+            if (s != null) {
+                channelOutstanding.remove(s.getChannel(), s);
+                outstandingMessages.remove(s.getNum());
+                this.channels.get(s.getChannel()).forgetMessage(s);
+            }
         }
     }
 

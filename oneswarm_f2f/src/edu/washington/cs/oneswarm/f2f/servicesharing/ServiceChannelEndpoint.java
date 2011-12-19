@@ -98,7 +98,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     @Override
     protected void handleDelayedOverlayMessage(OSF2FChannelDataMsg msg) {
         if (logger.isLoggable(Level.FINEST)) {
-            // logger.finest("incoming message: " + msg.getDescription());
+            logger.finest("incoming message: " + msg.getDescription());
         }
 
         if (closed) {
@@ -125,9 +125,13 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     }
 
     public void writeMessage(final SequenceNumber num, DirectByteBuffer buffer) {
+        writeMessage(num, buffer, 0);
+    }
+
+    private void writeMessage(final SequenceNumber num, DirectByteBuffer buffer, int attempt) {
         int length = buffer.remaining(ss);
         ReferenceCountedDirectByteBuffer copy = buffer.getReferenceCountedBuffer();
-        sentMessage sent = new sentMessage(num, copy, length);
+        sentMessage sent = new sentMessage(num, copy, length, attempt);
         this.sentMessages.put(num, sent);
         this.outstandingBytes += length;
         OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,
@@ -143,7 +147,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         bytesOut += totalWritten;
 
         // Remember the message may need to be retransmitted.
-        delayedExecutor.queue((long) (RETRANSMISSION_PERIOD * this.latency), sent);
+        delayedExecutor.queue((long) (RETRANSMISSION_PERIOD * this.latency * (1 << attempt)), sent);
     }
 
     public int getOutstanding() {
@@ -168,6 +172,9 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
     public void forgetMessage(SequenceNumber num) {
         sentMessage msg = this.sentMessages.remove(num);
+        if (msg == null) {
+            return;
+        }
         msg.cancel();
         this.outstandingBytes -= msg.length;
         long sample = System.currentTimeMillis() - msg.creation;
@@ -177,11 +184,15 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         }
 
         // Assume pending messages sent before this one were lost.
-        for (sentMessage m : this.sentMessages.values()) {
-            if (m.creation < msg.creation) {
-                m.run();
-            }
-        }
+        /*
+         * sentMessage[] messages = this.sentMessages.values().toArray(new
+         * sentMessage[0]);
+         * for (sentMessage m : messages) {
+         * if (m.creation < msg.creation) {
+         * m.run();
+         * }
+         * }
+         */
     }
 
     private class sentMessage extends TimerTask {
@@ -189,20 +200,24 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         public int length;
         public long creation;
         private final SequenceNumber num;
+        private final int attempt;
 
-        public sentMessage(SequenceNumber num, ReferenceCountedDirectByteBuffer msg, int length) {
+        public sentMessage(SequenceNumber num, ReferenceCountedDirectByteBuffer msg, int length,
+                int attempt) {
             this.creation = System.currentTimeMillis();
             this.msg = msg;
             msg.incrementReferenceCount();
             this.length = length;
             this.num = num;
+            this.attempt = attempt;
         }
 
         @Override
         public void run() {
             if (sentMessages.remove(num) != null) {
+                logger.fine("Message with sequence number " + num.getNum() + " was retransmitted.");
                 outstandingBytes -= length;
-                writeMessage(num, msg);
+                writeMessage(num, msg, attempt + 1);
                 // Decrement the reference count for the lost message.
                 msg.returnToPool();
             }
