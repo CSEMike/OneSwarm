@@ -170,10 +170,17 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         return this.sentMessages.get(num).msg;
     }
 
-    public void forgetMessage(SequenceNumber num) {
+    /**
+     * Attempt to forget a sent message.
+     * 
+     * @param num
+     *            The message to forget
+     * @return True if the message was successfully stopped from retransmitting.
+     */
+    public boolean forgetMessage(SequenceNumber num) {
         sentMessage msg = this.sentMessages.remove(num);
         if (msg == null) {
-            return;
+            return false;
         }
         msg.cancel();
         this.outstandingBytes -= msg.length;
@@ -182,6 +189,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         if (sample < minLatency) {
             minLatency = sample;
         }
+        return true;
 
         // Assume pending messages sent before this one were lost.
         /*
