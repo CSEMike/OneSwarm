@@ -8,8 +8,6 @@ import java.util.logging.Logger;
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 import org.gudy.azureus2.core3.util.ReferenceCountedDirectByteBuffer;
 
-import com.aelitis.azureus.core.peermanager.messaging.MessageException;
-
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
@@ -19,7 +17,6 @@ import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExec
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.OverlayEndpoint;
 import edu.washington.cs.oneswarm.f2f.network.OverlayTransport;
-import edu.washington.cs.oneswarm.f2f.network.PacketListener;
 
 /**
  * This class represents one Friend connection channel used for multiplexed
@@ -210,6 +207,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     private class sentMessage extends TimerTask {
         public ReferenceCountedDirectByteBuffer msg;
         public int length;
+        private final int position;
         public long creation;
         private final SequenceNumber num;
         private final int attempt;
@@ -218,6 +216,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
                 int attempt) {
             this.creation = System.currentTimeMillis();
             this.msg = msg;
+            this.position = msg.position(ss);
             msg.incrementReferenceCount();
             this.length = length;
             this.num = num;
@@ -229,9 +228,8 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
             if (sentMessages.remove(num) != null) {
                 logger.fine("Message with sequence number " + num.getNum() + " was retransmitted.");
                 outstandingBytes -= length;
+                msg.position(ss, position);
                 writeMessage(num, msg, attempt + 1);
-                // Decrement the reference count for the lost message.
-                msg.returnToPool();
             }
         }
 
