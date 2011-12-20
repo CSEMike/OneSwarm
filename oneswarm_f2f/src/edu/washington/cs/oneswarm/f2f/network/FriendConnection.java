@@ -2499,6 +2499,8 @@ public class FriendConnection implements DatagramListener {
         }
         // Notify the setup packet listener
         if (!friendConnectionQueue.packetListenerNotify(message)) {
+            logger.warning("Packetlistener told us to drop the packet!!!!!!");
+            message.destroy();
             return;
         }
         stats.protocolBytesSent(OSF2FMessage.MESSAGE_HEADER_LEN, isLanLocal());
