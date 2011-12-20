@@ -19,6 +19,7 @@ import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExec
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.OverlayEndpoint;
 import edu.washington.cs.oneswarm.f2f.network.OverlayTransport;
+import edu.washington.cs.oneswarm.f2f.network.PacketListener;
 
 /**
  * This class represents one Friend connection channel used for multiplexed
@@ -98,7 +99,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     @Override
     protected void handleDelayedOverlayMessage(OSF2FChannelDataMsg msg) {
         if (logger.isLoggable(Level.FINEST)) {
-            // logger.finest("incoming message: " + msg.getDescription());
+            logger.finest("incoming message: " + msg.getDescription());
         }
 
         if (closed) {
@@ -107,21 +108,18 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         if (this.isStarted()) {
             start();
         }
-        // logger.fine("Service channel msg recieved.");
-        // We need to create a new message here and transfer the payload over so
-        // the buffer won't be returned while the packet is in the queue.
-        try {
-            OSF2FServiceDataMsg newMessage = OSF2FServiceDataMsg.fromChannelMessage(msg);
-            // logger.fine("Received msg with sequence number " +
-            if (!newMessage.isAck()) {
-                logger.info("ack enqueued for " + newMessage.getSequenceNumber());
-                super.writeMessage(OSF2FServiceDataMsg.acknowledge(OSF2FMessage.CURRENT_VERSION,
-                        channelId, (short) 0, new int[] { newMessage.getSequenceNumber() }));
-            }
-            serviceAggregator.writeMessageToServiceBuffer(newMessage);
-        } catch (MessageException m) {
+        if (!(msg instanceof OSF2FServiceDataMsg)) {
             return;
         }
+        OSF2FServiceDataMsg newMessage = (OSF2FServiceDataMsg) msg;
+        // logger.fine("Received msg with sequence number " +
+        if (!newMessage.isAck()) {
+            logger.info("ack enqueued for " + newMessage.getSequenceNumber());
+            super.writeMessage(OSF2FServiceDataMsg.acknowledge(OSF2FMessage.CURRENT_VERSION,
+                    channelId, (short) 0, new int[] { newMessage.getSequenceNumber() }));
+        }
+        serviceAggregator.writeMessageToServiceBuffer(newMessage);
+
     }
 
     public void writeMessage(final SequenceNumber num, DirectByteBuffer buffer) {
@@ -137,7 +135,8 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
         long totalWritten = buffer.remaining(DirectByteBuffer.SS_MSG);
         if (logger.isLoggable(Level.FINEST)) {
-            logger.finest("Wrote msg to network with sequence number " + num.getNum());
+            logger.finest(String.format("Wrote msg to network bytes: %d, sequence number: %d",
+                    length, num.getNum()));
         }
         super.writeMessage(msg);
         bytesOut += totalWritten;
@@ -182,6 +181,11 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
                 m.run();
             }
         }
+    }
+
+    @Override
+    protected boolean isService() {
+        return true;
     }
 
     private class sentMessage extends TimerTask {

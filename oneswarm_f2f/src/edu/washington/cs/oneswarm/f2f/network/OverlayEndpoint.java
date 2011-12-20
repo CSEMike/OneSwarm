@@ -7,6 +7,7 @@ import org.gudy.azureus2.core3.util.Average;
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 
 import com.aelitis.azureus.core.networkmanager.NetworkManager;
+import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 
 import edu.washington.cs.oneswarm.f2f.Friend;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
@@ -15,6 +16,7 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExecutor;
+import edu.washington.cs.oneswarm.f2f.servicesharing.OSF2FServiceDataMsg;
 
 /**
  * This class handles shared functionality of all overlay end-points and must be
@@ -310,28 +312,40 @@ public abstract class OverlayEndpoint implements EndpointInterface {
      * (edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg)
      */
     @Override
-    public void incomingOverlayMsg(final OSF2FChannelDataMsg msg) {
+    public void incomingOverlayMsg(OSF2FChannelDataMsg msg) {
         lastMsgTime = System.currentTimeMillis();
         msg.setByteInChannel(bytesIn);
         bytesIn += msg.getMessageSize();
         if (closed) {
             return;
         }
+        if (isService()) {
+            try {
+                if (!(msg instanceof OSF2FServiceDataMsg)) {
+                    msg = OSF2FServiceDataMsg.fromChannelMessage(msg);
+                }
+                PacketListener setupPacketListener = friendConnection.getSetupPacketListener();
+                if (setupPacketListener != null && msg.getByteInChannel() == 0) {
+                    setupPacketListener.packetArrivedAtFinalDestination(friendConnection, search,
+                            response, msg, outgoing);
+                }
+            } catch (MessageException m) {
+                logger.warning("Got non service message to a service endpoint!: " + m.getMessage());
+                return;
+            }
 
+        }
+        final OSF2FChannelDataMsg message = msg;
         delayedOverlayMessageTimer.queue(overlayDelayMs, INCOMING_MESSAGE_DELAY_SLACK,
                 new TimerTask() {
                     @Override
                     public void run() {
-                        PacketListener setupPacketListener = friendConnection
-                                .getSetupPacketListener();
-                        if (setupPacketListener != null && msg.getByteInChannel() == 0) {
-                            setupPacketListener.packetArrivedAtFinalDestination(friendConnection,
-                                    search, response, msg, outgoing);
-                        }
-                        handleDelayedOverlayMessage(msg);
+                        handleDelayedOverlayMessage(message);
                     }
                 });
     }
+
+    protected abstract boolean isService();
 
     /*
      * (non-Javadoc)

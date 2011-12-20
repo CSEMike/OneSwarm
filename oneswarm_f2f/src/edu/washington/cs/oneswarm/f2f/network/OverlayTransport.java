@@ -616,4 +616,9 @@ public class OverlayTransport extends OverlayEndpoint implements Transport {
     public interface WriteQueueWaiter {
         public void readyForWrite();
     }
+
+    @Override
+    protected boolean isService() {
+        return false;
+    }
 }

@@ -92,7 +92,7 @@ class FriendConnectionQueue implements Comparable<FriendConnectionQueue> {
     private final Average uploadAverage = Average.getInstance(1000, 10);
 
     private PacketListener packetListener;
-    
+
     /* Used in ClientServiceConnection and ServerServiceConnection unit tests */
     private OSF2FMessage lastMsgQueued;
 

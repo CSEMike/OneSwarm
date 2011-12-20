@@ -29,8 +29,7 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
     private static final byte ss = 1;
 
     public OSF2FServiceDataMsg(byte _version, int channelID, int sequenceNumber, short window,
-            int[] options,
-            DirectByteBuffer data) {
+            int[] options, DirectByteBuffer data) {
         super(_version, channelID, data);
         this.version = VERSION_NUM;
         this.window = window;
@@ -89,6 +88,11 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
                 serviceHeader.putInt(DirectByteBuffer.SS_MSG, option);
             }
             serviceHeader.flip(DirectByteBuffer.SS_MSG);
+            // System.err.println(String.format(
+            // "OUT: %d, CONTROL: %d, WORDS: %d, WINDOW: %d, NUM:%d, REMAINING: %d",
+            // version,
+            // control, length, window, sequenceNumber,
+            // getPayload().remaining(SS_MSG)));
         }
 
         fullmsg[0] = channelmsg[0];
@@ -110,27 +114,41 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
 
     public static OSF2FServiceDataMsg fromChannelMessage(OSF2FChannelDataMsg msg)
             throws MessageException {
+        if (msg instanceof OSF2FServiceDataMsg) {
+            throw new MessageException("message already OSF2FServiceDataMsg!");
+        }
+        checkIfServiceMessage(msg);
         DirectByteBuffer payload = msg.transferPayload();
-
-        if (payload.remaining(SS_MSG) < 8) {
-            throw new MessageException("Not a Service Message - no Service Header");
-        }
         byte version = payload.get(SS_MSG);
-        if (version != VERSION_NUM) {
-            throw new MessageException("Incorrect Service Version Number.");
-        }
         byte control = payload.get(SS_MSG);
         int words = (control & 0xf0) >> 4;
         short window = payload.getShort(SS_MSG);
         words--;
         int num = payload.getInt(SS_MSG);
         words--;
+        // System.err.println(String.format(
+        // "VERSION: %d, CONTROL: %d, WORDS: %d, WINDOW: %d, NUM:%d REMAINING: %d",
+        // version,
+        // control, words, window, num, payload.remaining(SS_MSG)));
         int[] options = new int[words];
         for (int i = 0; i < words; i++) {
             options[i] = payload.getInt(SS_MSG);
         }
-        return new OSF2FServiceDataMsg(msg.getVersion(), msg.getChannelId(), num, window, options,
-                payload, control);
+        return new OSF2FServiceDataMsg(version, msg.getChannelId(), num, window, options, payload,
+                (byte) (control & 0x0f));
+    }
+
+    private static void checkIfServiceMessage(OSF2FChannelDataMsg msg) throws MessageException {
+        DirectByteBuffer payload = msg.getPayload();
+        if (payload.remaining(SS_MSG) < 8) {
+            throw new MessageException("Not a Service Message - no Service Header");
+        }
+        int oldPos = payload.position(SS_MSG);
+        byte version = payload.get(SS_MSG);
+        payload.position(SS_MSG, oldPos);
+        if (version != VERSION_NUM) {
+            throw new MessageException("Incorrect Service Version Number.");
+        }
     }
 
     public boolean isAck() {

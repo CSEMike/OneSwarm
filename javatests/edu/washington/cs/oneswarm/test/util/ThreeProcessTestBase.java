@@ -48,9 +48,6 @@ public class ThreeProcessTestBase extends LocalProcessesTestBase {
     /** Should we include experimental support? */
     protected static boolean experimentalInstance = false;
 
-    /** Commands to send before friends are connected */
-    protected static List<String> preConnectCommands = new LinkedList<String>();
-
     @BeforeClass
     public static void setUpClass() throws Exception {
         if (startSelenium) {
@@ -148,7 +145,6 @@ public class ThreeProcessTestBase extends LocalProcessesTestBase {
 
     private static void runPreConnectCommands(LocalOneSwarm process) {
         for (String command : preConnectCommands) {
-            System.err.println("ADDING: " + command);
             process.getCoordinator().addCommand(command);
         }
     }

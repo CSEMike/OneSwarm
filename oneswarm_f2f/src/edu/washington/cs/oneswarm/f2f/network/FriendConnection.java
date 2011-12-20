@@ -39,6 +39,7 @@ import com.aelitis.azureus.core.networkmanager.impl.osssl.OneSwarmSslTools;
 import com.aelitis.azureus.core.networkmanager.impl.osssl.OneSwarmSslTransportHelperFilterStream;
 import com.aelitis.azureus.core.networkmanager.impl.tcp.ProtocolEndpointTCP;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
+import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 import com.aelitis.azureus.core.peermanager.messaging.bittorrent.BTKeepAlive;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
@@ -2267,6 +2268,7 @@ public class FriendConnection implements DatagramListener {
         private final OSF2FSearch sourceMessage;
         private final OSF2FSearchResp setupMessage;
         private final long startTime;
+        private boolean service;
 
         public OverlayForward(int channelId, FriendConnection conn, OSF2FSearch sourceMessage,
                 OSF2FSearchResp setup, boolean searcherSide) {
@@ -2295,6 +2297,18 @@ public class FriendConnection implements DatagramListener {
             logger.finest("Packet to be forwarded: " + message.getDescription() + " forwarded="
                     + bytesForwarded);
             message.setByteInChannel(bytesForwarded);
+            if (message instanceof OSF2FChannelDataMsg) {
+                if (bytesForwarded == 0 || service) {
+                    // Check if first packet, detect service or not.
+                    try {
+                        message = OSF2FServiceDataMsg
+                                .fromChannelMessage((OSF2FChannelDataMsg) message);
+                        service = true;
+                    } catch (MessageException e) {
+                        // not service message
+                    }
+                }
+            }
             if (setupPacketListener != null && bytesForwarded == 0) {
                 setupPacketListener.packetAddedToForwardQueue(FriendConnection.this, conn,
                         sourceMessage, setupMessage, searcherSide, message);
@@ -2449,7 +2463,7 @@ public class FriendConnection implements DatagramListener {
         return mClosing;
     }
 
-    PacketListener getSetupPacketListener() {
+    public PacketListener getSetupPacketListener() {
         return setupPacketListener;
     }
 

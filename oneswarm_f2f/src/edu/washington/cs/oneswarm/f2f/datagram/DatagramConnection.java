@@ -21,12 +21,14 @@ import org.gudy.azureus2.core3.util.DirectByteBufferPool;
 import com.aelitis.azureus.core.networkmanager.RawMessage;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDatagramInit;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDatagramOk;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessageFactory;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
+import edu.washington.cs.oneswarm.f2f.servicesharing.OSF2FServiceDataMsg;
 
 /**
  * Connection used in parallel to the standard SSL connection between 2 friends.
@@ -229,11 +231,13 @@ public class DatagramConnection {
             logger.fine(toString() + "Got unknown packet");
             return false;
         }
+
         synchronized (decrypter) {
             if (receiveState == ReceiveState.CLOSED) {
                 logger.finest(toString() + "Got packet on closed connection");
                 return false;
             }
+            Message message = null;
             try {
                 byte[] data = packet.getData();
                 decryptBuffer.clear();
@@ -246,6 +250,7 @@ public class DatagramConnection {
 
                 int oldLimit = decryptBuffer.limit();
                 while (decryptBuffer.hasRemaining()) {
+
                     // The message length is 1 (for the type field) + the actual
                     // message length.
                     int messageLength = decryptBuffer.getInt();
@@ -263,9 +268,14 @@ public class DatagramConnection {
                     // next message.
                     decryptBuffer.limit(oldLimit);
 
-                    Message message = OSF2FMessageFactory.createOSF2FMessage(messageBuffer);
-                    if (message instanceof OSF2FChannelMsg) {
-                        ((OSF2FChannelMsg) message).setDatagram(true);
+                    message = OSF2FMessageFactory.createOSF2FMessage(messageBuffer);
+                    if (message instanceof OSF2FChannelDataMsg) {
+                        logger.finest("creating service message from "
+                                + ((OSF2FChannelDataMsg) message).getPayload().remaining(SS)
+                                + " bytes");
+                        message = OSF2FServiceDataMsg
+                                .fromChannelMessage((OSF2FChannelDataMsg) message);
+                        ((OSF2FChannelDataMsg) message).setDatagram(true);
                     }
                     if (logger.isLoggable(Level.FINEST)) {
                         logger.finest(toString() + "packet decrypted: " + message.getDescription());
@@ -288,13 +298,22 @@ public class DatagramConnection {
                         friendConnection.sendDatagramOk(new OSF2FDatagramOk(0));
                         receiveState = ReceiveState.ACTIVE;
                     }
+                    logger.finest("message decoded: " + message.getDescription());
                     friendConnection.datagramDecoded(message, messageLength);
+                    message = null;
+
                 }
                 return true;
             } catch (Exception e) {
                 e.printStackTrace();
+                logger.warning(toString() + "Unable to decode datagram: " + e.getMessage());
                 return false;
+            } finally {
+                if (message != null) {
+                    message.destroy();
+                }
             }
+
         }
     }
 
@@ -443,8 +462,9 @@ public class DatagramConnection {
                             messageBuffer[packetNum++] = OSF2FMessageFactory
                                     .createOSF2FRawMessage(message);
                             if (logger.isLoggable(Level.FINEST)) {
-                                logger.finest(String.format("Adding message, packets=%d, size=%d",
-                                        packetNum, datagramSize));
+                                logger.finest(String.format(
+                                        "Adding message, packets=%d, size=%d message=%s",
+                                        packetNum, datagramSize, message.getDescription()));
                             }
                             // This is going to get sent, update the queue size
                             queueLength -= datagramSize;

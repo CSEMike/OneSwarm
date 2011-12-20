@@ -60,5 +60,4 @@ public interface EndpointInterface {
     public abstract boolean isTimedOut();
 
     public abstract void start();
-
 }
