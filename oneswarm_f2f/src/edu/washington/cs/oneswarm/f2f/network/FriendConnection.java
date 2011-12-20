@@ -2508,7 +2508,6 @@ public class FriendConnection implements DatagramListener {
         } else {
             stats.protocolBytesSent(size, isLanLocal());
         }
-
         udpConnection.sendMessage(message);
     }
 

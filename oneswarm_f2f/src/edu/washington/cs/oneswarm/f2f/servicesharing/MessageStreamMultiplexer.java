@@ -1,5 +1,6 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,15 +42,31 @@ public class MessageStreamMultiplexer {
         // Parse acknowledged messages
         DirectByteBuffer payload = message.getPayload();
         HashSet<SequenceNumber> numbers = new HashSet<SequenceNumber>();
-        numbers.add(outstandingMessages.get(message.getSequenceNumber()));
+        ArrayList<Integer> retransmissions = new ArrayList<Integer>();
+        SequenceNumber s = outstandingMessages.get(message.getSequenceNumber());
+        if (s != null) {
+            numbers.add(s);
+        } else {
+            retransmissions.add(message.getSequenceNumber());
+        }
         while (payload.remaining(ss) > 0) {
-            numbers.add(outstandingMessages.get(payload.getInt(ss)));
+            int num = payload.getInt(ss);
+            s = outstandingMessages.get(num);
+            if (s != null) {
+                numbers.add(s);
+            } else {
+                retransmissions.add(num);
+            }
         }
 
-        for (SequenceNumber s : numbers) {
-            this.channels.get(s.getChannel()).forgetMessage(s);
-            channelOutstanding.remove(s.getChannel(), s);
-            outstandingMessages.remove(s.getNum());
+        for (SequenceNumber seq : numbers) {
+            if (this.channels.get(seq.getChannel()).forgetMessage(seq)) {
+                channelOutstanding.remove(seq.getChannel(), seq);
+                outstandingMessages.remove(seq.getNum());
+            }
+        }
+        for (Integer num : retransmissions) {
+            System.out.println("Non outstanding packet acked: " + num);
         }
     }
 
