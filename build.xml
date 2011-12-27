@@ -567,6 +567,7 @@
 			<batchtest todir="test-report">
 				<fileset dir="${root.dir}/javatests/">
 					<include name="**/*Test*.java" />
+					<exclude name="**/util/*.java" />
 				</fileset>
 			</batchtest>
 		</junit>
