@@ -549,6 +549,25 @@
 		</javac>
 	</target>
 	
+	<target name="junit" depends="compile-tests">
+		<mkdir dir="test-report" />
+		<junit printsummary="yes">
+			<formatter type="plain" />
+			<classpath>
+				<pathelement location="test-bin" />
+				<pathelement location="build/core-libs/junit.jar" />
+				<pathelement location="gwt-bin/war/WEB-INF/classes" />
+				<path refid="project.class.path.servlet" />
+			</classpath>
+
+			<batchtest todir="test-report">
+				<fileset dir="${root.dir}/javatests/">
+					<include name="**/*Test*.java" />
+				</fileset>
+			</batchtest>
+		</junit>
+	</target>
+
 	<!--
 	  Detect the set of tests in javatests/ and execute each one. 
 	
