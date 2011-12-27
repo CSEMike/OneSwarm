@@ -18,16 +18,14 @@ import org.junit.Test;
 import org.testng.Assert;
 
 import com.aelitis.azureus.core.peermanager.messaging.Message;
-import com.aelitis.net.udp.uc.impl.ExternalUdpPacketHandler;
 
 import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnection.ReceiveState;
 import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnection.SendState;
-import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDatagramInit;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDatagramOk;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessageFactory;
-import edu.washington.cs.oneswarm.test.integration.ServiceSharingFourProcessTest;
+import edu.washington.cs.oneswarm.f2f.servicesharing.OSF2FServiceDataMsg;
 import edu.washington.cs.oneswarm.test.util.OneSwarmTestBase;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 
@@ -219,7 +217,7 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
     @Test
     public void testSendReceiveSimple() throws Exception {
         byte[] testData = "hello".getBytes();
-        OSF2FChannelDataMsg msg = createPacket(testData);
+        OSF2FServiceDataMsg msg = createPacket(testData);
         conn1.sendMessage(msg);
         manager2.receive();
         checkPacket(testData);
@@ -227,27 +225,34 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
 
     private void checkPacket(byte[] testData) {
         Assert.assertTrue(conn2Incoming.size() > 0, "No packets left.");
-        OSF2FChannelDataMsg incoming = (OSF2FChannelDataMsg) conn2Incoming.removeFirst();
+        OSF2FServiceDataMsg incoming = (OSF2FServiceDataMsg) conn2Incoming.removeFirst();
         byte[] inData = new byte[incoming.getPayload().remaining(SS)];
         incoming.getPayload().get(SS, inData);
         Assert.assertEquals(inData, testData);
         incoming.destroy();
     }
 
-    private OSF2FChannelDataMsg createPacket(byte[] testData) {
+    private final int sequenceNumber = 0;
+
+    private OSF2FServiceDataMsg createPacket(byte[] testData) {
         DirectByteBuffer data = DirectByteBufferPool.getBuffer(AL, MAX_DATAGRAM_PAYLOAD_SIZE);
         data.put(SS, testData);
         data.flip(SS);
-        OSF2FChannelDataMsg msg = new OSF2FChannelDataMsg((byte) 0, 123, data);
+        return createPacket(data);
+    }
+
+    private OSF2FServiceDataMsg createPacket(DirectByteBuffer data) {
+        OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg((byte) 0, 0, sequenceNumber,
+                (short) 1000, new int[0], data);
         return msg;
     }
 
     @Test
     public void testMultipleSimple() throws Exception {
         byte[] testData1 = "hello1".getBytes();
-        OSF2FChannelDataMsg msg1 = createPacket(testData1);
+        OSF2FServiceDataMsg msg1 = createPacket(testData1);
         byte[] testData2 = "hello2".getBytes();
-        OSF2FChannelDataMsg msg2 = createPacket(testData2);
+        OSF2FServiceDataMsg msg2 = createPacket(testData2);
         // Make sure that both are sent together.
         synchronized (conn1.encrypter) {
             conn1.sendMessage(msg1);
@@ -262,13 +267,13 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
     @Test
     public void testMultipleOverfull() throws Exception {
         // Queue up 3 packets, the last should not fit in the first datagram.
-        int saveRoomFor = 2 * (OSF2FMessage.MESSAGE_HEADER_LEN + OSF2FChannelDataMsg.BASE_LENGTH) - 1;
-        byte[] testData1 = new byte[MAX_DATAGRAM_PAYLOAD_SIZE - OSF2FChannelDataMsg.BASE_LENGTH
+        int saveRoomFor = 2 * (OSF2FMessage.MESSAGE_HEADER_LEN + OSF2FServiceDataMsg.BASE_LENGTH) - 1;
+        byte[] testData1 = new byte[MAX_DATAGRAM_PAYLOAD_SIZE - OSF2FServiceDataMsg.BASE_LENGTH
                 - saveRoomFor];
         System.out.println(testData1.length);
-        OSF2FChannelDataMsg msg1 = createPacket(testData1);
-        OSF2FChannelDataMsg msg2 = createPacket(new byte[0]);
-        OSF2FChannelDataMsg msg3 = createPacket(new byte[0]);
+        OSF2FServiceDataMsg msg1 = createPacket(testData1);
+        OSF2FServiceDataMsg msg2 = createPacket(new byte[0]);
+        OSF2FServiceDataMsg msg3 = createPacket(new byte[0]);
         // Make sure that all are sent together.
         synchronized (conn1.encrypter) {
             conn1.sendMessage(msg1);
@@ -305,14 +310,14 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
     @Test
     public void testSocketChange() throws Exception {
         byte[] testData1 = "hello1".getBytes();
-        OSF2FChannelDataMsg msg1 = createPacket(testData1);
+        OSF2FServiceDataMsg msg1 = createPacket(testData1);
         conn1.sendMessage(msg1);
         manager2.receive();
         checkPacket(testData1);
         manager1.socketUpdated();
 
         byte[] testData2 = "hello2".getBytes();
-        OSF2FChannelDataMsg msg2 = createPacket(testData2);
+        OSF2FServiceDataMsg msg2 = createPacket(testData2);
         conn1.sendMessage(msg2);
         manager2.receive();
         checkPacket(testData2);
@@ -335,7 +340,7 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
 
         for (int i = 0; i < packets; i++) {
             DirectByteBuffer data = DirectByteBufferPool.getBuffer(AL, length);
-            OSF2FMessage message = new OSF2FChannelDataMsg((byte) 0, 1, data);
+            OSF2FMessage message = createPacket(data);
             conn1.sendMessage(message);
         }
         double mb = length * packets / (1024 * 1024.0);
@@ -367,7 +372,7 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
             public void run() {
                 for (int i = 0; i < packets; i++) {
                     DirectByteBuffer data = DirectByteBufferPool.getBuffer(AL, length);
-                    OSF2FMessage message = new OSF2FChannelDataMsg((byte) 0, 1, data);
+                    OSF2FMessage message = createPacket(data);
                     conn1.sendMessage(message);
                 }
             }
