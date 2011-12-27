@@ -180,23 +180,25 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         }
         msg.cancel();
         this.outstandingBytes -= msg.length;
-        long sample = System.currentTimeMillis() - msg.creation;
-        this.latency = (long) (this.latency * (1 - EWMA) + sample * EWMA);
-        if (sample < minLatency) {
-            minLatency = sample;
-        }
-        return true;
+        long now = System.currentTimeMillis();
+        long sample = now - msg.creation;
+        // If not the first attempt, we don't know which attempt was acked.
+        if (msg.attempt == 0) {
+            this.latency = (long) (this.latency * (1 - EWMA) + sample * EWMA);
+            if (sample < minLatency) {
+                minLatency = sample;
+            }
 
-        // Assume pending messages sent before this one were lost.
-        /*
-         * sentMessage[] messages = this.sentMessages.values().toArray(new
-         * sentMessage[0]);
-         * for (sentMessage m : messages) {
-         * if (m.creation < msg.creation) {
-         * m.run();
-         * }
-         * }
-         */
+            // Pending messages sent before this one were probably lost
+            sentMessage[] messages = this.sentMessages.values().toArray(new sentMessage[0]);
+            for (sentMessage m : messages) {
+                if (m.creation < msg.creation) {
+                    m.run();
+                }
+            }
+        }
+
+        return true;
     }
 
     @Override
@@ -225,11 +227,17 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
         @Override
         public void run() {
-            if (sentMessages.remove(num) != null) {
-                logger.fine("Message with sequence number " + num.getNum() + " was retransmitted.");
-                outstandingBytes -= length;
-                msg.position(ss, position);
-                writeMessage(num, msg, attempt + 1);
+            sentMessage self = sentMessages.remove(num);
+            if (self != null) {
+                if (self.attempt == attempt) {
+                    logger.fine("Message with sequence number " + num.getNum()
+                            + " was retransmitted.");
+                    outstandingBytes -= length;
+                    msg.position(ss, position);
+                    writeMessage(num, msg, attempt + 1);
+                } else {
+                    sentMessages.put(num, self);
+                }
             }
         }
 
