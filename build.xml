@@ -530,6 +530,7 @@
 		
 		<!-- Test -->
 		<delete dir="test-bin" />
+		<delete dir="test-report" />
 		
    </target>
 
@@ -552,7 +553,7 @@
 	<target name="junit" depends="compile-tests">
 		<mkdir dir="test-report" />
 		<junit printsummary="yes">
-			<formatter type="plain" />
+			<formatter type="xml" />
 			<classpath>
 				<pathelement location="test-bin" />
 				<pathelement location="build/core-libs/junit.jar" />
