@@ -27,7 +27,6 @@ public class LocalProcessesTestBase extends OneSwarmTestBase {
                         e.printStackTrace();
                         System.exit(-1);
                     }
-                    System.exit(0);
                 }
             }.start();
         }
