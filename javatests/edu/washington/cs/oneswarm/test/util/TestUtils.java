@@ -58,6 +58,12 @@ public class TestUtils {
     // community server
     public static final String TEST_COMMUNITY_SERVER = "localhost:8889";
 
+    /**
+     * Whether an integration test was started via junit, to determine when
+     * instances are started.
+     */
+    private static boolean swtTestRunnerMade = false;
+
     /** Checks if a test instance of the community server is running locally. */
     public static boolean isLocalCommunityServerRunning() {
         try {
@@ -242,6 +248,7 @@ public class TestUtils {
      * suitable for OSX, which requires SWT execution on the main thread.
      */
     public static void swtCompatibleTestRunner(final Class<?> testClass) throws IOException {
+        swtTestRunnerMade = true;
         final junit.framework.Test suite = new JUnit4TestAdapter(testClass);
         final TestResult[] box = new TestResult[1];
         final CountDownLatch latch = new CountDownLatch(1);
@@ -360,6 +367,10 @@ public class TestUtils {
     public static void awaitAndClick(Selenium selenium, String elementXpath) {
         awaitElement(selenium, elementXpath);
         selenium.click(elementXpath);
+    }
+
+    public static boolean swtTestRunnerUsed() {
+        return swtTestRunnerMade;
     }
 
     /**

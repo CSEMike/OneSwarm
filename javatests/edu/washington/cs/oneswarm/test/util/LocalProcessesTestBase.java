@@ -1,5 +1,6 @@
 package edu.washington.cs.oneswarm.test.util;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -16,6 +17,21 @@ public class LocalProcessesTestBase extends OneSwarmTestBase {
     }
 
     protected static void startLocalInstance() {
+        if (!TestUtils.swtTestRunnerUsed()) {
+            new Thread("Off-main Oneswarm") {
+                @Override
+                public void run() {
+                    try {
+                        TestUtils.startOneSwarmForTest();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        System.exit(-1);
+                    }
+                    System.exit(0);
+                }
+            }.start();
+        }
+
         // Start a local client in this JVM
         TestUtils.awaitJVMOneSwarmStart();
 

@@ -552,13 +552,16 @@
 	
 	<target name="junit" depends="compile-tests">
 		<mkdir dir="test-report" />
-		<junit printsummary="yes">
+		<junit printsummary="yes" fork="yes">
+			<jvmarg value="-Doneswarm.test.local.classpath=gwt-bin/war/WEB-INF/classes:core-dist/OneSwarmCore.jar"/>
 			<formatter type="xml" />
 			<classpath>
 				<pathelement location="test-bin" />
 				<pathelement location="build/core-libs/junit.jar" />
 				<pathelement location="gwt-bin/war/WEB-INF/classes" />
+				<pathelement location="${platform.swt.jar}" />
 				<path refid="project.class.path.servlet" />
+				<path refid="f2f.class.path" />
 				<!-- For org/testng/Assert. -->
 				<pathelement location="build/test-libs/selenium-server.jar" />
 				<pathelement location="build/test-libs/selenium-java-client-driver.jar" />
