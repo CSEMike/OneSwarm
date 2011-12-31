@@ -553,7 +553,7 @@
 	<target name="junit" depends="compile-tests">
 		<mkdir dir="test-report" />
 		<junit printsummary="yes" fork="yes">
-			<jvmarg value="-Doneswarm.test.local.classpath=gwt-bin/war/WEB-INF/classes:core-dist/OneSwarmCore.jar"/>
+			<jvmarg value="-Doneswarm.test.local.classpath=test-bin:gwt-bin/war/WEB-INF/classes:core-dist/OneSwarmCore.jar"/>
 			<formatter type="xml" />
 			<classpath>
 				<pathelement location="test-bin" />

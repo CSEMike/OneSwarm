@@ -2,7 +2,6 @@ package edu.washington.cs.oneswarm.ui.gwt;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Method;
 import java.security.Principal;
 import java.util.logging.Logger;
 
@@ -36,6 +35,7 @@ import org.mortbay.thread.BoundedThreadPool;
 import org.mortbay.thread.QueuedThreadPool;
 
 import edu.washington.cs.oneswarm.HealthChecker;
+import edu.washington.cs.oneswarm.f2f.ExperimentalHarnessManager;
 import edu.washington.cs.oneswarm.f2f.multisource.Sha1HashManager;
 import edu.washington.cs.oneswarm.f2f.multisource.Sha1HashManager.Sha1CalcListener;
 import edu.washington.cs.oneswarm.f2f.multisource.Sha1HashManager.Sha1HashJobListener;
@@ -159,6 +159,7 @@ public class OsgwtuiMain implements Plugin {
         return coreInterface;
     }
 
+    @Override
     public void initialize(PluginInterface pluginInterface) throws PluginException {
         this.coreInterface = new CoreInterface(pluginInterface);
 
@@ -241,33 +242,11 @@ public class OsgwtuiMain implements Plugin {
         }
         CommunityServerManager.get();
 
-        // check to see if we can parse a planetlab-style experiment config file
-        try {
-            Class expConfigManagerClass = Class
-                    .forName("edu.washington.cs.oneswarm.planetlab.ExperimentConfigManager");
-            if (expConfigManagerClass != null) {
-
-                Method getMethod = expConfigManagerClass.getMethod("get");
-                Object configManager = getMethod.invoke(null, new Object[] {});
-                if (configManager != null) {
-                    logger.info("Got experimental manager");
-                    Method setCore = expConfigManagerClass.getMethod("setCore",
-                            new Class[] { CoreInterface.class });
-                    setCore.invoke(configManager, coreInterface);
-                    logger.info("Set core");
-                    Method startHeartbeats = expConfigManagerClass.getMethod("startHeartbeats");
-                    startHeartbeats.invoke(configManager);
-                    logger.info("startHeartbeats");
-                } else {
-                    logger.info("configManager is null -- classes found but experimental mode not enabled");
-                }
-            }
-
-        } catch (ClassNotFoundException e) {
-            logger.info("PlanetLab classes not found -- not running in experimental mode.");
-        } catch (Exception e) {
-            System.err.println(e);
-            logger.info("PlanetLab classes failed to load -- not running in experimental mode.");
+        // Maybe initialize Experimental code for tests.
+        ExperimentalHarnessManager ehm = ExperimentalHarnessManager.get();
+        if (ehm != null) {
+            ehm.setCore(coreInterface);
+            ehm.start();
         }
 
         // make sure community server refreshes whether we load the web UI or
@@ -278,9 +257,11 @@ public class OsgwtuiMain implements Plugin {
          * add the listener to the sha1 hasher manager
          */
         Sha1HashManager.getInstance().addJobListener(new Sha1HashJobListener() {
+            @Override
             public Sha1CalcListener jobAdded(String name) {
                 final int taskID = BackendTaskManager.get().createTask("Hashing: " + name,
                         new CancellationListener() {
+                            @Override
                             public void cancelled(int inID) {
                                 Sha1HashManager.getInstance().stop();
                             }
@@ -288,15 +269,18 @@ public class OsgwtuiMain implements Plugin {
                 final BackendTask task = BackendTaskManager.get().getTask(taskID);
                 task.setSummary("Calculating SHA1 and ED2K hashes of " + name);
                 return new Sha1CalcListener() {
+                    @Override
                     public void progress(double fraction) {
                         int percent = (int) Math.round(100 * fraction);
                         task.setProgress(percent + "%");
                     }
 
+                    @Override
                     public void errorOccured(Throwable cause) {
                         BackendTaskManager.get().removeTask(taskID);
                     }
 
+                    @Override
                     public void completed(Sha1Result result) {
                         BackendTaskManager.get().removeTask(taskID);
 
@@ -338,6 +322,7 @@ public class OsgwtuiMain implements Plugin {
             // create config listener
             COConfigurationManager.addAndFireParameterListener("autostart",
                     new ParameterListener() {
+                        @Override
                         public void parameterChanged(String parameterName) {
                             try {
                                 int handle = RegUtil.RegOpenKey(RegUtil.HKEY_CURRENT_USER,
@@ -369,6 +354,7 @@ public class OsgwtuiMain implements Plugin {
     private void installRemoteAccessPropertyListener() {
         COConfigurationManager.addParameterListener(OneSwarmConstants.REMOTE_ACCESS_PROPERTIES_KEY,
                 new ParameterListener() {
+                    @Override
                     public void parameterChanged(String parameterName) {
                         disableRemoteAccess();
                         if (isRemoteAccessAllowed()) {

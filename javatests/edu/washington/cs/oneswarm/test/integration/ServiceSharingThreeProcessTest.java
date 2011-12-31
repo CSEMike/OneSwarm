@@ -9,6 +9,7 @@ import static org.testng.Assert.fail;
 import java.util.logging.Logger;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import edu.washington.cs.oneswarm.f2f.network.SearchManager;
@@ -21,8 +22,11 @@ import edu.washington.cs.oneswarm.test.util.ThreeProcessTestBase;
 public class ServiceSharingThreeProcessTest extends ThreeProcessTestBase {
 
     private static Logger logger = Logger.getLogger(ServiceSharingThreeProcessTest.class.getName());
-    static {
-        startSelenium = false;
+
+    @BeforeClass
+    public static void setUpClass() throws Exception {
+        ThreeProcessTestBase.startSelenium = false;
+        ThreeProcessTestBase.setUpClass();
     }
 
     @Before
@@ -70,6 +74,8 @@ public class ServiceSharingThreeProcessTest extends ThreeProcessTestBase {
     }
 
     private void tellRemoteToShareService(String name, long searchKey, String address, int port) {
+        processB.getCoordinator().addCommand(
+                "inject edu.washington.cs.oneswarm.test.integration.ServiceSharingExperiment");
         processB.getCoordinator().addCommand(
                 "share_service " + name + " " + searchKey + " " + address + " " + port);
     }

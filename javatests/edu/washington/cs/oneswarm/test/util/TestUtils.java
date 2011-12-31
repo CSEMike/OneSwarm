@@ -144,6 +144,8 @@ public class TestUtils {
         // We use an experimental config to set the instance name.
         PrintStream experimentalConfig = new PrintStream(new FileOutputStream(
                 scratchPaths.get("experimentalConfig")));
+        experimentalConfig
+                .println("inject edu.washington.cs.oneswarm.test.integration.oop.LocalOneSwarmExperiment");
         experimentalConfig.println("name " + label);
 
         com.aelitis.azureus.ui.Main.main(new String[] {});

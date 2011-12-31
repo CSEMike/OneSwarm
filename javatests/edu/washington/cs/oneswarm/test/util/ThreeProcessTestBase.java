@@ -3,8 +3,6 @@ package edu.washington.cs.oneswarm.test.util;
 import java.io.File;
 import java.net.InetAddress;
 import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.logging.Logger;
 
 import org.bouncycastle.util.encoders.Base64;
@@ -58,10 +56,8 @@ public class ThreeProcessTestBase extends LocalProcessesTestBase {
         if (experimentalInstance) {
             System.setProperty("oneswarm.experimental.config.file", "dummy");
         }
-
         // Start a local client in this JVM
         startLocalInstance();
-
         // Fire up the other instances
         startInstances();
 
@@ -90,6 +86,7 @@ public class ThreeProcessTestBase extends LocalProcessesTestBase {
         processA.start();
         processB = new LocalOneSwarm(experimentalInstance);
         processB.start();
+
         TestUtils.awaitInstanceStart(processA);
         TestUtils.awaitInstanceStart(processB);
 

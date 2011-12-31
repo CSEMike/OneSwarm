@@ -90,7 +90,6 @@ public class LocalOneSwarmCoordinator extends Thread {
     @Override
     public void run() {
         while (!done) {
-
             Socket socket = null;
             try {
                 // Use a timeout so we can detect and cleanup expired threads.
@@ -149,19 +148,19 @@ public class LocalOneSwarmCoordinator extends Thread {
                 }
 
                 // The last line contains all the form parameters, if included.
-                if (lastLine.startsWith("dlsummary=")) {
-                    logger.fine("Got POST from instance " + instance.toString() + " / " + lastLine);
-                    String[] kvPairs = lastLine.split("&");
-                    for (String kv : kvPairs) {
-                        String[] toks = kv.split("=");
-                        if (toks[0].equals("key")) {
-                            encodedPublicKey = URLDecoder.decode(toks[1], "UTF-8");
-                        } else if (toks[0].equals("onlinefriends")) {
-                            onlineFriendCount = Integer.parseInt(toks[1]);
-                        } else if (toks[0].equals("friendConnectorAvailable")) {
-                            friendConnectorAvailable = Boolean.parseBoolean(toks[1]);
-                        }
+                logger.fine("Got POST from instance " + instance.toString() + " / " + lastLine);
+                String[] kvPairs = lastLine.split("&");
+                for (String kv : kvPairs) {
+                    String[] toks = kv.split("=");
+                    if (toks[0].equals("key")) {
+                        encodedPublicKey = URLDecoder.decode(toks[1], "UTF-8");
+                    } else if (toks[0].equals("onlinefriends")) {
+                        onlineFriendCount = Integer.parseInt(toks[1]);
+                    } else if (toks[0].equals("friendConnectorAvailable")) {
+                        friendConnectorAvailable = Boolean.parseBoolean(toks[1]);
                     }
+                    // TODO(willscott): Make this extensible, so tests can
+                    // retrieve arbitrary responses.
                 }
 
                 PrintStream out = new PrintStream(socket.getOutputStream());

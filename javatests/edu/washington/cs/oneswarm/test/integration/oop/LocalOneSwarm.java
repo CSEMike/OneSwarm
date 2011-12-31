@@ -320,6 +320,8 @@ public class LocalOneSwarm {
          */
         PrintStream experimentalConfig = new PrintStream(new FileOutputStream(
                 scratchPaths.get("experimentalConfig")));
+        experimentalConfig
+                .println("inject edu.washington.cs.oneswarm.test.integration.oop.LocalOneSwarmExperiment");
         experimentalConfig.println("name " + config.getLabel());
         experimentalConfig.println("register http://127.0.0.1:" + coordinator.getServerPort()
                 + "/s");
@@ -327,6 +329,8 @@ public class LocalOneSwarm {
         experimentalConfig.println("booleanSetting OSF2F.Use@DHT@Proxy false");
         experimentalConfig.println("booleanSetting OSF2F.LanFriendFinder false");
         experimentalConfig.println("booleanSetting dht.enabled false");
+        // Make it communicate regularly for shorter test timeouts.
+        experimentalConfig.println("setprop oneswarm.test.coordinator.poll 1");
         experimentalConfig.close();
 
         // Add the appropriate config properties

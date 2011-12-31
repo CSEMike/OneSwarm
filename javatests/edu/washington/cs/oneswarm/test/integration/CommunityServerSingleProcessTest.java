@@ -31,6 +31,19 @@ public class CommunityServerSingleProcessTest {
 
     @BeforeClass
     public static void setupClass() {
+        if (!TestUtils.swtTestRunnerUsed()) {
+            new Thread("Off-main Oneswarm") {
+                @Override
+                public void run() {
+                    try {
+                        TestUtils.startOneSwarmForTest();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        System.exit(-1);
+                    }
+                }
+            }.start();
+        }
         TestUtils.awaitJVMOneSwarmStart();
     }
 

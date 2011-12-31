@@ -5,6 +5,7 @@ import static org.testng.Assert.fail;
 import java.util.logging.Logger;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import edu.washington.cs.oneswarm.f2f.servicesharing.EchoServer;
@@ -19,8 +20,11 @@ public class ServiceSharingTest extends TwoProcessTestBase {
     private final static String LOCALHOST = ServiceSharingSingleProcessTest.LOCALHOST;
 
     private static Logger logger = Logger.getLogger(ServiceSharingTest.class.getName());
-    static {
-        startSelenium = false;
+
+    @BeforeClass
+    public static void setUpClass() throws Exception {
+        TwoProcessTestBase.startSelenium = false;
+        TwoProcessTestBase.setUpClass();
     }
 
     @Before
@@ -66,6 +70,8 @@ public class ServiceSharingTest extends TwoProcessTestBase {
     }
 
     private void tellRemoteToShareService(String name, long searchKey, String address, int port) {
+        localOneSwarm.getCoordinator().addCommand(
+                "inject edu.washington.cs.oneswarm.test.integration.ServiceSharingExperiment");
         localOneSwarm.getCoordinator().addCommand(
                 "share_service " + name + " " + searchKey + " " + address + " " + port);
     }
