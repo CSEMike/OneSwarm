@@ -11,6 +11,7 @@ logging.properties
 
 # Build output.
 OneSwarm.jar
+OneSwarm-tests.jar
 OneSwarmAzMods.jar
 core-bin
 core-dist
