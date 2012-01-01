@@ -4,7 +4,7 @@
 
 	<taskdef resource="net/sf/antcontrib/antcontrib.properties" />
 
-   <property name="root.dir" value="." />
+   <property name="root.dir" value="${basedir}" />
    <property name="core-libs.dir" value="build/core-libs" />
    <property name="core-dist.dir" value="core-dist" />
    <property name="core-bin.dir" value="core-bin" />
@@ -122,7 +122,7 @@
 		<taskdef name="DiscoverTestClasses" classname="edu.washington.cs.oneswarm.ant.DiscoverTestClasses" classpath="${root.dir}/ant-custom-bin" />
 		
 		<!-- Sets gwt.recompile, used by the gwt-webui target. -->
-		<GWTRecompileCheck directory="oneswarm_gwt_ui/src/edu/washington/cs/oneswarm/ui/gwt/client" lastBuild="${build.timestamp}" />
+		<GWTRecompileCheck directory="oneswarm_gwt_ui/src/edu/washington/cs/oneswarm/ui/gwt/client" basedir="${basedir}/" lastBuild="${build.timestamp}" />
    </target>
    
    <target name="compile-core" depends="core-init" >
@@ -379,8 +379,8 @@
 			<src path="${root.dir}/oneswarm_gwt_ui/gwt_override"/>
 			<classpath refid="project.class.path.servlet" />
 		</javac>
-		
-		<java classname="com.google.gwt.i18n.tools.I18NSync" failonerror="true">
+		<echo>basedir=${basedir}</echo>
+		<java classname="com.google.gwt.i18n.tools.I18NSync" failonerror="true" fork="true">
 			<arg value="edu.washington.cs.oneswarm.ui.gwt.client.i18n.OSMessages" />
 			<arg value="-out" />
 			<arg value="oneswarm_gwt_ui/src" />
@@ -390,7 +390,7 @@
 				<pathelement location="oneswarm_gwt_ui/src/" />
 				<pathelement location="build/gwt-libs/gwt/gwt-dev.jar" />
 				<pathelement location="build/gwt-libs/gwt/gwt-user.jar" />
-			</classpath>
+			</classpath>			
 		</java>
 		
 	</target>
