@@ -531,7 +531,8 @@
 		<!-- Test -->
 		<delete dir="test-bin" />
 		<delete dir="test-report" />
-		
+   		<delete file="OneSwarm-tests.jar" />
+   			
    </target>
 
 	<!-- =============================== Test ==================== -->
@@ -545,9 +546,10 @@
 				<path refid="project.class.path.servlet" />
 				<pathelement location="build/test-libs/selenium-server.jar" />
 				<pathelement location="build/test-libs/selenium-java-client-driver.jar" />
-			</classpath>
-			
+			</classpath>			
 		</javac>
+		
+		<jar destfile="OneSwarm-tests.jar" basedir="test-bin" />		
 	</target>
 	
 	<target name="junit" depends="compile-tests">
