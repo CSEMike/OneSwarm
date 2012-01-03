@@ -56,8 +56,8 @@ public class LocalOneSwarmCoordinatorTest {
             e.printStackTrace();
             fail("Thread interrupted");
         }
-        Assert.assertEquals("ExampleTestName".toLowerCase(),
-                COConfigurationManager.getStringParameter("Computer Name"));
+        Assert.assertEquals("ExampleTestName".toLowerCase(), COConfigurationManager
+                .getStringParameter("Computer Name").toLowerCase());
     }
 
     @Test

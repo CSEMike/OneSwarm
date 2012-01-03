@@ -17,6 +17,7 @@ import java.util.logging.Logger;
 
 import edu.washington.cs.oneswarm.f2f.ExperimentalHarnessManager;
 import edu.washington.cs.oneswarm.f2f.OSF2FMain;
+import edu.washington.cs.oneswarm.ui.gwt.CoreInterface;
 
 public class LocalOneSwarmCoordinatee extends Thread {
     private static Logger logger = Logger.getLogger(LocalOneSwarmCoordinatee.class.getName());
@@ -52,12 +53,14 @@ public class LocalOneSwarmCoordinatee extends Thread {
                 Map<String, String> formParams = new HashMap<String, String>();
                 formParams.put("started", started + "");
                 formParams.put("clock", System.currentTimeMillis() + "");
-                formParams.put("key", ExperimentalHarnessManager.get().getCoreInterface()
-                        .getF2FInterface().getMyPublicKey().replaceAll("\n", ""));
+                CoreInterface ci = ExperimentalHarnessManager.get().getCoreInterface();
+                if (ci != null) {
+                    formParams.put("key", ci.getF2FInterface().getMyPublicKey()
+                            .replaceAll("\n", ""));
+                    formParams.put("onlinefriends",
+                            ci.getF2FInterface().getFriends(false, false).length + "");
+                }
                 formParams.put("friendConnectorAvailable", connectorAvailable + "");
-                formParams.put("onlinefriends", ExperimentalHarnessManager.get().getCoreInterface()
-                        .getF2FInterface().getFriends(false, false).length
-                        + "");
                 synchronized (this.pending) {
                     for (Entry<String, String> entry : this.pending) {
                         formParams.put(entry.getKey(), entry.getValue());
