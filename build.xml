@@ -573,6 +573,11 @@
 				<fileset dir="${root.dir}/javatests/">
 					<include name="**/*Test*.java" />
 					<exclude name="**/util/*.java" />
+					<!-- Unimplemented tests.  TODO(piatek): Implement these! -->
+					<exclude name="**/integration/DirectTransferTest.java" />
+					<exclude name="**/integration/IndirectTransferTest.java" />
+					<exclude name="**/integration/PermissionsTest.java" />
+					<exclude name="**/integration/WatchDirectoryTest.java" />
 				</fileset>
 			</batchtest>
 		</junit>
