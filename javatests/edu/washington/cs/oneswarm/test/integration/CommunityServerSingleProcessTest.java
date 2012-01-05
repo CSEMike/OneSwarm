@@ -26,8 +26,11 @@ import edu.washington.cs.oneswarm.test.util.TestUtils;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.CommunityRecord;
 
 public class CommunityServerSingleProcessTest {
+    public static final String TEST_COMMUNITY_URL = "http://" + TestUtils.TEST_COMMUNITY_SERVER
+            + "/";
 
-    private static Logger logger = Logger.getLogger(CommunityServerTest.class.getName());
+    private static Logger logger = Logger.getLogger(CommunityServerSingleProcessTest.class
+            .getName());
 
     @BeforeClass
     public static void setupClass() {
@@ -70,7 +73,7 @@ public class CommunityServerSingleProcessTest {
         final int testBatchSize = 10;
 
         try {
-            CommunityRecord rec = CommunityServerTest.getTestCommunityRecord();
+            CommunityRecord rec = CommunityServerSingleProcessTest.getTestCommunityRecord();
             rec.setAllowAddressResolution(true);
             rec.setCht_path("cht");
             CHTClientHTTP cht = new CHTClientHTTP(rec);
@@ -142,6 +145,13 @@ public class CommunityServerSingleProcessTest {
         if (UIFunctionsManager.getUIFunctions() != null) {
             UIFunctionsManager.getUIFunctions().requestShutdown();
         }
+    }
+
+    public static CommunityRecord getTestCommunityRecord() {
+        CommunityRecord rec = new CommunityRecord(Arrays.asList(new String[] { TEST_COMMUNITY_URL,
+                "", "", "Exp. contacts", "true;false;false;false;" + 26 }), 0);
+        rec.setAllowAddressResolution(true);
+        return rec;
     }
 
     /** Boilerplate code for running as executable. */
