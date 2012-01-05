@@ -1,4 +1,3 @@
-
 # OneSwarm
 
 * [WWW](http://www.oneswarm.org/)
@@ -50,4 +49,4 @@
 
 # Testing
 
-`ant test`
+`ant test` or `ant junit`
