@@ -44,7 +44,8 @@ public class ChatTest extends TwoProcessTestBase {
             TestUtils.awaitElement(selenium, "chatTextBox");
             selenium.focus("chatTextBox");
             selenium.typeKeys("chatTextBox", chatMessage);
-            selenium.keyPress("chatTextBox", "13");
+            selenium.keyDown("chatTextBox", "\\13");
+            selenium.keyUp("chatTextBox", "\\13");
 
             // Verify local display of the chat message.
             new ConditionWaiter(new ConditionWaiter.Predicate() {
