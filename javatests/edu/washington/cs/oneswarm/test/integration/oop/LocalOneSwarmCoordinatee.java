@@ -65,6 +65,7 @@ public class LocalOneSwarmCoordinatee extends Thread {
                     for (Entry<String, String> entry : this.pending) {
                         formParams.put(entry.getKey(), entry.getValue());
                     }
+                    this.pending.clear();
                 }
 
                 logger.fine("Registering with: " + url);
