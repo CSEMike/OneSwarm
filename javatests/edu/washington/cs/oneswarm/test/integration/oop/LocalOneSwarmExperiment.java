@@ -36,7 +36,7 @@ public class LocalOneSwarmExperiment implements ExperimentInterface {
     public String[] getKeys() {
         return new String[] { "port", "name", "register", "community_server", "setprop",
                 "booleanSetting", "intSetting", "stringSetting", "floatSetting", "addkey",
-                "forceall", "shutdown" };
+                "forceall", "shutdown", "clean_community_servers" };
     }
 
     @SuppressWarnings("unchecked")
@@ -79,6 +79,9 @@ public class LocalOneSwarmExperiment implements ExperimentInterface {
             
             currentServers.addAll(Arrays.asList(rec.toTokens()));
             COConfigurationManager.setParameter("oneswarm.community.servers", currentServers);
+        } else if (toks[0].equals("clean_community_servers")) {
+            List<String> servers = new ArrayList<String>();
+            COConfigurationManager.setParameter("oneswarm.community.servers", servers);
         } else if (toks[0].equals("setprop")) {
             System.setProperty(toks[1], toks[2]);
         } else if (toks[0].equals("booleanSetting")) {
