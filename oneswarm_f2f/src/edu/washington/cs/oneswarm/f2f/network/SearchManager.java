@@ -59,7 +59,6 @@ import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExec
 import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExecutor;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayRegistrationError;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServerServiceConnection;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceChannelEndpoint;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
 import edu.washington.cs.oneswarm.f2f.servicesharing.SharedService;
 import edu.washington.cs.oneswarm.f2f.share.ShareManagerTools;
@@ -1568,12 +1567,16 @@ public class SearchManager {
         
         public void addSource(FriendConnection source, OSF2FHashSearchResp response)
                 throws OverlayRegistrationError {
-            sources.add(source);
-            conn.addChannel(source, search, response);
-            // register it with the friendConnection
-            source.registerOverlayTransport(conn);
+            if (conn.addChannel(source, search, response)) {
+                sources.add(source);
+                // register it with the friendConnection
+                source.registerOverlayTransport(conn);
 
-            Debug.out("Aggregated a channel for a service search. (now " + sources.size() + ").");
+                Debug.out("Aggregated a channel for a service search. (now " + sources.size()
+                        + ").");
+            } else {
+                Debug.out("Did not aggregate a channel for a service search.");
+            }
         }
         
         public List<FriendConnection> getSources() {

@@ -1,15 +1,13 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.HashMultimap;
 
 /**
@@ -60,9 +58,15 @@ public class MessageStreamMultiplexer {
         }
 
         for (SequenceNumber seq : numbers) {
-            if (this.channels.get(seq.getChannel()).forgetMessage(seq)) {
-                channelOutstanding.remove(seq.getChannel(), seq);
-                outstandingMessages.remove(seq.getNum());
+            seq.ack();
+            for (Integer channelId : seq.getChannels()) {
+                if (this.channels.get(channelId).forgetMessage(seq)) {
+                    channelOutstanding.remove(channelId, seq);
+                    seq.removeChannel(channelId);
+                }
+            }
+            if (seq.getChannels().size() == 0) {
+                outstandingMessages.remove(seq);
             }
         }
         for (Integer num : retransmissions) {
@@ -70,33 +74,38 @@ public class MessageStreamMultiplexer {
         }
     }
 
-    public SequenceNumber nextMsg(ServiceChannelEndpoint channel) {
+    public SequenceNumber nextMsg() {
         int num = next++;
-        int chan = channel.getChannelId()[0];
-        SequenceNumber n = new SequenceNumber(num, chan);
+        SequenceNumber n = new SequenceNumber(num);
         outstandingMessages.put(num, n);
-        channelOutstanding.put(chan, n);
         return n;
+    }
+
+    public void sendMsg(SequenceNumber msg, ServiceChannelEndpoint channel) {
+        int channelId = channel.getChannelId()[0];
+        msg.addChannel(channelId);
+        channelOutstanding.put(channelId, msg);
     }
 
     public boolean hasOutstanding(ServiceChannelEndpoint channel) {
         return channelOutstanding.containsKey(channel.getChannelId()[0]);
     }
 
-    public Collection<DirectByteBuffer> getOutstanding(final ServiceChannelEndpoint channel) {
+    public Map<SequenceNumber, DirectByteBuffer> getOutstanding(final ServiceChannelEndpoint channel) {
         Set<SequenceNumber> outstanding = channelOutstanding.get(channel.getChannelId()[0]);
-        return Collections2.transform(outstanding,
-                new Function<SequenceNumber, DirectByteBuffer>() {
-
-                    @Override
-                    public DirectByteBuffer apply(SequenceNumber s) {
-                        return channel.getMessage(s);
-                    }
-        });
+        HashMap<SequenceNumber, DirectByteBuffer> mapping = new HashMap<SequenceNumber, DirectByteBuffer>();
+        for (SequenceNumber s : outstanding) {
+            mapping.put(s, channel.getMessage(s));
+        }
+        return mapping;
     }
 
     public void removeChannel(ServiceChannelEndpoint channel) {
-        channels.remove(channel.getChannelId()[0]);
-        channelOutstanding.removeAll(channel.getChannelId()[0]);
+        int channelId = channel.getChannelId()[0];
+        channels.remove(channelId);
+        for (SequenceNumber s : channelOutstanding.get(channelId)) {
+            s.removeChannel(channelId);
+        }
+        channelOutstanding.removeAll(channelId);
     }
 }

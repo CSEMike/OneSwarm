@@ -29,13 +29,17 @@ public class ServerServiceConnection extends AbstractServiceConnection {
     }
     
     @Override
-    public void addChannel(FriendConnection channel,
+    public boolean addChannel(FriendConnection channel,
             OSF2FHashSearch search, OSF2FHashSearchResp response) {
         ServiceChannelEndpoint chan = new ServiceChannelEndpoint(this, channel, search, response,
                 false);
+        if (this.connections.size() >= MAX_CHANNELS) {
+            return false;
+        }
         this.connections.add(chan);
         this.mmt.addChannel(chan);
         logger.info("Server Service Connection channel added.");
+        return true;
     }
 
     @Override

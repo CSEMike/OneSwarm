@@ -119,20 +119,23 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
     }
 
-    public void writeMessage(final SequenceNumber num, DirectByteBuffer buffer) {
-        writeMessage(num, buffer, 0);
+    public void writeMessage(final SequenceNumber num, DirectByteBuffer buffer, boolean datagram) {
+        writeMessage(num, buffer, 0, datagram);
     }
 
-    private void writeMessage(final SequenceNumber num, DirectByteBuffer buffer, int attempt) {
+    private void writeMessage(final SequenceNumber num, DirectByteBuffer buffer, int attempt,
+            boolean datagram) {
         int length = buffer.remaining(ss);
         ReferenceCountedDirectByteBuffer copy = buffer.getReferenceCountedBuffer();
-        sentMessage sent = new sentMessage(num, copy, length, attempt);
+        sentMessage sent = new sentMessage(num, copy, length, attempt, datagram);
         this.sentMessages.put(num, sent);
         this.outstandingBytes += length;
         OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,
                 num.getNum(), (short) 0, new int[0], copy);
-        // Set datagram flag to allow the packet to be sent over UDP.
-        msg.setDatagram(true);
+        if (datagram) {
+            // Set datagram flag to allow the packet to be sent over UDP.
+            msg.setDatagram(true);
+        }
 
         long totalWritten = buffer.remaining(DirectByteBuffer.SS_MSG);
         if (logger.isLoggable(Level.FINEST)) {
@@ -213,9 +216,10 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         public long creation;
         private final SequenceNumber num;
         private final int attempt;
+        private final boolean datagram;
 
         public sentMessage(SequenceNumber num, ReferenceCountedDirectByteBuffer msg, int length,
-                int attempt) {
+                int attempt, boolean datagram) {
             this.creation = System.currentTimeMillis();
             this.msg = msg;
             this.position = msg.position(ss);
@@ -223,6 +227,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
             this.length = length;
             this.num = num;
             this.attempt = attempt;
+            this.datagram = datagram;
         }
 
         @Override
@@ -234,7 +239,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
                             + " was retransmitted.");
                     outstandingBytes -= length;
                     msg.position(ss, position);
-                    writeMessage(num, msg, attempt + 1);
+                    writeMessage(num, msg, attempt + 1, datagram);
                 } else {
                     sentMessages.put(num, self);
                 }

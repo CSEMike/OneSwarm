@@ -2,9 +2,10 @@ package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,40 +31,54 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     static final int SERVICE_MSG_BUFFER_SIZE = 1024;
 
     private static final int CHANNEL_BUFFER = 1024 * 4;
+    protected final int MAX_CHANNELS = COConfigurationManager.getIntParameter(
+            "SERVICE_CLIENT_channels", 4);
+    protected final EnumSet<ServiceFeatures> FEATURES;
     protected int serviceSequenceNumber;
     protected final DirectByteBuffer[] bufferedServiceMessages = new DirectByteBuffer[SERVICE_MSG_BUFFER_SIZE];
-    protected final LinkedList<DirectByteBuffer> bufferedNetworkMessages;
+    protected final LinkedList<BufferedMessage> bufferedNetworkMessages;
     protected final MessageStreamMultiplexer mmt;
-    private final Random random;
+
+    private class BufferedMessage {
+        public BufferedMessage(DirectByteBuffer msg, SequenceNumber msgId) {
+            this.messageId = msgId;
+            this.message = msg;
+        }
+
+        public SequenceNumber messageId;
+        public DirectByteBuffer message;
+    };
+
+    enum ServiceFeatures {
+        UDP, PACKET_DUPLICATION, ADAPTIVE_DUPLICATION
+    };
 
     @Override
     public abstract boolean isOutgoing();
 
-    public abstract void addChannel(FriendConnection channel, OSF2FHashSearch search,
+    public abstract boolean addChannel(FriendConnection channel, OSF2FHashSearch search,
             OSF2FHashSearchResp response);
 
     protected final List<ServiceChannelEndpoint> connections = Collections
             .synchronizedList(new ArrayList<ServiceChannelEndpoint>());
 
-    private enum SCPolicy {
-        ROUNDROBIN, RANDOM, WEIGHTED
-    };
-
-    final SCPolicy policy;
-
     public AbstractServiceConnection() {
-        String channelScheme = COConfigurationManager.getStringParameter(SERVICE_PRIORITY_KEY);
-        if (channelScheme.equals("roundrobin")) {
-            policy = SCPolicy.ROUNDROBIN;
-        } else if (channelScheme.equals("random")) {
-            policy = SCPolicy.RANDOM;
-        } else {
-            policy = SCPolicy.WEIGHTED;
-        }
-        this.random = new Random();
         this.serviceSequenceNumber = 0;
-        this.bufferedNetworkMessages = new LinkedList<DirectByteBuffer>();
+        this.bufferedNetworkMessages = new LinkedList<BufferedMessage>();
         this.mmt = new MessageStreamMultiplexer();
+
+        // Load Configuration.
+        ArrayList<ServiceFeatures> features = new ArrayList<ServiceFeatures>();
+        if (COConfigurationManager.getBooleanParameter("SERVICE_CLIENT_udp")) {
+            features.add(ServiceFeatures.UDP);
+        }
+        if (COConfigurationManager.getBooleanParameter("SERVICE_CLIENT_duplication")) {
+            features.add(ServiceFeatures.PACKET_DUPLICATION);
+        }
+        if (COConfigurationManager.getBooleanParameter("SERVICE_CLIENT_adaptive")) {
+            features.add(ServiceFeatures.ADAPTIVE_DUPLICATION);
+        }
+        this.FEATURES = EnumSet.copyOf(features);
     }
 
     @Override
@@ -306,10 +321,12 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             return;
         }
 
-        // TODO(willscott): Get retransmission working.
         if (mmt.hasOutstanding(channel)) {
             synchronized (bufferedNetworkMessages) {
-                bufferedNetworkMessages.addAll(mmt.getOutstanding(channel));
+                for (Map.Entry<SequenceNumber, DirectByteBuffer> e : mmt.getOutstanding(channel)
+                        .entrySet()) {
+                    bufferedNetworkMessages.add(new BufferedMessage(e.getValue(), e.getKey()));
+                }
             }
         }
 
@@ -331,81 +348,118 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         return response;
     }
 
-    boolean routeMessageToChannel(DirectByteBuffer msg) {
-        ServiceChannelEndpoint channel = null;
-        logger.finest("Routed message to channel, policy=" + policy.name());
-        if (policy == SCPolicy.RANDOM) {
-            while (true) {
-                synchronized (this.connections) {
-                    channel = this.connections.get(random.nextInt(connections.size()));
-                }
+    /**
+     * Route a message to appropriate channel(s).
+     * 
+     * @param msg
+     *            The message to route.
+     * @param msgId
+     *            The sequence number of the msg if determined, or null.
+     * @return Whether the msg was handled.
+     */
+    boolean routeMessageToChannel(DirectByteBuffer msg, SequenceNumber msgId) {
+        List<ServiceChannelEndpoint> channels = new ArrayList<ServiceChannelEndpoint>();
+        int totalOutstanding = 0;
+        int totalBuffer = 0;
 
-                // Assume some channel is 'started'
-                if (!channel.isStarted() && !channel.isOutgoing()) {
+        synchronized (this.connections) {
+            for (ServiceChannelEndpoint c : connections) {
+                // Don't allow questionable paths to be opened by the
+                // server.
+                if (!c.isStarted() && !c.isOutgoing()) {
                     continue;
                 }
-                break;
-            }
-        } else if (policy == SCPolicy.ROUNDROBIN) {
-            while (true) {
-                channel = this.connections.remove(0);
-                this.connections.add(channel);
 
-                // Assume some channel is 'started'
-                if (!channel.isStarted() && !channel.isOutgoing()) {
+                totalOutstanding += c.getOutstanding();
+                totalBuffer += CHANNEL_BUFFER;
+                // Don't allow full paths to get greedy.
+                if (c.isStarted() && c.getOutstanding() > CHANNEL_BUFFER) {
                     continue;
                 }
-                break;
-            }
-        } else {
-            synchronized (this.connections) {
-                for (ServiceChannelEndpoint c : connections) {
-                    // Don't allow questionable paths to be opened by the
-                    // server.
-                    if (!c.isStarted() && !c.isOutgoing()) {
-                        continue;
-                    }
 
-                    // Don't allow full paths to get greedy.
-                    if (c.isStarted() && c.getOutstanding() > CHANNEL_BUFFER) {
-                        continue;
-                    }
+                // Don't resend on an active channel.
+                if (msgId != null && msgId.getChannels().contains(new Integer(c.getChannelId()[0]))) {
+                    continue;
+                }
 
-                    if (channel == null) {
-                        channel = c;
-                        continue;
-                    }
-
-                    if (c.isStarted()) {
-                        if (!channel.isStarted()) {
-                            channel = c;
-                        } else if (c.getBytesOut() / c.getAge() > channel.getBytesOut()
-                                / channel.getAge()) {
-                            channel = c;
+                // Decide on priority.
+                if (c.isStarted()) {
+                    boolean added = false;
+                    for (int i = 0; i < channels.size(); i++) {
+                        ServiceChannelEndpoint current = channels.get(i);
+                        if (!current.isStarted()) {
+                            channels.add(i, c);
+                            added = true;
+                            break;
+                        } else if (c.getBytesOut() / c.getAge() > current.getBytesOut()
+                                / current.getAge()) {
+                            channels.add(i, c);
+                            added = true;
+                            break;
                         }
                     }
+                    if (!added) {
+                        channels.add(c);
+                    }
+                } else {
+                    channels.add(c);
                 }
             }
         }
-        if (channel == null) {
-            logger.finer("not accepting more data from client, no available channel.");
+        if (channels.size() == 0) {
+            logger.warning("not accepting more data from client, no available channel.");
             return false;
         }
 
-        if (!channel.isStarted()) {
-            logger.finer("Unstarted channel prioritized, msg buffered");
-            synchronized (bufferedNetworkMessages) {
-                if (bufferedNetworkMessages.size() < SERVICE_MSG_BUFFER_SIZE) {
-                    bufferedNetworkMessages.add(msg);
-                    return true;
+        ArrayList<ServiceChannelEndpoint> channelsToUse = new ArrayList<ServiceChannelEndpoint>();
+        if (!this.FEATURES.contains(ServiceFeatures.PACKET_DUPLICATION)) {
+            channelsToUse.add(channels.get(0));
+        } else if (this.FEATURES.contains(ServiceFeatures.ADAPTIVE_DUPLICATION)) {
+            if (totalBuffer == 0 || totalOutstanding == 0) {
+                channelsToUse.addAll(channels);
+            } else {
+                float replicationFactor = (float) ((totalBuffer - totalOutstanding) * 1.0 / totalBuffer);
+                int replicas = (int) (replicationFactor * channels.size());
+                if (msgId != null) {
+                    replicas -= msgId.getChannels().size();
                 }
-                return false;
+                if (replicas > channels.size()) {
+                    replicas = channels.size();
+                }
+                if (replicas < 1) {
+                    replicas = 1;
+                }
+                for (int i = 0; i < replicas; i++) {
+                    channelsToUse.add(channels.get(i));
+                }
             }
         } else {
-            if (logger.isLoggable(Level.FINEST)) {
-                logger.finest("Writing message to channel: " + channel.getDescription());
+            channelsToUse.addAll(channels);
+        }
+
+        if (msgId == null) {
+            msgId = mmt.nextMsg();
+        }
+        logger.warning("Message will attempt to send with replication " + channelsToUse.size());
+        for (ServiceChannelEndpoint c : channelsToUse) {
+            if (!c.isStarted()) {
+                logger.finest("Unstarted channel chosen, msg buffered");
+                synchronized (bufferedNetworkMessages) {
+                    if (bufferedNetworkMessages.size() < SERVICE_MSG_BUFFER_SIZE) {
+                        bufferedNetworkMessages.add(new BufferedMessage(msg, msgId));
+                    }
+                }
+            } else {
+                if (logger.isLoggable(Level.FINEST)) {
+                    logger.finest("Writing message to channel: " + c.getDescription());
+                }
+                mmt.sendMsg(msgId, c);
+                c.writeMessage(msgId, msg, FEATURES.contains(ServiceFeatures.UDP));
             }
-            channel.writeMessage(mmt.nextMsg(channel), msg);
+        }
+        if (msgId.getChannels().size() == 0) {
+            return false;
+        } else {
             return true;
         }
     }
@@ -427,8 +481,8 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                 return false;
             }
             DataMessage dataMessage = (DataMessage) message;
-            boolean routed = AbstractServiceConnection.this.routeMessageToChannel(dataMessage
-                    .transferPayload());
+            boolean routed = AbstractServiceConnection.this.routeMessageToChannel(
+                    dataMessage.transferPayload(), null);
             if (!routed) {
                 logger.warning("No channel accepted incoming packet.");
             }
@@ -449,7 +503,10 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         synchronized (bufferedNetworkMessages) {
             int size = bufferedNetworkMessages.size();
             while (size > 0) {
-                routeMessageToChannel(bufferedNetworkMessages.pop());
+                BufferedMessage b = bufferedNetworkMessages.pop();
+                if (!b.messageId.isAcked()) {
+                    routeMessageToChannel(b.message, b.messageId);
+                }
                 if (bufferedNetworkMessages.size() == size) {
                     break;
                 }
