@@ -130,12 +130,10 @@ public class FourProcessTestBase extends LocalProcessesTestBase {
                 processA.getCoordinator().getPort(), processA.getLabel(),
                 Base64.decode(processAKey), "test", 0, 0, false, true);
         f2fMain.getFriendManager().addFriend(f);
-        f2fMain.getDHTConnector().connectToFriend(f);
         Friend g = new Friend(true, true, new Date(), new Date(), InetAddress.getLocalHost(),
                 processB.getCoordinator().getPort(), processB.getLabel(),
                 Base64.decode(processBKey), "test", 0, 0, false, true);
         f2fMain.getFriendManager().addFriend(g);
-        f2fMain.getDHTConnector().connectToFriend(g);
 
         // Add us and node C to node A, B
         processA.getCoordinator().addCommand("addkey TEST " + localKey + " true true");
@@ -149,6 +147,11 @@ public class FourProcessTestBase extends LocalProcessesTestBase {
 
         // Wait for the connections to be established
         processC.waitForOnlineFriends(2);
+        processB.waitForOnlineFriends(1);
+        processA.waitForOnlineFriends(1);
+
+        f2fMain.getDHTConnector().connectToFriend(f);
+        f2fMain.getDHTConnector().connectToFriend(g);
         processB.waitForOnlineFriends(2);
         processA.waitForOnlineFriends(2);
     }

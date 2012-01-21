@@ -22,7 +22,6 @@ import com.aelitis.azureus.core.networkmanager.RawMessage;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
-import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDatagramInit;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDatagramOk;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;

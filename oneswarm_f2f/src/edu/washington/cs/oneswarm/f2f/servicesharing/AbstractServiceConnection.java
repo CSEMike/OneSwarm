@@ -1,5 +1,6 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -26,6 +27,7 @@ import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 
 public abstract class AbstractServiceConnection implements EndpointInterface {
     public static final Logger logger = Logger.getLogger(AbstractServiceConnection.class.getName());
+    private static final byte ss = 97;
 
     static final String SERVICE_PRIORITY_KEY = "SERVICE_CLIENT_MULTIPLEX_QUEUE";
     static final int SERVICE_MSG_BUFFER_SIZE = 1024;
@@ -440,8 +442,15 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
         if (msgId == null) {
             msgId = mmt.nextMsg();
         }
+        ArrayList<DirectByteBuffer> msgcpys = new ArrayList<DirectByteBuffer>();
+        msgcpys.add(msg);
+        while (msgcpys.size() < channelsToUse.size()) {
+            ByteBuffer cpy = msg.getBuffer(ss).asReadOnlyBuffer();
+            msgcpys.add(new DirectByteBuffer(cpy));
+        }
         logger.warning("Message will attempt to send with replication " + channelsToUse.size());
         for (ServiceChannelEndpoint c : channelsToUse) {
+            msg = msgcpys.remove(0);
             if (!c.isStarted()) {
                 logger.finest("Unstarted channel chosen, msg buffered");
                 synchronized (bufferedNetworkMessages) {

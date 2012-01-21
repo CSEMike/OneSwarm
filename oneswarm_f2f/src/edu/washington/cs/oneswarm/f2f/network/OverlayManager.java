@@ -474,6 +474,7 @@ public class OverlayManager {
                     break;
                 } else {
                     // the new connection is "worse", keep the old one.
+                    logger.info("new connection concurrent with a better one.");
                     return false;
                 }
             }
