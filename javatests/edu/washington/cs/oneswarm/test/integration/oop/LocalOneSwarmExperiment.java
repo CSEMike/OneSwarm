@@ -84,18 +84,20 @@ public class LocalOneSwarmExperiment implements ExperimentInterface {
             COConfigurationManager.setParameter("oneswarm.community.servers", servers);
         } else if (toks[0].equals("setprop")) {
             System.setProperty(toks[1], toks[2]);
-        } else if (toks[0].equals("booleanSetting")) {
+        } else if (toks[0].equals("booleansetting")) {
+            logger.info("boolean setting: " + toks[1]);
             ConfigurationManager.getInstance().setParameter(toks[1].replaceAll("@", " "),
                     Boolean.parseBoolean(toks[2]));
             ConfigurationManager.getInstance().setDirty();
-        } else if (toks[0].equals("intSetting")) {
+        } else if (toks[0].equals("intsetting")) {
+            logger.info("integer setting: " + toks[1] + "=" + toks[2]);
             ConfigurationManager.getInstance().setParameter(toks[1].replaceAll("@", " "),
                     Integer.parseInt(toks[2]));
             ConfigurationManager.getInstance().setDirty();
-        } else if (toks[0].equals("stringSetting")) {
+        } else if (toks[0].equals("stringsetting")) {
             ConfigurationManager.getInstance().setParameter(toks[1].replaceAll("@", " "), toks[2]);
             ConfigurationManager.getInstance().setDirty();
-        } else if (toks[0].equals("floatSetting")) {
+        } else if (toks[0].equals("floatsetting")) {
             ConfigurationManager.getInstance().setParameter(toks[1].replaceAll("@", " "),
                     Float.parseFloat(toks[2]));
             ConfigurationManager.getInstance().setDirty();

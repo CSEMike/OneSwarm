@@ -81,6 +81,16 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             features.add(ServiceFeatures.ADAPTIVE_DUPLICATION);
         }
         this.FEATURES = EnumSet.copyOf(features);
+        logger.info("ASC active with settings: max="
+                + MAX_CHANNELS
+                + ", "
+                + (features.contains(ServiceFeatures.UDP) ? "UDP" : "No UDP")
+                + ", "
+                + (features.contains(ServiceFeatures.PACKET_DUPLICATION) ? "Duplication"
+                        : "No Duplication")
+                + ", "
+                + (features.contains(ServiceFeatures.ADAPTIVE_DUPLICATION) ? "Adaptive"
+                        : "Not Adapitive"));
     }
 
     @Override
@@ -448,7 +458,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             ByteBuffer cpy = msg.getBuffer(ss).asReadOnlyBuffer();
             msgcpys.add(new DirectByteBuffer(cpy));
         }
-        logger.warning("Message will attempt to send with replication " + channelsToUse.size());
+        logger.finest("Message will attempt to send with replication " + channelsToUse.size());
         for (ServiceChannelEndpoint c : channelsToUse) {
             msg = msgcpys.remove(0);
             if (!c.isStarted()) {
