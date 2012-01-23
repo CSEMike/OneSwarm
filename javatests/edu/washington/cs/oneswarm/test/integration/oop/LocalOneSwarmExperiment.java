@@ -85,7 +85,7 @@ public class LocalOneSwarmExperiment implements ExperimentInterface {
         } else if (toks[0].equals("setprop")) {
             System.setProperty(toks[1], toks[2]);
         } else if (toks[0].equals("booleansetting")) {
-            logger.info("boolean setting: " + toks[1]);
+            logger.info("boolean setting: " + toks[1] + "=" + toks[2]);
             ConfigurationManager.getInstance().setParameter(toks[1].replaceAll("@", " "),
                     Boolean.parseBoolean(toks[2]));
             ConfigurationManager.getInstance().setDirty();
