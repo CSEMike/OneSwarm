@@ -11,7 +11,7 @@ public class ServiceSharingExperiment implements ExperimentInterface {
 
     @Override
     public String[] getKeys() {
-        return new String[] { "share_service", "expose_client" };
+        return new String[] { "share_service", "expose_client", "clean_services" };
     }
 
     @Override
@@ -34,6 +34,8 @@ public class ServiceSharingExperiment implements ExperimentInterface {
             ServiceSharingManager.getInstance().registerClientService(name, port, key);
             logger.info("adding client: "
                     + ServiceSharingManager.getInstance().getClientService(key));
+        } else if (toks[0].equals("clean_services")) {
+            ServiceSharingManager.getInstance().clearLocalServices();
         } else {
             logger.warning("Unknown Service command: " + toks[0]);
             return;
