@@ -233,7 +233,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         @Override
         public void run() {
             sentMessage self = sentMessages.remove(num);
-            if (self != null) {
+            if (self != null && !closed) {
                 if (self.attempt == attempt) {
                     logger.fine("Message with sequence number " + num.getNum()
                             + " was retransmitted.");
