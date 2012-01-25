@@ -102,7 +102,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         if (closed) {
             return;
         }
-        if (this.isStarted()) {
+        if (!this.isStarted()) {
             start();
         }
         if (!(msg instanceof OSF2FServiceDataMsg)) {

@@ -16,6 +16,7 @@ public class ServiceSharingExperiment implements ExperimentInterface {
 
     @Override
     public void execute(String command) {
+        logger.info("sse asked to execute " + command);
         String[] toks = command.toLowerCase().split("\\s+");
         if (toks[0].equals("share_service")) {
             String name = toks[1];
@@ -27,6 +28,8 @@ public class ServiceSharingExperiment implements ExperimentInterface {
                     new InetSocketAddress(address, port));
             logger.info("adding service: "
                     + ServiceSharingManager.getInstance().getSharedService(searchKey));
+            logger.warning("SERVICE ADDED for " + name + " (" + searchKey + ") " + " "
+                    + address + ":" + port);
         } else if (toks[0].equals("expose_client")) {
             String name = toks[1];
             long key = Long.parseLong(toks[2]);

@@ -107,6 +107,12 @@ public class ClientServiceConnection extends AbstractServiceConnection {
     }
 
     @Override
+    public void close(String reason) {
+        super.close(reason);
+        clientConnection.close();
+    }
+
+    @Override
     public boolean isOutgoing() {
         return true;
     }
@@ -129,7 +135,12 @@ public class ClientServiceConnection extends AbstractServiceConnection {
         if (logger.isLoggable(Level.FINEST)) {
             logger.finest("writing message to server queue: " + msg.getDescription());
         }
-        clientConnection.getOutgoingMessageQueue().addMessage(msg, false);
+        if (directByteBuffer.remaining((byte) 0) == 0) {
+            logger.warning("Read 0 byte message - assuming EOF from server.");
+            clientConnection.close();
+        } else {
+            clientConnection.getOutgoingMessageQueue().addMessage(msg, false);
+        }
     }
 
     @Override

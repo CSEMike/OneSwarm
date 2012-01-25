@@ -311,7 +311,6 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             mmt.onAck(message);
             return;
         }
-
         synchronized (bufferedServiceMessages) {
             if (message.getSequenceNumber() >= serviceSequenceNumber + SERVICE_MSG_BUFFER_SIZE) {
                 // Throw out to prevent buffer overflow.
@@ -344,6 +343,10 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
         mmt.removeChannel(channel);
         this.connections.remove(channel);
+        if (this.connections.size() == 0) {
+            logger.info("All channels removed. closing service connection.");
+            close("No Channels Remaining.");
+        }
         channelReady(null);
     }
 
