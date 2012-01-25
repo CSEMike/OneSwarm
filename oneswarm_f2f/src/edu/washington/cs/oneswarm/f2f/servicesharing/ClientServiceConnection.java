@@ -135,12 +135,7 @@ public class ClientServiceConnection extends AbstractServiceConnection {
         if (logger.isLoggable(Level.FINEST)) {
             logger.finest("writing message to server queue: " + msg.getDescription());
         }
-        if (directByteBuffer.remaining((byte) 0) == 0) {
-            logger.warning("Read 0 byte message - assuming EOF from server.");
-            clientConnection.close();
-        } else {
-            clientConnection.getOutgoingMessageQueue().addMessage(msg, false);
-        }
+        clientConnection.getOutgoingMessageQueue().addMessage(msg, false);
     }
 
     @Override
