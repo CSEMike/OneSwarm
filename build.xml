@@ -574,7 +574,7 @@
 					<include name="**/*Test*.java" />
 					<exclude name="**/util/*.java" />
 					<!-- TODO(willscott): Understand failure! -->
-					<exclude name="**/integration/MultipathResilianceTest.java" />
+					<exclude name="**/integration/MultipathResillianceTest.java" />
 					<!-- Unimplemented tests.  TODO(piatek): Implement these! -->
 					<exclude name="**/integration/DirectTransferTest.java" />
 					<exclude name="**/integration/IndirectTransferTest.java" />
