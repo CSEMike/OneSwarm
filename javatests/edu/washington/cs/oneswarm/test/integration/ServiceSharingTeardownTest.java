@@ -114,6 +114,7 @@ public class ServiceSharingTeardownTest extends LocalProcessesTestBase {
         Socket serversock = writeReadVerify("t".getBytes("UTF-8"), client, server);
         serversock.close();
         Assert.assertEquals(-1, client.getInputStream().read());
+        server.close();
     }
 
     private static Socket writeReadVerify(byte[] out, Socket client, ServerSocket server)
