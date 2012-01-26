@@ -353,6 +353,9 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     private int getAvailableBytes() {
         ChannelBufferInfo b = new ChannelBufferInfo();
         getAvailableChannels(null, b);
+        if (b.replication == 0) {
+            return 0;
+        }
         return (b.total - b.outstanding) / b.replication;
     }
 

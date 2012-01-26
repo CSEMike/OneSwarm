@@ -56,6 +56,7 @@ public class ServerServiceConnection extends AbstractServiceConnection {
     public void close(String reason) {
         super.close(reason);
         serverConnection.close();
+        serviceConnected = false;
     }
 
     @Override

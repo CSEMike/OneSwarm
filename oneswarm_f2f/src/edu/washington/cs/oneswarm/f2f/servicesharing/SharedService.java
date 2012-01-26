@@ -23,6 +23,7 @@ public class SharedService implements Comparable<SharedService> {
     public static final String CONFIGURATION_PREFIX = "SHARED_SERVICE_";
 
     private long lastFailedConnect;
+    private int activeConnections = 0;
 
     final long searchKey;
 
@@ -78,12 +79,14 @@ public class SharedService implements Comparable<SharedService> {
 
                 @Override
                 public void connectFailure(Throwable failure_msg) {
+                    activeConnections--;
                     lastFailedConnect = System.currentTimeMillis();
                     listener.connectFailure(failure_msg);
                 }
 
                 @Override
                 public void connectStarted() {
+                    activeConnections++;
                     listener.connectStarted();
                 }
 
@@ -94,6 +97,7 @@ public class SharedService implements Comparable<SharedService> {
 
                 @Override
                 public void exceptionThrown(Throwable error) {
+                    activeConnections--;
                     listener.exceptionThrown(error);
                 }
 
@@ -119,6 +123,9 @@ public class SharedService implements Comparable<SharedService> {
 
     public boolean isEnabled() {
         long lastFailedAge = System.currentTimeMillis() - lastFailedConnect;
+        if (activeConnections > 0) {
+            return true;
+        }
         boolean enabled = lastFailedAge > FAILURE_BACKOFF;
         if (!enabled) {
             ServiceSharingManager.logger.finer(String.format(
@@ -134,6 +141,7 @@ public class SharedService implements Comparable<SharedService> {
                 .getHostAddress(), address.getPort());
     }
 
+    @Override
     public String toString() {
         InetSocketAddress address = getAddress();
         return "key=" + searchKey + getName() + " " + address + " enabled=" + isEnabled();
