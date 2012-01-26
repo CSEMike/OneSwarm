@@ -98,8 +98,7 @@ public class ServerServiceConnection extends AbstractServiceConnection {
             public void exceptionThrown(Throwable error) {
                 logger.fine("got exception in server service connection: "
                         + error.getClass().getName() + "::" + error.getMessage());
-                error.printStackTrace();
-                ServerServiceConnection.this.close("Exception in connection to server");
+                ServerServiceConnection.this.close("Exception in connection to server.");
             }
 
             @Override

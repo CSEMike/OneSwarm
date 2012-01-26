@@ -91,7 +91,7 @@ public class ClientServiceConnection extends AbstractServiceConnection {
 
             @Override
             public void exceptionThrown(Throwable error) {
-                ClientServiceConnection.this.close("Exception during connect");
+                ClientServiceConnection.this.close("Exception from Client Service.");
             }
 
             @Override
