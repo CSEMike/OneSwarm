@@ -30,9 +30,11 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     private static final byte ss = 97;
 
     static final String SERVICE_PRIORITY_KEY = "SERVICE_CLIENT_MULTIPLEX_QUEUE";
-    static final int SERVICE_MSG_BUFFER_SIZE = 1024;
+    static final int SERVICE_MSG_BUFFER_SIZE = 1024 * COConfigurationManager.getIntParameter(
+            "SERVICE_CLIENT_flow", 10);
 
-    private static final int CHANNEL_BUFFER = 1024 * 4;
+    private final int CHANNEL_BUFFER = 1024 * COConfigurationManager.getIntParameter(
+            "SERVICE_CLIENT_window", 4);
     protected final int MAX_CHANNELS = COConfigurationManager.getIntParameter(
             "SERVICE_CLIENT_channels", 4);
     protected final EnumSet<ServiceFeatures> FEATURES;
@@ -81,7 +83,11 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             features.add(ServiceFeatures.ADAPTIVE_DUPLICATION);
         }
         this.FEATURES = EnumSet.copyOf(features);
-        logger.info("ASC active with settings: max="
+        logger.info("ASC active with settings: window = "
+                + (CHANNEL_BUFFER / 1024)
+                + ", flow="
+                + (SERVICE_MSG_BUFFER_SIZE / 1024)
+                + ", max="
                 + MAX_CHANNELS
                 + ", "
                 + (features.contains(ServiceFeatures.UDP) ? "UDP" : "No UDP")
