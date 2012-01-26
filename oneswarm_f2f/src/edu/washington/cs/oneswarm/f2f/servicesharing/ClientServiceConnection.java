@@ -133,7 +133,7 @@ public class ClientServiceConnection extends AbstractServiceConnection {
          */
         DataMessage msg = new DataMessage(directByteBuffer); // deliveryBuffer);
         if (logger.isLoggable(Level.FINEST)) {
-            logger.finest("writing message to server queue: " + msg.getDescription());
+            logger.finest("writing message to client queue: " + msg.getDescription());
         }
         clientConnection.getOutgoingMessageQueue().addMessage(msg, false);
     }
