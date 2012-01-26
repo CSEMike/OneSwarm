@@ -351,31 +351,21 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     }
 
     private int getAvailableBytes() {
-        int response = 0;
-        synchronized (this.connections) {
-            for (ServiceChannelEndpoint c : connections) {
-                if (!c.isStarted() && !c.isOutgoing()) {
-                    continue;
-                }
-                response += Math.max(CHANNEL_BUFFER - c.getOutstanding(), 0);
-            }
-        }
-        return response;
+        ChannelBufferInfo b = new ChannelBufferInfo();
+        getAvailableChannels(null, b);
+        logger.info("reporting availability of " + (b.total - b.outstanding));
+        return (b.total - b.outstanding) / b.replication;
     }
 
-    /**
-     * Route a message to appropriate channel(s).
-     * 
-     * @param msg
-     *            The message to route.
-     * @param msgId
-     *            The sequence number of the msg if determined, or null.
-     * @return Whether the msg was handled.
-     */
-    boolean routeMessageToChannel(DirectByteBuffer msg, SequenceNumber msgId) {
+    private class ChannelBufferInfo {
+        int outstanding = 0;
+        int total = 0;
+        int replication = 0;
+    };
+
+    private List<ServiceChannelEndpoint> getAvailableChannels(SequenceNumber msgId,
+            ChannelBufferInfo b) {
         List<ServiceChannelEndpoint> channels = new ArrayList<ServiceChannelEndpoint>();
-        int totalOutstanding = 0;
-        int totalBuffer = 0;
 
         synchronized (this.connections) {
             for (ServiceChannelEndpoint c : connections) {
@@ -385,8 +375,8 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                     continue;
                 }
 
-                totalOutstanding += c.getOutstanding();
-                totalBuffer += CHANNEL_BUFFER;
+                b.outstanding += c.getOutstanding();
+                b.total += CHANNEL_BUFFER;
                 // Don't allow full paths to get greedy.
                 if (c.isStarted() && c.getOutstanding() > CHANNEL_BUFFER) {
                     continue;
@@ -421,19 +411,14 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                 }
             }
         }
-        if (channels.size() == 0) {
-            logger.warning("not accepting more data from client, no available channel.");
-            return false;
-        }
 
-        ArrayList<ServiceChannelEndpoint> channelsToUse = new ArrayList<ServiceChannelEndpoint>();
         if (!this.FEATURES.contains(ServiceFeatures.PACKET_DUPLICATION)) {
-            channelsToUse.add(channels.get(0));
+            b.replication = 1;
         } else if (this.FEATURES.contains(ServiceFeatures.ADAPTIVE_DUPLICATION)) {
-            if (totalBuffer == 0 || totalOutstanding == 0) {
-                channelsToUse.addAll(channels);
+            if (b.total == 0 || b.outstanding == 0) {
+                b.replication = channels.size();
             } else {
-                float replicationFactor = (float) ((totalBuffer - totalOutstanding) * 1.0 / totalBuffer);
+                float replicationFactor = (float) ((b.total - b.outstanding) * 1.0 / b.total);
                 int replicas = (int) (replicationFactor * channels.size());
                 if (msgId != null) {
                     replicas -= msgId.getChannels().size();
@@ -444,12 +429,39 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                 if (replicas < 1) {
                     replicas = 1;
                 }
-                for (int i = 0; i < replicas; i++) {
-                    channelsToUse.add(channels.get(i));
-                }
+                b.replication = replicas;
             }
         } else {
-            channelsToUse.addAll(channels);
+            b.replication = channels.size();
+        }
+
+        return channels;
+    }
+
+    /**
+     * Route a message to appropriate channel(s).
+     * 
+     * @param msg
+     *            The message to route.
+     * @param msgId
+     *            The sequence number of the msg if determined, or null.
+     * @return Whether the msg was handled.
+     */
+    boolean routeMessageToChannel(DirectByteBuffer msg, SequenceNumber msgId) {
+        ChannelBufferInfo b = new ChannelBufferInfo();
+        List<ServiceChannelEndpoint> channels = getAvailableChannels(msgId, b);
+        if (channels.size() == 0) {
+            logger.info("Currently advertising " + (b.total - b.outstanding) + " available buffer");
+            logger.warning("not accepting more data from service, no available channel.");
+            return false;
+        }
+
+        ArrayList<ServiceChannelEndpoint> channelsToUse = new ArrayList<ServiceChannelEndpoint>();
+        for (int i = 0; i < b.replication; i++) {
+            ServiceChannelEndpoint sce = channels.get(i);
+            if (sce != null) {
+                channelsToUse.add(sce);
+            }
         }
 
         if (msgId == null) {
