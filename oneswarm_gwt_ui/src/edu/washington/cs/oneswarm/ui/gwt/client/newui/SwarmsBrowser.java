@@ -157,7 +157,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
 
     private TorrentInfo[] mSwarmsOrderedByDisplay = null;
 
-    private Tree mDirectoryTree = new Tree();
+    private final Tree mDirectoryTree = new Tree();
     private ScrollPanel mDirectoryScroll = null; // so we can hide/show this
     private HorizontalPanel mFoldersAndFiles = null;
     private TreeItem mRootTreeItem = null;
@@ -248,10 +248,12 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         mFoldersAndFiles.add(filesFlowPanel);
 
         mDirectoryTree.addTreeListener(new TreeListener() {
+            @Override
             public void onTreeItemSelected(TreeItem item) {
                 refreshActive(true);
             }
 
+            @Override
             public void onTreeItemStateChanged(TreeItem item) {
             }
         });
@@ -297,6 +299,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         mSwarmsPerPage = Integer.parseInt(swarmsPerPagePopup.getItemText(swarmsPerPagePopup
                 .getSelectedIndex()));
         swarmsPerPagePopup.addChangeListener(new ChangeListener() {
+            @Override
             public void onChange(Widget sender) {
                 mSwarmsPerPage = Integer.parseInt(swarmsPerPagePopup.getItemText(swarmsPerPagePopup
                         .getSelectedIndex()));
@@ -323,6 +326,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         }
         this.add(mShowFriendsCheckbox);
         mShowFriendsCheckbox.addClickHandler(new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 Cookies.setCookie(COOKIE_SHOW_FRIENDS_SWARMS, mShowFriendsCheckbox.getValue() + "",
                         OneSwarmConstants.TEN_YEARS_FROM_NOW);
@@ -336,6 +340,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
          * add click listener to noFriendsFilesLabel
          */
         allFilesFiltered.addClickHandler(new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 if (mFilterPattern.trim().length() < NavigationFilterBar.MIN_SEARCH_LENGTH) {
                     Window.alert(msg
@@ -354,6 +359,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
 
     }
 
+    @Override
     protected void onAttach() {
         super.onAttach();
         mEntireUIRoot = EntireUIRoot.getRoot(this);
@@ -375,7 +381,8 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
     public static final long DOUBLE_CLICK_THRESHOLD = 750;
 
     private int mSortingMetric = SORT_BY_DATE_ID;
-    private ChangeListener mJumpChangeListener = new ChangeListener() {
+    private final ChangeListener mJumpChangeListener = new ChangeListener() {
+        @Override
         public void onChange(Widget sender) {
             System.out.println("change listener, mJumpList.getSelectedIndex: "
                     + mJumpList.getSelectedIndex());
@@ -410,6 +417,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         mSortByList.addItem(SORT_BY_SIZE, "" + SORT_BY_SIZE_ID);
 
         mSortByList.addChangeListener(new ChangeListener() {
+            @Override
             public void onChange(Widget sender) {
                 int oldMetric = mSortingMetric;
                 mSortingMetric = Integer.parseInt(mSortByList.getValue(mSortByList
@@ -439,6 +447,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                 which.equals("icons") ? Strings.get(Strings.LIST_VIEW)
                         : Strings.get(Strings.ICON_VIEW), "");
         viewLink.addClickHandler(new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 if (viewLink.getText().equals(Strings.get(Strings.LIST_VIEW))) {
                     viewLink.setText(Strings.get(Strings.ICON_VIEW));
@@ -459,6 +468,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         mChatHTML = new HTML("| <a href=\"#\">" + msg.swarm_browser_chat() + "</a>");
         mChatHTML.setVisible(false);
         mChatHTML.addClickHandler(new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 mEntireUIRoot.startChat(mEntireUIRoot.getSelectedFriend());
             }
@@ -488,6 +498,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         nextLink = new Hyperlink(msg.swarm_browser_show_next_swarms(), "morefiles");
 
         nextPreviousPageLinkListener = new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 int incDec = 0;
                 Object sender = event.getSource();
@@ -671,11 +682,13 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                 OneSwarmRPCClient.getService().copyTorrentInfoToMagnetLink(
                         OneSwarmRPCClient.getSessionID(), new String[] { infos[0].getTorrentID() },
                         new AsyncCallback<String>() {
+                            @Override
                             public void onFailure(Throwable caught) {
                                 caught.printStackTrace();
                                 OneSwarmGWT.log("Error: " + caught.getMessage());
                             }
 
+                            @Override
                             public void onSuccess(String success) {
                                 System.out.println("copy success: " + success);
                                 if (OneSwarmGWT.isRemoteAccess()) {
@@ -689,10 +702,12 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
 
             OneSwarmRPCClient.getService().selectFileOrDirectory(OneSwarmRPCClient.getSessionID(),
                     false, new AsyncCallback<String>() {
+                        @Override
                         public void onFailure(Throwable caught) {
                             caught.printStackTrace();
                         }
 
+                        @Override
                         public void onSuccess(String result) {
 
                             if (result == null) {
@@ -713,6 +728,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                                     .addDownloadFromLocalTorrentDefaultSaveLocation(
                                             OneSwarmRPCClient.getSessionID(), result, permitted,
                                             new AsyncCallback<Void>() {
+                                                @Override
                                                 public void onFailure(Throwable caught) {
                                                     caught.printStackTrace();
                                                     // new
@@ -722,6 +738,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                                                             .swarm_browser_warning_invalid_torrent());
                                                 }
 
+                                                @Override
                                                 public void onSuccess(Void result) {
                                                     ; // success
                                                 }
@@ -764,10 +781,12 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                 OneSwarmRPCClient.getService().revealSwarmInFinder(
                         OneSwarmRPCClient.getSessionID(), getSelectedSwarms(),
                         new AsyncCallback<ReportableException>() {
+                            @Override
                             public void onFailure(Throwable caught) {
                                 caught.printStackTrace();
                             }
 
+                            @Override
                             public void onSuccess(ReportableException result) {
                                 if (result != null) {
                                     new ReportableErrorDialogBox(result, false);
@@ -779,10 +798,12 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
             System.out.println("got default play event");
             OneSwarmRPCClient.getService().openFileDefaultApp(OneSwarmRPCClient.getSessionID(),
                     getSelectedSwarms(), new AsyncCallback<ReportableException>() {
+                        @Override
                         public void onFailure(Throwable caught) {
                             caught.printStackTrace();
                         }
 
+                        @Override
                         public void onSuccess(ReportableException result) {
                             if (result != null) {
                                 new ReportableErrorDialogBox(result, false);
@@ -799,10 +820,12 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                 OneSwarmRPCClient.getService().getPagedAndFilteredSwarms(0, Integer.MAX_VALUE, "",
                         SORT_BY_NAME_ID, "all", false, Integer.MIN_VALUE, null,
                         new AsyncCallback<PagedTorrentInfo>() {
+                            @Override
                             public void onFailure(Throwable caught) {
                                 caught.printStackTrace();
                             }
 
+                            @Override
                             public void onSuccess(PagedTorrentInfo result) {
                                 TorrentInfo[] selectedarr = getSelectedSwarms();
                                 TorrentInfo selected = null;
@@ -854,10 +877,12 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                 }
                 OneSwarmRPCClient.getService().stopTorrent(OneSwarmRPCClient.getSessionID(),
                         selected_ids, new AsyncCallback<Boolean>() {
+                            @Override
                             public void onFailure(Throwable caught) {
                                 caught.printStackTrace();
                             }
 
+                            @Override
                             public void onSuccess(Boolean result) {
                                 System.out.println("stopped torrents: " + selected_ids.length);
                             }
@@ -869,10 +894,12 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                 }
                 OneSwarmRPCClient.getService().startTorrent(OneSwarmRPCClient.getSessionID(),
                         selected_ids, new AsyncCallback<Boolean>() {
+                            @Override
                             public void onFailure(Throwable caught) {
                                 caught.printStackTrace();
                             }
 
+                            @Override
                             public void onSuccess(Boolean result) {
                                 System.out.println("started torrents: " + selected_ids.length);
                             }
@@ -1089,10 +1116,12 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                         .getSelectedIndex())), mFilterPattern, mSortingMetric, fileType.name(),
                 showAllFriendsFiles, selectedFriendID, getSelectedTagPath(),
                 new AsyncCallback<PagedTorrentInfo>() {
+                    @Override
                     public void onFailure(Throwable caught) {
                         caught.printStackTrace();
                     }
 
+                    @Override
                     public void onSuccess(PagedTorrentInfo result) {
 
                         /**
@@ -1134,6 +1163,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                             filesFlowPanel.add(selectNoneButton);
 
                             ClickHandler cl = new ClickHandler() {
+                                @Override
                                 public void onClick(ClickEvent event) {
                                     Object w = event.getSource();
                                     if (w.equals(selectAllButton)) {
@@ -1256,6 +1286,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         if (truncated_tags) {
             rootTagLabel.setHTML(ROOT_TAG_LABEL + "<a href=\"#\" >(!)</a>");
             rootTagLabel.addClickHandler(new ClickHandler() {
+                @Override
                 public void onClick(ClickEvent event) {
                     Window.alert(msg.swarm_browser_warning_tags_are_hidden());
                 }
@@ -1407,6 +1438,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
     final Label computerNameLabel = new Label();
 
     final private ClickHandler statusImageClickListener = new ClickHandler() {
+        @Override
         public void onClick(ClickEvent event) {
             if (event.getSource() instanceof TorrentContainingImage) {
 
@@ -1441,13 +1473,14 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         }
 
         createSwarmButton.addClickHandler(new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 new CreateSwarmDialogBox(mEntireUIRoot);
             }
         });
 
         Button addDownloadButton = new Button(Strings.get(Strings.ADD_SWARM_URL));
-
+        addDownloadButton.getElement().setId("addUrlLink");
         DOM.setStyleAttribute(addDownloadButton.getElement(), "whiteSpace", "nowrap");
 
         playButton = new Button(Strings.get(Strings.SWARM_BROWSER_PLAY));
@@ -1457,6 +1490,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         if (useDebug) {
             debugButton = new Button(msg.swarm_browser_button_debug());
             debugButton.addClickHandler(new ClickHandler() {
+                @Override
                 public void onClick(ClickEvent event) {
                     dispatchSwarmAction(Strings.DEBUG, null);
                 }
@@ -1464,6 +1498,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         }
 
         addDownloadButton.addClickHandler(new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 String url = Window.prompt(msg.swarm_browser_add_enter_url(), "");
                 if (url == null) { // cancel
@@ -1473,12 +1508,12 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                 if (url.toLowerCase().startsWith("magnet:")
                         || url.toLowerCase().startsWith("oneswarm:")) {
 
-                    int pos = url.indexOf((int) '?');
+                    int pos = url.indexOf('?');
                     if (pos == -1) {
                         Window.alert(msg.swarm_browser_add_warning_bad_magnet());
                         return;
                     }
-                    String query = url.substring(url.indexOf((int) '?'));
+                    String query = url.substring(url.indexOf('?'));
                     if (query.length() < 10) {
                         Window.alert(msg.swarm_browser_add_warning_bad_magnet());
                         return;
@@ -1497,12 +1532,14 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                     OneSwarmRPCClient.getService().getBase64HashesForBase32s(
                             OneSwarmRPCClient.getSessionID(), new String[] { base32hash },
                             new AsyncCallback<String[]>() {
+                                @Override
                                 public void onFailure(Throwable caught) {
                                     caught.printStackTrace();
                                     OneSwarmGWT.log("Error: " + caught.getMessage());
                                     new ReportableErrorDialogBox(caught.getMessage(), false);
                                 }
 
+                                @Override
                                 public void onSuccess(String[] result) {
                                     if (result == null) {
                                         return;
@@ -1520,10 +1557,12 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                 } else {
                     OneSwarmRPCClient.getService().downloadTorrent(
                             OneSwarmRPCClient.getSessionID(), url, new AsyncCallback<Integer>() {
+                                @Override
                                 public void onFailure(Throwable caught) {
                                     caught.printStackTrace();
                                 }
 
+                                @Override
                                 public void onSuccess(Integer result) {
                                     if (result == -1) {
                                         Window.alert(msg.swarm_browser_add_download_error());
@@ -1543,6 +1582,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         });
 
         tagButton.addClickHandler(new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 TagEditorDialog dlg = new TagEditorDialog(mEntireUIRoot, SwarmsBrowser.this
                         .getSelectedSwarms());
@@ -1562,6 +1602,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         headerButtons.add(tagButton);
 
         playButton.addClickHandler(new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 String btext = playButton.getText();
                 if (btext.equals(Strings.get(Strings.SWARM_BROWSER_PLAY))
@@ -1572,6 +1613,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
             }
         });
         deleteButton.addClickHandler(new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 dispatchSwarmAction(Strings.SWARM_DELETE, getSelectedSwarms());
             }
@@ -1579,6 +1621,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
 
         Button settingsButton = new Button(Strings.get(Strings.SETTINGS));
         settingsButton.addClickHandler(new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 showSettings(0);
             }
@@ -1604,6 +1647,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         // immediately by a call to
         // refresh header buttons
         moreActions.addChangeListener(new ChangeListener() {
+            @Override
             public void onChange(Widget sender) {
                 String selected = moreActions.getItemText(moreActions.getSelectedIndex());
                 System.out.println("selected: " + selected);
@@ -1661,9 +1705,11 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         HTML nameEditAnchor = new HTML("(<a href='#'>" + msg.swarm_browser_change_nick_name()
                 + "</a>)");
         nameEditAnchor.addClickHandler(new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 ComputerNameDialog dlg = new ComputerNameDialog(computerNameLabel.getText(), true,
                         new ComputerNameDialog.NameSetCallback() {
+                            @Override
                             public void setName(String newName) {
                                 computerNameLabel.setText(newName);
                             }
@@ -1690,9 +1736,11 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
     private void updateComputerName() {
         OneSwarmRPCClient.getService().getComputerName(OneSwarmRPCClient.getSessionID(),
                 new AsyncCallback<String>() {
+                    @Override
                     public void onFailure(Throwable caught) {
                     }
 
+                    @Override
                     public void onSuccess(String result) {
                         computerNameLabel.setText(result);
                     }
@@ -1902,6 +1950,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
             return mTorrent;
         }
 
+        @Override
         protected void onLoad() {
             super.onLoad();
             /**
@@ -1925,6 +1974,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
             sinkEvents(Event.ONMOUSEUP | Event.ONDBLCLICK | Event.ONCONTEXTMENU);
         }
 
+        @Override
         public void onBrowserEvent(Event event) {
             GWT.log("onBrowserEvent", null);
             event.stopPropagation();
@@ -1982,6 +2032,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
             if (anyF2F) {
                 MenuItem downloadItem = new MenuItem(msg.swarm_browser_button_download(), true,
                         new Command() {
+                            @Override
                             public void execute() {
                                 dispatchSwarmAction(Strings.SWARM_BROWSER_PLAY, selected);
                             }
@@ -1993,6 +2044,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                 if (playButton.isEnabled()) {
                     MenuItem playItem = new MenuItem(msg.swarm_browser_button_play(), true,
                             new Command() {
+                                @Override
                                 public void execute() {
                                     dispatchSwarmAction(Strings.SWARM_BROWSER_PLAY,
                                             getSelectedSwarms());
@@ -2005,6 +2057,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
 
                 MenuItem defaultPlayItem = new MenuItem(
                         msg.swarm_browser_more_actions_default_app(), true, new Command() {
+                            @Override
                             public void execute() {
                                 dispatchSwarmAction(Strings.SWARM_DEFAULT_PLAY, getSelectedSwarms());
                                 hide();
@@ -2015,6 +2068,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
 
                 MenuItem showInFinder = new MenuItem(msg.swarm_browser_more_actions_reveal(), true,
                         new Command() {
+                            @Override
                             public void execute() {
                                 dispatchSwarmAction(Strings.SWARM_REVEAL, getSelectedSwarms());
                                 hide();
@@ -2027,6 +2081,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                 if (!anyCompleted) {
                     MenuItem startStop = new MenuItem(msg.swarm_browser_right_click_start_stop(),
                             true, new Command() {
+                                @Override
                                 public void execute() {
                                     dispatchSwarmAction(Strings.SWARM_STARTSTOP,
                                             getSelectedSwarms());
@@ -2038,6 +2093,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                 }
                 MenuItem showDetails = new MenuItem(msg.swarm_browser_more_actions_swarm_details(),
                         true, new Command() {
+                            @Override
                             public void execute() {
                                 dispatchSwarmAction(Strings.SWARM_DETAILS, getSelectedSwarms());
                                 hide();
@@ -2048,6 +2104,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
 
                 MenuItem copyLink = new MenuItem(msg.swarm_browser_more_actions_copy_magnet(),
                         true, new Command() {
+                            @Override
                             public void execute() {
                                 dispatchSwarmAction(Strings.SWARM_COPY_MAGNET, getSelectedSwarms());
                                 hide();
@@ -2058,6 +2115,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
 
                 MenuItem managePerms = new MenuItem(
                         msg.swarm_browser_more_actions_manage_visibility(), true, new Command() {
+                            @Override
                             public void execute() {
                                 dispatchSwarmAction(Strings.MANAGE_PERMS, getSelectedSwarms());
                                 hide();
@@ -2070,6 +2128,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
 
                 MenuItem delete = new MenuItem(msg.swarm_browser_button_delete(), true,
                         new Command() {
+                            @Override
                             public void execute() {
                                 dispatchSwarmAction(Strings.SWARM_DELETE, getSelectedSwarms());
                                 hide();
@@ -2085,7 +2144,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
     }
 
     static class TorrentContainingImage extends Image {
-        private TorrentInfo torrent;
+        private final TorrentInfo torrent;
 
         public TorrentContainingImage(String url, TorrentInfo torrent) {
             super(url);
@@ -2126,12 +2185,14 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
             icon_panel_scratch = new RightClickablePanel();
             ((RightClickablePanel) icon_panel_scratch)
                     .addRightClickHandler(new RightClickHandler() {
+                        @Override
                         public void onRightClick(final Event event) {
                             selectSwarm(inTorrent, false, false);
                             refreshHeaderButtons();
 
                             final RightClickMenu menu = new RightClickMenu();
                             menu.setPopupPositionAndShow(new PositionCallback() {
+                                @Override
                                 public void setPosition(int offsetWidth, int offsetHeight) {
                                     menu.setPopupPosition(event.getClientX(), event.getClientY());
                                 }
@@ -2215,6 +2276,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         // };
 
         ClickHandler selectHandler = new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 selectSwarm(inTorrent, true, event.getNativeEvent().getShiftKey());
                 refreshHeaderButtons();
@@ -2295,6 +2357,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
 
     private Image currentMoveIcon = null;
 
+    @Override
     public void update(int count) {
         // testing explicit signaling to remove polling
         // refreshActive();
@@ -2327,6 +2390,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         if (mNextWarningCheck < System.currentTimeMillis()) {
             OneSwarmRPCClient.getService().checkIfWarning(OneSwarmRPCClient.getSessionID(),
                     new AsyncCallback<String[]>() {
+                        @Override
                         public void onSuccess(String[] result) {
                             for (int j = 0; j < 4; j++) {
                                 if (result[4 + (j * 8)].equals("true")) {
@@ -2349,6 +2413,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                             }
                         }
 
+                        @Override
                         public void onFailure(Throwable caught) {
                             caught.printStackTrace();
                         }
@@ -2363,10 +2428,12 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
             mNextErrorPoll = System.currentTimeMillis() + 120 * 1000;
             OneSwarmRPCClient.getService().getBackendErrors(OneSwarmRPCClient.getSessionID(),
                     new AsyncCallback<ArrayList<BackendErrorReport>>() {
+                        @Override
                         public void onFailure(Throwable caught) {
                             caught.printStackTrace();
                         }
 
+                        @Override
                         public void onSuccess(ArrayList<BackendErrorReport> result) {
 
                             if (result.size() > 0) {
@@ -2408,10 +2475,12 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
     private void lightweight_refresh_check() {
         OneSwarmRPCClient.getService().getDownloadManagersCount(OneSwarmRPCClient.getSessionID(),
                 new AsyncCallback<Integer>() {
+                    @Override
                     public void onFailure(Throwable caught) {
                         caught.printStackTrace();
                     }
 
+                    @Override
                     public void onSuccess(Integer result) {
                         if (result.intValue() != mPreviousFullRefreshTotalSwarmsCount) {
                             System.out
@@ -2444,10 +2513,12 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
 
         OneSwarmRPCClient.getService().pagedTorrentStateRefresh(OneSwarmRPCClient.getSessionID(),
                 whichOnes, new AsyncCallback<TorrentInfo[]>() {
+                    @Override
                     public void onFailure(Throwable caught) {
                         caught.printStackTrace();
                     }
 
+                    @Override
                     public void onSuccess(TorrentInfo[] result) {
                         /**
                          * begin by synchronizing the state
@@ -2754,10 +2825,12 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
         System.out.println("sync settings");
         OneSwarmRPCClient.getService().getIntegerParameterValue(OneSwarmRPCClient.getSessionID(),
                 "OneSwarm.ui.double.click", new AsyncCallback<Integer>() {
+                    @Override
                     public void onFailure(Throwable caught) {
                         caught.printStackTrace();
                     }
 
+                    @Override
                     public void onSuccess(Integer result) {
                         System.out.println("doubleclick action: " + result);
                         if (result >= 0 && result < 3) {
@@ -2831,6 +2904,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
 
     public void nextPage() {
         nextPreviousPageLinkListener.onClick(new ClickEvent() {
+            @Override
             public Object getSource() {
                 return nextLink;
             }
@@ -2839,6 +2913,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
 
     public void previousPage() {
         nextPreviousPageLinkListener.onClick(new ClickEvent() {
+            @Override
             public Object getSource() {
                 return prevLink;
             }

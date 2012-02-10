@@ -115,13 +115,15 @@ public class TestUtils {
         }
     }
 
+    public static String DEFAULT_NAME = "OneSwarmJVM";
+
     /**
      * Starts the a OneSwarm client in the current JVM in a testing
      * configuration. This method will never return.
      */
     public static void startOneSwarmForTest() throws IOException {
 
-        final String label = "OneSwarmJVM";
+        final String label = DEFAULT_NAME;
 
         // Configure the environment for tests
         System.setProperty("MULTI_INSTANCE", "true");
@@ -288,8 +290,7 @@ public class TestUtils {
      * local JVM client added and connected as a friend.
      */
     public static LocalOneSwarm spawnOneSwarmInstance(boolean connectToLocalInstance,
-            boolean experimentalInstance)
-            throws Exception {
+            boolean experimentalInstance) throws Exception {
         final LocalOneSwarm localOneSwarm = new LocalOneSwarm(experimentalInstance);
         localOneSwarm.start();
         TestUtils.awaitInstanceStart(localOneSwarm);

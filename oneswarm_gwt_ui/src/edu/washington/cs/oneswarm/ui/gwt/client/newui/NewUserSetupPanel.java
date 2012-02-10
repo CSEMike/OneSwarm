@@ -30,7 +30,7 @@ public class NewUserSetupPanel extends VerticalPanel implements Updateable {
     public static final String CSS_WELCOME_PROMPT = "os-welcome_prompt";
     public static final String CSS_WELCOME_DEFAULTS_BUTTON = "os-welcome_defaults_button";
 
-    private SwarmsBrowser swarmsBrowser;
+    private final SwarmsBrowser swarmsBrowser;
 
     enum State {
         kLoading, kNoFriendsNoCommunity, kNoFriends, kNoOnlineFriends, kFriendsButNotOnline, kFriendsOnline
@@ -108,8 +108,10 @@ public class NewUserSetupPanel extends VerticalPanel implements Updateable {
         this.setCellHorizontalAlignment(desc, ALIGN_CENTER);
 
         Button defaultsButton = new Button(msg.swarm_browser_welcome_button_default());
+        defaultsButton.getElement().setId("useDefaultsLink");
         defaultsButton.addStyleName(CSS_WELCOME_DEFAULTS_BUTTON);
         defaultsButton.addClickHandler(new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 defaultClicked();
             }
@@ -126,6 +128,7 @@ public class NewUserSetupPanel extends VerticalPanel implements Updateable {
         add(advanced);
         setCellHorizontalAlignment(advanced, ALIGN_CENTER);
         advanced.addClickHandler(new ClickHandler() {
+            @Override
             public void onClick(ClickEvent event) {
                 swarmsBrowser.showSettings(1);
             }
@@ -136,11 +139,13 @@ public class NewUserSetupPanel extends VerticalPanel implements Updateable {
         add(spacer);
     }
 
+    @Override
     public void onAttach() {
         super.onAttach();
         OneSwarmGWT.addToUpdateTask(this);
     }
 
+    @Override
     public void onDetach() {
         super.onDetach();
         OneSwarmGWT.removeFromUpdateTask(this);
@@ -152,12 +157,14 @@ public class NewUserSetupPanel extends VerticalPanel implements Updateable {
 
         OneSwarmRPCClient.getService().applyDefaultSettings(OneSwarmRPCClient.getSessionID(),
                 new AsyncCallback<Void>() {
+                    @Override
                     public void onFailure(Throwable caught) {
                         String message = caught.getClass().getName() + " / " + caught.toString()
                                 + " / " + caught.getMessage();
                         new ReportableErrorDialogBox(message, false);
                     }
 
+                    @Override
                     public void onSuccess(Void result) {
                         state = State.kNoFriends;
                     }
@@ -166,6 +173,7 @@ public class NewUserSetupPanel extends VerticalPanel implements Updateable {
 
     private long mNextRPC = 0;
 
+    @Override
     public void update(int count) {
 
         if (mNextRPC < System.currentTimeMillis()) {
@@ -176,10 +184,12 @@ public class NewUserSetupPanel extends VerticalPanel implements Updateable {
 
             OneSwarmRPCClient.getService().getNumberOnlineFriends(OneSwarmRPCClient.getSessionID(),
                     new AsyncCallback<Integer>() {
+                        @Override
                         public void onFailure(Throwable caught) {
                             caught.printStackTrace();
                         }
 
+                        @Override
                         public void onSuccess(Integer onlineFriends) {
                             mNextRPC = System.currentTimeMillis() + 10 * 1000;
 
@@ -191,10 +201,12 @@ public class NewUserSetupPanel extends VerticalPanel implements Updateable {
                                 OneSwarmRPCClient.getService().getNumberFriendsCount(
                                         OneSwarmRPCClient.getSessionID(),
                                         new AsyncCallback<Integer>() {
+                                            @Override
                                             public void onFailure(Throwable caught) {
                                                 caught.printStackTrace();
                                             }
 
+                                            @Override
                                             public void onSuccess(Integer anyfriends) {
 
                                                 // System.out.println("total friends: "
@@ -214,10 +226,12 @@ public class NewUserSetupPanel extends VerticalPanel implements Updateable {
                                                                             .getSessionID(),
                                                                     "oneswarm.community.servers",
                                                                     new AsyncCallback<ArrayList<String>>() {
+                                                                        @Override
                                                                         public void onFailure(
                                                                                 Throwable caught) {
                                                                         }
 
+                                                                        @Override
                                                                         public void onSuccess(
                                                                                 ArrayList<String> result) {
                                                                             if (result.size() == 0) {
