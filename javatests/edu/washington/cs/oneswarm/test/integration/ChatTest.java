@@ -53,7 +53,7 @@ public class ChatTest extends TwoProcessTestBase {
                 public boolean satisfied() {
                     return selenium.isTextPresent(chatMessage);
                 }
-            }, 5000).await();
+            }, 5000).awaitFail();
 
             // Switch to the other instance
             selenium.selectWindow("local");
@@ -66,7 +66,7 @@ public class ChatTest extends TwoProcessTestBase {
                 public boolean satisfied() {
                     return selenium.isElementPresent("link=1 unread message");
                 }
-            }, 15000).await();
+            }, 15000).awaitFail();
 
             // Click to bring up chat box
             selenium.click("link=1 unread message");
@@ -77,7 +77,7 @@ public class ChatTest extends TwoProcessTestBase {
                 public boolean satisfied() {
                     return selenium.isTextPresent("ChatMessage JVM to Local");
                 }
-            }, 5000).await();
+            }, 5000).awaitFail();
 
             // Finally, verify that this message was stored in our local
             // database

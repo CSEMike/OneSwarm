@@ -134,7 +134,7 @@ public class ServiceSharingClientTest extends LocalProcessesTestBase {
             public boolean satisfied() {
                 return server.hasData();
             }
-        }, 1000 * 1000).await();
+        }, 1000 * 1000).awaitFail();
 
         assertTrue(server.hasData());
         assertEquals(out, server.getLatestData());

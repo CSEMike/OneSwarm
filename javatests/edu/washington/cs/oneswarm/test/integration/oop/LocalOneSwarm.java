@@ -390,7 +390,7 @@ public class LocalOneSwarm {
             public boolean satisfied() {
                 return getCoordinator().onlineFriendCount >= count;
             }
-        }, 40 * 1000).await();
+        }, 40 * 1000).awaitFail();
     }
 
     /** Blocks until the instance's public key is available and returns it. */
@@ -400,7 +400,7 @@ public class LocalOneSwarm {
             public boolean satisfied() {
                 return getCoordinator().encodedPublicKey != null;
             }
-        }, 20 * 1000).await();
+        }, 20 * 1000).awaitFail();
         return getCoordinator().encodedPublicKey;
     }
 

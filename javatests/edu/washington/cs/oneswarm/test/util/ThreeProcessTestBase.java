@@ -152,7 +152,7 @@ public class ThreeProcessTestBase extends LocalProcessesTestBase {
             public boolean satisfied() {
                 return p.getCoordinator().isFriendConnectorAvailable();
             }
-        }, 90 * 1000).await();
+        }, 90 * 1000).awaitFail();
     }
 
     protected static void waitForFriendConnector(final OSF2FMain f2fMain) {
@@ -161,7 +161,7 @@ public class ThreeProcessTestBase extends LocalProcessesTestBase {
             public boolean satisfied() {
                 return f2fMain.getDHTConnector() != null;
             }
-        }, 90 * 1000).await();
+        }, 90 * 1000).awaitFail();
     }
 
     private static void shutDown(final LocalOneSwarm process) {
@@ -171,7 +171,7 @@ public class ThreeProcessTestBase extends LocalProcessesTestBase {
             public boolean satisfied() {
                 return process.getCoordinator().getPendingCommands().size() == 0;
             }
-        }, 10000).await();
+        }, 10000).awaitFail();
         process.stop();
     }
 

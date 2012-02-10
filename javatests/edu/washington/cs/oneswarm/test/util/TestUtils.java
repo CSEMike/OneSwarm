@@ -163,7 +163,7 @@ public class TestUtils {
             public boolean satisfied() {
                 return AzureusCoreImpl.isCoreAvailable();
             }
-        }, 60 * 1000).await();
+        }, 60 * 1000).awaitFail();
 
         AzureusCore core = AzureusCoreImpl.getSingleton();
         AzureusCoreLifecycleListener l = new AzureusCoreLifecycleListener() {
@@ -311,14 +311,14 @@ public class TestUtils {
                 public boolean satisfied() {
                     return f2fMain.getDHTConnector() != null;
                 }
-            }, 90 * 1000).await();
+            }, 90 * 1000).awaitFail();
 
             new ConditionWaiter(new ConditionWaiter.Predicate() {
                 @Override
                 public boolean satisfied() {
                     return localOneSwarm.getCoordinator().isFriendConnectorAvailable();
                 }
-            }, 90 * 1000).await();
+            }, 90 * 1000).awaitFail();
 
             // Next add remote friend's key to our instance
             String remoteKey = localOneSwarm.getPublicKey();
@@ -349,7 +349,7 @@ public class TestUtils {
                 }
                 return isPresent;
             }
-        }, 15000).await();
+        }, 15000).awaitFail();
     }
 
     /** Uses special servlet handler for test to flush all server side storage. */

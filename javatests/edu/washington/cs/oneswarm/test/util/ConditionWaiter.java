@@ -35,19 +35,31 @@ public class ConditionWaiter {
      * Waits for the specified predicate, failing if not satisfied in the
      * timeout interval.
      */
-    public void await() {
+    public void awaitFail() {
+        if (!awaitWarn()) {
+            Assert.fail("ConditionWaiter timed out.");
+        }
+    }
+
+    /**
+     * Waits for the specified predicate, returns true when the predicate is
+     * satisfied, false if not satisfied in the time interval
+     * timeout interval.
+     */
+    public boolean awaitWarn() {
         try {
             long started = System.currentTimeMillis();
             while (!predicate.satisfied()) {
                 Thread.sleep(100);
-
                 if (started + maxDelay < System.currentTimeMillis()) {
-                    Assert.fail("ConditionWaiter timed out.");
+                    return false;
                 }
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
-            Assert.fail();
+            return false;
         }
+        return true;
     }
+
 }

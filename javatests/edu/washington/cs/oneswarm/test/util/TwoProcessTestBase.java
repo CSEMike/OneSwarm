@@ -76,7 +76,7 @@ public class TwoProcessTestBase extends LocalProcessesTestBase {
             public boolean satisfied() {
                 return localOneSwarm.getCoordinator().getPendingCommands().size() == 0;
             }
-        }, 10000).await();
+        }, 10000).awaitFail();
         localOneSwarm.stop();
         logger.info("selenium.stop()");
         // Quit browser
