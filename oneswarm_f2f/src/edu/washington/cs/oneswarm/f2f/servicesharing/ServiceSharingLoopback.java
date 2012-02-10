@@ -38,7 +38,7 @@ public class ServiceSharingLoopback {
     }
 
     private class ServiceConnectionListener implements ConnectionListener {
-        private boolean outgoing;
+        private final boolean outgoing;
 
         public ServiceConnectionListener(boolean outgoing) {
             this.outgoing = outgoing;

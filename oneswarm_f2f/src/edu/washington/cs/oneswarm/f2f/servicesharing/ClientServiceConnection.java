@@ -91,7 +91,7 @@ public class ClientServiceConnection extends AbstractServiceConnection {
 
             @Override
             public void exceptionThrown(Throwable error) {
-                ClientServiceConnection.this.close("Exception during connect");
+                ClientServiceConnection.this.close("Exception from Client Service.");
             }
 
             @Override
@@ -104,6 +104,12 @@ public class ClientServiceConnection extends AbstractServiceConnection {
     @Override
     public boolean isStarted() {
         return clientConnected;
+    }
+
+    @Override
+    public void close(String reason) {
+        super.close(reason);
+        clientConnection.close();
     }
 
     @Override
@@ -127,7 +133,7 @@ public class ClientServiceConnection extends AbstractServiceConnection {
          */
         DataMessage msg = new DataMessage(directByteBuffer); // deliveryBuffer);
         if (logger.isLoggable(Level.FINEST)) {
-            logger.finest("writing message to server queue: " + msg.getDescription());
+            logger.finest("writing message to client queue: " + msg.getDescription());
         }
         clientConnection.getOutgoingMessageQueue().addMessage(msg, false);
     }

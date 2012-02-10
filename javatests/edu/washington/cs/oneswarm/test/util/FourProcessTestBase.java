@@ -140,18 +140,17 @@ public class FourProcessTestBase extends LocalProcessesTestBase {
         processA.getCoordinator().addCommand("addkey TEST " + processCKey + " true true");
         processB.getCoordinator().addCommand("addkey TEST " + localKey + " true true");
         processB.getCoordinator().addCommand("addkey TEST " + processCKey + " true true");
+        processA.waitForClean();
+        processB.waitForClean();
 
         // Add node A, B to node C
         processC.getCoordinator().addCommand("addkey TEST " + processAKey + " true true");
         processC.getCoordinator().addCommand("addkey TEST " + processBKey + " true true");
+        f2fMain.getDHTConnector().connectToFriend(f);
+        f2fMain.getDHTConnector().connectToFriend(g);
 
         // Wait for the connections to be established
         processC.waitForOnlineFriends(2);
-        processB.waitForOnlineFriends(1);
-        processA.waitForOnlineFriends(1);
-
-        f2fMain.getDHTConnector().connectToFriend(f);
-        f2fMain.getDHTConnector().connectToFriend(g);
         processB.waitForOnlineFriends(2);
         processA.waitForOnlineFriends(2);
     }

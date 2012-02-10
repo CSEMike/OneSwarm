@@ -102,7 +102,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         if (closed) {
             return;
         }
-        if (this.isStarted()) {
+        if (!this.isStarted()) {
             start();
         }
         if (!(msg instanceof OSF2FServiceDataMsg)) {
@@ -111,7 +111,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         OSF2FServiceDataMsg newMessage = (OSF2FServiceDataMsg) msg;
         // logger.fine("Received msg with sequence number " +
         if (!newMessage.isAck()) {
-            logger.info("ack enqueued for " + newMessage.getSequenceNumber());
+            logger.finest("ack enqueued for " + newMessage.getSequenceNumber());
             super.writeMessage(OSF2FServiceDataMsg.acknowledge(OSF2FMessage.CURRENT_VERSION,
                     channelId, (short) 0, new int[] { newMessage.getSequenceNumber() }));
         }
@@ -233,7 +233,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         @Override
         public void run() {
             sentMessage self = sentMessages.remove(num);
-            if (self != null) {
+            if (self != null && !closed) {
                 if (self.attempt == attempt) {
                     logger.fine("Message with sequence number " + num.getNum()
                             + " was retransmitted.");

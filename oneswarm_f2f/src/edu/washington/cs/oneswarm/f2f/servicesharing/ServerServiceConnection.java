@@ -53,6 +53,13 @@ public class ServerServiceConnection extends AbstractServiceConnection {
     }
 
     @Override
+    public void close(String reason) {
+        super.close(reason);
+        serverConnection.close();
+        serviceConnected = false;
+    }
+
+    @Override
     public void start() {
         if (!serverService.isEnabled()) {
             logger.fine("Tried to start disabled connection");
@@ -91,8 +98,7 @@ public class ServerServiceConnection extends AbstractServiceConnection {
             public void exceptionThrown(Throwable error) {
                 logger.fine("got exception in server service connection: "
                         + error.getClass().getName() + "::" + error.getMessage());
-                error.printStackTrace();
-                ServerServiceConnection.this.close("Exception in connection to server");
+                ServerServiceConnection.this.close("Exception in connection to server.");
             }
 
             @Override

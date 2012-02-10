@@ -681,6 +681,8 @@ public class ConfigurationDefaults {
 
         // NOTE(willscott): service sharing network settings.
         def.put("SERVICE_CLIENT_channels", new Long(4));
+        def.put("SERVICE_CLIENT_window", new Long(4));
+        def.put("SERVICE_CLIENT_flow", new Long(10));
         def.put("SERVICE_CLIENT_udp", TRUE);
         def.put("SERVICE_CLIENT_duplication", TRUE);
         def.put("SERVICE_CLIENT_adaptive", TRUE);

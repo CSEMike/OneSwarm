@@ -30,9 +30,11 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
     private static final byte ss = 97;
 
     static final String SERVICE_PRIORITY_KEY = "SERVICE_CLIENT_MULTIPLEX_QUEUE";
-    static final int SERVICE_MSG_BUFFER_SIZE = 1024;
+    static final int SERVICE_MSG_BUFFER_SIZE = 1024 * COConfigurationManager.getIntParameter(
+            "SERVICE_CLIENT_flow", 10);
 
-    private static final int CHANNEL_BUFFER = 1024 * 4;
+    private final int CHANNEL_BUFFER = 1024 * COConfigurationManager.getIntParameter(
+            "SERVICE_CLIENT_window", 4);
     protected final int MAX_CHANNELS = COConfigurationManager.getIntParameter(
             "SERVICE_CLIENT_channels", 4);
     protected final EnumSet<ServiceFeatures> FEATURES;
@@ -81,6 +83,20 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             features.add(ServiceFeatures.ADAPTIVE_DUPLICATION);
         }
         this.FEATURES = EnumSet.copyOf(features);
+        logger.info("ASC active with settings: window = "
+                + (CHANNEL_BUFFER / 1024)
+                + ", flow="
+                + (SERVICE_MSG_BUFFER_SIZE / 1024)
+                + ", max="
+                + MAX_CHANNELS
+                + ", "
+                + (features.contains(ServiceFeatures.UDP) ? "UDP" : "No UDP")
+                + ", "
+                + (features.contains(ServiceFeatures.PACKET_DUPLICATION) ? "Duplication"
+                        : "No Duplication")
+                + ", "
+                + (features.contains(ServiceFeatures.ADAPTIVE_DUPLICATION) ? "Adaptive"
+                        : "Not Adapitive"));
     }
 
     @Override
@@ -301,7 +317,6 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             mmt.onAck(message);
             return;
         }
-
         synchronized (bufferedServiceMessages) {
             if (message.getSequenceNumber() >= serviceSequenceNumber + SERVICE_MSG_BUFFER_SIZE) {
                 // Throw out to prevent buffer overflow.
@@ -334,35 +349,31 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
 
         mmt.removeChannel(channel);
         this.connections.remove(channel);
+        if (this.connections.size() == 0) {
+            logger.info("All channels removed. closing service connection.");
+            close("No Channels Remaining.");
+        }
         channelReady(null);
     }
 
     private int getAvailableBytes() {
-        int response = 0;
-        synchronized (this.connections) {
-            for (ServiceChannelEndpoint c : connections) {
-                if (!c.isStarted() && !c.isOutgoing()) {
-                    continue;
-                }
-                response += Math.max(CHANNEL_BUFFER - c.getOutstanding(), 0);
-            }
+        ChannelBufferInfo b = new ChannelBufferInfo();
+        getAvailableChannels(null, b);
+        if (b.replication == 0) {
+            return 0;
         }
-        return response;
+        return (b.total - b.outstanding) / b.replication;
     }
 
-    /**
-     * Route a message to appropriate channel(s).
-     * 
-     * @param msg
-     *            The message to route.
-     * @param msgId
-     *            The sequence number of the msg if determined, or null.
-     * @return Whether the msg was handled.
-     */
-    boolean routeMessageToChannel(DirectByteBuffer msg, SequenceNumber msgId) {
+    private class ChannelBufferInfo {
+        int outstanding = 0;
+        int total = 0;
+        int replication = 0;
+    };
+
+    private List<ServiceChannelEndpoint> getAvailableChannels(SequenceNumber msgId,
+            ChannelBufferInfo b) {
         List<ServiceChannelEndpoint> channels = new ArrayList<ServiceChannelEndpoint>();
-        int totalOutstanding = 0;
-        int totalBuffer = 0;
 
         synchronized (this.connections) {
             for (ServiceChannelEndpoint c : connections) {
@@ -372,8 +383,8 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                     continue;
                 }
 
-                totalOutstanding += c.getOutstanding();
-                totalBuffer += CHANNEL_BUFFER;
+                b.outstanding += c.getOutstanding();
+                b.total += CHANNEL_BUFFER;
                 // Don't allow full paths to get greedy.
                 if (c.isStarted() && c.getOutstanding() > CHANNEL_BUFFER) {
                     continue;
@@ -408,19 +419,14 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                 }
             }
         }
-        if (channels.size() == 0) {
-            logger.warning("not accepting more data from client, no available channel.");
-            return false;
-        }
 
-        ArrayList<ServiceChannelEndpoint> channelsToUse = new ArrayList<ServiceChannelEndpoint>();
         if (!this.FEATURES.contains(ServiceFeatures.PACKET_DUPLICATION)) {
-            channelsToUse.add(channels.get(0));
+            b.replication = 1;
         } else if (this.FEATURES.contains(ServiceFeatures.ADAPTIVE_DUPLICATION)) {
-            if (totalBuffer == 0 || totalOutstanding == 0) {
-                channelsToUse.addAll(channels);
+            if (b.total == 0 || b.outstanding == 0) {
+                b.replication = channels.size();
             } else {
-                float replicationFactor = (float) ((totalBuffer - totalOutstanding) * 1.0 / totalBuffer);
+                float replicationFactor = (float) ((b.total - b.outstanding) * 1.0 / b.total);
                 int replicas = (int) (replicationFactor * channels.size());
                 if (msgId != null) {
                     replicas -= msgId.getChannels().size();
@@ -431,12 +437,39 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
                 if (replicas < 1) {
                     replicas = 1;
                 }
-                for (int i = 0; i < replicas; i++) {
-                    channelsToUse.add(channels.get(i));
-                }
+                b.replication = replicas;
             }
         } else {
-            channelsToUse.addAll(channels);
+            b.replication = channels.size();
+        }
+
+        return channels;
+    }
+
+    /**
+     * Route a message to appropriate channel(s).
+     * 
+     * @param msg
+     *            The message to route.
+     * @param msgId
+     *            The sequence number of the msg if determined, or null.
+     * @return Whether the msg was handled.
+     */
+    boolean routeMessageToChannel(DirectByteBuffer msg, SequenceNumber msgId) {
+        ChannelBufferInfo b = new ChannelBufferInfo();
+        List<ServiceChannelEndpoint> channels = getAvailableChannels(msgId, b);
+        if (channels.size() == 0) {
+            logger.info("Currently advertising " + (b.total - b.outstanding) + " available buffer");
+            logger.warning("not accepting more data from service, no available channel.");
+            return false;
+        }
+
+        ArrayList<ServiceChannelEndpoint> channelsToUse = new ArrayList<ServiceChannelEndpoint>();
+        for (int i = 0; i < b.replication; i++) {
+            ServiceChannelEndpoint sce = channels.get(i);
+            if (sce != null) {
+                channelsToUse.add(sce);
+            }
         }
 
         if (msgId == null) {
@@ -448,7 +481,7 @@ public abstract class AbstractServiceConnection implements EndpointInterface {
             ByteBuffer cpy = msg.getBuffer(ss).asReadOnlyBuffer();
             msgcpys.add(new DirectByteBuffer(cpy));
         }
-        logger.warning("Message will attempt to send with replication " + channelsToUse.size());
+        logger.finest("Message will attempt to send with replication " + channelsToUse.size());
         for (ServiceChannelEndpoint c : channelsToUse) {
             msg = msgcpys.remove(0);
             if (!c.isStarted()) {

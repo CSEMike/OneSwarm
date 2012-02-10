@@ -326,9 +326,9 @@ public class LocalOneSwarm {
         experimentalConfig.println("register http://127.0.0.1:" + coordinator.getServerPort()
                 + "/s");
         // Disable lan-, cht-, dht-friend connect
-        experimentalConfig.println("booleanSetting OSF2F.Use@DHT@Proxy false");
-        experimentalConfig.println("booleanSetting OSF2F.LanFriendFinder false");
-        experimentalConfig.println("booleanSetting dht.enabled false");
+        // experimentalConfig.println("booleanSetting OSF2F.Use@DHT@Proxy false");
+        // experimentalConfig.println("booleanSetting OSF2F.LanFriendFinder false");
+        // experimentalConfig.println("booleanSetting dht.enabled false");
         // Make it communicate regularly for shorter test timeouts.
         experimentalConfig.println("setprop oneswarm.test.coordinator.poll 1");
         experimentalConfig.close();
@@ -391,6 +391,15 @@ public class LocalOneSwarm {
                 return getCoordinator().onlineFriendCount >= count;
             }
         }, 40 * 1000).awaitFail();
+    }
+
+    public void waitForClean() {
+        new ConditionWaiter(new ConditionWaiter.Predicate() {
+            @Override
+            public boolean satisfied() {
+                return getCoordinator().getPendingCommands().size() == 0;
+            }
+        }, 40 * 1000).await();
     }
 
     /** Blocks until the instance's public key is available and returns it. */

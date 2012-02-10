@@ -11,25 +11,38 @@ public class ServiceSharingExperiment implements ExperimentInterface {
 
     @Override
     public String[] getKeys() {
-        return new String[] { "share_service" };
+        return new String[] { "share_service", "expose_client", "clean_services" };
     }
 
     @Override
     public void execute(String command) {
+        logger.info("sse asked to execute " + command);
         String[] toks = command.toLowerCase().split("\\s+");
-        if (!toks[0].equals("share_service")) {
-            logger.warning("unknown command " + command);
+        if (toks[0].equals("share_service")) {
+            String name = toks[1];
+            long searchKey = Long.parseLong(toks[2]);
+            String address = toks[3];
+            int port = Integer.parseInt(toks[4]);
+            // final OSF2FMain f2fMain = OSF2FMain.getSingelton();
+            ServiceSharingManager.getInstance().registerSharedService(searchKey, name,
+                    new InetSocketAddress(address, port));
+            logger.info("adding service: "
+                    + ServiceSharingManager.getInstance().getSharedService(searchKey));
+            logger.warning("SERVICE ADDED for " + name + " (" + searchKey + ") " + " "
+                    + address + ":" + port);
+        } else if (toks[0].equals("expose_client")) {
+            String name = toks[1];
+            long key = Long.parseLong(toks[2]);
+            int port = Integer.parseInt(toks[3]);
+            ServiceSharingManager.getInstance().registerClientService(name, port, key);
+            logger.info("adding client: "
+                    + ServiceSharingManager.getInstance().getClientService(key));
+        } else if (toks[0].equals("clean_services")) {
+            ServiceSharingManager.getInstance().clearLocalServices();
+        } else {
+            logger.warning("Unknown Service command: " + toks[0]);
             return;
         }
-        String name = toks[1];
-        long searchKey = Long.parseLong(toks[2]);
-        String address = toks[3];
-        int port = Integer.parseInt(toks[4]);
-        // final OSF2FMain f2fMain = OSF2FMain.getSingelton();
-        ServiceSharingManager.getInstance().registerSharedService(searchKey, name,
-                new InetSocketAddress(address, port));
-        logger.info("adding service: "
-                + ServiceSharingManager.getInstance().getSharedService(searchKey));
     }
 
     @Override

@@ -2444,7 +2444,7 @@ public class FriendConnection implements DatagramListener {
         // we must have gotten a channel reset from the remote friend,stop
         // forwarding on this channel and clear any messages that might be
         // queued up
-        final OverlayForward overlayForward = overlayForwards.remove(channelId);
+        final OverlayForward overlayForward = overlayForwards.get(channelId);
         if (overlayForward != null) {
             overlayForward.close();
 
