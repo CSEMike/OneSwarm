@@ -1,5 +1,8 @@
 package edu.washington.cs.oneswarm.test.util;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -39,4 +42,20 @@ public class OneSwarmTestBase {
         logger.setLevel(Level.INFO);
     }
 
+    protected void saveResult(String filename, String[] header, Object[] data) throws IOException {
+        BufferedWriter out = new BufferedWriter(new FileWriter(filename));
+        writeAsCsv(header, out);
+        writeAsCsv(data, out);
+        out.close();
+    }
+
+    private void writeAsCsv(Object[] data, BufferedWriter out) throws IOException {
+        for (int i = 0; i < data.length; i++) {
+            out.append("" + data[i]);
+            if (i + 1 < data.length) {
+                out.append(",");
+            }
+        }
+        out.append("\n");
+    }
 }

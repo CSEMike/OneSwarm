@@ -399,7 +399,7 @@ public class LocalOneSwarm {
             public boolean satisfied() {
                 return getCoordinator().getPendingCommands().size() == 0;
             }
-        }, 40 * 1000).await();
+        }, 40 * 1000).awaitFail();
     }
 
     /** Blocks until the instance's public key is available and returns it. */
