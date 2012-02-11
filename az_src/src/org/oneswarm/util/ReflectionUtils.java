@@ -13,7 +13,8 @@ public class ReflectionUtils {
      * optimization to prevent invoking reflective methods unnecessarily.
      */
     public static boolean isExperimental() {
-        return System.getProperty("oneswarm.experimental.config.file") != null;
+        String experiment = System.getProperty("oneswarm.experimental.config.file");
+        return experiment != null && experiment.trim().length() > 0;
     }
 
     /**
