@@ -27,7 +27,7 @@ import edu.washington.cs.oneswarm.test.util.TestUtils;
 import edu.washington.cs.oneswarm.test.util.TorrentExperimentFunctions;
 
 public class DefaultSettingsTest extends OneSwarmTestBase {
-    private static final String RESULTS_FILE = "/tmp/new_user_default_settings_test";
+    private static final String RESULTS_FILE = "new_user_default_settings_test_result.csv";
     public static String TEST_FILE_BASE64 = "OktR+K6G/Y3E6xlSJE3Jv2GKG/A=";
     public static String TEST_FILE_URI = "oneswarm:?xt=urn:osih:HJFVD6FOQ36Y3RHLDFJCITOJX5QYUG7Q";
 
@@ -47,7 +47,7 @@ public class DefaultSettingsTest extends OneSwarmTestBase {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        TestUtils.DEFAULT_NAME = "OneSwarmHourlyPerfTest";
+        TestUtils.DEFAULT_NAME = "OneSwarmDailyPerfTest";
         if (startSelenium) {
             seleniumServer = TestUtils.startSeleniumServer((new File(".").getAbsolutePath()));
         }
