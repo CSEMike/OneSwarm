@@ -42,7 +42,7 @@ public class DefaultSettingsTest extends OneSwarmTestBase {
 
     public static final int MAX_METAINFO_RETRIES = 5;
     public static final int MIN_FRIENDS = 3;
-    public static final int MAX_WAIT = 20 * 60 * 1000;
+    public static final int MAX_WAIT = 30 * 60 * 1000;
     public static final int MAX_METAINFO_WAIT = 60 * 1000;
 
     @BeforeClass
