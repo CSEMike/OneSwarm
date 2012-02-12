@@ -22,7 +22,7 @@ public class LocalProcessesTestBase extends OneSwarmTestBase {
                 @Override
                 public void run() {
                     try {
-                        TestUtils.startOneSwarmForTest();
+                        TestUtils.startOneSwarmForTest(true);
                     } catch (IOException e) {
                         e.printStackTrace();
                         System.exit(-1);

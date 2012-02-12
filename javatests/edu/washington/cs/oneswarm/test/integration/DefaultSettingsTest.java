@@ -41,7 +41,7 @@ public class DefaultSettingsTest extends OneSwarmTestBase {
     protected static boolean startSelenium = true;
 
     public static final int MAX_METAINFO_RETRIES = 5;
-    public static final int MIN_FRIENDS = 3;
+    public static final int MIN_FRIENDS = 5;
     public static final int MAX_WAIT = 30 * 60 * 1000;
     public static final int MAX_METAINFO_WAIT = 60 * 1000;
 
@@ -58,7 +58,7 @@ public class DefaultSettingsTest extends OneSwarmTestBase {
                 @Override
                 public void run() {
                     try {
-                        TestUtils.startOneSwarmForTest();
+                        TestUtils.startOneSwarmForTest(false);
                     } catch (IOException e) {
                         e.printStackTrace();
                         System.exit(-1);

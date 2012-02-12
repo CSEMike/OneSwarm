@@ -121,7 +121,7 @@ public class TestUtils {
      * Starts the a OneSwarm client in the current JVM in a testing
      * configuration. This method will never return.
      */
-    public static void startOneSwarmForTest() throws IOException {
+    public static void startOneSwarmForTest(boolean useExperimentalConfig) throws IOException {
 
         final String label = DEFAULT_NAME;
 
@@ -139,8 +139,10 @@ public class TestUtils {
         System.setProperty("oneswarm.integration.start.server.port",
                 Integer.toString(JVM_INSTANCE_START_SERVER_PORT));
         System.setProperty("azureus.security.manager.install", "0");
-        System.setProperty("oneswarm.experimental.config.file",
-                scratchPaths.get("experimentalConfig"));
+        if (useExperimentalConfig) {
+            System.setProperty("oneswarm.experimental.config.file",
+                    scratchPaths.get("experimentalConfig"));
+        }
         System.setProperty("nolaunch_startup", "1");
 
         // We use an experimental config to set the instance name.
@@ -276,7 +278,7 @@ public class TestUtils {
                 System.exit(0);
             }
         }.start();
-        TestUtils.startOneSwarmForTest();
+        TestUtils.startOneSwarmForTest(true);
         try {
             latch.await();
         } catch (final InterruptedException e) {
@@ -383,7 +385,7 @@ public class TestUtils {
      * selenium IDE to develop tests.
      */
     public static void main(String[] args) throws Exception {
-        TestUtils.startOneSwarmForTest();
+        TestUtils.startOneSwarmForTest(true);
     }
 
 }
