@@ -25,9 +25,6 @@ public class ExperimentalHarnessManager {
      * @return The ExperimentalHarnessManager.
      */
     public static ExperimentalHarnessManager get() {
-        if (!isEnabled()) {
-            return null;
-        }
 
         if (inst == null) {
             experiments = new ArrayList<ExperimentInterface>();
@@ -43,7 +40,7 @@ public class ExperimentalHarnessManager {
      * 
      * @return True if experimental code should be loaded.
      */
-    private static boolean isEnabled() {
+    public static boolean isEnabled() {
         return System.getProperty(EXPERIMENTAL_CONFIG_PROPERTY) != null;
     }
 

@@ -244,8 +244,8 @@ public class OsgwtuiMain implements Plugin {
 
         // Maybe initialize Experimental code for tests.
         ExperimentalHarnessManager ehm = ExperimentalHarnessManager.get();
-        if (ehm != null) {
-            ehm.setCore(coreInterface);
+        ehm.setCore(coreInterface);
+        if (ExperimentalHarnessManager.isEnabled()) {
             ehm.start();
         }
 
