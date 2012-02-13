@@ -705,8 +705,9 @@ ProtocolDecoderPHE
 		// **********************************************
 		} else if (selected_protocol == CRYPTO_SSL) {
 			filter = sslFilter;
-            System.err.println("HANDSHAKE COMPLETED: outgoing=" + outBoundSSL + " filter: "
-                    + sslFilter.getName());
+            // System.err.println("HANDSHAKE COMPLETED: outgoing=" + outBoundSSL
+            // + " filter: "
+            // + sslFilter.getName());
 		// **********************************************
 			
 			/*
