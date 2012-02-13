@@ -95,7 +95,7 @@ public class CHTClientHTTP implements CHTClientInterface {
             values.add(op.val);
         }
         if (keys.size() > 0) {
-            logger.info("Sending " + keys.size() + " CHT puts to " + record.getRealUrl());
+            logger.fine("Sending " + keys.size() + " CHT puts to " + record.getRealUrl());
             new CHTPutOp(record, keys, values).start();
         }
     }
@@ -112,7 +112,7 @@ public class CHTClientHTTP implements CHTClientInterface {
             callbacks.add(op.callback);
         }
         if (keys.size() > 0) {
-            logger.info("Sending " + keys.size() + " CHT gets to " + record.getCht_path());
+            logger.fine("Sending " + keys.size() + " CHT gets to " + record.getCht_path());
             new CHTGetOp(record, keys, callbacks).start();
         }
     }
