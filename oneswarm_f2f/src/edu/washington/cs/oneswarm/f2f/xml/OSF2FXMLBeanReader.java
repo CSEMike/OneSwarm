@@ -39,6 +39,7 @@ public class OSF2FXMLBeanReader<T> implements Runnable {
         this.filename = filename;
     }
 
+    @Override
     public void run() {
         try {
 
@@ -69,7 +70,7 @@ public class OSF2FXMLBeanReader<T> implements Runnable {
                 }
                 logger.fine("read " + objects.length + " objects");
             } else {
-                Debug.out("file not found: " + friendsFile.getPath());
+                logger.warning("File not found: " + friendsFile.getPath());
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -86,6 +87,7 @@ public class OSF2FXMLBeanReader<T> implements Runnable {
     private T[] readFriendsFromFile(File friendsFile) throws FileNotFoundException {
         XMLDecoder decoder = new XMLDecoder(new BufferedInputStream(
                 new FileInputStream(friendsFile)), this, new ExceptionListener() {
+            @Override
             public void exceptionThrown(Exception e) {
                 e.printStackTrace();
             }
