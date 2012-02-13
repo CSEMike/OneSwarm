@@ -138,7 +138,7 @@ public class PiecePickerImpl
 	private static final int							REQUESTS_MIN									 = 16;
 
 	/** Max number of request sent to a peer */
-	private static final int							REQUESTS_MAX									 = 768;
+    public static final int REQUESTS_MAX = 768;
 
 	/** Default number of requests sent to a peer, (for each X B/s another request will be used) */
 	private static final int							SLOPE_REQUESTS								 = 1 * 1024;
@@ -185,7 +185,7 @@ public class PiecePickerImpl
 
 	protected final PEPiece[]						 pePieces;
 
-	private List													rarestStartedPieces;																																													 //List of pieces started as rarest first
+	private final List													rarestStartedPieces;																																													 //List of pieces started as rarest first
 
 	protected final AEMonitor						 availabilityMon								= new AEMonitor(
 																																					 "PiecePicker:avail");
@@ -268,11 +268,11 @@ public class PiecePickerImpl
 
 	private long													lastProviderRecalcTime;
 
-	private CopyOnWriteList							 rta_providers									= new CopyOnWriteList();
+	private final CopyOnWriteList							 rta_providers									= new CopyOnWriteList();
 
 	private long[]												provider_piece_rtas;
 
-	private CopyOnWriteList							 priority_providers						 = new CopyOnWriteList();
+	private final CopyOnWriteList							 priority_providers						 = new CopyOnWriteList();
 
 	private long[]												provider_piece_priorities;
 
@@ -282,7 +282,7 @@ public class PiecePickerImpl
 
 	private static boolean								includeLanPeersInReqLimiting;
 
-	private CopyOnWriteList							 listeners											= new CopyOnWriteList();
+	private final CopyOnWriteList							 listeners											= new CopyOnWriteList();
 
 	// this one is used to group the pieces together in chunks so that
 	// sha1 multisource matches better, it has to be deterministic
@@ -293,7 +293,8 @@ public class PiecePickerImpl
 		class ParameterListenerImpl
 			implements ParameterListener
 		{
-			public final void parameterChanged(final String parameterName) {
+			@Override
+            public final void parameterChanged(final String parameterName) {
 				if (parameterName.equals("Prioritize Most Completed Files")) {
 					completionPriority = COConfigurationManager.getBooleanParameter(parameterName);
 					paramPriorityChange++; // this is a user's priority change event
@@ -401,12 +402,13 @@ public class PiecePickerImpl
 		}
 	}
 
-	public final void addHavePiece(final PEPeer peer, final int pieceNumber) {
+	@Override
+    public final void addHavePiece(final PEPeer peer, final int pieceNumber) {
 		// peer is null if called from disk-manager callback
 		try {
 			availabilityMon.enter();
 			if (availabilityAsynch == null) {
-				availabilityAsynch = (int[]) availability.clone();
+				availabilityAsynch = availability.clone();
 			}
 			++availabilityAsynch[pieceNumber];
 			availabilityChange++;
@@ -426,7 +428,8 @@ public class PiecePickerImpl
 	 * This methd will compute the pieces' overall availability (including ourself)
 	 * and the _globalMinOthers & _globalAvail
 	 */
-	public final void updateAvailability() {
+	@Override
+    public final void updateAvailability() {
 		final long now = SystemTime.getCurrentTime();
 		if (now >= time_last_avail && now < time_last_avail + TIME_MIN_AVAILABILITY)
 			return;
@@ -570,36 +573,44 @@ public class PiecePickerImpl
 		return newAvailability;
 	}
 
-	public int getNumberOfPieces() {
+	@Override
+    public int getNumberOfPieces() {
 		return (nbPieces);
 	}
 
-	public final int[] getAvailability() {
+	@Override
+    public final int[] getAvailability() {
 		return availability;
 	}
 
-	public final int getAvailability(final int pieceNumber) {
+	@Override
+    public final int getAvailability(final int pieceNumber) {
 		return availability[pieceNumber];
 	}
 
 	//this only gets called when the My Torrents view is displayed
-	public final float getMinAvailability() {
+	@Override
+    public final float getMinAvailability() {
 		return globalAvail;
 	}
 
-	public final long getAvailWentBadTime() {
+	@Override
+    public final long getAvailWentBadTime() {
 		return (timeAvailLessThanOne);
 	}
 
-	public final int getMaxAvailability() {
+	@Override
+    public final int getMaxAvailability() {
 		return globalMax;
 	}
 
-	public final float getAvgAvail() {
+	@Override
+    public final float getAvgAvail() {
 		return globalAvgAvail;
 	}
 
-	public int getNbPiecesDone() {
+	@Override
+    public int getNbPiecesDone() {
 		return nbPiecesDone;
 	}
 
@@ -628,7 +639,8 @@ public class PiecePickerImpl
 	 * sorted by best uploaders, providing some ooprtunity to download the most important
 	 * (ie; rarest and/or highest priority) pieces faster and more reliably
 	 */
-	public final void allocateRequests() {
+	@Override
+    public final void allocateRequests() {
 		//System.err.println("in allocateRequests()");
 		if (!hasNeededUndonePiece) {
 			return;
@@ -666,7 +678,8 @@ public class PiecePickerImpl
 		 */
 		Collections.shuffle(bestUploaders);
 		Collections.sort(bestUploaders, new Comparator() {
-			public int compare(Object o1, Object o2) {
+			@Override
+            public int compare(Object o1, Object o2) {
 				PEPeerTransport pt2 = (PEPeerTransport) o2;
 				PEPeerTransport pt1 = (PEPeerTransport) o1;
 				PEPeerStats stats2 = pt2.getStats();
@@ -744,7 +757,8 @@ public class PiecePickerImpl
 			final Map block_time_order_peers_metrics = new HashMap(uploadersSize);
 
 			Set block_time_order_peers = new TreeSet(new Comparator() {
-				public int compare(Object arg1, Object arg2) {
+				@Override
+                public int compare(Object arg1, Object arg2) {
 					PEPeerTransport pt1 = (PEPeerTransport) arg1;
 					PEPeerTransport pt2 = (PEPeerTransport) arg2;
 
@@ -2120,11 +2134,13 @@ public class PiecePickerImpl
 		return -1;
 	}
 
-	public final boolean hasDownloadablePiece() {
+	@Override
+    public final boolean hasDownloadablePiece() {
 		return hasNeededUndonePiece;
 	}
 
-	public final long getNeededUndonePieceChange() {
+	@Override
+    public final long getNeededUndonePieceChange() {
 		return neededUndonePieceChange;
 	}
 
@@ -2253,18 +2269,21 @@ public class PiecePickerImpl
 		}
 	}
 
-	public final boolean isInEndGameMode() {
+	@Override
+    public final boolean isInEndGameMode() {
 		return endGameMode;
 	}
 
-	public boolean hasEndGameModeBeenAbandoned() {
+	@Override
+    public boolean hasEndGameModeBeenAbandoned() {
 		return (endGameModeAbandoned);
 	}
 
 	/** adds every block from the piece to the list of chuncks to be selected for egm requesting
 	 * 
 	 */
-	public final void addEndGameChunks(final PEPiece pePiece) {
+	@Override
+    public final void addEndGameChunks(final PEPiece pePiece) {
 		if (!endGameMode) {
 			return;
 		}
@@ -2333,7 +2352,8 @@ public class PiecePickerImpl
 		return 0;
 	}
 
-	public final void removeFromEndGameModeChunks(final int pieceNumber,
+	@Override
+    public final void removeFromEndGameModeChunks(final int pieceNumber,
 			final int offset) {
 		if (!endGameMode) {
 
@@ -2360,7 +2380,8 @@ public class PiecePickerImpl
 		}
 	}
 
-	public final void clearEndGameChunks() {
+	@Override
+    public final void clearEndGameChunks() {
 		if (!endGameMode) {
 
 			return;
@@ -2530,7 +2551,8 @@ public class PiecePickerImpl
 		}
 	}
 
-	public void addRTAProvider(PieceRTAProvider provider) {
+	@Override
+    public void addRTAProvider(PieceRTAProvider provider) {
 		rta_providers.add(provider);
 
 		Iterator it = listeners.iterator();
@@ -2554,7 +2576,8 @@ public class PiecePickerImpl
 		leaveEndGameMode();
 	}
 
-	public void removeRTAProvider(PieceRTAProvider provider) {
+	@Override
+    public void removeRTAProvider(PieceRTAProvider provider) {
 		rta_providers.remove(provider);
 
 		Iterator it = listeners.iterator();
@@ -2571,11 +2594,13 @@ public class PiecePickerImpl
 		}
 	}
 
-	public List getRTAProviders() {
+	@Override
+    public List getRTAProviders() {
 		return (rta_providers.getList());
 	}
 
-	public void addPriorityProvider(PiecePriorityProvider provider) {
+	@Override
+    public void addPriorityProvider(PiecePriorityProvider provider) {
 		priority_providers.add(provider);
 
 		Iterator it = listeners.iterator();
@@ -2592,7 +2617,8 @@ public class PiecePickerImpl
 		}
 	}
 
-	public void removePriorityProvider(PiecePriorityProvider provider) {
+	@Override
+    public void removePriorityProvider(PiecePriorityProvider provider) {
 		priority_providers.remove(provider);
 
 		Iterator it = listeners.iterator();
@@ -2609,11 +2635,13 @@ public class PiecePickerImpl
 		}
 	}
 
-	public List getPriorityProviders() {
+	@Override
+    public List getPriorityProviders() {
 		return (rta_providers.getList());
 	}
 
-	public void addListener(PiecePickerListener listener) {
+	@Override
+    public void addListener(PiecePickerListener listener) {
 		listeners.add(listener);
 
 		Iterator it = rta_providers.iterator();
@@ -2624,7 +2652,8 @@ public class PiecePickerImpl
 		}
 	}
 
-	public void removeListener(PiecePickerListener listener) {
+	@Override
+    public void removeListener(PiecePickerListener listener) {
 		listeners.remove(listener);
 	}
 
@@ -2636,7 +2665,8 @@ public class PiecePickerImpl
 	private class PEPeerManagerListenerImpl
 		implements PEPeerManagerListener
 	{
-		public final void peerAdded(final PEPeerManager manager, PEPeer peer) {
+		@Override
+        public final void peerAdded(final PEPeerManager manager, PEPeer peer) {
 			PEPeerListenerImpl peerListener;
 			peerListener = (PEPeerListenerImpl) peerListeners.get(peer);
 			if (peerListener == null) {
@@ -2646,13 +2676,15 @@ public class PiecePickerImpl
 			peer.addListener(peerListener);
 		}
 
-		public final void peerRemoved(final PEPeerManager manager, PEPeer peer) {
+		@Override
+        public final void peerRemoved(final PEPeerManager manager, PEPeer peer) {
 			// remove this listener from list of listeners and from the peer
 			final PEPeerListenerImpl peerListener = (PEPeerListenerImpl) peerListeners.remove(peer);
 			peer.removeListener(peerListener);
 		}
 
-		public void destroyed() {
+		@Override
+        public void destroyed() {
 		}
 	}
 
@@ -2662,7 +2694,8 @@ public class PiecePickerImpl
 	private class PEPeerListenerImpl
 		implements PEPeerListener
 	{
-		public final void stateChanged(PEPeer peer, final int newState) {
+		@Override
+        public final void stateChanged(PEPeer peer, final int newState) {
 			/*
 			switch (newState)
 			{
@@ -2684,19 +2717,21 @@ public class PiecePickerImpl
 			*/
 		}
 
-		public final void sentBadChunk(final PEPeer peer, final int piece_num,
+		@Override
+        public final void sentBadChunk(final PEPeer peer, final int piece_num,
 				final int total_bad_chunks) {
 			/* nothing to do here */
 		}
 
-		public final void addAvailability(final PEPeer peer,
+		@Override
+        public final void addAvailability(final PEPeer peer,
 				final BitFlags peerHavePieces) {
 			if (peerHavePieces == null || peerHavePieces.nbSet <= 0)
 				return;
 			try {
 				availabilityMon.enter();
 				if (availabilityAsynch == null) {
-					availabilityAsynch = (int[]) availability.clone();
+					availabilityAsynch = availability.clone();
 				}
 				for (int i = peerHavePieces.start; i <= peerHavePieces.end; i++) {
 					if (peerHavePieces.flags[i]) {
@@ -2714,14 +2749,15 @@ public class PiecePickerImpl
 		 * @param PEPeer peer this is about
 		 * @param peerHasPieces BitFlags of the pieces
 		 */
-		public final void removeAvailability(final PEPeer peer,
+		@Override
+        public final void removeAvailability(final PEPeer peer,
 				final BitFlags peerHavePieces) {
 			if (peerHavePieces == null || peerHavePieces.nbSet <= 0)
 				return;
 			try {
 				availabilityMon.enter();
 				if (availabilityAsynch == null) {
-					availabilityAsynch = (int[]) availability.clone();
+					availabilityAsynch = availability.clone();
 				}
 				for (int i = peerHavePieces.start; i <= peerHavePieces.end; i++) {
 					if (peerHavePieces.flags[i]) {
@@ -2745,11 +2781,13 @@ public class PiecePickerImpl
 	private class DiskManagerListenerImpl
 		implements DiskManagerListener
 	{
-		public final void stateChanged(int oldState, int newState) {
+		@Override
+        public final void stateChanged(int oldState, int newState) {
 			//starting torrent
 		}
 
-		public final void filePriorityChanged(DiskManagerFileInfo file) {
+		@Override
+        public final void filePriorityChanged(DiskManagerFileInfo file) {
 			// record that user-based priorities changed
 			filePriorityChange++; // this is a user's priority change event
 
@@ -2778,7 +2816,8 @@ public class PiecePickerImpl
 			}
 		}
 
-		public final void pieceDoneChanged(DiskManagerPiece dmPiece) {
+		@Override
+        public final void pieceDoneChanged(DiskManagerPiece dmPiece) {
 			final int pieceNumber = dmPiece.getPieceNumber();
 			if (dmPiece.isDone()) {
 				addHavePiece(null, pieceNumber);
@@ -2789,7 +2828,7 @@ public class PiecePickerImpl
 				try {
 					availabilityMon.enter();
 					if (availabilityAsynch == null) {
-						availabilityAsynch = (int[]) availability.clone();
+						availabilityAsynch = availability.clone();
 					}
 					if (availabilityAsynch[pieceNumber] > 0)
 						--availabilityAsynch[pieceNumber];
@@ -2807,18 +2846,21 @@ public class PiecePickerImpl
 			}
 		}
 
-		public final void fileAccessModeChanged(DiskManagerFileInfo file,
+		@Override
+        public final void fileAccessModeChanged(DiskManagerFileInfo file,
 				int old_mode, int new_mode) {
 			//file done (write to read)
 			//starting to upload from the file (read to write)
 		}
 	}
 
-	public void destroy() {
+	@Override
+    public void destroy() {
 
 	}
 
-	public String getPieceString(int piece_number) {
+	@Override
+    public String getPieceString(int piece_number) {
 		String str;
 
 		long priority = startPriorities == null ? 0 : startPriorities[piece_number];
@@ -2846,7 +2888,8 @@ public class PiecePickerImpl
 		return (str);
 	}
 
-	public void generateEvidence(IndentWriter writer) {
+	@Override
+    public void generateEvidence(IndentWriter writer) {
 		writer.println("Piece Picker");
 
 		try {
@@ -2870,7 +2913,7 @@ public class PiecePickerImpl
 
 	protected class RealTimeData
 	{
-		private List[] peer_requests;
+		private final List[] peer_requests;
 
 		protected RealTimeData(PEPiece piece) {
 			int nb = piece.getNbBlocks();
@@ -2889,9 +2932,9 @@ public class PiecePickerImpl
 
 	protected class RealTimePeerRequest
 	{
-		private PEPeerTransport				peer;
+		private final PEPeerTransport				peer;
 
-		private DiskManagerReadRequest request;
+		private final DiskManagerReadRequest request;
 
 		protected RealTimePeerRequest(PEPeerTransport _peer,
 				DiskManagerReadRequest _request) {
