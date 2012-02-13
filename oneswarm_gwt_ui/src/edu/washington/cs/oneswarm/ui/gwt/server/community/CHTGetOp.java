@@ -67,12 +67,12 @@ public class CHTGetOp extends CommunityServerOperation {
             writer.endArray();
             outputStreamWriter.flush();
 
-            System.out.println(baos.toString() + "\n");
+            logger.finest(baos.toString() + "\n");
 
             conn.getOutputStream().write(
                     ("q=" + URLEncoder.encode(baos.toString(), "UTF-8")).getBytes());
 
-            System.out.println("CHT get response code: " + conn.getResponseCode() + " / "
+            logger.finer("CHT get response code: " + conn.getResponseCode() + " / "
                     + conn.getResponseMessage());
 
             // Collect and parse the get responses
