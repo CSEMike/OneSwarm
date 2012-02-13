@@ -677,6 +677,9 @@ public class ConfigurationDefaults {
         // for a value of 20, the added delay for overlay transports connections
         // will be 20-40ms
         def.put("f2f_overlay_emulate_link_latency_max", new Long(20));
+
+        // Allow users to clear upload and download ratios on torrents on close
+        def.put("privacy.clear.seed.ratio.on.close", FALSE);
         // *********************************************************************
 
         // NOTE(willscott): service sharing network settings.

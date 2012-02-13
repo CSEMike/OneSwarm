@@ -17,6 +17,7 @@ class PrivacySettingsPanel extends SettingsPanel {
     private final List<SettingsCheckBox> checkBoxes = new ArrayList<SettingsCheckBox>();
 
     ClickHandler advancedCL = new ClickHandler() {
+        @Override
         public void onClick(ClickEvent event) {
             VersionCheckAdvancedDialog dlg = new VersionCheckAdvancedDialog();
             dlg.show();
@@ -67,6 +68,10 @@ class PrivacySettingsPanel extends SettingsPanel {
                 msg.settings_interface_privacy_silent_url(), "Add URL Silently");
         checkBoxes.add(silentURLsCheckbox);
 
+        final SettingsCheckBox clearRatioStatsURLsCheckbox = new SettingsCheckBox(
+                "Clear swarm up:down seed ratio on close", "privacy.clear.seed.ratio.on.close");
+        checkBoxes.add(clearRatioStatsURLsCheckbox);
+
         // final SettingsCheckBox speedCheckCheckbox = new
         // SettingsCheckBox("Allow incoming speed checks",
         // "Allow.Incoming.Speed.Check");
@@ -94,6 +99,7 @@ class PrivacySettingsPanel extends SettingsPanel {
         super.add(g);
     }
 
+    @Override
     public void sync() {
         for (SettingsCheckBox checkBox : checkBoxes) {
             checkBox.save();

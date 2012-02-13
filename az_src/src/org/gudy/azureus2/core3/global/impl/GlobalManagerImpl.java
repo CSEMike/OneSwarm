@@ -80,11 +80,12 @@ public class GlobalManagerImpl
 	private static final int LDT_DESTROYED				= 4;
     private static final int LDT_SEEDING_ONLY           = 5;
 	
-	private ListenerManager	listeners 	= ListenerManager.createAsyncManager(
+	private final ListenerManager	listeners 	= ListenerManager.createAsyncManager(
 		"GM:ListenDispatcher",
 		new ListenerManagerDispatcher()
 		{
-			public void
+			@Override
+            public void
 			dispatch(
 				Object		_listener,
 				int			type,
@@ -120,11 +121,12 @@ public class GlobalManagerImpl
 	
 	private static final int LDT_MANAGER_WBR			= 1;
 	
-	private ListenerManager	removal_listeners 	= ListenerManager.createManager(
+	private final ListenerManager	removal_listeners 	= ListenerManager.createManager(
 			"GM:DLWBRMListenDispatcher",
 			new ListenerManagerDispatcherWithException()
 			{
-				public void
+				@Override
+                public void
 				dispatchWithException(
 					Object		_listener,
 					int			type,
@@ -143,9 +145,9 @@ public class GlobalManagerImpl
 			});
 	
 	private List 		managers_cow	= new ArrayList();
-	private AEMonitor	managers_mon	= new AEMonitor( "GM:Managers" );
+	private final AEMonitor	managers_mon	= new AEMonitor( "GM:Managers" );
 	
-	private Map		manager_map			= new HashMap();
+	private final Map		manager_map			= new HashMap();
 		
 	private GlobalMangerProgressListener	progress_listener;
 	
@@ -159,13 +161,13 @@ public class GlobalManagerImpl
 	private GlobalManagerStatsWriter 	stats_writer;
 	private GlobalManagerHostSupport	host_support;
   
-	private Map							saved_download_manager_state	= new HashMap();
+	private final Map							saved_download_manager_state	= new HashMap();
 	
 	private int							next_seed_piece_recheck_index;
 	
 	private TorrentFolderWatcher torrent_folder_watcher;
   
-	private ArrayList paused_list = new ArrayList();
+	private final ArrayList paused_list = new ArrayList();
 	private final AEMonitor paused_list_mon = new AEMonitor( "GlobalManager:PL" );
   
   
@@ -177,15 +179,16 @@ public class GlobalManagerImpl
 	private volatile boolean 	needsSaving = false;
   
 	private boolean seeding_only_mode = false;
-	private FrequencyLimitedDispatcher	check_seeding_only_state_dispatcher = 
+	private final FrequencyLimitedDispatcher	check_seeding_only_state_dispatcher = 
 		new FrequencyLimitedDispatcher(
-			new AERunnable(){ public void runSupport(){ checkSeedingOnlyStateSupport(); }}, 5000 );
+			new AERunnable(){ @Override
+            public void runSupport(){ checkSeedingOnlyStateSupport(); }}, 5000 );
 	
 	private boolean	force_start_non_seed_exists;
 	private int 	nat_status				= ConnectionManager.NAT_UNKNOWN;
 	private boolean	nat_status_probably_ok;
 		
-   private CopyOnWriteList	dm_adapters = new CopyOnWriteList();
+   private final CopyOnWriteList	dm_adapters = new CopyOnWriteList();
 
    /** delay loading of torrents */
    DelayedEvent loadTorrentsDelay = null;
@@ -205,10 +208,10 @@ public class GlobalManagerImpl
     private static final int waitTime = 10*1000;
     // 5 minutes save resume data interval (default)
     private int saveResumeLoopCount = 5*60*1000 / waitTime;
-    private int natCheckLoopCount	= 30*1000 / waitTime;
-    private int seedPieceCheckCount	= 30*1000 / waitTime;
+    private final int natCheckLoopCount	= 30*1000 / waitTime;
+    private final int seedPieceCheckCount	= 30*1000 / waitTime;
            
-    private AESemaphore	run_sem = new AESemaphore( "GM:Checker:run");
+    private final AESemaphore	run_sem = new AESemaphore( "GM:Checker:run");
     
 
      public Checker() {
@@ -224,6 +227,7 @@ public class GlobalManagerImpl
         saveResumeLoopCount = saveResumeInterval * 60000 / waitTime;
     }
 
+    @Override
     public void 
 	runSupport() 
     {    	
@@ -325,7 +329,8 @@ public class GlobalManagerImpl
     if (existingTorrentLoadDelay > 0) {
 			loadTorrentsDelay = new DelayedEvent("GM:tld", existingTorrentLoadDelay,
 					new AERunnable() {
-						public void runSupport() {
+						@Override
+                        public void runSupport() {
 							loadExistingTorrentsNow(false); // already async
 						}
 					});
@@ -345,7 +350,8 @@ public class GlobalManagerImpl
     trackerScraper.setClientResolver(
     	new TRTrackerScraperClientResolver()
 		{
-    		public int
+    		@Override
+            public int
 			getStatus(
 				HashWrapper	torrent_hash )
     		{
@@ -371,7 +377,8 @@ public class GlobalManagerImpl
     			return( TRTrackerScraperClientResolver.ST_OTHER );
     		}
     		
-    		public boolean
+    		@Override
+            public boolean
 			isNetworkEnabled(
 				HashWrapper	hash,
 				URL			url )
@@ -398,7 +405,8 @@ public class GlobalManagerImpl
     			return( false );
     		}
     		
-    		public Object[]
+    		@Override
+            public Object[]
     		getExtensions(
     			HashWrapper	hash )
     		{
@@ -448,7 +456,8 @@ public class GlobalManagerImpl
     			return( new Object[]{ ext, state });
     		}
     		
-    		public boolean
+    		@Override
+            public boolean
     		redirectTrackerUrl(
     			HashWrapper		hash,
     			URL				old_url,
@@ -467,7 +476,8 @@ public class GlobalManagerImpl
     
     trackerScraper.addListener(
     	new TRTrackerScraperListener() {
-    		public void scrapeReceived(TRTrackerScraperResponse response) {
+    		@Override
+            public void scrapeReceived(TRTrackerScraperResponse response) {
     			HashWrapper	hash = response.getHash();
     			
    				DownloadManager manager = (DownloadManager)manager_map.get( hash );
@@ -495,7 +505,8 @@ public class GlobalManagerImpl
     TRTrackerUtils.addListener(
     	new TRTrackerUtilsListener()
     	{
-    		public void
+    		@Override
+            public void
     		announceDetailsChanged()
     		{	
 				Logger.log( new LogEvent(LOGID, "Announce details have changed, updating trackers" ));
@@ -512,7 +523,8 @@ public class GlobalManagerImpl
     	});
   }
   
-  public void loadExistingTorrentsNow(boolean async)
+  @Override
+public void loadExistingTorrentsNow(boolean async)
 	{
 		if (loadTorrentsDelay == null) {
 			return;
@@ -522,7 +534,8 @@ public class GlobalManagerImpl
 		//System.out.println(SystemTime.getCurrentTime() + ": load via " + Debug.getCompressedStackTrace());
 		if (async) {
 			AEThread thread = new AEThread("load torrents", true) {
-				public void runSupport() {
+				@Override
+                public void runSupport() {
 					loadDownloads();
 				}
 			};
@@ -533,7 +546,8 @@ public class GlobalManagerImpl
 		}
 	}
 
-  public DownloadManager 
+  @Override
+public DownloadManager 
   addDownloadManager(
   		String fileName, 
 		String savePath) 
@@ -542,7 +556,8 @@ public class GlobalManagerImpl
   	return addDownloadManager(fileName, null, savePath, DownloadManager.STATE_WAITING, true);
   }
    
-	public DownloadManager
+	@Override
+    public DownloadManager
 	addDownloadManager(
 	    String 		fileName,
 	    byte[]	optionalHash,
@@ -554,7 +569,8 @@ public class GlobalManagerImpl
 				persistent, false, null);
 	}
 
-	  public DownloadManager 
+	  @Override
+    public DownloadManager 
 	  addDownloadManager(
 	  		String torrent_file_name, 
 	  		byte[] optionalHash,
@@ -574,7 +590,8 @@ public class GlobalManagerImpl
 	 * @author Rene Leonhardt
 	 */
 	
-  public DownloadManager 
+  @Override
+public DownloadManager 
   addDownloadManager(
   		String torrent_file_name, 
   		byte[] optionalHash,
@@ -1048,11 +1065,13 @@ public class GlobalManagerImpl
     }
   }
 
-  public List getDownloadManagers() {
+  @Override
+public List getDownloadManagers() {
     return managers_cow;
   }
     
-  public DownloadManager getDownloadManager(TOTorrent torrent) {
+  @Override
+public DownloadManager getDownloadManager(TOTorrent torrent) {
   	if (torrent == null) {
   		return null;
   	}
@@ -1063,13 +1082,15 @@ public class GlobalManagerImpl
     }
   }
 
-  public DownloadManager 
+  @Override
+public DownloadManager 
   getDownloadManager(HashWrapper	hw) 
   {
       return (DownloadManager)manager_map.get( hw );
   }
   
-  public void 
+  @Override
+public void 
   canDownloadManagerBeRemoved(
   	DownloadManager manager,
   	boolean remove_torrent, boolean remove_data) 
@@ -1094,7 +1115,8 @@ public class GlobalManagerImpl
   }
   
 
-  public void 
+  @Override
+public void 
   removeDownloadManager(
   	DownloadManager manager)
   
@@ -1103,7 +1125,8 @@ public class GlobalManagerImpl
   	removeDownloadManager(manager, false, false);
   }
 
-  public void 
+  @Override
+public void 
   removeDownloadManager(
   	DownloadManager manager,
 		boolean	remove_torrent,
@@ -1195,7 +1218,8 @@ public class GlobalManagerImpl
   /* Puts GlobalManager in a stopped state.
    * Used when closing down Azureus.
    */
-  public void 
+  @Override
+public void 
   stopGlobalManager() {
   	try{
   		managers_mon.enter();
@@ -1230,13 +1254,15 @@ public class GlobalManagerImpl
     	NonDaemonTaskRunner.run(
     			new NonDaemonTask()
     			{
-    				public Object
+    				@Override
+                    public Object
     				run()
     				{	
     					return( null );
     				}
     				
-    				public String
+    				@Override
+                    public String
     				getName()
     				{
     					return( "Stopping global manager" );
@@ -1279,7 +1305,8 @@ public class GlobalManagerImpl
   informDestroyed();
   }
 
-  public void stopAllDownloads() {
+  @Override
+public void stopAllDownloads() {
 	  stopAllDownloads(false);
   }
   
@@ -1329,7 +1356,8 @@ public class GlobalManagerImpl
   /**
    * Starts all downloads
    */
-  public void startAllDownloads() {    
+  @Override
+public void startAllDownloads() {    
     for (Iterator iter = managers_cow.iterator(); iter.hasNext();) {
       DownloadManager manager = (DownloadManager) iter.next();
  
@@ -1340,7 +1368,8 @@ public class GlobalManagerImpl
     }
   }
   
-  public boolean 
+  @Override
+public boolean 
   pauseDownload(
 	DownloadManager	manager ) 
   {
@@ -1387,7 +1416,8 @@ public class GlobalManagerImpl
   }
 
   
-  public void 
+  @Override
+public void 
   pauseDownloads() 
   {
 	  pauseDownloads( false );
@@ -1460,7 +1490,8 @@ public class GlobalManagerImpl
       return false;
   	}
   
-	public boolean
+	@Override
+    public boolean
 	isPaused(
 		DownloadManager	manager )
 	{
@@ -1494,7 +1525,8 @@ public class GlobalManagerImpl
 		}
 	}
 	
-	public boolean 
+	@Override
+    public boolean 
 	canPauseDownloads() 
 	{
 		for( Iterator i = managers_cow.iterator(); i.hasNext(); ) {
@@ -1510,7 +1542,8 @@ public class GlobalManagerImpl
 	}
 
 
-  public void 
+  @Override
+public void 
   resumeDownload(
 	DownloadManager	manager )
   {
@@ -1560,7 +1593,8 @@ public class GlobalManagerImpl
 	}
   }
   
-  public void resumeDownloads() {
+  @Override
+public void resumeDownloads() {
     try {  paused_list_mon.enter();
       for( int i=0; i < paused_list.size(); i++ ) {     
       	Object[]	data = (Object[])paused_list.get(i);
@@ -1586,7 +1620,8 @@ public class GlobalManagerImpl
   }
 
 
-  public boolean canResumeDownloads() {
+  @Override
+public boolean canResumeDownloads() {
     try {  paused_list_mon.enter();
       for( int i=0; i < paused_list.size(); i++ ) {  
       	Object[]	data = (Object[])paused_list.get(i);
@@ -1855,6 +1890,7 @@ public class GlobalManagerImpl
   		managers_mon.enter();
   		
 	    Collections.sort(managers_cow, new Comparator () {
+        @Override
         public final int compare (Object a, Object b) {
         	return ((DownloadManager) a).getPosition()
 							- ((DownloadManager) b).getPosition();
@@ -1912,17 +1948,33 @@ public class GlobalManagerImpl
             state = DownloadManager.STATE_WAITING;
             
 	      }
+                int completed = dm_stats.getDownloadCompleted(true);
           
+                // By Isdal: Optionally: Do not store torrent upload:download
+                if (COConfigurationManager.getBooleanParameter("privacy.clear.seed.ratio.on.close")) {
+                    if (completed == 1000) {
+                        dmMap.put("downloaded", new Long(0));
+                    } else {
+                        dmMap.put("downloaded", new Long(dm_stats.getTotalDataBytesReceived()));
+                    }
+                    dmMap.put("uploaded", new Long(0));
+                    dmMap.put("secondsDownloading", new Long(0));
+                    dmMap.put("secondsOnlySeeding", new Long(0));
+                    dmMap.put("hashfailbytes", new Long(0));
+                    dmMap.put("discarded", new Long(0));
+                } else {
+                    dmMap.put("uploaded", new Long(dm_stats.getTotalDataBytesSent()));
+                    dmMap.put("secondsDownloading", new Long(dm_stats.getSecondsDownloading()));
+                    dmMap.put("secondsOnlySeeding", new Long(dm_stats.getSecondsOnlySeeding()));
+                    dmMap.put("hashfailbytes", new Long(dm_stats.getHashFailBytes()));
+                    dmMap.put("discarded", new Long(dm_stats.getDiscarded()));
+                }
+
           dmMap.put("state", new Long(state));		      
 	      dmMap.put("position", new Long(dm.getPosition()));
-	      dmMap.put("downloaded", new Long(dm_stats.getTotalDataBytesReceived()));
-	      dmMap.put("uploaded", new Long(dm_stats.getTotalDataBytesSent()));
-	      dmMap.put("completed", new Long(dm_stats.getDownloadCompleted(true)));
-	      dmMap.put("discarded", new Long(dm_stats.getDiscarded()));
-	      dmMap.put("hashfailbytes", new Long(dm_stats.getHashFailBytes()));
+
+        dmMap.put("completed", new Long(completed));
 	      dmMap.put("forceStart", new Long(dm.isForceStart() && (dm.getState() != DownloadManager.STATE_CHECKING) ? 1 : 0));
-	      dmMap.put("secondsDownloading", new Long(dm_stats.getSecondsDownloading()));
-	      dmMap.put("secondsOnlySeeding", new Long(dm_stats.getSecondsOnlySeeding()));
       
 	      	// although this has been migrated, keep storing it to allow regression for a while
 	      dmMap.put("uploads", new Long(dm.getMaxUploads()));
@@ -1976,23 +2028,27 @@ public class GlobalManagerImpl
   /**
    * @return
    */
-  public TRTrackerScraper getTrackerScraper() {
+  @Override
+public TRTrackerScraper getTrackerScraper() {
     return trackerScraper;
   }
 
-	public GlobalManagerStats
+	@Override
+    public GlobalManagerStats
 	getStats()
 	{
 		return( stats );
 	}
 	
-  public int getIndexOf(DownloadManager manager) {
+  @Override
+public int getIndexOf(DownloadManager manager) {
     if (managers_cow != null && manager != null)
       return managers_cow.indexOf(manager);
     return -1;
   }
 
-  public boolean isMoveableUp(DownloadManager manager) {
+  @Override
+public boolean isMoveableUp(DownloadManager manager) {
 
     if ((manager.isDownloadComplete(false)) &&
         (COConfigurationManager.getIntParameter("StartStopManager_iRankType") != 0) &&
@@ -2002,7 +2058,8 @@ public class GlobalManagerImpl
     return manager.getPosition() > 1;
   }
   
-  public int downloadManagerCount(boolean bCompleted) {
+  @Override
+public int downloadManagerCount(boolean bCompleted) {
     int numInGroup = 0;
     for (Iterator it = managers_cow.iterator();it.hasNext();) {
       DownloadManager dm = (DownloadManager)it.next();
@@ -2012,7 +2069,8 @@ public class GlobalManagerImpl
     return numInGroup;
   }
 
-  public boolean isMoveableDown(DownloadManager manager) {
+  @Override
+public boolean isMoveableDown(DownloadManager manager) {
 
     boolean isCompleted = manager.isDownloadComplete(false);
 
@@ -2024,15 +2082,18 @@ public class GlobalManagerImpl
     return manager.getPosition() < downloadManagerCount(isCompleted);
   }
 
-  public void moveUp(DownloadManager manager) {
+  @Override
+public void moveUp(DownloadManager manager) {
   	moveTo(manager, manager.getPosition() - 1);
   }
 
-  public void moveDown(DownloadManager manager) {
+  @Override
+public void moveDown(DownloadManager manager) {
   	moveTo(manager, manager.getPosition() + 1);
   }
 
-  public void moveTop(DownloadManager[] manager) {
+  @Override
+public void moveTop(DownloadManager[] manager) {
  
       try{
       	managers_mon.enter();
@@ -2046,7 +2107,8 @@ public class GlobalManagerImpl
       }
   }
 
-  public void moveEnd(DownloadManager[] manager) {
+  @Override
+public void moveEnd(DownloadManager[] manager) {
        try{
       	managers_mon.enter();
       
@@ -2071,7 +2133,8 @@ public class GlobalManagerImpl
       }
   }
   
-  public void moveTo(DownloadManager manager, int newPosition) {
+  @Override
+public void moveTo(DownloadManager manager, int newPosition) {
     boolean curCompleted = manager.isDownloadComplete(false);
 
     if (newPosition < 1 || newPosition > downloadManagerCount(curCompleted))
@@ -2128,14 +2191,16 @@ public class GlobalManagerImpl
       }
   }
 	
-	public void fixUpDownloadManagerPositions() {
+	@Override
+    public void fixUpDownloadManagerPositions() {
       try{
       	managers_mon.enter();
       
       	int posComplete = 1;
       	int posIncomplete = 1;
 		    Collections.sort(managers_cow, new Comparator () {
-	          public final int compare (Object a, Object b) {
+	          @Override
+            public final int compare (Object a, Object b) {
 	            int i = ((DownloadManager)a).getPosition() - ((DownloadManager)b).getPosition();
 	            if (i != 0) {
 	            	return i;
@@ -2214,14 +2279,16 @@ public class GlobalManagerImpl
   	listeners.dispatch( LDT_DESTROY_INITIATED, null, true );		
   }
   	
- 	public void
+ 	@Override
+    public void
 	addListener(
 		GlobalManagerListener	listener )
 	{
  		addListener(listener, true);
 	}
 
- 	public void
+ 	@Override
+    public void
 	addListener(
 		GlobalManagerListener	listener,
 		boolean trigger )
@@ -2255,21 +2322,24 @@ public class GlobalManagerImpl
 		}
 	}
 		
-	public void
+	@Override
+    public void
  	removeListener(
 		GlobalManagerListener	listener )
 	{			
 		listeners.removeListener(listener);
 	}
 	
-	public void
+	@Override
+    public void
 	addDownloadWillBeRemovedListener(
 		GlobalManagerDownloadWillBeRemovedListener	l )
 	{
 		removal_listeners.addListener( l );
 	}
 	
-	public void
+	@Override
+    public void
 	removeDownloadWillBeRemovedListener(
 		GlobalManagerDownloadWillBeRemovedListener	l )
 	{
@@ -2277,7 +2347,8 @@ public class GlobalManagerImpl
 	}
   
   // DownloadManagerListener
-  public void 
+  @Override
+public void 
   stateChanged(
 	DownloadManager 	manager, 
 	int 				new_state ) 
@@ -2410,7 +2481,8 @@ public class GlobalManagerImpl
     }
   }
 		
-  public boolean
+  @Override
+public boolean
   isSeedingOnly()
   {
 	  return( seeding_only_mode );
@@ -2499,7 +2571,8 @@ public class GlobalManagerImpl
         }
 	}
 	
-	public int
+	@Override
+    public int
 	getNATStatus()
 	{	
 		return( nat_status );
@@ -2591,7 +2664,8 @@ public class GlobalManagerImpl
 		
 		return( new DownloadManagerInitialisationAdapter()
 				{
-					public void
+					@Override
+                    public void
 					initialised(
 						DownloadManager		manager )
 					{
@@ -2609,21 +2683,24 @@ public class GlobalManagerImpl
 				});
 	}
 	
-	public void
+	@Override
+    public void
 	addDownloadManagerInitialisationAdapter(
 		DownloadManagerInitialisationAdapter	adapter )
 	{
 		dm_adapters.add( adapter );
 	}
 	
-	public void
+	@Override
+    public void
 	removeDownloadManagerInitialisationAdapter(
 		DownloadManagerInitialisationAdapter	adapter )
 	{
 		dm_adapters.remove( adapter );
 	}
 	
-	public void
+	@Override
+    public void
 	generate(
 		IndentWriter		writer )
 	{
@@ -2734,11 +2811,13 @@ public class GlobalManagerImpl
 		}
 	}
 	
-	public void setMainlineDHTProvider(MainlineDHTProvider provider) {
+	@Override
+    public void setMainlineDHTProvider(MainlineDHTProvider provider) {
 		this.provider = provider;
 	}
 	
-	public MainlineDHTProvider getMainlineDHTProvider() {
+	@Override
+    public MainlineDHTProvider getMainlineDHTProvider() {
 		return this.provider;
 	}
 }
