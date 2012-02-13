@@ -113,7 +113,7 @@ public class FriendConnection implements DatagramListener {
     // less conserves resource, more allows searches to expire later
     private static final int OVERLAY_FORWARD_TIMEOUT = 5 * 60 * 1000;
 
-    private static final long RECENTLY_CLOSED_TIME = 30 * 1000;
+    private static final long RECENTLY_CLOSED_TIME = 90 * 1000;
 
     final double FORWARD_SEARCH_PROBABILITY = COConfigurationManager.getFloatParameter(
             "f2f_forward_search_probability", 0.50f);

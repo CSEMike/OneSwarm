@@ -942,7 +942,9 @@ public class SearchManager {
             try {
                 search = forwardedSearches.get(msg.getSearchID());
                 if (search == null) {
-                    logger.warning("got response for unknown search:" + source + ":"
+                    // Search responses after 60 seconds are dropped (not that
+                    // unusual)
+                    logger.fine("got response for slow/unknown search:" + source + ":"
                             + msg.getDescription());
                     return;
                 }
