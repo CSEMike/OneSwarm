@@ -100,6 +100,7 @@ public class DefaultSettingsTest extends OneSwarmTestBase {
     long metainfo = -1;
     long transfer = -1;
     int numRetries = -1;
+    int percentDone = -1;
 
     @Test
     public void testDownloadFile() throws Exception {
@@ -160,7 +161,9 @@ public class DefaultSettingsTest extends OneSwarmTestBase {
                     if (dm.getDiskManager() == null) {
                         return false;
                     }
-                    return dm.getDiskManager().getPercentDone() == 100;
+
+                    percentDone = dm.getDiskManager().getPercentDone();
+                    return percentDone == 100;
                 }
             }, MAX_WAIT).awaitFail();
             long downloadCompletedAt = System.currentTimeMillis();
@@ -184,8 +187,9 @@ public class DefaultSettingsTest extends OneSwarmTestBase {
 
     private void writeResult() throws IOException {
         String[] header = new String[] { "total", "friend_connect", "metainfo", "metainfo_retries",
-                "transfer" };
-        Object[] result = new Object[] { total, friendConnect, metainfo, numRetries, transfer };
+                "transfer", "transfer_percent_done" };
+        Object[] result = new Object[] { total, friendConnect, metainfo, numRetries, transfer,
+                percentDone };
         saveResult(RESULTS_FILE, header, result);
     }
 
