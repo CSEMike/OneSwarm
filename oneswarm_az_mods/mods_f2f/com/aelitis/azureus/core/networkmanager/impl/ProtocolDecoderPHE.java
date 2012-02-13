@@ -255,7 +255,8 @@ ProtocolDecoderPHE
 	    		new String[]{ "network.transport.encrypted.min_level" },
 	    		new ParameterListener()
 	    		{
-	    			 public void 
+	    			 @Override
+                    public void 
 	    			 parameterChanged(
 	    				String ignore )
 	    			 {
@@ -357,7 +358,7 @@ ProtocolDecoderPHE
 
 	private boolean processing_complete;
 	
-	private AEMonitor	process_mon	= new AEMonitor( "ProtocolDecoderPHE:process" );
+	private final AEMonitor	process_mon	= new AEMonitor( "ProtocolDecoderPHE:process" );
 	
 	// ****************************************************
 	private boolean outBoundSSL = false;
@@ -465,7 +466,8 @@ ProtocolDecoderPHE
 			transport.registerForReadSelects(
 				new TransportHelper.selectListener()
 				{
-				   	public boolean 
+				   	@Override
+                    public boolean 
 			    	selectSuccess(
 			    		TransportHelper	helper, 
 			    		Object 			attachment )
@@ -473,7 +475,8 @@ ProtocolDecoderPHE
 				   		return( ProtocolDecoderPHE.this.selectSuccess( helper, attachment, false ));
 				   	}
 	
-			        public void 
+			        @Override
+                    public void 
 			        selectFailure(
 			        	TransportHelper	helper,
 			        	Object 			attachment, 
@@ -487,7 +490,8 @@ ProtocolDecoderPHE
 			transport.registerForWriteSelects(
 					new TransportHelper.selectListener()
 					{
-					   	public boolean 
+					   	@Override
+                        public boolean 
 				    	selectSuccess(
 				    		TransportHelper	helper, 
 				    		Object 			attachment )
@@ -495,7 +499,8 @@ ProtocolDecoderPHE
 					   		return( ProtocolDecoderPHE.this.selectSuccess( helper, attachment, true ));
 					   	}
 	
-				        public void 
+				        @Override
+                        public void 
 				        selectFailure(
 				        	TransportHelper	helper,
 				        	Object 			attachment, 
@@ -1198,8 +1203,8 @@ ProtocolDecoderPHE
 								
 								throw( new IOException( 
 										"No crypto protocol in common: mine = " + 
-											Integer.toHexString((byte)my_supported_protocols) + ", theirs = " +
-											Integer.toHexString((byte)other_supported_protocols)));
+											Integer.toHexString(my_supported_protocols) + ", theirs = " +
+											Integer.toHexString(other_supported_protocols)));
 				
 							}
 													
@@ -1421,8 +1426,8 @@ ProtocolDecoderPHE
 								
 								throw( new IOException( 
 										"Selected protocol has nothing in common: mine = " + 
-											Integer.toHexString((byte)my_supported_protocols) + ", theirs = " +
-											Integer.toHexString((byte)selected_protocol)));
+											Integer.toHexString(my_supported_protocols) + ", theirs = " +
+											Integer.toHexString(selected_protocol)));
 				
 							}
 													
@@ -1521,7 +1526,7 @@ ProtocolDecoderPHE
 				}
 			}
 		}catch( Throwable e ){
-						e.printStackTrace();
+            // e.printStackTrace();
 			failed( e );
 			
 			if ( e instanceof IOException ){
@@ -2164,14 +2169,16 @@ ProtocolDecoderPHE
 		adapter.decodeFailed( this, cause );
 	}
 	
-	public boolean
+	@Override
+    public boolean
 	isComplete(
 		long		now )
 	{
 		return( processing_complete );
 	}
 	
-	public TransportHelperFilter
+	@Override
+    public TransportHelperFilter
 	getFilter()
 	{
 		return( filter );
