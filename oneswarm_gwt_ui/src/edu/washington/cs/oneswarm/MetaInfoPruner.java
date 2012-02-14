@@ -2,6 +2,7 @@ package edu.washington.cs.oneswarm;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,7 +57,9 @@ public class MetaInfoPruner {
                         + new Date(Long.parseLong(activeHashes.getProperty("created"))));
             } catch (IOException e) {
                 logger.warning("couldn't load metainfo access times!");
-                e.printStackTrace();
+                if (!(e instanceof FileNotFoundException)) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -88,8 +91,8 @@ public class MetaInfoPruner {
         synchronized (activeHashes) {
             activeHashes.setProperty(inHexHash, Long.toString(System.currentTimeMillis()));
 
-            int upper_thresh = (int) Math.min((double) lastSaveCount + 0.2
-                    * ((double) lastSaveCount), (double) (lastSaveCount + 20));
+            int upper_thresh = (int) Math.min(lastSaveCount + 0.2
+                    * lastSaveCount, (lastSaveCount + 20));
 
             logger.finest("record: " + inHexHash + " thresh: " + upper_thresh + " curr: "
                     + lastSaveCount);
@@ -141,6 +144,7 @@ public class MetaInfoPruner {
 
         UpdatingFileTree metainfo_dir = new UpdatingFileTree(metainfo_dir_file,
                 new UpdatingFileTreeListener() {
+                    @Override
                     public void broadcastChange(UpdatingFileTree arg0, boolean arg1) {
                         // ignored since we never update this obejct
                     }
@@ -225,6 +229,7 @@ public class MetaInfoPruner {
 
         UpdatingFileTree metainfo_dir = new UpdatingFileTree(metainfo_dir_file,
                 new UpdatingFileTreeListener() {
+                    @Override
                     public void broadcastChange(UpdatingFileTree arg0, boolean arg1) {
                     }
                 });
