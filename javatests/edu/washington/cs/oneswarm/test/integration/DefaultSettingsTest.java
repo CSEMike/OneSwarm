@@ -161,8 +161,10 @@ public class DefaultSettingsTest extends OneSwarmTestBase {
                     if (dm.getDiskManager() == null) {
                         return false;
                     }
-
-                    percentDone = dm.getDiskManager().getPercentDone();
+                    if (!(dm.getState() == DownloadManager.STATE_DOWNLOADING || dm.getState() == DownloadManager.STATE_SEEDING)) {
+                        return false;
+                    }
+                    percentDone = dm.getStats().getDownloadCompleted(true);
                     // 1000 is 100% (!!!?)
                     return percentDone == 1000;
                 }
