@@ -163,7 +163,8 @@ public class DefaultSettingsTest extends OneSwarmTestBase {
                     }
 
                     percentDone = dm.getDiskManager().getPercentDone();
-                    return percentDone == 100;
+                    // 1000 is 100% (!!!?)
+                    return percentDone == 1000;
                 }
             }, MAX_WAIT).awaitFail();
             long downloadCompletedAt = System.currentTimeMillis();

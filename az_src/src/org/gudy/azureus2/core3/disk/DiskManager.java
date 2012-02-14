@@ -199,6 +199,7 @@ DiskManager
 	public long
 	getRemainingExcludingDND();
 	
+	// RETURNS 1000 for done, not PERCENT!!
 	public int
 	getPercentDone();
 	

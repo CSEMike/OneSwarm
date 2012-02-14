@@ -1076,6 +1076,7 @@ DiskManagerImpl
         return nbPieces;
     }
 
+    // RETURNS 1000 for done, not PERCENT!!
     public int
     getPercentDone()
     {
