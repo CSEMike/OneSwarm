@@ -71,11 +71,11 @@ public class OSF2FSpeedChecker {
     private Timer checkTimer;
 
     private int currentId = 0;
-    private LinkedList<IncomingSpeedCheckConnection> incomingConnections = new LinkedList<IncomingSpeedCheckConnection>();
+    private final LinkedList<IncomingSpeedCheckConnection> incomingConnections = new LinkedList<IncomingSpeedCheckConnection>();
     private boolean running = false;
 
     private BufferedWriter speedCheckLog;
-    private Map<Integer, OutgoingSpeedCheck> speedChecks = new HashMap<Integer, OutgoingSpeedCheck>();
+    private final Map<Integer, OutgoingSpeedCheck> speedChecks = new HashMap<Integer, OutgoingSpeedCheck>();
 
     private NetworkManager.ByteMatcher speedMatcher;
 
@@ -85,6 +85,7 @@ public class OSF2FSpeedChecker {
         this.stats = stats;
         COConfigurationManager.addAndFireParameterListener("Allow.Incoming.Speed.Check",
                 new ParameterListener() {
+                    @Override
                     public void parameterChanged(String parameterName) {
                         boolean enabled = COConfigurationManager
                                 .getBooleanParameter("Allow.Incoming.Speed.Check");
@@ -106,6 +107,7 @@ public class OSF2FSpeedChecker {
             if (!running) {
                 Thread t = new Thread(new Runnable() {
 
+                    @Override
                     public void run() {
                         synchronized (OSF2FSpeedChecker.this) {
                             running = true;
@@ -113,11 +115,13 @@ public class OSF2FSpeedChecker {
                             speedMatcher = new OsSpeedMatcher();
                             NetworkManager.getSingleton().requestIncomingConnectionRouting(
                                     speedMatcher, new RoutingListener() {
+                                        @Override
                                         public boolean autoCryptoFallback() {
                                             // TODO Auto-generated method stub
                                             return false;
                                         }
 
+                                        @Override
                                         public void connectionRouted(NetworkConnection connection,
                                                 Object routing_data) {
                                             logger.fine("connection routed to speed checker, isTcp="
@@ -129,10 +133,12 @@ public class OSF2FSpeedChecker {
                                             }
                                         }
                                     }, new MessageStreamFactory() {
+                                        @Override
                                         public MessageStreamDecoder createDecoder() {
                                             return new OSF2FMessageDecoder();
                                         }
 
+                                        @Override
                                         public MessageStreamEncoder createEncoder() {
                                             return new OSF2FMessageEncoder();
                                         }
@@ -232,7 +238,7 @@ public class OSF2FSpeedChecker {
 
         private long lastMessageTime;
 
-        private LinkedList<Integer> messageTimes = new LinkedList<Integer>();
+        private final LinkedList<Integer> messageTimes = new LinkedList<Integer>();
         private int packetSize = 0;
         private int remoteLocalEstimate = -1;
         private int remoteRemoteEstimate = -1;
@@ -250,24 +256,29 @@ public class OSF2FSpeedChecker {
 
             connection.connect(true, new ConnectionListener() {
 
+                @Override
                 public void connectFailure(Throwable failureMsg) {
                     connection.close();
                 }
 
+                @Override
                 public void connectStarted() {
                 }
 
+                @Override
                 public void connectSuccess(ByteBuffer remainingInitialData) {
                     NetworkManager.getSingleton().upgradeTransferProcessing(connection, null);
                     logger.finest("incoming speed check connected: " + getRemoteIp());
                 }
 
+                @Override
                 public void exceptionThrown(Throwable error) {
                     logger.warning("got exception in incoming speed test: " + error.getMessage());
                     error.printStackTrace();
                     connection.close();
                 }
 
+                @Override
                 public String getDescription() {
                     return "speed connection listener";
                 }
@@ -284,6 +295,7 @@ public class OSF2FSpeedChecker {
             }
         }
 
+        @Override
         public void dataBytesReceived(int byteCount) {
             if (stats != null) {
                 stats.protocolBytesReceived(byteCount, false);
@@ -328,6 +340,7 @@ public class OSF2FSpeedChecker {
             return System.currentTimeMillis() - lastMessageTime > TIMEOUT_MS;
         }
 
+        @Override
         public boolean messageReceived(Message message) {
             logger.finest("incoming speed packet: " + message.getDescription());
             lastMessageTime = System.currentTimeMillis();
@@ -377,6 +390,7 @@ public class OSF2FSpeedChecker {
             return true;
         }
 
+        @Override
         public void protocolBytesReceived(int byteCount) {
             if (stats != null) {
                 stats.protocolBytesReceived(byteCount, false);
@@ -392,15 +406,18 @@ public class OSF2FSpeedChecker {
             this.size = legacy_handshake_header.length;
         }
 
+        @Override
         public byte[][] getSharedSecrets() {
 
             return null;
         }
 
+        @Override
         public int getSpecificPort() {
             return (-1);
         }
 
+        @Override
         public Object matches(TransportHelper transport, ByteBuffer to_compare, int port) {
             // logger.finest("looking at: " + new String(to_compare.array()));
             int old_limit = to_compare.limit();
@@ -410,18 +427,22 @@ public class OSF2FSpeedChecker {
             return matches ? "" : null;
         }
 
+        @Override
         public int matchThisSizeOrBigger() {
             return (maxSize());
         }
 
+        @Override
         public int maxSize() {
             return size;
         }
 
+        @Override
         public Object minMatches(TransportHelper transport, ByteBuffer to_compare, int port) {
             return (matches(transport, to_compare, port));
         }
 
+        @Override
         public int minSize() {
             return maxSize();
         }
@@ -432,14 +453,14 @@ public class OSF2FSpeedChecker {
         private static final String SPEEDTEST_URL = "http://" + Constants.VERSION_SERVER_V4
                 + "/speedcheck";
 
-        private List<OutgoingSpeedCheckConnection> connections = new LinkedList<OutgoingSpeedCheckConnection>();
+        private final List<OutgoingSpeedCheckConnection> connections = new LinkedList<OutgoingSpeedCheckConnection>();
 
         private int localEstimate = -1;
 
         private int remoteEstimate = -1;
         private final long startTime;
 
-        private StringBuffer log = new StringBuffer();
+        private final StringBuffer log = new StringBuffer();
         private String lastLine = "";
 
         private void log(String str) {
@@ -468,8 +489,7 @@ public class OSF2FSpeedChecker {
                 log("connecting to " + SPEEDTEST_URL);
                 HttpURLConnection conn = (HttpURLConnection) new URL(SPEEDTEST_URL)
                         .openConnection();
-                BufferedReader in = new BufferedReader(new InputStreamReader(
-conn.getInputStream()));
+                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 
                 String line;
                 List<String> hosts = new LinkedList<String>();
@@ -517,8 +537,8 @@ conn.getInputStream()));
 
                             for (OutgoingSpeedCheckConnection c : connections) {
                                 try {
-                                    c.sendReport((int) localEstimate);
-                                    c.sendReport((int) remoteEstimate);
+                                    c.sendReport(localEstimate);
+                                    c.sendReport(remoteEstimate);
                                     // remote side should close conn after
                                     // getting
                                     // second report
@@ -640,10 +660,10 @@ conn.getInputStream()));
         private boolean closed = false;
         private boolean completed = false;
         private final String host;
-        private List<Integer> localTimeStamps = new Vector<Integer>();
+        private final List<Integer> localTimeStamps = new Vector<Integer>();
         private OutputStream out;
         private final int port;
-        private List<Integer> remoteTimeStamps = new Vector<Integer>();
+        private final List<Integer> remoteTimeStamps = new Vector<Integer>();
         private Socket s;
         private boolean sendCompleted = false;
         private final GlobalManagerStats stats;
@@ -677,6 +697,7 @@ conn.getInputStream()));
             return completed;
         }
 
+        @Override
         public void run() {
             long startTime = System.currentTimeMillis();
 
@@ -686,6 +707,7 @@ conn.getInputStream()));
                 out = s.getOutputStream();
                 final DataInputStream in = new DataInputStream(s.getInputStream());
                 Thread readThread = new Thread(new Runnable() {
+                    @Override
                     public void run() {
                         logger.fine("running speed check to " + host + ":" + port);
                         try {
@@ -712,8 +734,8 @@ conn.getInputStream()));
                             logger.fine("incoming reader complete");
                             completed = true;
                         } catch (IOException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
+                            logger.fine("speed check connection closed: " + e.getClass().getName() + "::"
+                                    + e.getMessage());
                             closed = true;
                         }
                     }
@@ -748,14 +770,14 @@ conn.getInputStream()));
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                logger.fine("speed check connection closed: " + e.getClass().getName() + "::"
+                        + e.getMessage());
                 closed = true;
             }
         }
 
         public void sendReport(int speed) throws IOException {
-            if (!closed) {
+            if (!closed && out != null) {
                 out.write(getReportBytes(speed));
             }
         }
