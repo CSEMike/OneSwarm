@@ -1545,13 +1545,13 @@ public class SearchManager {
             return getAge() > MAX_SEARCH_AGE;
         }
     }
-    
+
     class ServiceSearch {
         private final OSF2FHashSearch search;
         private final List<FriendConnection> sources;
         private final long time;
         private final ServerServiceConnection conn;
-    
+
         public ServiceSearch(SharedService service, OSF2FHashSearch search) {
             this.time = System.currentTimeMillis();
             this.search = search;
@@ -1562,11 +1562,11 @@ public class SearchManager {
         public OSF2FSearch getSearch() {
             return search;
         }
-        
+
         public int getSearchId() {
             return search.getSearchID();
         }
-        
+
         public void addSource(FriendConnection source, OSF2FHashSearchResp response)
                 throws OverlayRegistrationError {
             if (conn.addChannel(source, search, response)) {
@@ -1580,11 +1580,11 @@ public class SearchManager {
                 Debug.out("Did not aggregate a channel for a service search.");
             }
         }
-        
+
         public List<FriendConnection> getSources() {
             return sources;
         }
-        
+
         public boolean isTimedOut() {
             return (System.currentTimeMillis() - time) > MAX_SEARCH_AGE;
         }
@@ -1634,8 +1634,13 @@ public class SearchManager {
         }
 
         public void insert(int searchId, int searchValue) {
-            byte[] bytes = bytesFromInts(searchId, searchValue);
-            filters.getFirst().insert(bytes);
+            try {
+                byte[] bytes = bytesFromInts(searchId, searchValue);
+                filters.getFirst().insert(bytes);
+            } catch (Exception e) {
+                Debug.out("Error when inserting into bloom filter, searchId=" + searchId
+                        + " value=" + searchValue, e);
+            }
         }
 
         private void rotate() {
