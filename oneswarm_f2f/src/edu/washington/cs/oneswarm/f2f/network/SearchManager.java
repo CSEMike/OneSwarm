@@ -1607,13 +1607,17 @@ public class SearchManager {
         }
 
         public boolean contains(int searchId, int searchValue) {
-            byte[] bytes = bytesFromInts(searchId, searchValue);
-            for (BloomFilter f : filters) {
-                if (f.test(bytes)) {
-                    return true;
+            try {
+                byte[] bytes = bytesFromInts(searchId, searchValue);
+                for (BloomFilter f : filters) {
+                    if (f.test(bytes)) {
+                        return true;
+                    }
                 }
+            } catch (Exception e) {
+                Debug.out("Error when checking bloom filter, searchId=" + searchId + " value="
+                        + searchValue, e);
             }
-
             return false;
         }
 
