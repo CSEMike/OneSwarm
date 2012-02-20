@@ -19,7 +19,6 @@ import org.junit.Test;
 import org.testng.Assert;
 
 import com.aelitis.azureus.core.peermanager.messaging.Message;
-import com.sun.xml.internal.bind.v2.runtime.reflect.opt.MethodAccessor_Double;
 
 import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnection.ReceiveState;
 import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnection.SendState;
