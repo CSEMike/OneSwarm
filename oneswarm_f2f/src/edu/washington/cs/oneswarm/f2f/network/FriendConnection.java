@@ -111,7 +111,7 @@ public class FriendConnection implements DatagramListener {
 
     // max age of an overlay, 5 minutes should be enough
     // less conserves resource, more allows searches to expire later
-    private static final int OVERLAY_FORWARD_TIMEOUT = 5 * 60 * 1000;
+    public static final int OVERLAY_FORWARD_TIMEOUT = 5 * 60 * 1000;
 
     private static final long RECENTLY_CLOSED_TIME = 90 * 1000;
 

@@ -20,4 +20,6 @@ interface DatagramConnectionManager {
     void register(DatagramConnection connection);
 
     int getPort();
+
+    DatagramRateLimiter getMainRateLimiter();
 }

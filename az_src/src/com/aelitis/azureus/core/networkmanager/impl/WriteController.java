@@ -22,16 +22,23 @@
 
 package com.aelitis.azureus.core.networkmanager.impl;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.config.ParameterListener;
-import org.gudy.azureus2.core3.util.*;
+import org.gudy.azureus2.core3.util.AEDiagnostics;
+import org.gudy.azureus2.core3.util.AEDiagnosticsEvidenceGenerator;
+import org.gudy.azureus2.core3.util.AEMonitor;
+import org.gudy.azureus2.core3.util.AEThread;
+import org.gudy.azureus2.core3.util.Debug;
+import org.gudy.azureus2.core3.util.IndentWriter;
 
 import com.aelitis.azureus.core.networkmanager.EventWaiter;
 import com.aelitis.azureus.core.stats.AzureusCoreStats;
 import com.aelitis.azureus.core.stats.AzureusCoreStatsProvider;
-
 
 /**
  * Processes writes of write-entities and handles the write selector.
@@ -49,7 +56,8 @@ public class WriteController implements AzureusCoreStatsProvider{
 			},
 			new ParameterListener()
 			{
-				public void 
+				@Override
+                public void 
 				parameterChanged(
 					String name )
 				{
@@ -72,8 +80,9 @@ public class WriteController implements AzureusCoreStatsProvider{
   private long	progress_count;
   private long	non_progress_count;
   
-  private EventWaiter 	write_waiter = new EventWaiter();
+  private final EventWaiter 	write_waiter = new EventWaiter();
   
+    private WriteEventListener writeEventListener;
   /**
    * Create a new write controller.
    */
@@ -81,7 +90,8 @@ public class WriteController implements AzureusCoreStatsProvider{
     
     //start write handler processing
     Thread write_processor_thread = new AEThread( "WriteController:WriteProcessor" ) {
-      public void runSupport() {
+      @Override
+    public void runSupport() {
         writeProcessorLoop();
       }
     };
@@ -106,7 +116,8 @@ public class WriteController implements AzureusCoreStatsProvider{
     AEDiagnostics.addEvidenceGenerator(
     	new AEDiagnosticsEvidenceGenerator()
     	{
-    		public void 
+    		@Override
+            public void 
     		generate(
     			IndentWriter writer ) 
     		{
@@ -144,7 +155,12 @@ public class WriteController implements AzureusCoreStatsProvider{
     	});
   }
   
-  public void
+    public void addWriteEventListener(WriteEventListener writeEventListener) {
+        this.writeEventListener = writeEventListener;
+    }
+
+  @Override
+public void
   updateStats(
 		  Set		types,
 		  Map		values )
@@ -205,6 +221,9 @@ public class WriteController implements AzureusCoreStatsProvider{
     boolean check_high_first = true;
     
     while( true ) {
+            if (writeEventListener != null) {
+                writeEventListener.writeEvent();
+            }
       try {
         if( check_high_first ) {
           check_high_first = false;

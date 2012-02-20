@@ -49,7 +49,8 @@ public class BloomFilter
 				&& mBitsCapacity == rhs.mBitsCapacity && mInToStore == rhs.mInToStore;
 	}
 
-	public String toString() {
+	@Override
+    public String toString() {
 		String out = "[BloomFilter: store: " + mInToStore + " hashes: "
 				+ mHashesCount + " bits: " + mBits.length() + "] ";
 		if (mBits.length() < 100) {
@@ -122,7 +123,7 @@ public class BloomFilter
 				buff.position(0);
 				buff.put(hash, 0, 4);
 				buff.position(0);
-				bits[funcItr] = (Math.abs(buff.getInt()) % mBitsCapacity);
+                bits[funcItr] = Math.abs(buff.getInt() % mBitsCapacity);
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.err.println("error hashing cert into bloom filter: " + e);

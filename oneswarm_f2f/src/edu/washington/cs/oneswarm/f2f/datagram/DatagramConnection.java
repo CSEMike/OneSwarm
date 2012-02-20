@@ -7,7 +7,10 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
@@ -22,6 +25,7 @@ import com.aelitis.azureus.core.networkmanager.RawMessage;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
+import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelMsg;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDatagramInit;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FDatagramOk;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessage;
@@ -43,7 +47,7 @@ import edu.washington.cs.oneswarm.f2f.servicesharing.OSF2FServiceDataMsg;
  * @author isdal
  * 
  */
-public class DatagramConnection {
+public class DatagramConnection extends DatagramRateLimiter {
     /**
      * Receive states:
      * 
@@ -102,11 +106,11 @@ public class DatagramConnection {
     public final static Logger logger = Logger.getLogger(DatagramConnection.class.getName());
 
     // According to netalyzr more than 98% of hosts have a path MTU of 1450
-    // bytes. Set max size to 1410 to be on the safer side. (room for 8 byte UDP
+    // bytes. Set max size to 1420 to be on the safer side. (room for 8 byte UDP
     // header and 20 byte ip header).
     // (MAX_DATAGRAM_SIZE - HMAC_SIZE - SEQUENCE_NUMBER_BYTES % BLOCK_SIZE) == 0
     // must be 0;
-    public static final int MAX_DATAGRAM_SIZE = 1410;
+    public static final int MAX_DATAGRAM_SIZE = 1420;
     // The actual payload we can use is a bit less.
     // -4 for length field
     // -1 for type field
@@ -149,6 +153,9 @@ public class DatagramConnection {
 
     private boolean registered;
     private final HashSet<String> remoteIpPorts = new HashSet<String>();
+
+    // Visible for testing
+    final HashMap<Integer, DatagramRateLimitedChannelQueue> queueMap = new HashMap<Integer, DatagramRateLimitedChannelQueue>();
 
     public DatagramConnection(DatagramConnectionManager manager, DatagramListener friendConnection)
             throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException,
@@ -218,11 +225,25 @@ public class DatagramConnection {
 
     private void deregister() {
         manager.deregister(this);
+        clearExpiredChannels();
         this.registered = false;
     }
 
     public boolean isSendingActive() {
         return sendState == SendState.ACTIVE;
+    }
+
+    @Override
+    protected synchronized void addQueue(DatagramRateLimiter queue) {
+        super.addQueue(queue);
+        DatagramRateLimitedChannelQueue cQueue = (DatagramRateLimitedChannelQueue) queue;
+        queueMap.put(cQueue.getChannelId(), cQueue);
+    }
+
+    @Override
+    protected synchronized void removeQueue(DatagramRateLimiter queue) {
+        super.removeQueue(queue);
+        queueMap.remove(((DatagramRateLimitedChannelQueue) queue).getChannelId());
     }
 
     boolean messageReceived(DatagramPacket packet) {
@@ -333,6 +354,21 @@ public class DatagramConnection {
         }
     }
 
+    private synchronized void sendChannelMessage(OSF2FChannelMsg msg) {
+        int channelId = msg.getChannelId();
+        DatagramRateLimitedChannelQueue queue = queueMap.get(channelId);
+        if (queue == null) {
+            queue = new DatagramRateLimitedChannelQueue(channelId, sendThread);
+            addQueue(queue);
+            // Seed the new channel with half the number of tokens we have, and
+            // half of what the main rate limiter has.
+            transferTokens(queue, getAvailableTokens() / 2);
+            DatagramRateLimiter mainRateLimiter = manager.getMainRateLimiter();
+            mainRateLimiter.transferTokens(queue, mainRateLimiter.getAvailableTokens() / 2);
+        }
+        queue.queuePacket(msg);
+    }
+
     public void sendMessage(OSF2FMessage message) {
         if (sendState == SendState.CLOSED) {
             logger.finest("Tried to send packet on a closed connection");
@@ -344,7 +380,13 @@ public class DatagramConnection {
             return;
         }
         try {
-            sendThread.queueMessage(message);
+            if (message instanceof OSF2FChannelMsg) {
+                // put in the appropriate channel queue
+                sendChannelMessage((OSF2FChannelMsg) message);
+            } else {
+                // Send directly to socket.
+                sendThread.queueMessage(message);
+            }
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -381,6 +423,10 @@ public class DatagramConnection {
         return System.currentTimeMillis() - lastPacketReceived > FriendConnection.KEEP_ALIVE_TIMEOUT;
     }
 
+    public boolean isLanLocal() {
+        return friendConnection.isLanLocal();
+    }
+
     public void reInitialize() {
         if (sendState == SendState.CLOSED) {
             logger.warning("tried to reinitialize closed connection");
@@ -393,9 +439,30 @@ public class DatagramConnection {
         return sendThread.queueLength;
     }
 
+    public synchronized void clearExpiredChannels() {
+        LinkedList<DatagramRateLimitedChannelQueue> toRemove = new LinkedList<DatagramRateLimitedChannelQueue>();
+        for (Iterator<DatagramRateLimitedChannelQueue> iterator = queueMap.values().iterator(); iterator
+                .hasNext();) {
+            DatagramRateLimitedChannelQueue queue = iterator.next();
+            if (queue.isExpired()) {
+                toRemove.add(queue);
+            }
+        }
+        for (DatagramRateLimitedChannelQueue queue : toRemove) {
+            // Clear any messages in the queue.
+            queue.clear();
+            // Take back any tokens, first give to the main connection
+            DatagramRateLimiter mainRateLimiter = manager.getMainRateLimiter();
+            queue.transferTokens(mainRateLimiter, queue.getAvailableTokens());
+            // And any leftovers go to this connection.
+            queue.transferTokens(this, queue.getAvailableTokens());
+            removeQueue(queue);
+        }
+    }
+
     /**
-     * Sending enrypted udp packets is cpu intensive and potentially blocking.
-     * Each connection is sending
+     * Sending encrypted udp packets is cpu intensive and potentially blocking.
+     * Each connection is sending packets in its own thread.
      * 
      * @author isdal
      * 
@@ -472,6 +539,13 @@ public class DatagramConnection {
                                 && datagramSize + message.getMessageSize() <= MAX_DATAGRAM_PAYLOAD_SIZE
                                 && (message = messageQueue.remove()) != null);
                         sendMessage(messageBuffer, packetNum);
+
+                        // If we merged packets we can reuse the saved bytes.
+                        int headerBytesSaved = (packetNum - 1)
+                                * (DatagramEncrypter.SEQUENCE_NUMBER_BYTES + DatagramEncrypter.HMAC_SIZE);
+                        if (headerBytesSaved > 0) {
+                            DatagramConnection.this.refillBucket(headerBytesSaved);
+                        }
                     }
 
                 }
@@ -511,11 +585,6 @@ public class DatagramConnection {
                 EncryptedPacket encrypted = encrypter.encrypt(unencryptedPayload, buffers,
                         outgoingPacketBuf);
 
-                // Return the incoming messages buffers to the pool.
-                for (int i = 0; i < num; i++) {
-                    messages[i].destroy();
-                }
-
                 // Create and send the packet.
                 DatagramPacket packet = new DatagramPacket(outgoingPacketBuf, 0,
                         encrypted.getLength(), remoteIp, remotePort);
@@ -523,6 +592,11 @@ public class DatagramConnection {
             } catch (Exception e) {
                 e.printStackTrace();
                 sendState = SendState.CLOSED;
+            } finally {
+                // Return the incoming messages buffers to the pool.
+                for (int i = 0; i < num; i++) {
+                    messages[i].destroy();
+                }
             }
         }
     }

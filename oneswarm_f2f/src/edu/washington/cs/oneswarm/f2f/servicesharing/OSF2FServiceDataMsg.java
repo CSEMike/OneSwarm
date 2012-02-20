@@ -27,6 +27,8 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
     private DirectByteBuffer serviceHeader;
     private static final byte VERSION_NUM = 42;
     private static final byte ss = 1;
+    // with no options: 1 word channel, 2 word header.
+    public static final int BASE_LENGTH = 12;
 
     public OSF2FServiceDataMsg(byte _version, int channelID, int sequenceNumber, short subchannel,
             int[] options, DirectByteBuffer data) {
@@ -154,6 +156,11 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
         if (version != VERSION_NUM) {
             throw new MessageException("Incorrect Service Version Number.");
         }
+    }
+
+    @Override
+    public int getMessageSize() {
+        return super.getMessageSize() + 4 * (2 + options.length);
     }
 
     public boolean isAck() {

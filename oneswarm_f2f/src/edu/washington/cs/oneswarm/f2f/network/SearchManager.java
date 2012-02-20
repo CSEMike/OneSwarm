@@ -1545,7 +1545,7 @@ public class SearchManager {
             return getAge() > MAX_SEARCH_AGE;
         }
     }
-    
+
     class ServiceSearch {
         private final OSF2FHashSearch search;
         private final List<FriendConnection> sources;
@@ -1560,11 +1560,11 @@ public class SearchManager {
         public OSF2FSearch getSearch() {
             return search;
         }
-        
+
         public int getSearchId() {
             return search.getSearchID();
         }
-        
+
         public void addSource(FriendConnection source, OSF2FHashSearchResp response)
                 throws OverlayRegistrationError {
             ServiceConnectionManager.getInstance().createChannel(
@@ -1574,11 +1574,11 @@ public class SearchManager {
             Debug.out("Created a channel for a service search. (now " + sources.size()
                         + ").");
         }
-        
+
         public List<FriendConnection> getSources() {
             return sources;
         }
-        
+
         public boolean isTimedOut() {
             return (System.currentTimeMillis() - time) > MAX_SEARCH_AGE;
         }
@@ -1601,13 +1601,17 @@ public class SearchManager {
         }
 
         public boolean contains(int searchId, int searchValue) {
-            byte[] bytes = bytesFromInts(searchId, searchValue);
-            for (BloomFilter f : filters) {
-                if (f.test(bytes)) {
-                    return true;
+            try {
+                byte[] bytes = bytesFromInts(searchId, searchValue);
+                for (BloomFilter f : filters) {
+                    if (f.test(bytes)) {
+                        return true;
+                    }
                 }
+            } catch (Exception e) {
+                Debug.out("Error when checking bloom filter, searchId=" + searchId + " value="
+                        + searchValue, e);
             }
-
             return false;
         }
 
@@ -1628,8 +1632,13 @@ public class SearchManager {
         }
 
         public void insert(int searchId, int searchValue) {
-            byte[] bytes = bytesFromInts(searchId, searchValue);
-            filters.getFirst().insert(bytes);
+            try {
+                byte[] bytes = bytesFromInts(searchId, searchValue);
+                filters.getFirst().insert(bytes);
+            } catch (Exception e) {
+                Debug.out("Error when inserting into bloom filter, searchId=" + searchId
+                        + " value=" + searchValue, e);
+            }
         }
 
         private void rotate() {
