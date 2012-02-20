@@ -23,7 +23,7 @@ import org.junit.Test;
 import com.aelitis.azureus.ui.UIFunctionsManager;
 
 import edu.washington.cs.oneswarm.f2f.network.SearchManager;
-import edu.washington.cs.oneswarm.f2f.servicesharing.AbstractServiceConnection;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceConnection;
 import edu.washington.cs.oneswarm.f2f.servicesharing.EchoServer;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceChannelEndpoint;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingLoopback;
@@ -57,7 +57,7 @@ public class ServiceSharingTeardownTest extends LocalProcessesTestBase {
         logFinest(EchoServer.logger);
         logFinest(ServiceSharingLoopback.logger);
         logFinest(ServiceSharingManager.logger);
-        logFinest(AbstractServiceConnection.logger);
+        logFinest(ServiceConnection.logger);
         logFinest(ServiceChannelEndpoint.logger);
         logFinest(SearchManager.logger);
     }

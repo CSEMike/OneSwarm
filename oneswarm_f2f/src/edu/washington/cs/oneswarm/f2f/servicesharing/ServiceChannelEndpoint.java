@@ -163,7 +163,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
         long totalWritten = buffer.remaining(DirectByteBuffer.SS_MSG);
         if (logger.isLoggable(Level.FINEST)) {
-            logger.finest(String.format("Wrote msg to network bytes: %d, sequence number: %d",
+            logger.finest(String.format("Wrote msg to network. bytes: %d, sequence number: %d",
                     length, num.getNum()));
         }
         super.writeMessage(msg);

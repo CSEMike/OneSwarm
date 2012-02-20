@@ -22,7 +22,7 @@ import com.aelitis.azureus.ui.UIFunctionsManager;
 
 import edu.uw.cse.netlab.utils.ByteManip;
 import edu.washington.cs.oneswarm.f2f.network.SearchManager;
-import edu.washington.cs.oneswarm.f2f.servicesharing.AbstractServiceConnection;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceConnection;
 import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage;
 import edu.washington.cs.oneswarm.f2f.servicesharing.EchoServer;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceChannelEndpoint;
@@ -58,7 +58,7 @@ public class ServiceSharingSingleProcessTest extends LocalProcessesTestBase {
         logFinest(EchoServer.logger);
         logFinest(ServiceSharingLoopback.logger);
         logFinest(ServiceSharingManager.logger);
-        logFinest(AbstractServiceConnection.logger);
+        logFinest(ServiceConnection.logger);
         logFinest(ServiceChannelEndpoint.logger);
         logFinest(SearchManager.logger);
     }

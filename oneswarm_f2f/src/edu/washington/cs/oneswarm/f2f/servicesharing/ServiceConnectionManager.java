@@ -2,7 +2,6 @@ package edu.washington.cs.oneswarm.f2f.servicesharing;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
@@ -53,6 +52,7 @@ public class ServiceConnectionManager implements ServiceChannelEndpointDelegate 
     }
 
     public void addChannel(ServiceChannelEndpoint channel) {
+        logger.fine("Network Channel registered with Connection Manager");
         Long key = channel.getServiceKey();
         if (!this.connections.containsKey(key)) {
             registerKey(key);
@@ -65,6 +65,7 @@ public class ServiceConnectionManager implements ServiceChannelEndpointDelegate 
         channel.addDelegate(this);
         if (this.services.get(key).size() > 0) {
             for (ServiceConnection service : this.services.get(key)) {
+                logger.finest("Channel added to existing service: " + service.getDescription());
                 service.addChannel(channel);
             }
         }
@@ -114,6 +115,7 @@ public class ServiceConnectionManager implements ServiceChannelEndpointDelegate 
     public boolean channelGotMessage(ServiceChannelEndpoint sender, OSF2FServiceDataMsg msg) {
         // Alert the service manager when a new flow is established.
         if (msg.isSyn()) {
+            logger.info("New Flow Established over " + sender.getChannelId());
             long serviceKey = sender.getServiceKey();
             SharedService ss = ServiceSharingManager.getInstance().getSharedService(serviceKey);
             List<ServiceConnection> existing = services.get(serviceKey);
@@ -147,18 +149,21 @@ public class ServiceConnectionManager implements ServiceChannelEndpointDelegate 
     public boolean requestService(NetworkConnection incomingConnection, long serverSearchKey) {
         // Create a new sub flow if channels exist, or note the request for when
         // one does.
-        if (this.getChannelsForService(serverSearchKey).size() > 0) {
+        Collection<ServiceChannelEndpoint> channels = this.getChannelsForService(serverSearchKey);
+        if (channels != null && channels.size() > 0) {
             short subchannel = (short) services.get(serverSearchKey).size();
             ServiceConnection c = new ServiceConnection(true, subchannel, incomingConnection);
-            for (ServiceChannelEndpoint channel : this.getChannelsForService(serverSearchKey)) {
+            for (ServiceChannelEndpoint channel : channels) {
                 c.addChannel(channel);
             }
             services.get(serverSearchKey).add(c);
+            logger.fine("Service requested - existing channel found. Search Skipped.");
             return true;
         } else {
+            registerKey(serverSearchKey);
             ServiceConnection c = new ServiceConnection(true, (short)0, incomingConnection);
-            services.put(serverSearchKey,
-                    new ArrayList<ServiceConnection>(Collections.singleton(c)));
+            services.get(serverSearchKey).add(c);
+            logger.fine("Service requested - existing channel not present. Search Needed.");
             return false;
         }
     }

@@ -68,6 +68,11 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
         this.subchannelId = subchannel;
         this.serviceChannel = serviceChannel;
         this.serviceChannelConnected = serviceChannel.isConnected();
+        if (this.serviceChannelConnected) {
+            logger.info("Service connection created to pre-connected service channel.");
+            // Add our connection listener.
+            connectServiceChannel();
+        }
         this.mmt = new MessageStreamMultiplexer(subchannel);
 
         // Load Configuration.
@@ -122,20 +127,20 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
             @Override
             public void connectFailure(Throwable failure_msg) {
                 logger.fine(ServiceConnection.this.getDescription()
-                        + " connection failure to service.");
+                        + ": connection failure to service.");
                 ServiceConnection.this.close("Exception during connect");
             }
 
             @Override
             public void connectStarted() {
                 logger.fine(ServiceConnection.this.getDescription()
-                        + " Service connection initiated.");
+                        + ": Service connection initiated.");
             }
 
             @Override
             public void connectSuccess(ByteBuffer remaining_initial_data) {
                 logger.fine(ServiceConnection.this.getDescription()
-                        + " Service connection established.");
+                        + ": Service connection established.");
                 serviceChannel.getIncomingMessageQueue().registerQueueListener(
                         new ServerIncomingMessageListener());
                 serviceChannel.startMessageProcessing();
@@ -153,7 +158,7 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
 
             @Override
             public String getDescription() {
-                return ServiceConnection.this.getDescription() + " Service Channel Observer.";
+                return ServiceConnection.this.getDescription() + ": Service Channel Observer.";
             }
         });
     }
@@ -506,7 +511,7 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
 
         @Override
         public boolean messageReceived(Message message) {
-            logger.finest("ASC Service message recieved.");
+            logger.finest(ServiceConnection.this.getDescription() + ": Service message recieved.");
 
             if (!(message instanceof DataMessage)) {
                 String msg = "got wrong message type from server: ";

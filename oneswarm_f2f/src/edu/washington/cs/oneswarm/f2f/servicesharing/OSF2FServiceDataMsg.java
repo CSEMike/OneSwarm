@@ -134,8 +134,8 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
         words--;
         // System.err.println(String.format(
         // "VERSION: %d, CONTROL: %d, WORDS: %d, WINDOW: %d, NUM:%d REMAINING: %d",
-        // version,
-        // control, words, window, num, payload.remaining(SS_MSG)));
+        // version, control, words, subchannel, num,
+        // payload.remaining(SS_MSG)));
         int[] options = new int[words];
         for (int i = 0; i < words; i++) {
             options[i] = payload.getInt(SS_MSG);
@@ -175,7 +175,7 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
         if (flag < 0 || flag > 15) {
             return;
         }
-        this.control |= 1 << flag;
+        this.control |= flag;
     }
 
     public boolean isRst() {
