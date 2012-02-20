@@ -28,7 +28,7 @@ public class ServiceSharingLoopback {
         logger.info("forwarding connection to service: " + sharedService + " address="
                 + serviceConnection.getEndpoint().getNotionalAddress());
         incomingConnection.connect(true, new ServiceConnectionListener(false));
-        sharedService.connect(serviceConnection, new ServiceConnectionListener(true));
+        serviceConnection.connect(true, new ServiceConnectionListener(true));
     }
 
     public void close() {

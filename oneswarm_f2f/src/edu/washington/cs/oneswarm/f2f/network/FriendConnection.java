@@ -615,24 +615,18 @@ public class FriendConnection implements DatagramListener {
                             + pathID);
                 }
             }
-            boolean removed = false;
-            for (int channelId : transport.getChannelId()) {
-                EndpointInterface exists = overlayTransports.remove(channelId);
-                recentlyClosedChannels.put(channelId, System.currentTimeMillis());
-                if (exists != null) {
-                    removed = true;
-                } else {
-                    continue;
-                }
-                if (overlayPathLogger.isEnabled()) {
-                    overlayPathLogger.log(System.currentTimeMillis() + ", deregistered_transport, "
-                            + exists.getChannelId() + ", " + exists.getBytesIn() + ", "
-                            + exists.getBytesOut() + ", " + exists.getAge() + ", "
-                            + exists.getPathID());
-                }
-            }
-            if (removed) {
+            int channelId = transport.getChannelId();
+            EndpointInterface exists = overlayTransports.remove(channelId);
+            recentlyClosedChannels.put(channelId, System.currentTimeMillis());
+            if (exists != null) {
                 activeOverlays--;
+            }
+            if (overlayPathLogger.isEnabled()) {
+                overlayPathLogger
+                        .log(System.currentTimeMillis() + ", deregistered_transport, "
+                                + exists.getChannelId() + ", " + exists.getBytesIn() + ", "
+                                + exists.getBytesOut() + ", " + exists.getAge() + ", "
+                                + exists.getPathID());
             }
         } finally {
             lock.unlock();
@@ -1353,16 +1347,15 @@ public class FriendConnection implements DatagramListener {
             throws OverlayRegistrationError {
         lock.lock();
         try {
-            for (int channelId : transport.getChannelId()) {
-                if (overlayTransports.containsKey(channelId)) {
-                    Debug.out(getDescription() + "tried to register existing channel id, "
-                            + "this should _never_ happen " + this);
-                    throw new FriendConnection.OverlayRegistrationError(
-                            getRemoteFriend().getNick(), channelId, "existing channel id");
+            int channelId = transport.getChannelId();
+            if (overlayTransports.containsKey(channelId)) {
+                Debug.out(getDescription() + "tried to register existing channel id, "
+                        + "this should _never_ happen " + this);
+                throw new FriendConnection.OverlayRegistrationError(getRemoteFriend().getNick(),
+                        channelId, "existing channel id");
 
-                }
-                overlayTransports.put(channelId, transport);
             }
+            overlayTransports.put(channelId, transport);
             for (int pathID : transport.getPathID()) {
                 if (overlayTransportPathsId.containsKey(pathID)) {
                     Debug.out(getDescription() + "tried to register existing path id, "
@@ -1892,8 +1885,6 @@ public class FriendConnection implements DatagramListener {
     }
 
     private class IncomingQueueListener implements MessageQueueListener {
-        private final long packetNum = 0;
-
         @Override
         public void dataBytesReceived(int byte_count) {
             if (debugMessageLog != null) {

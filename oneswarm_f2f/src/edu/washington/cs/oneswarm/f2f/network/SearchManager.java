@@ -58,7 +58,7 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FTextSearchResp;
 import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExecutionEntry;
 import edu.washington.cs.oneswarm.f2f.network.DelayedExecutorService.DelayedExecutor;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayRegistrationError;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ServerServiceConnection;
+import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceConnectionManager;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
 import edu.washington.cs.oneswarm.f2f.servicesharing.SharedService;
 import edu.washington.cs.oneswarm.f2f.share.ShareManagerTools;
@@ -1550,13 +1550,11 @@ public class SearchManager {
         private final OSF2FHashSearch search;
         private final List<FriendConnection> sources;
         private final long time;
-        private final ServerServiceConnection conn;
     
         public ServiceSearch(SharedService service, OSF2FHashSearch search) {
             this.time = System.currentTimeMillis();
             this.search = search;
             this.sources = new LinkedList<FriendConnection>();
-            this.conn = new ServerServiceConnection(service);
         }
 
         public OSF2FSearch getSearch() {
@@ -1569,16 +1567,12 @@ public class SearchManager {
         
         public void addSource(FriendConnection source, OSF2FHashSearchResp response)
                 throws OverlayRegistrationError {
-            if (conn.addChannel(source, search, response)) {
-                sources.add(source);
-                // register it with the friendConnection
-                source.registerOverlayTransport(conn);
+            ServiceConnectionManager.getInstance().createChannel(
+                    source, search, response, false);
+            sources.add(source);
 
-                Debug.out("Aggregated a channel for a service search. (now " + sources.size()
+            Debug.out("Created a channel for a service search. (now " + sources.size()
                         + ").");
-            } else {
-                Debug.out("Did not aggregate a channel for a service search.");
-            }
         }
         
         public List<FriendConnection> getSources() {

@@ -211,10 +211,8 @@ public abstract class OverlayEndpoint implements EndpointInterface {
      * edu.washington.cs.oneswarm.f2f.network.EndpointInterface#getChannelId()
      */
     @Override
-    public int[] getChannelId() {
-        int[] channels = new int[1];
-        channels[0] = channelId;
-        return channels;
+    public int getChannelId() {
+        return channelId;
     }
 
     /*

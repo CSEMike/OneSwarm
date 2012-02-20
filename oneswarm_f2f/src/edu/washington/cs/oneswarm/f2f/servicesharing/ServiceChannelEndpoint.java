@@ -1,5 +1,6 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.TimerTask;
 import java.util.logging.Level;
@@ -36,38 +37,47 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     private static final double EWMA = 0.25;
     private static final double RETRANSMISSION_PERIOD = 2;
     private final DelayedExecutor delayedExecutor;
-    protected AbstractServiceConnection serviceAggregator;
     protected final Hashtable<SequenceNumber, sentMessage> sentMessages;
+    protected final ArrayList<ServiceChannelEndpointDelegate> delegates = new ArrayList<ServiceChannelEndpointDelegate>();
     private int outstandingBytes;
     private long latency = 1000;
     private long minLatency = Long.MAX_VALUE;
+    private final long serviceKey;
 
-    public ServiceChannelEndpoint(AbstractServiceConnection aggregator,
-            FriendConnection connection, OSF2FHashSearch search, OSF2FHashSearchResp response,
+    public ServiceChannelEndpoint(FriendConnection connection, OSF2FHashSearch search,
+            OSF2FHashSearchResp response,
             boolean outgoing) {
         super(connection, response.getPathID(), 0, search, response, outgoing);
         logger.info("Service Channel Endpoint Created.");
-        this.serviceAggregator = aggregator;
 
         this.sentMessages = new Hashtable<SequenceNumber, sentMessage>();
         this.outstandingBytes = 0;
         this.delayedExecutor = DelayedExecutorService.getInstance().getVariableDelayExecutor();
+        this.serviceKey = search.getInfohashhash();
 
         this.started = true;
         friendConnection.isReadyForWrite(new OverlayTransport.WriteQueueWaiter() {
             @Override
             public void readyForWrite() {
                 logger.info("friend connection marked ready for write.");
-                serviceAggregator.channelReady(ServiceChannelEndpoint.this);
+                for (ServiceChannelEndpointDelegate d : ServiceChannelEndpoint.this.delegates) {
+                    d.channelIsReady(ServiceChannelEndpoint.this);
+                }
             }
         });
     }
 
+    public void addDelegate(ServiceChannelEndpointDelegate d) {
+        this.delegates.add(d);
+    }
+
+    public void removeDelegate(ServiceChannelEndpointDelegate d) {
+        this.delegates.remove(d);
+    }
+
     @Override
     public void start() {
-        if (!this.outgoing) {
-            // TODO(willscott): allow server to open channels.
-        }
+        // TODO(willscott): allow server to open channels.
     }
 
     @Override
@@ -90,7 +100,9 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
     @Override
     public void cleanup() {
-        serviceAggregator.removeChannel(this);
+        for (ServiceChannelEndpointDelegate d : this.delegates) {
+            d.channelDidClose(this);
+        }
     };
 
     @Override
@@ -115,8 +127,16 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
             super.writeMessage(OSF2FServiceDataMsg.acknowledge(OSF2FMessage.CURRENT_VERSION,
                     channelId, (short) 0, new int[] { newMessage.getSequenceNumber() }));
         }
-        serviceAggregator.writeMessageToServiceBuffer(newMessage);
 
+        for (ServiceChannelEndpointDelegate d : this.delegates) {
+            if (d.channelGotMessage(this, newMessage)) {
+                break;
+            }
+        }
+    }
+    
+    public long getServiceKey() {
+        return this.serviceKey;
     }
 
     public void writeMessage(final SequenceNumber num, DirectByteBuffer buffer, boolean datagram) {
@@ -131,7 +151,11 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         this.sentMessages.put(num, sent);
         this.outstandingBytes += length;
         OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,
-                num.getNum(), (short) 0, new int[0], copy);
+                num.getNum(), num.getFlow(), new int[0], copy);
+        if (num.getNum() == 0) {
+            // Mark SYN messages.
+            msg.setControlFlag(4);
+        }
         if (datagram) {
             // Set datagram flag to allow the packet to be sent over UDP.
             msg.setDatagram(true);

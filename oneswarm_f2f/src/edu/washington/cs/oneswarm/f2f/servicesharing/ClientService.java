@@ -4,7 +4,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import org.gudy.azureus2.core3.config.COConfigurationManager;
-import org.gudy.azureus2.core3.util.Debug;
 
 import com.aelitis.azureus.core.networkmanager.NetworkConnection;
 import com.aelitis.azureus.core.networkmanager.NetworkManager;
@@ -15,7 +14,6 @@ import edu.washington.cs.oneswarm.f2f.OSF2FMain;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearch;
 import edu.washington.cs.oneswarm.f2f.messaging.OSF2FHashSearchResp;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
-import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayRegistrationError;
 import edu.washington.cs.oneswarm.f2f.network.SearchManager;
 import edu.washington.cs.oneswarm.f2f.network.SearchManager.HashSearchListener;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.ClientServiceDTO;
@@ -72,7 +70,6 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
     @Override
     public void connectionRouted(final NetworkConnection incomingConnection, Object routing_data) {
         ServiceSharingManager.logger.fine("connection routed");
-      	final ClientServiceConnection connection = new ClientServiceConnection(ClientService.this, incomingConnection);
         final SharedService sharedService = ServiceSharingManager.getInstance().getSharedService(
                 serverSearchKey);
         // Check if local
@@ -82,32 +79,22 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
                     incomingConnection);
             loopback.connect();
         } else {
-            ServiceSharingManager.logger.finer("sending search to " + serverSearchKey);
-            SearchManager searchManager = OSF2FMain.getSingelton().getOverlayManager()
+            if (!ServiceConnectionManager.getInstance().requestService(incomingConnection,
+                    serverSearchKey)) {
+                ServiceSharingManager.logger.finer("sending search to " + serverSearchKey);
+                SearchManager searchManager = OSF2FMain.getSingelton().getOverlayManager()
                     .getSearchManager();
-            searchManager.sendServiceSearch(serverSearchKey, new HashSearchListener() {
-                @Override
-                public void searchResponseReceived(OSF2FHashSearch search, FriendConnection source,
+                searchManager.sendServiceSearch(serverSearchKey, new HashSearchListener() {
+                    @Override
+                    public void searchResponseReceived(OSF2FHashSearch search,
+                            FriendConnection source,
                         OSF2FHashSearchResp msg) {
+                        ServiceConnectionManager.getInstance()
+                            .createChannel(source, search, msg, true);
                     // Limit number of multiplexed channels.
-                    if (connection.getChannelId().length >= serviceChannels) {
-                        return;
                     }
-                    connection.addChannel(source, search, msg);
-
-                    // register it with the friendConnection
-                    try {
-                        source.registerOverlayTransport(connection);
-                        // safe to start it since we know that the other
-                        // party is interested
-                        connection.start();
-                    } catch (OverlayRegistrationError e) {
-                        Debug.out("got an error when registering outgoing transport: "
-                                + e.getMessage());
-                        return;
-                    }
-                }
-            });
+                });
+            }
         }
     }
 

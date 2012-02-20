@@ -12,28 +12,30 @@ import com.google.common.collect.HashMultimap;
 
 /**
  * Multiplexes a stream of data, and tracks what is in
- * transit on each channel.
+ * transit across channels.
  * 
  * @author willscott
  * 
  */
 public class MessageStreamMultiplexer {
     private Integer next;
+    private final short flow;
     private final HashMap<Integer, ServiceChannelEndpoint> channels;
 
     private final HashMap<Integer, SequenceNumber> outstandingMessages;
     private final HashMultimap<Integer, SequenceNumber> channelOutstanding;
     private final static byte ss = 44;
 
-    public MessageStreamMultiplexer() {
+    public MessageStreamMultiplexer(short flow) {
         this.channels = new HashMap<Integer, ServiceChannelEndpoint>();
         this.outstandingMessages = new HashMap<Integer, SequenceNumber>();
         this.channelOutstanding = HashMultimap.create();
+        this.flow = flow;
         next = 0;
     }
 
     public void addChannel(ServiceChannelEndpoint s) {
-        this.channels.put(s.getChannelId()[0], s);
+        this.channels.put(s.getChannelId(), s);
     }
 
     public void onAck(OSF2FServiceDataMsg message) {
@@ -76,23 +78,23 @@ public class MessageStreamMultiplexer {
 
     public SequenceNumber nextMsg() {
         int num = next++;
-        SequenceNumber n = new SequenceNumber(num);
+        SequenceNumber n = new SequenceNumber(num, flow);
         outstandingMessages.put(num, n);
         return n;
     }
 
     public void sendMsg(SequenceNumber msg, ServiceChannelEndpoint channel) {
-        int channelId = channel.getChannelId()[0];
+        int channelId = channel.getChannelId();
         msg.addChannel(channelId);
         channelOutstanding.put(channelId, msg);
     }
 
     public boolean hasOutstanding(ServiceChannelEndpoint channel) {
-        return channelOutstanding.containsKey(channel.getChannelId()[0]);
+        return channelOutstanding.containsKey(channel.getChannelId());
     }
 
     public Map<SequenceNumber, DirectByteBuffer> getOutstanding(final ServiceChannelEndpoint channel) {
-        Set<SequenceNumber> outstanding = channelOutstanding.get(channel.getChannelId()[0]);
+        Set<SequenceNumber> outstanding = channelOutstanding.get(channel.getChannelId());
         HashMap<SequenceNumber, DirectByteBuffer> mapping = new HashMap<SequenceNumber, DirectByteBuffer>();
         for (SequenceNumber s : outstanding) {
             mapping.put(s, channel.getMessage(s));
@@ -101,7 +103,7 @@ public class MessageStreamMultiplexer {
     }
 
     public void removeChannel(ServiceChannelEndpoint channel) {
-        int channelId = channel.getChannelId()[0];
+        int channelId = channel.getChannelId();
         channels.remove(channelId);
         for (SequenceNumber s : channelOutstanding.get(channelId)) {
             s.removeChannel(channelId);

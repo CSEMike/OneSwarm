@@ -10,40 +10,40 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FChannelDataMsg;
 public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
     /**
      * Service Message Header:
-     * [version_][control_][window____________]
+     * [version_][control_][subchannel________]
      * [sequence number_______________________]
      * [options____________________________...]
      * [data_______________________________...]
-     * Control byte holds [length*4 ack reserved*3]
+     * Control byte holds [length*4 ack syn rst reserved]
      * When the ack bit is set, 'sequence number' + all data words
      * are interpreted as acknowledgments.
      */
     private final byte version;
     private byte control = 0;
     private final int[] options;
-    private final short window;
+    private final short subchannel;
     private final int sequenceNumber;
     // private final byte[] options;
     private DirectByteBuffer serviceHeader;
     private static final byte VERSION_NUM = 42;
     private static final byte ss = 1;
 
-    public OSF2FServiceDataMsg(byte _version, int channelID, int sequenceNumber, short window,
+    public OSF2FServiceDataMsg(byte _version, int channelID, int sequenceNumber, short subchannel,
             int[] options, DirectByteBuffer data) {
         super(_version, channelID, data);
         this.version = VERSION_NUM;
-        this.window = window;
+        this.subchannel = subchannel;
         this.options = options;
         this.sequenceNumber = sequenceNumber;
     }
 
-    private OSF2FServiceDataMsg(byte _version, int channelID, int sequenceNumber, short window,
+    private OSF2FServiceDataMsg(byte _version, int channelID, int sequenceNumber, short subchannel,
             int[] options, DirectByteBuffer data, byte control) {
-        this(_version, channelID, sequenceNumber, window, options, data);
+        this(_version, channelID, sequenceNumber, subchannel, options, data);
         this.control = control;
     }
 
-    static OSF2FServiceDataMsg acknowledge(byte _version, int channelID, short window,
+    static OSF2FServiceDataMsg acknowledge(byte _version, int channelID, short subchannel,
             int[] acknowledgements) {
         int payloadSize = acknowledgements.length - 1;
         DirectByteBuffer data = null;
@@ -55,7 +55,7 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
             data.flip(ss);
         }
         OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(_version, channelID, acknowledgements[0],
-                window, new int[0], data, (byte) 8);
+                subchannel, new int[0], data, (byte) 8);
         return msg;
     }
 
@@ -82,7 +82,7 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
             byte control = this.control;
             control += length << 4;
             serviceHeader.put(DirectByteBuffer.SS_MSG, control);
-            serviceHeader.putShort(DirectByteBuffer.SS_MSG, window);
+            serviceHeader.putShort(DirectByteBuffer.SS_MSG, subchannel);
             serviceHeader.putInt(DirectByteBuffer.SS_MSG, sequenceNumber);
             for (int option : options) {
                 serviceHeader.putInt(DirectByteBuffer.SS_MSG, option);
@@ -112,6 +112,10 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
         return sequenceNumber;
     }
 
+    public short getSubchannel() {
+        return subchannel;
+    }
+
     public static OSF2FServiceDataMsg fromChannelMessage(OSF2FChannelDataMsg msg)
             throws MessageException {
         if (msg instanceof OSF2FServiceDataMsg) {
@@ -122,7 +126,7 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
         byte version = payload.get(SS_MSG);
         byte control = payload.get(SS_MSG);
         int words = (control & 0xf0) >> 4;
-        short window = payload.getShort(SS_MSG);
+        short subchannel = payload.getShort(SS_MSG);
         words--;
         int num = payload.getInt(SS_MSG);
         words--;
@@ -134,7 +138,8 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
         for (int i = 0; i < words; i++) {
             options[i] = payload.getInt(SS_MSG);
         }
-        return new OSF2FServiceDataMsg(version, msg.getChannelId(), num, window, options, payload,
+        return new OSF2FServiceDataMsg(version, msg.getChannelId(), num, subchannel, options,
+                payload,
                 (byte) (control & 0x0f));
     }
 
@@ -153,5 +158,20 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
 
     public boolean isAck() {
         return (this.control & 8) == 8;
+    }
+
+    public boolean isSyn() {
+        return (this.control & 4) == 4;
+    }
+
+    public void setControlFlag(int flag) {
+        if (flag < 0 || flag > 15) {
+            return;
+        }
+        this.control |= 1 << flag;
+    }
+
+    public boolean isRst() {
+        return (this.control & 2) == 2;
     }
 }

@@ -25,6 +25,14 @@ import edu.washington.cs.oneswarm.f2f.network.OverlayManager;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.ClientServiceDTO;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.SharedServiceDTO;
 
+/**
+ * This class manages local client and server services. It keeps records of
+ * active
+ * services, and allows new services to be registered.
+ * 
+ * @author isdal
+ * 
+ */
 public class ServiceSharingManager {
 
     public static final int CHT_DEBUG_SEARCH_PREFIX = 1650551921;

@@ -35,7 +35,7 @@ public interface EndpointInterface {
 
     public abstract long getBytesOut();
 
-    public abstract int[] getChannelId();
+    public abstract int getChannelId();
 
     public abstract String getDescription();
 

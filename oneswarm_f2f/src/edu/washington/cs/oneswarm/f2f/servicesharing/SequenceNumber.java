@@ -16,11 +16,13 @@ import java.util.List;
 
 class SequenceNumber {
     private final int number;
+    private final short flow;
     private final List<Integer> channels;
     private boolean acked;
 
-    protected SequenceNumber(int n) {
+    protected SequenceNumber(int n, short flow) {
         this.number = n;
+        this.flow = flow;
         this.channels = Collections.synchronizedList(new ArrayList<Integer>());
         this.acked = false;
     }
@@ -47,5 +49,9 @@ class SequenceNumber {
 
     public void removeChannel(int channelId) {
         this.channels.remove(new Integer(channelId));
+    }
+
+    public short getFlow() {
+        return flow;
     }
 }

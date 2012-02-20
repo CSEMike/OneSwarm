@@ -73,42 +73,35 @@ public class SharedService implements Comparable<SharedService> {
         return this.getName().compareTo(that.getName());
     }
 
-    public void connect(NetworkConnection conn, final ConnectionListener listener) {
-        try {
-            conn.connect(true, new ConnectionListener() {
+    private ConnectionListener getMonitoringListener()
+    {
+        final SharedService self = this;
+        return new ConnectionListener() {
+            @Override
+            public void connectFailure(Throwable failure_msg) {
+                self.activeConnections--;
+                self.lastFailedConnect = System.currentTimeMillis();
+            }
 
-                @Override
-                public void connectFailure(Throwable failure_msg) {
-                    activeConnections--;
-                    lastFailedConnect = System.currentTimeMillis();
-                    listener.connectFailure(failure_msg);
-                }
+            @Override
+            public void connectStarted() {
+                self.activeConnections++;
+            }
 
-                @Override
-                public void connectStarted() {
-                    activeConnections++;
-                    listener.connectStarted();
-                }
+            @Override
+            public void connectSuccess(ByteBuffer remaining_initial_data) {
+            }
 
-                @Override
-                public void connectSuccess(ByteBuffer remaining_initial_data) {
-                    listener.connectSuccess(remaining_initial_data);
-                }
-
-                @Override
+            @Override
                 public void exceptionThrown(Throwable error) {
-                    activeConnections--;
-                    listener.exceptionThrown(error);
-                }
+                self.activeConnections--;
+            }
 
-                @Override
-                public String getDescription() {
-                    return getName() + "Listener";
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            @Override
+            public String getDescription() {
+                    return "Shared Service Listener";
+            }
+        };
     }
 
     public NetworkConnection createConnection() {
@@ -117,8 +110,7 @@ public class SharedService implements Comparable<SharedService> {
         target.addProtocol(new ProtocolEndpointTCP(address));
         NetworkConnection conn = NetworkManager.getSingleton().createConnection(target,
                 new RawMessageEncoder(), new RawMessageDecoder(), false, false, new byte[0][0]);
-
-        return conn;
+        return new ListenedNetworkConnection(conn, this.getMonitoringListener());
     }
 
     public boolean isEnabled() {
