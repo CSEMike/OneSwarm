@@ -155,6 +155,10 @@ public class DatagramRateLimitedChannelQueue extends DatagramRateLimiter {
 
     @Override
     public String toString() {
-        return super.toString() + " Channel=" + channelId;
+        return super.toString() + " Channel=" + getChannelId();
+    }
+
+    public int getChannelId() {
+        return channelId;
     }
 }

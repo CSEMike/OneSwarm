@@ -10,6 +10,7 @@ import java.security.NoSuchProviderException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
@@ -224,11 +225,25 @@ public class DatagramConnection extends DatagramRateLimiter {
 
     private void deregister() {
         manager.deregister(this);
+        clearExpiredChannels();
         this.registered = false;
     }
 
     public boolean isSendingActive() {
         return sendState == SendState.ACTIVE;
+    }
+
+    @Override
+    protected synchronized void addQueue(DatagramRateLimiter queue) {
+        super.addQueue(queue);
+        DatagramRateLimitedChannelQueue cQueue = (DatagramRateLimitedChannelQueue) queue;
+        queueMap.put(cQueue.getChannelId(), cQueue);
+    }
+
+    @Override
+    protected synchronized void removeQueue(DatagramRateLimiter queue) {
+        super.removeQueue(queue);
+        queueMap.remove(((DatagramRateLimitedChannelQueue) queue).getChannelId());
     }
 
     boolean messageReceived(DatagramPacket packet) {
@@ -345,7 +360,6 @@ public class DatagramConnection extends DatagramRateLimiter {
         if (queue == null) {
             queue = new DatagramRateLimitedChannelQueue(channelId, sendThread);
             addQueue(queue);
-            queueMap.put(channelId, queue);
             // Seed the new channel with half the number of tokens we have, and
             // half of what the main rate limiter has.
             transferTokens(queue, getAvailableTokens() / 2);
@@ -426,18 +440,23 @@ public class DatagramConnection extends DatagramRateLimiter {
     }
 
     public synchronized void clearExpiredChannels() {
+        LinkedList<DatagramRateLimitedChannelQueue> toRemove = new LinkedList<DatagramRateLimitedChannelQueue>();
         for (Iterator<DatagramRateLimitedChannelQueue> iterator = queueMap.values().iterator(); iterator
                 .hasNext();) {
             DatagramRateLimitedChannelQueue queue = iterator.next();
             if (queue.isExpired()) {
-                queue.clear();
-                // Take back any tokens, first give to the main connection
-                DatagramRateLimiter mainRateLimiter = manager.getMainRateLimiter();
-                queue.transferTokens(mainRateLimiter, queue.getAvailableTokens());
-                // And any leftovers go to this connection.
-                queue.transferTokens(this, queue.getAvailableTokens());
-                iterator.remove();
+                toRemove.add(queue);
             }
+        }
+        for (DatagramRateLimitedChannelQueue queue : toRemove) {
+            // Clear any messages in the queue.
+            queue.clear();
+            // Take back any tokens, first give to the main connection
+            DatagramRateLimiter mainRateLimiter = manager.getMainRateLimiter();
+            queue.transferTokens(mainRateLimiter, queue.getAvailableTokens());
+            // And any leftovers go to this connection.
+            queue.transferTokens(this, queue.getAvailableTokens());
+            removeQueue(queue);
         }
     }
 

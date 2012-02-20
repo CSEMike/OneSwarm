@@ -27,6 +27,8 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
     private DirectByteBuffer serviceHeader;
     private static final byte VERSION_NUM = 42;
     private static final byte ss = 1;
+    // with no options: 1 word channel, 2 word header.
+    public static final int BASE_LENGTH = 12;
 
     public OSF2FServiceDataMsg(byte _version, int channelID, int sequenceNumber, short window,
             int[] options, DirectByteBuffer data) {

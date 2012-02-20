@@ -299,7 +299,7 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
     @Test
     public void testMultipleOverfull() throws Exception {
         // Queue up 3 packets, the last should not fit in the first datagram.
-        int saveRoomFor = 2 * (OSF2FMessage.MESSAGE_HEADER_LEN + OSF2FServiceDataMsg.BASE_LENGTH);
+        int saveRoomFor = 2 * (OSF2FMessage.MESSAGE_HEADER_LEN + OSF2FServiceDataMsg.BASE_LENGTH) - 1;
         byte[] testData1 = new byte[MAX_DATAGRAM_PAYLOAD_SIZE - OSF2FServiceDataMsg.BASE_LENGTH
                 - saveRoomFor];
         System.out.println(testData1.length);
@@ -312,7 +312,7 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
             conn1.sendMessage(msg2);
             conn1.sendMessage(msg3);
         }
-        allocateRateLimitTokens(MAX_DATAGRAM_SIZE + saveRoomFor);
+        allocateRateLimitTokens(2 * MAX_DATAGRAM_SIZE);
         // Only one call to receive (both messages must be in one packet).
         manager2.receive();
         checkPacket(testData1);
@@ -479,7 +479,7 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
 
     @Test
     public void testChannelFairSharing() throws Exception {
-        int PACKET_NUM = 47;
+        int PACKET_NUM = 100;
 
         // Queue 2 packets to create channel 0 and 1
         conn1.sendMessage(createPacket(new byte[MAX_CHANNEL_MESSAGE_PAYLOAD_SIZE], 0));
@@ -507,7 +507,7 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
         }
 
         // Packets should arrive interleaved.
-        for (int i = 0; i < PACKET_NUM / 2; i++) {
+        for (int i = 0; i < PACKET_NUM; i++) {
             if (i % 2 == 0) {
                 allocateRateLimitTokens(2 * MAX_DATAGRAM_SIZE);
             }
