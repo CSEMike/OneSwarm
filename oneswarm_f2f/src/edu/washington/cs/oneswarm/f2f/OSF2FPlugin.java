@@ -44,7 +44,6 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FTextSearch;
 import edu.washington.cs.oneswarm.f2f.network.EndpointInterface;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection.OverlayForward;
-import edu.washington.cs.oneswarm.f2f.network.OverlayEndpoint;
 import edu.washington.cs.oneswarm.f2f.network.OverlayManager;
 import edu.washington.cs.oneswarm.f2f.permissions.GroupBean;
 import edu.washington.cs.oneswarm.f2f.permissions.PermissionsDAO;
@@ -664,8 +663,8 @@ public class OSF2FPlugin implements Plugin {
                 b.append("   Transports: \n");
             }
             for (EndpointInterface ot : transports) {
-                b.append("      channel=" + Integer.toHexString(ot.getChannelId()[0]) + "(x"
-                        + ot.getChannelId().length + ") path=" + Integer.toHexString(ot.getPathID()[0])
+                b.append("      channel=" + Integer.toHexString(ot.getChannelId()) + " path="
+                        + Integer.toHexString(ot.getPathID()[0])
                         + "(x" + ot.getPathID().length + " lastSent=" + ot.getLastMsgTime() + "\n");
             }
         }
