@@ -38,6 +38,7 @@ import com.aelitis.azureus.core.networkmanager.impl.ReadController;
 import com.aelitis.azureus.core.networkmanager.impl.TransferProcessor;
 import com.aelitis.azureus.core.networkmanager.impl.TransportHelper;
 import com.aelitis.azureus.core.networkmanager.impl.WriteController;
+import com.aelitis.azureus.core.networkmanager.impl.WriteEventListener;
 import com.aelitis.azureus.core.networkmanager.impl.http.HTTPNetworkManager;
 import com.aelitis.azureus.core.networkmanager.impl.tcp.TCPNetworkManager;
 import com.aelitis.azureus.core.networkmanager.impl.udp.UDPNetworkManager;
@@ -406,6 +407,10 @@ public class NetworkManager {
         }
     }
   
+    public void addWriteEventListener(WriteEventListener listener) {
+        write_controller.addWriteEventListener(listener);
+    }
+
   /**
    * Register peer connection for network upload and download handling.
    * NOTE: The given max rate limits are ignored until the connection is upgraded.

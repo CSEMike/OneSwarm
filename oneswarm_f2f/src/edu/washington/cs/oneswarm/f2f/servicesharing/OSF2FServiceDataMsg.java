@@ -151,6 +151,11 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
         }
     }
 
+    @Override
+    public int getMessageSize() {
+        return super.getMessageSize() + 4 * (2 + options.length);
+    }
+
     public boolean isAck() {
         return (this.control & 8) == 8;
     }

@@ -108,13 +108,18 @@ public class DatagramEncrypter extends DatagramEncrytionBase {
     }
 
     private void preparePaddingBB(int inputBytes) {
-        byte paddingLen = (byte) (BLOCK_SIZE - inputBytes % BLOCK_SIZE);
-        if (paddingLen == 0) {
-            paddingLen = BLOCK_SIZE;
-        }
+        byte paddingLen = calcPaddingLength(inputBytes);
         Arrays.fill(paddingBuffer, 0, paddingLen, paddingLen);
         paddingBB.clear();
         paddingBB.limit(paddingLen);
+    }
+
+    public static byte calcPaddingLength(int byteNum) {
+        byte paddingLen = (byte) (BLOCK_SIZE - byteNum % BLOCK_SIZE);
+        if (paddingLen == 0) {
+            paddingLen = BLOCK_SIZE;
+        }
+        return paddingLen;
     }
 
     public byte[] getKey() {

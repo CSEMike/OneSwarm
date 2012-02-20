@@ -1,6 +1,7 @@
 package edu.washington.cs.oneswarm.f2f.datagram;
 
 import static edu.washington.cs.oneswarm.f2f.datagram.DatagramConnection.MAX_DATAGRAM_PAYLOAD_SIZE;
+import static edu.washington.cs.oneswarm.f2f.datagram.DatagramConnection.MAX_DATAGRAM_SIZE;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -18,6 +19,7 @@ import org.junit.Test;
 import org.testng.Assert;
 
 import com.aelitis.azureus.core.peermanager.messaging.Message;
+import com.sun.xml.internal.bind.v2.runtime.reflect.opt.MethodAccessor_Double;
 
 import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnection.ReceiveState;
 import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnection.SendState;
@@ -32,16 +34,22 @@ import edu.washington.cs.oneswarm.test.util.TestUtils;
 public class DatagramConnectionTest extends OneSwarmTestBase {
     public static final byte AL = DirectByteBuffer.AL_MSG;
     public static final byte SS = DirectByteBuffer.SS_MSG;
+    public static final int LOTS_OF_TOKENS = 100 * 1000 * 1000;
+
+    // Leave room for 1 word channel_id + 2 word service header
+    public static final int MAX_CHANNEL_MESSAGE_PAYLOAD_SIZE = MAX_DATAGRAM_PAYLOAD_SIZE - 12;
 
     private static class MockDatagramConnectionManager implements DatagramConnectionManager {
         DatagramSocket socket;
         final String desc;
         private DatagramConnection conn;
+        private final DatagramRateLimiter rateLimiter = new DatagramRateLimiter();
 
         public MockDatagramConnectionManager(String desc) throws SocketException {
             this.socket = new DatagramSocket();
             socket.setSoTimeout(500);
             this.desc = desc;
+            rateLimiter.setTokenBucketSize(LOTS_OF_TOKENS);
         }
 
         @Override
@@ -54,6 +62,7 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
         @Override
         public void register(DatagramConnection connection) {
             conn = connection;
+            rateLimiter.addQueue(connection);
         }
 
         @Override
@@ -63,7 +72,8 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
 
         @Override
         public void deregister(DatagramConnection conn) {
-            conn = null;
+            rateLimiter.removeQueue(conn);
+            this.conn = null;
         }
 
         void receive() throws IOException {
@@ -75,12 +85,17 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
             conn.messageReceived(p);
         }
 
-        public void socketUpdated() throws SocketException {
+        public void socketUpdated() throws IOException {
             int oldPort = this.socket.getLocalPort();
             this.socket.close();
             this.socket = new DatagramSocket();
             System.out.println("port change: " + oldPort + "->" + socket.getLocalPort());
             conn.reInitialize();
+        }
+
+        @Override
+        public DatagramRateLimiter getMainRateLimiter() {
+            return rateLimiter;
         }
     }
 
@@ -96,6 +111,8 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
         logFinest(DatagramEncrypter.logger);
         logFinest(DatagramDecrypter.logger);
         logFinest(DatagramConnection.logger);
+        logFinest(DatagramRateLimitedChannelQueue.logger);
+        logFinest(DatagramRateLimiter.logger);
     }
 
     @BeforeClass
@@ -219,8 +236,14 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
         byte[] testData = "hello".getBytes();
         OSF2FServiceDataMsg msg = createPacket(testData);
         conn1.sendMessage(msg);
+        allocateRateLimitTokens(MAX_DATAGRAM_SIZE);
         manager2.receive();
         checkPacket(testData);
+    }
+
+    private void allocateRateLimitTokens(int amount) {
+        manager1.rateLimiter.refillBucket(amount);
+        manager1.rateLimiter.allocateTokens();
     }
 
     private void checkPacket(byte[] testData) {
@@ -232,17 +255,25 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
         incoming.destroy();
     }
 
-    private final int sequenceNumber = 0;
+    private int sequenceNumber = 0;
 
     private OSF2FServiceDataMsg createPacket(byte[] testData) {
+        return createPacket(testData, 0);
+    }
+
+    private OSF2FServiceDataMsg createPacket(byte[] testData, int channel) {
         DirectByteBuffer data = DirectByteBufferPool.getBuffer(AL, MAX_DATAGRAM_PAYLOAD_SIZE);
         data.put(SS, testData);
         data.flip(SS);
-        return createPacket(data);
+        return createPacket(data, channel);
     }
 
     private OSF2FServiceDataMsg createPacket(DirectByteBuffer data) {
-        OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg((byte) 0, 0, sequenceNumber,
+        return createPacket(data, 0);
+    }
+
+    private OSF2FServiceDataMsg createPacket(DirectByteBuffer data, int channel) {
+        OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg((byte) 0, channel, sequenceNumber++,
                 (short) 1000, new int[0], data);
         return msg;
     }
@@ -258,6 +289,7 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
             conn1.sendMessage(msg1);
             conn1.sendMessage(msg2);
         }
+        allocateRateLimitTokens(MAX_DATAGRAM_SIZE);
         // Only one call to receive (both messages must be in one packet).
         manager2.receive();
         checkPacket(testData1);
@@ -267,7 +299,7 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
     @Test
     public void testMultipleOverfull() throws Exception {
         // Queue up 3 packets, the last should not fit in the first datagram.
-        int saveRoomFor = 2 * (OSF2FMessage.MESSAGE_HEADER_LEN + OSF2FServiceDataMsg.BASE_LENGTH) - 1;
+        int saveRoomFor = 2 * (OSF2FMessage.MESSAGE_HEADER_LEN + OSF2FServiceDataMsg.BASE_LENGTH);
         byte[] testData1 = new byte[MAX_DATAGRAM_PAYLOAD_SIZE - OSF2FServiceDataMsg.BASE_LENGTH
                 - saveRoomFor];
         System.out.println(testData1.length);
@@ -280,11 +312,13 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
             conn1.sendMessage(msg2);
             conn1.sendMessage(msg3);
         }
+        allocateRateLimitTokens(MAX_DATAGRAM_SIZE + saveRoomFor);
         // Only one call to receive (both messages must be in one packet).
         manager2.receive();
         checkPacket(testData1);
         checkPacket(new byte[0]);
         Assert.assertEquals(conn2Incoming.size(), 0);
+        allocateRateLimitTokens(MAX_DATAGRAM_SIZE);
         manager2.receive();
         checkPacket(new byte[0]);
     }
@@ -312,13 +346,18 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
         byte[] testData1 = "hello1".getBytes();
         OSF2FServiceDataMsg msg1 = createPacket(testData1);
         conn1.sendMessage(msg1);
+        allocateRateLimitTokens(MAX_DATAGRAM_SIZE);
         manager2.receive();
         checkPacket(testData1);
+        System.err.println("NEW CONN INIT START");
         manager1.socketUpdated();
+        manager2.receive();
 
-        byte[] testData2 = "hello2".getBytes();
+        System.err.println("NEW CONN INIT DONE");
+        byte[] testData2 = "hello22".getBytes();
         OSF2FServiceDataMsg msg2 = createPacket(testData2);
         conn1.sendMessage(msg2);
+        allocateRateLimitTokens(MAX_DATAGRAM_SIZE);
         manager2.receive();
         checkPacket(testData2);
     }
@@ -333,18 +372,28 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
         logInfo(DatagramEncrypter.logger);
         logInfo(DatagramDecrypter.logger);
         logInfo(DatagramConnection.logger);
+        logInfo(DatagramRateLimiter.logger);
+        logInfo(DatagramRateLimitedChannelQueue.logger);
 
         long startTime = System.currentTimeMillis();
         final int packets = 200000;
-        int length = MAX_DATAGRAM_PAYLOAD_SIZE - 4;
+        int length = MAX_CHANNEL_MESSAGE_PAYLOAD_SIZE;
 
+        final int TOKEN_BATCH_SIZE = 1000;
         for (int i = 0; i < packets; i++) {
             DirectByteBuffer data = DirectByteBufferPool.getBuffer(AL, length);
             OSF2FMessage message = createPacket(data);
             conn1.sendMessage(message);
+            if (i % TOKEN_BATCH_SIZE == 0) {
+                allocateRateLimitTokens(TOKEN_BATCH_SIZE * MAX_DATAGRAM_SIZE);
+            }
         }
         double mb = length * packets / (1024 * 1024.0);
         double elapsed = (System.currentTimeMillis() - startTime) / 1000.0;
+        while (conn1.queues.size() == 0
+                || !((DatagramRateLimitedChannelQueue) conn1.queues.get(0)).isEmpty()) {
+            Thread.sleep(10);
+        }
         while (conn1.sendThread.messageQueue.peek() != null) {
             Thread.sleep(10);
         }
@@ -363,10 +412,14 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
         logInfo(DatagramEncrypter.logger);
         logInfo(DatagramDecrypter.logger);
         logInfo(DatagramConnection.logger);
+        logInfo(DatagramRateLimiter.logger);
+        logInfo(DatagramRateLimitedChannelQueue.logger);
 
         long startTime = System.currentTimeMillis();
         final int packets = 200000;
-        final int length = MAX_DATAGRAM_PAYLOAD_SIZE - 4;
+        final int length = MAX_CHANNEL_MESSAGE_PAYLOAD_SIZE;
+        final int TOKEN_BATCH_SIZE = 1000;
+
         Thread sendThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -374,6 +427,9 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
                     DirectByteBuffer data = DirectByteBufferPool.getBuffer(AL, length);
                     OSF2FMessage message = createPacket(data);
                     conn1.sendMessage(message);
+                    if (i % TOKEN_BATCH_SIZE == 0) {
+                        allocateRateLimitTokens(TOKEN_BATCH_SIZE * MAX_DATAGRAM_SIZE);
+                    }
                 }
             }
         });
@@ -397,7 +453,76 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
 
         Assert.assertTrue(percentReceived > 0.8,
                 String.format("high packet loss (%.1f) percent", percentReceived));
+    }
 
+    @Test
+    public void testChannelRateLimitSimple() throws Exception {
+        byte[] testData1 = "hello1".getBytes();
+        byte[] testData2 = "hello22".getBytes();
+        OSF2FServiceDataMsg msg1 = createPacket(testData1, 1);
+
+        // Queue 2 packets, channel 1 before 2.
+        conn1.sendMessage(msg1);
+        OSF2FServiceDataMsg msg2 = createPacket(testData2, 2);
+        conn1.sendMessage(msg2);
+        // Give tokens to channel 2 first.
+        conn1.queueMap.get(2).refillBucket(MAX_DATAGRAM_SIZE);
+        // The give tokens to channel 1.
+        conn1.queueMap.get(1).refillBucket(MAX_DATAGRAM_SIZE);
+
+        // The packet on channel 2 should arrive first.
+        manager2.receive();
+        checkPacket(testData2);
+        manager2.receive();
+        checkPacket(testData1);
+    }
+
+    @Test
+    public void testChannelFairSharing() throws Exception {
+        int PACKET_NUM = 47;
+
+        // Queue 2 packets to create channel 0 and 1
+        conn1.sendMessage(createPacket(new byte[MAX_CHANNEL_MESSAGE_PAYLOAD_SIZE], 0));
+        conn1.sendMessage(createPacket(new byte[MAX_CHANNEL_MESSAGE_PAYLOAD_SIZE], 1));
+        allocateRateLimitTokens(2 * MAX_DATAGRAM_SIZE);
+        checkPacketChannel(0);
+        checkPacketChannel(1);
+
+        DatagramRateLimitedChannelQueue channel0RateLimiter = conn1.queueMap.get(0);
+        DatagramRateLimitedChannelQueue channel1RateLimiter = conn1.queueMap.get(1);
+
+        // After the queues are created we can change parameters.
+
+        // Increase max queue size.
+        channel0RateLimiter.maxQueueLength = PACKET_NUM * MAX_DATAGRAM_SIZE;
+        channel1RateLimiter.maxQueueLength = PACKET_NUM * MAX_DATAGRAM_SIZE;
+
+        // Fill channel 0 followed by channel 1.
+        for (int i = 0; i < PACKET_NUM; i++) {
+            if (i < PACKET_NUM / 2) {
+                conn1.sendMessage(createPacket(new byte[MAX_CHANNEL_MESSAGE_PAYLOAD_SIZE], 0));
+            } else {
+                conn1.sendMessage(createPacket(new byte[MAX_CHANNEL_MESSAGE_PAYLOAD_SIZE], 1));
+            }
+        }
+
+        // Packets should arrive interleaved.
+        for (int i = 0; i < PACKET_NUM / 2; i++) {
+            if (i % 2 == 0) {
+                allocateRateLimitTokens(2 * MAX_DATAGRAM_SIZE);
+            }
+            if (!checkPacketChannel(i % 2)) {
+                String msg = "Error at packet " + i + ", expected " + i % 2;
+                System.err.println(msg);
+                Assert.fail(msg);
+            }
+        }
+    }
+
+    private boolean checkPacketChannel(int channelId) throws IOException {
+        manager2.receive();
+        OSF2FServiceDataMsg incoming = (OSF2FServiceDataMsg) conn2Incoming.removeFirst();
+        return incoming.getChannelId() == channelId;
     }
 
     /** Boilerplate code for running as executable. */
