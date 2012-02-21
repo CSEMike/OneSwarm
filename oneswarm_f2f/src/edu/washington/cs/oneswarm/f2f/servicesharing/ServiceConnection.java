@@ -87,7 +87,7 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
             features.add(ServiceFeatures.ADAPTIVE_DUPLICATION);
         }
         this.FEATURES = EnumSet.copyOf(features);
-        logger.info("ASC active with settings: window = "
+        logger.info("Service Connection active with settings: window = "
                 + (CHANNEL_BUFFER / 1024)
                 + ", flow="
                 + (SERVICE_MSG_BUFFER_SIZE / 1024)
@@ -181,6 +181,10 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
             conn.removeDelegate(this);
         }
         this.serviceChannel.close();
+        if (channels.length > 0) {
+            // Send RST Packet.
+            channels[0].writeMessage(mmt.nextMsg(), null, FEATURES.contains(ServiceFeatures.UDP));
+        }
 
         synchronized (bufferedServiceMessages) {
             for (int i = 0; i < SERVICE_MSG_BUFFER_SIZE; i++) {
@@ -193,6 +197,19 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
         synchronized (bufferedNetworkMessages) {
             bufferedNetworkMessages.clear();
         }
+    }
+
+    public void closeUponReading(int sequenceNumber) {
+        synchronized (bufferedServiceMessages) {
+            if (sequenceNumber >= serviceSequenceNumber + SERVICE_MSG_BUFFER_SIZE) {
+                // Throw out to prevent buffer overflow.
+                logger.warning("RST message dropped, exceeded message buffer.");
+            } else {
+                bufferedServiceMessages[sequenceNumber & (SERVICE_MSG_BUFFER_SIZE - 1)] = new DirectByteBuffer(
+                        ByteBuffer.allocate(0));
+            }
+        }
+        flushServiceQueue();
     }
 
     public long getBytesIn() {
@@ -270,6 +287,7 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
         }
 
         if (msg.isAck()) {
+            logger.fine("Acked msg " + msg.getSequenceNumber());
             mmt.onAck(msg);
             return true;
         }
@@ -280,8 +298,12 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
                 logger.warning("Incoming service message dropped, exceeded message buffer.");
                 return true;
             } else {
-                bufferedServiceMessages[msg.getSequenceNumber() & (SERVICE_MSG_BUFFER_SIZE - 1)] = msg
-                        .transferPayload();
+                DirectByteBuffer payload = msg.transferPayload();
+                if (payload.remaining(ss) > 0) {
+                    bufferedServiceMessages[msg.getSequenceNumber() & (SERVICE_MSG_BUFFER_SIZE - 1)] = payload;
+                } else {
+                    logger.warning("Received 0 length message.  Dropped.");
+                }
             }
         }
         flushServiceQueue();
@@ -294,9 +316,13 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
         }
         synchronized (bufferedServiceMessages) {
             while (bufferedServiceMessages[serviceSequenceNumber & (SERVICE_MSG_BUFFER_SIZE - 1)] != null) {
-                DataMessage outgoing = new DataMessage(
-                        bufferedServiceMessages[serviceSequenceNumber
-                                & (SERVICE_MSG_BUFFER_SIZE - 1)]);
+                DirectByteBuffer buf = bufferedServiceMessages[serviceSequenceNumber
+                        & (SERVICE_MSG_BUFFER_SIZE - 1)];
+                if (buf.remaining(ss) == 0) {
+                    this.close("Reached end of stream.");
+                    return;
+                }
+                DataMessage outgoing = new DataMessage(buf);
                 if (logger.isLoggable(Level.FINEST)) {
                     logger.finest("writing message to service queue: " + outgoing.getDescription());
                 }
@@ -417,7 +443,7 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
             }
         }
 
-        if (!this.FEATURES.contains(ServiceFeatures.PACKET_DUPLICATION)) {
+        if (this.FEATURES == null || !this.FEATURES.contains(ServiceFeatures.PACKET_DUPLICATION)) {
             b.replication = 1;
         } else if (this.FEATURES.contains(ServiceFeatures.ADAPTIVE_DUPLICATION)) {
             if (b.total == 0 || b.outstanding == 0) {
@@ -514,7 +540,7 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
             logger.finest(ServiceConnection.this.getDescription() + ": Service message recieved.");
 
             if (!(message instanceof DataMessage)) {
-                String msg = "got wrong message type from server: ";
+                String msg = "got wrong message type from the service: ";
                 logger.warning(msg + message.getDescription());
                 ServiceConnection.this.close(msg);
                 return false;

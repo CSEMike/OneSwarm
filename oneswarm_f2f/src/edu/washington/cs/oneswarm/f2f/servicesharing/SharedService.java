@@ -73,7 +73,7 @@ public class SharedService implements Comparable<SharedService> {
         return this.getName().compareTo(that.getName());
     }
 
-    private ConnectionListener getMonitoringListener()
+    private ConnectionListener getMonitoringListener(final NetworkConnection conn)
     {
         final SharedService self = this;
         return new ConnectionListener() {
@@ -110,7 +110,7 @@ public class SharedService implements Comparable<SharedService> {
         target.addProtocol(new ProtocolEndpointTCP(address));
         NetworkConnection conn = NetworkManager.getSingleton().createConnection(target,
                 new RawMessageEncoder(), new RawMessageDecoder(), false, false, new byte[0][0]);
-        return new ListenedNetworkConnection(conn, this.getMonitoringListener());
+        return new ListenedNetworkConnection(conn, this.getMonitoringListener(conn));
     }
 
     public boolean isEnabled() {

@@ -115,7 +115,7 @@ public class ServiceConnectionManager implements ServiceChannelEndpointDelegate 
     public boolean channelGotMessage(ServiceChannelEndpoint sender, OSF2FServiceDataMsg msg) {
         // Alert the service manager when a new flow is established.
         if (msg.isSyn()) {
-            logger.info("New Flow Established over " + sender.getChannelId());
+            logger.fine("New Flow Established over " + sender.getChannelId());
             long serviceKey = sender.getServiceKey();
             SharedService ss = ServiceSharingManager.getInstance().getSharedService(serviceKey);
             List<ServiceConnection> existing = services.get(serviceKey);
@@ -139,8 +139,20 @@ public class ServiceConnectionManager implements ServiceChannelEndpointDelegate 
             }
             c.channelGotMessage(sender, msg);
             return true;
-        } else if (msg.isRst()) {
-            // TODO(willscott): Implement explicit channel closing.
+        }
+        if (msg.isRst()) {
+            logger.fine("RST message received.");
+            List<ServiceConnection> existing = services.get(sender.getServiceKey());
+            if (existing != null) {
+                for (ServiceConnection c : existing) {
+                    // TODO(willscott): Also need check here to differentiate
+                    // distinct clients.
+                    if (c.subchannelId == msg.getSubchannel()) {
+                        c.closeUponReading(msg.getSequenceNumber());
+                        break;
+                    }
+                }
+            }
             return true;
         }
         return false;

@@ -63,7 +63,11 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
 
     @Override
     public String getDescription() {
-        return super.getDescription() + " [Sequence number " + sequenceNumber + "]";
+        DirectByteBuffer payload = this.getPayload();
+        return "ServiceDataMessage[channel = " + this.getChannelId() + "." + this.subchannel
+                + ", data = " + (payload == null ? "null" : payload.remaining(ss)) + ", flags="
+                + (this.isAck() ? "ACK " : "") + (this.isSyn() ? "SYN " : "")
+                + (this.isRst() ? "RST " : "") + (this.isDatagram() ? "UDP " : "");
     }
 
     @Override

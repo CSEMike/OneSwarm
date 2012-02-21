@@ -1,5 +1,6 @@
 package edu.washington.cs.oneswarm.f2f.servicesharing;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.TimerTask;
@@ -145,6 +146,10 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
     private void writeMessage(final SequenceNumber num, DirectByteBuffer buffer, int attempt,
             boolean datagram) {
+        boolean rst = buffer == null;
+        if (buffer == null) {
+            buffer = new DirectByteBuffer(ByteBuffer.allocate(0));
+        }
         int length = buffer.remaining(ss);
         ReferenceCountedDirectByteBuffer copy = buffer.getReferenceCountedBuffer();
         sentMessage sent = new sentMessage(num, copy, length, attempt, datagram);
@@ -152,9 +157,12 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         this.outstandingBytes += length;
         OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(OSF2FMessage.CURRENT_VERSION, channelId,
                 num.getNum(), num.getFlow(), new int[0], copy);
-        if (num.getNum() == 0) {
+        if (num.getNum() == 0 && !rst) {
             // Mark SYN messages.
             msg.setControlFlag(4);
+        }
+        if (rst) {
+            msg.setControlFlag(2);
         }
         if (datagram) {
             // Set datagram flag to allow the packet to be sent over UDP.

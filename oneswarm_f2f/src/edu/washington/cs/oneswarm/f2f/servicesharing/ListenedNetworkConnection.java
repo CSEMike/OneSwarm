@@ -53,6 +53,21 @@ class ListenedNetworkConnection implements NetworkConnection {
         }
     }
 
+    // TODO(willscott): This may not be good enough since the .equals is not
+    // symmetric.
+    @Override
+    public int hashCode() {
+        return underlyingConnection.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this || obj == underlyingConnection || underlyingConnection.equals(obj)) {
+            return true;
+        }
+        return false;
+    }
+
     public ListenedNetworkConnection(NetworkConnection n, ConnectionListener l) {
         this.underlyingConnection = n;
         this.listener = l;
