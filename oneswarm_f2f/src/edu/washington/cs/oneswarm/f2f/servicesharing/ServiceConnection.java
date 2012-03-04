@@ -113,7 +113,7 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
         }
         this.networkChannels.add(channel);
         this.mmt.addChannel(channel);
-        channel.addDelegate(this);
+        channel.addDelegate(this, this.subchannelId);
 
         if (!serviceChannelConnected) {
             connectServiceChannel();
@@ -379,24 +379,32 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
         channelIsReady(null);
     }
 
+    @Override
+    public boolean writesMessages() {
+        return true;
+    }
+
     private int getAvailableBytes() {
         ChannelBufferInfo b = new ChannelBufferInfo();
         getAvailableChannels(null, b);
         if (b.replication == 0) {
             return 0;
         }
-        return (b.total - b.outstanding) / b.replication;
+        return b.capacity / b.replication;
     }
 
     private class ChannelBufferInfo {
-        int outstanding = 0;
-        int total = 0;
+        int capacity = 0;
+        int potential = 0;
         int replication = 0;
     };
 
     private List<ServiceChannelEndpoint> getAvailableChannels(SequenceNumber msgId,
             ChannelBufferInfo b) {
         List<ServiceChannelEndpoint> channels = new ArrayList<ServiceChannelEndpoint>();
+
+        b.capacity = 0;
+        b.potential = 0;
 
         synchronized (this.networkChannels) {
             for (ServiceChannelEndpoint c : networkChannels) {
@@ -406,10 +414,10 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
                     continue;
                 }
 
-                b.outstanding += c.getOutstanding();
-                b.total += CHANNEL_BUFFER;
+                b.capacity += c.getWriteCapacity(this);
+                b.potential += c.getPotentialWriteCapacity();
                 // Don't allow full paths to get greedy.
-                if (c.isStarted() && c.getOutstanding() > CHANNEL_BUFFER) {
+                if (c.isStarted() && c.getWriteCapacity(this) == 0) {
                     continue;
                 }
 
@@ -446,10 +454,10 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
         if (this.FEATURES == null || !this.FEATURES.contains(ServiceFeatures.PACKET_DUPLICATION)) {
             b.replication = 1;
         } else if (this.FEATURES.contains(ServiceFeatures.ADAPTIVE_DUPLICATION)) {
-            if (b.total == 0 || b.outstanding == 0) {
+            if (b.capacity == 0) {
                 b.replication = channels.size();
             } else {
-                float replicationFactor = (float) ((b.total - b.outstanding) * 1.0 / b.total);
+                float replicationFactor = (float) (b.capacity * 1.0 / b.potential);
                 int replicas = (int) (replicationFactor * channels.size());
                 if (msgId != null) {
                     replicas -= msgId.getChannels().size();
@@ -482,7 +490,7 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
         ChannelBufferInfo b = new ChannelBufferInfo();
         List<ServiceChannelEndpoint> channels = getAvailableChannels(msgId, b);
         if (channels.size() == 0) {
-            logger.info("Currently advertising " + (b.total - b.outstanding) + " available buffer");
+            logger.info("Currently advertising " + b.capacity + " available buffer");
             logger.warning("not accepting more data from service, no available channel.");
             return false;
         }

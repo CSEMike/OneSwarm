@@ -121,6 +121,8 @@ public class DatagramConnection extends DatagramRateLimiter {
             - OSF2FMessage.MESSAGE_HEADER_LEN - DatagramEncrypter.SEQUENCE_NUMBER_BYTES - 1
             - DatagramEncrypter.HMAC_SIZE;
 
+    private final static int INITIAL_QUEUE_CAPACITY = 2;
+
     private final static int MAX_UNACKED_UDP_OKs = 10;
 
     private final static byte SS = DirectByteBuffer.SS_MSG;
@@ -188,6 +190,28 @@ public class DatagramConnection extends DatagramRateLimiter {
                 encrypter.getHmac(), manager.getPort());
         logger.fine(toString() + "Init message created: " + initMessage.getDescription());
         return initMessage;
+    }
+
+    public int getCapacityForChannel(int channelId) {
+        DatagramRateLimitedChannelQueue queue = this.queueMap.get(new Integer(channelId));
+        if (queue != null) {
+            int tokens = queue.getAvailableTokens();
+            if (tokens < MAX_DATAGRAM_PAYLOAD_SIZE) {
+                return 0;
+            }
+            return tokens;
+        } else {
+            return MAX_DATAGRAM_PAYLOAD_SIZE * INITIAL_QUEUE_CAPACITY;
+        }
+    }
+
+    public int getPotentialCapacityForChannel(int channelId) {
+        DatagramRateLimitedChannelQueue queue = this.queueMap.get(new Integer(channelId));
+        if (queue != null) {
+            return queue.getTokenBucketSize();
+        } else {
+            return MAX_DATAGRAM_PAYLOAD_SIZE * INITIAL_QUEUE_CAPACITY;
+        }
     }
 
     Set<String> getKeys() {

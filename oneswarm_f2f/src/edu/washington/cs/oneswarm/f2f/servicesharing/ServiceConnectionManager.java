@@ -62,7 +62,7 @@ public class ServiceConnectionManager implements ServiceChannelEndpointDelegate 
             return;
         }
         this.connections.get(key).add(channel);
-        channel.addDelegate(this);
+        channel.addDelegate(this, (short) -1);
         if (this.services.get(key).size() > 0) {
             for (ServiceConnection service : this.services.get(key)) {
                 logger.finest("Channel added to existing service: " + service.getDescription());
@@ -178,6 +178,11 @@ public class ServiceConnectionManager implements ServiceChannelEndpointDelegate 
             logger.fine("Service requested - existing channel not present. Search Needed.");
             return false;
         }
+    }
+
+    @Override
+    public boolean writesMessages() {
+        return false;
     }
 
 }

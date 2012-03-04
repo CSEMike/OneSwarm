@@ -743,6 +743,23 @@ public class FriendConnection implements DatagramListener {
         return remoteFriendKeyHash;
     }
 
+    public int getSendQueueCurrentCapacity(int channelId) {
+        if (udpConnection.isSendingActive()) {
+            return udpConnection.getCapacityForChannel(channelId);
+        } else {
+            return (FriendConnectionQueue.MAX_FRIEND_QUEUE_LENGTH - friendConnectionQueue
+                    .getForwardQueueBytes()) / this.overlayTransports.size();
+        }
+    }
+
+    public int getSendQueuePotentialCapacity(int channelId) {
+        if (udpConnection.isSendingActive()) {
+            return udpConnection.getPotentialCapacityForChannel(channelId);
+        } else {
+            return (FriendConnectionQueue.MAX_FRIEND_QUEUE_LENGTH) / this.overlayTransports.size();
+        }
+    }
+
     private void handleChannelMsg(Message message) {
         if (message instanceof OSF2FChannelDataMsg) {
             OSF2FChannelDataMsg msg = (OSF2FChannelDataMsg) message;

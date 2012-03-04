@@ -37,9 +37,13 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     private static final byte ss = 0;
     private static final double EWMA = 0.25;
     private static final double RETRANSMISSION_PERIOD = 2;
+
+    public static final int MAX_SERVICE_MESSAGE_SIZE = 1024;
+
     private final DelayedExecutor delayedExecutor;
     protected final Hashtable<SequenceNumber, sentMessage> sentMessages;
-    protected final ArrayList<ServiceChannelEndpointDelegate> delegates = new ArrayList<ServiceChannelEndpointDelegate>();
+    protected final Hashtable<Short, ServiceChannelEndpointDelegate> delegates = new Hashtable<Short, ServiceChannelEndpointDelegate>();
+    protected final ArrayList<Short> delegateOrder = new ArrayList<Short>();
     private int outstandingBytes;
     private long latency = 1000;
     private long minLatency = Long.MAX_VALUE;
@@ -61,19 +65,55 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
             @Override
             public void readyForWrite() {
                 logger.info("friend connection marked ready for write.");
-                for (ServiceChannelEndpointDelegate d : ServiceChannelEndpoint.this.delegates) {
+                for (ServiceChannelEndpointDelegate d : ServiceChannelEndpoint.this.delegates
+                        .values()) {
                     d.channelIsReady(ServiceChannelEndpoint.this);
                 }
             }
         });
     }
 
-    public void addDelegate(ServiceChannelEndpointDelegate d) {
-        this.delegates.add(d);
+    public void addDelegate(ServiceChannelEndpointDelegate d, short flow) {
+        if (d.writesMessages()) {
+            this.delegateOrder.add(flow);
+        }
+        this.delegates.put(flow, d);
     }
 
     public void removeDelegate(ServiceChannelEndpointDelegate d) {
-        this.delegates.remove(d);
+        for (Short flow : this.delegates.keySet()) {
+            if (this.delegates.get(flow).equals(d)) {
+                this.delegates.remove(flow);
+                this.delegateOrder.remove(flow);
+                break;
+            }
+        }
+    }
+
+    public int getPotentialWriteCapacity() {
+        int channelCapacity = friendConnection.getSendQueuePotentialCapacity(this.channelId);
+        return channelCapacity / this.delegateOrder.size();
+    }
+
+    public int getWriteCapacity(ServiceChannelEndpointDelegate d) {
+        int networkCapacity = friendConnection.getSendQueueCurrentCapacity(this.channelId);
+        int fullPackets = networkCapacity / (this.delegates.size() * MAX_SERVICE_MESSAGE_SIZE);
+
+        int delegatePriority = this.delegates.size();
+        for (Short flow : this.delegates.keySet()) {
+            if (this.delegates.get(flow).equals(d)) {
+                delegatePriority = this.delegateOrder.indexOf(flow);
+            }
+        }
+
+        networkCapacity -= fullPackets * this.delegates.size() * MAX_SERVICE_MESSAGE_SIZE
+                + delegatePriority * MAX_SERVICE_MESSAGE_SIZE;
+
+        if (networkCapacity >= MAX_SERVICE_MESSAGE_SIZE) {
+            fullPackets += 1;
+        }
+
+        return fullPackets * MAX_SERVICE_MESSAGE_SIZE;
     }
 
     @Override
@@ -101,7 +141,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
     @Override
     public void cleanup() {
-        for (ServiceChannelEndpointDelegate d : this.delegates) {
+        for (ServiceChannelEndpointDelegate d : this.delegates.values()) {
             d.channelDidClose(this);
         }
     };
@@ -129,7 +169,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
                     channelId, (short) 0, new int[] { newMessage.getSequenceNumber() }));
         }
 
-        for (ServiceChannelEndpointDelegate d : this.delegates) {
+        for (ServiceChannelEndpointDelegate d : this.delegates.values()) {
             if (d.channelGotMessage(this, newMessage)) {
                 break;
             }
@@ -141,6 +181,12 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     }
 
     public void writeMessage(final SequenceNumber num, DirectByteBuffer buffer, boolean datagram) {
+        try {
+            this.delegateOrder.remove(num.getFlow());
+        } catch (IndexOutOfBoundsException e) {
+            return;
+        }
+        this.delegateOrder.add(num.getFlow());
         writeMessage(num, buffer, 0, datagram);
     }
 

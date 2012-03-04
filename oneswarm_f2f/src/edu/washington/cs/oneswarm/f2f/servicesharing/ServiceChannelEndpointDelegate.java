@@ -8,4 +8,6 @@ public interface ServiceChannelEndpointDelegate {
     public void channelIsReady(ServiceChannelEndpoint sender);
 
     public boolean channelGotMessage(ServiceChannelEndpoint sender, OSF2FServiceDataMsg msg);
+
+    public boolean writesMessages();
 }

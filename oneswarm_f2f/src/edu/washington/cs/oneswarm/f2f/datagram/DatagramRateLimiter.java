@@ -73,6 +73,10 @@ public class DatagramRateLimiter {
         return availableTokens;
     }
 
+    public int getTokenBucketSize() {
+        return this.maxAvailableTokens;
+    }
+
     public void transferTokens(DatagramRateLimiter target, int maxToTransfer) {
         int amount = target.refillBucket(Math.min(maxToTransfer, availableTokens));
         availableTokens -= amount;
