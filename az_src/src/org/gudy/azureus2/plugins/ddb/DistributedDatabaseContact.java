@@ -32,15 +32,28 @@ import java.net.InetSocketAddress;
 public interface 
 DistributedDatabaseContact 
 {
+	public byte[]
+	getID();
+	
 	public String
 	getName();
 	
 	public InetSocketAddress
 	getAddress();
 	
+	public int
+	getDHT();
+	
 	public boolean
 	isAlive(
 		long		timeout );
+	
+		// async version - event types: complete -> alive, timeout -> dead
+	
+	public void
+	isAlive(
+		long							timeout,
+		DistributedDatabaseListener		listener );
 	
 	public boolean
 	isOrHasBeenLocal();

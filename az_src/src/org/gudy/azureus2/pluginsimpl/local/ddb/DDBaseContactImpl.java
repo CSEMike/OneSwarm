@@ -24,14 +24,21 @@ package org.gudy.azureus2.pluginsimpl.local.ddb;
 
 import java.net.InetSocketAddress;
 
+import org.gudy.azureus2.plugins.ddb.DistributedDatabase;
 import org.gudy.azureus2.plugins.ddb.DistributedDatabaseContact;
+import org.gudy.azureus2.plugins.ddb.DistributedDatabaseEvent;
 import org.gudy.azureus2.plugins.ddb.DistributedDatabaseException;
 import org.gudy.azureus2.plugins.ddb.DistributedDatabaseKey;
+import org.gudy.azureus2.plugins.ddb.DistributedDatabaseKeyStats;
+import org.gudy.azureus2.plugins.ddb.DistributedDatabaseListener;
 import org.gudy.azureus2.plugins.ddb.DistributedDatabaseProgressListener;
 import org.gudy.azureus2.plugins.ddb.DistributedDatabaseTransferType;
 import org.gudy.azureus2.plugins.ddb.DistributedDatabaseValue;
 
+import com.aelitis.azureus.plugins.dht.DHTPlugin;
 import com.aelitis.azureus.plugins.dht.DHTPluginContact;
+import com.aelitis.azureus.plugins.dht.DHTPluginOperationListener;
+import com.aelitis.azureus.plugins.dht.DHTPluginValue;
 
 
 /**
@@ -55,6 +62,12 @@ DDBaseContactImpl
 		contact		= _contact;
 	}
 	
+	public byte[] 
+	getID() 
+	{
+		return( contact.getID());
+	}
+	
 	public String
 	getName()
 	{
@@ -67,11 +80,94 @@ DDBaseContactImpl
 		return( contact.getAddress());
 	}
 	
+	public int 
+	getDHT() 
+	{
+		return( contact.getNetwork() == DHTPlugin.NW_CVS?DistributedDatabase.DHT_CVS:DistributedDatabase.DHT_MAIN );
+	}
+	
 	public boolean
 	isAlive(
 		long		timeout )
 	{
 		return( contact.isAlive( timeout ));
+	}
+	
+	public void
+	isAlive(
+		long								timeout,
+		final DistributedDatabaseListener	listener )
+	{
+			
+		contact.isAlive( 
+			timeout,
+			new DHTPluginOperationListener()
+			{
+				public void
+				starts(
+					byte[]				key )
+				{
+				}
+				
+				public void
+				diversified()
+				{
+				}
+				
+				public void
+				valueRead(
+					DHTPluginContact	originator,
+					DHTPluginValue		value )
+				{
+				}
+				
+				public void
+				valueWritten(
+					DHTPluginContact	target,
+					DHTPluginValue		value )
+				{
+				}
+				
+				public void
+				complete(
+					byte[]					key,
+					final boolean			timeout_occurred )
+				{
+					listener.event(
+						new DistributedDatabaseEvent()
+						{
+							public int
+							getType()
+							{
+								return( timeout_occurred?ET_OPERATION_TIMEOUT:ET_OPERATION_COMPLETE );
+							}
+							
+							public DistributedDatabaseKey
+							getKey()
+							{
+								return( null );
+							}
+							
+							public DistributedDatabaseKeyStats
+							getKeyStats()
+							{
+								return( null );
+							}
+							
+							public DistributedDatabaseValue
+							getValue()
+							{
+								return( null );
+							}
+							
+							public DistributedDatabaseContact
+							getContact()
+							{
+								return( DDBaseContactImpl.this );
+							}
+						});
+				}
+			});
 	}
 	
 	public boolean

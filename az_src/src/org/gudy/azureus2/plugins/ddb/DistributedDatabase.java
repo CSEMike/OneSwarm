@@ -42,6 +42,11 @@ DistributedDatabase
 	public static final byte	DT_FREQUENCY	= 2;
 	public static final byte	DT_SIZE			= 3;
 	
+		// dht types
+	
+	public static final int	DHT_MAIN	= 1;
+	public static final int	DHT_CVS		= 2;
+	
 	public boolean
 	isAvailable();
 
@@ -74,6 +79,21 @@ DistributedDatabase
 	public DistributedDatabaseContact
 	importContact(
 		InetSocketAddress				address )
+	
+		throws DistributedDatabaseException;
+	
+	public DistributedDatabaseContact
+	importContact(
+		InetSocketAddress				address,
+		byte							protocol_version )
+	
+		throws DistributedDatabaseException;
+	
+	public DistributedDatabaseContact
+	importContact(
+		InetSocketAddress				address,
+		byte							protocol_version,
+		int								preferred_dht )
 	
 		throws DistributedDatabaseException;
 	
@@ -126,6 +146,14 @@ DistributedDatabase
 		throws DistributedDatabaseException;
 	
 	public void
+	delete(
+		DistributedDatabaseListener		listener,
+		DistributedDatabaseKey			key,
+		DistributedDatabaseContact[]	targets )
+	
+		throws DistributedDatabaseException;
+
+	public void
 	addTransferHandler(
 		DistributedDatabaseTransferType		type,
 		DistributedDatabaseTransferHandler	handler )
@@ -137,4 +165,12 @@ DistributedDatabase
 		int		standard_type )
 	
 		throws DistributedDatabaseException;
+	
+	public void
+	addListener(
+		DistributedDatabaseListener		l );
+	
+	public void
+	removeListener(
+		DistributedDatabaseListener		l );
 }
