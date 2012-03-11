@@ -186,7 +186,7 @@ AzureusCoreImpl
 
 		MessageText.loadBundle();
 
-		AEDiagnostics.startup();
+        AEDiagnostics.startup(false);
 
 		AEDiagnostics.markDirty();
 
@@ -203,7 +203,8 @@ AzureusCoreImpl
 		PlatformManagerFactory.getPlatformManager().addListener(
 			new PlatformManagerListener()
 			{
-				public void
+				@Override
+                public void
 				eventOccurred(
 					int		type )
 				{
@@ -253,7 +254,8 @@ AzureusCoreImpl
 					{
 						private boolean setting_limits;
 
-						public int
+						@Override
+                        public int
 						getCurrentProtocolUploadSpeed(
 							int	average_period )
 						{
@@ -269,7 +271,8 @@ AzureusCoreImpl
 							}
 						}
 
-						public int
+						@Override
+                        public int
 						getCurrentDataUploadSpeed(
 							int	average_period )
 						{
@@ -285,6 +288,7 @@ AzureusCoreImpl
 							}
 						}
 
+                        @Override
                         public int
                         getCurrentProtocolDownloadSpeed(
                         	int	average_period )
@@ -297,6 +301,7 @@ AzureusCoreImpl
                             }
                         }
 
+                        @Override
                         public int
                         getCurrentDataDownloadSpeed(
                         	int	average_period )
@@ -309,6 +314,7 @@ AzureusCoreImpl
                             }
                         }
 
+                        @Override
                         public int
 						getCurrentUploadLimit()
 						{
@@ -330,7 +336,8 @@ AzureusCoreImpl
 							return( bytes_per_second );
 						}
 
-						public void
+						@Override
+                        public void
 						setCurrentUploadLimit(
 							int		bytes_per_second )
 						{
@@ -353,20 +360,23 @@ AzureusCoreImpl
 							}
 						}
 
-						public int
+						@Override
+                        public int
 						getCurrentDownloadLimit()
 						{
 							return( TransferSpeedValidator.getGlobalDownloadRateLimitBytesPerSecond());
 						}
 
-						public void
+						@Override
+                        public void
 						setCurrentDownloadLimit(
 							int		bytes_per_second )
 						{
 							TransferSpeedValidator.setGlobalDownloadRateLimitBytesPerSecond( bytes_per_second );
 						}
 
-						public Object
+						@Override
+                        public Object
 						getLimits()
 						{
 							String up_key 	= TransferSpeedValidator.getActiveUploadParameter( global_manager );
@@ -381,7 +391,8 @@ AzureusCoreImpl
 								});
 						}
 
-						public void
+						@Override
+                        public void
 						setLimits(
 							Object		limits,
 							boolean		do_up,
@@ -430,7 +441,8 @@ AzureusCoreImpl
 				SystemTime.getOffsetTime(60*1000),
 				new TimerEventPerformer()
 				{
-					public void
+					@Override
+                    public void
 					perform(
 						TimerEvent event)
 					{
@@ -490,13 +502,15 @@ AzureusCoreImpl
 	    }
 	}
 
-	public LocaleUtil
+	@Override
+    public LocaleUtil
 	getLocaleUtil()
 	{
 		return( LocaleUtil.getSingleton());
 	}
 
-	public void
+	@Override
+    public void
 	start()
 
 		throws AzureusCoreException
@@ -543,14 +557,16 @@ AzureusCoreImpl
 				this,
 				new GlobalMangerProgressListener()
 				{
-					public void
+					@Override
+                    public void
 					reportCurrentTask(
 						String currentTask )
 					{
 						initialisation_op.reportCurrentTask( currentTask );
 					}
 
-					public void
+					@Override
+                    public void
 					reportPercent(
 						int percent )
 					{
@@ -575,7 +591,8 @@ AzureusCoreImpl
 					{
 						private boolean	first_dht = true;
 
-						public void
+						@Override
+                        public void
 						handleEvent(
 							PluginEvent	ev )
 						{
@@ -606,7 +623,8 @@ AzureusCoreImpl
 														TransferSpeedValidator.AUTO_UPLOAD_SEEDING_ENABLED_CONFIGKEY },
 										new ParameterListener()
 										{
-											public void
+											@Override
+                                            public void
 											parameterChanged(
 												String parameterName )
 											{
@@ -682,7 +700,8 @@ AzureusCoreImpl
 			   {
 				   private String	last_as;
 
-				   public void
+				   @Override
+                public void
 				   propertyChanged(
 						   String		property )
 				   {
@@ -739,13 +758,15 @@ AzureusCoreImpl
 			   });
 	}
 
-	public boolean
+	@Override
+    public boolean
 	isStarted()
 	{
 		return( started );
 	}
 
-	public void triggerLifeCycleComponentCreated(AzureusCoreComponent component) {
+	@Override
+    public void triggerLifeCycleComponentCreated(AzureusCoreComponent component) {
 		for (int i = 0; i < lifecycle_listeners.size(); i++) {
 
 			try{
@@ -812,7 +833,8 @@ AzureusCoreImpl
 		}
 	}
 
-	public void
+	@Override
+    public void
 	stop()
 
 		throws AzureusCoreException
@@ -1032,7 +1054,8 @@ AzureusCoreImpl
 	}
 
 
-	public void
+	@Override
+    public void
 	requestStop()
 
 		throws AzureusCoreException
@@ -1061,7 +1084,8 @@ AzureusCoreImpl
 		});
 	}
 
-	public void
+	@Override
+    public void
 	restart()
 
 		throws AzureusCoreException
@@ -1085,7 +1109,8 @@ AzureusCoreImpl
 		});
 	}
 
-	public void
+	@Override
+    public void
 	requestRestart()
 
 		throws AzureusCoreException
@@ -1115,7 +1140,8 @@ AzureusCoreImpl
         });
 	}
 
-	public void
+	@Override
+    public void
 	checkRestartSupported()
 
 		throws AzureusCoreException
@@ -1128,7 +1154,8 @@ AzureusCoreImpl
 		}
 	}
 
-	public GlobalManager
+	@Override
+    public GlobalManager
 	getGlobalManager()
 
 		throws AzureusCoreException
@@ -1141,7 +1168,8 @@ AzureusCoreImpl
 		return( global_manager );
 	}
 
-	public TRHost
+	@Override
+    public TRHost
 	getTrackerHost()
 
 		throws AzureusCoreException
@@ -1149,7 +1177,8 @@ AzureusCoreImpl
 		return( TRHostFactory.getSingleton());
 	}
 
-	public PluginManagerDefaults
+	@Override
+    public PluginManagerDefaults
 	getPluginManagerDefaults()
 
 		throws AzureusCoreException
@@ -1157,7 +1186,8 @@ AzureusCoreImpl
 		return( PluginManager.getDefaults());
 	}
 
-	public PluginManager
+	@Override
+    public PluginManager
 	getPluginManager()
 
 		throws AzureusCoreException
@@ -1167,7 +1197,8 @@ AzureusCoreImpl
 		return( PluginInitializer.getDefaultInterface().getPluginManager());
 	}
 
-	public IpFilterManager
+	@Override
+    public IpFilterManager
 	getIpFilterManager()
 
 		throws AzureusCoreException
@@ -1175,57 +1206,66 @@ AzureusCoreImpl
 		return( IpFilterManagerFactory.getSingleton());
 	}
 
-	public AZInstanceManager
+	@Override
+    public AZInstanceManager
 	getInstanceManager()
 	{
 		return( instance_manager );
 	}
 
-	public SpeedManager
+	@Override
+    public SpeedManager
 	getSpeedManager()
 	{
 		return( speed_manager );
 	}
 
-	public CryptoManager
+	@Override
+    public CryptoManager
 	getCryptoManager()
 	{
 		return( crypto_manager );
 	}
 
-	public NATTraverser
+	@Override
+    public NATTraverser
 	getNATTraverser()
 	{
 		return( nat_traverser );
 	}
 
-	public AzureusCoreOperation
+	@Override
+    public AzureusCoreOperation
 	createOperation(
 		final int		type )
 	{
 		AzureusCoreOperation	op =
 			new AzureusCoreOperation()
 			{
-				public int
+				@Override
+                public int
 				getOperationType()
 				{
 					return( type );
 				}
 
-				public AzureusCoreOperationTask
+				@Override
+                public AzureusCoreOperationTask
 				getTask()
 				{
 					return null;
 				}
 
-				public void
+				@Override
+                public void
 				reportCurrentTask(
 					String task )
 				{
 					AzureusCoreImpl.this.reportCurrentTask( this, task );
 				}
 
-				public void
+				@Override
+                public void
 				reportPercent(
 					int percent )
 				{
@@ -1247,7 +1287,8 @@ AzureusCoreImpl
 		return( op );
 	}
 
-	public void
+	@Override
+    public void
 	createOperation(
 		final int					type,
 		AzureusCoreOperationTask	task )
@@ -1257,26 +1298,30 @@ AzureusCoreImpl
 		AzureusCoreOperation	op =
 				new AzureusCoreOperation()
 				{
-					public int
+					@Override
+                    public int
 					getOperationType()
 					{
 						return( type );
 					}
 
-					public AzureusCoreOperationTask
+					@Override
+                    public AzureusCoreOperationTask
 					getTask()
 					{
 						return( f_task[0] );
 					}
 
-					public void
+					@Override
+                    public void
 					reportCurrentTask(
 						String task )
 					{
 						AzureusCoreImpl.this.reportCurrentTask( this, task );
 					}
 
-					public void
+					@Override
+                    public void
 					reportPercent(
 						int percent )
 					{
@@ -1348,42 +1393,48 @@ AzureusCoreImpl
 		}
 	}
 
-	public void
+	@Override
+    public void
 	addLifecycleListener(
 		AzureusCoreLifecycleListener	l )
 	{
 		lifecycle_listeners.add(l);
 	}
 
-	public void
+	@Override
+    public void
 	removeLifecycleListener(
 		AzureusCoreLifecycleListener	l )
 	{
 		lifecycle_listeners.remove(l);
 	}
 
-	public void
+	@Override
+    public void
 	addListener(
 		AzureusCoreListener	l )
 	{
 		listeners.add( l );
 	}
 
-	public void
+	@Override
+    public void
 	removeListener(
 		AzureusCoreListener	l )
 	{
 		listeners.remove( l );
 	}
 
-	public void
+	@Override
+    public void
 	addOperationListener(
 		AzureusCoreOperationListener	l )
 	{
 		operation_listeners.add(l);
 	}
 
-	public void
+	@Override
+    public void
 	removeOperationListener(
 		AzureusCoreOperationListener	l )
 	{

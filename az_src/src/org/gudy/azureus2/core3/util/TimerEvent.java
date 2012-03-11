@@ -38,6 +38,7 @@ TimerEvent
 	private long					when;
 	private TimerEventPerformer	performer;
 	
+	private boolean		absolute;
 	private boolean		cancelled;
 	private boolean		has_run;
 	
@@ -49,14 +50,26 @@ TimerEvent
 		long					_unique_id,
 		long					_created,
 		long					_when,
+		boolean					_absolute,
 		TimerEventPerformer		_performer )
 	{
 		timer		= _timer;
 		unique_id	= _unique_id;
 		when		= _when;
+		absolute	= _absolute;
 		performer	= _performer;
 		
 		created 	= _created;
+		
+		if ( Constants.IS_CVS_VERSION ){
+			
+				// sanity check - seems we sometimes use 0 to denote 'now'
+			
+			if ( when != 0 && when <= 7*24*60*60*1000 ){
+				
+				Debug.out( "You sure you want to schedule an event in the past? Time should be absolute!" );
+			}
+		}
 	}
 		
 	public void
@@ -101,6 +114,12 @@ TimerEvent
 	getPerformer()
 	{
 		return( performer );
+	}
+	
+	protected boolean
+	isAbsolute()
+	{
+		return( absolute );
 	}
 	
 	public void

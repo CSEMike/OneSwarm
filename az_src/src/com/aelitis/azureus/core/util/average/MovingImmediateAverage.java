@@ -73,14 +73,21 @@ public class MovingImmediateAverage implements Average {
     */
    public double getAverage() { return calculateAve(); }
    
+   public int getSampleCount(){
+	   return( pos>periods?periods:pos );
+   }
    
    private double calculateAve() {
-      double sum = 0.0;
       int	lim = pos>periods?periods:pos;
-      for (int i=0; i < lim; i++) {
-         sum += data[i];
+      if ( lim == 0 ){
+    	  return( 0 );
+      }else{
+    	  double sum = 0.0;
+	      for (int i=0; i < lim; i++) {
+	         sum += data[i];
+	      }
+	      return sum / lim;
       }
-      return sum / lim;
    }
 
 }

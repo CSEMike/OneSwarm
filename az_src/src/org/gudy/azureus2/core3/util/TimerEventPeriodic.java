@@ -31,7 +31,8 @@ TimerEventPeriodic
 {
 	private Timer					timer;
 	private long					frequency;
-	private TimerEventPerformer	performer;
+	private boolean					absolute;
+	private TimerEventPerformer		performer;
 	
 	private String				name;
 	private TimerEvent			current_event;
@@ -41,14 +42,17 @@ TimerEventPeriodic
 	TimerEventPeriodic(
 		Timer				_timer,
 		long				_frequency,
+		boolean				_absolute,
 		TimerEventPerformer	_performer )
 	{
 		timer		= _timer;
 		frequency	= _frequency;
+		absolute	= _absolute;
 		performer	= _performer;
 		
-		current_event = timer.addEvent( 	SystemTime.getCurrentTime()+ frequency,
-											this );
+		long	 now = SystemTime.getCurrentTime();
+		
+		current_event = timer.addEvent(	name, now, now + frequency, absolute, this );
 	}
 	
 	public void
@@ -108,7 +112,9 @@ TimerEventPeriodic
 				
 				if ( !cancelled ){
 				
-					current_event = timer.addEvent(name, SystemTime.getCurrentTime()+ frequency, this );	
+					long	 now = SystemTime.getCurrentTime();
+
+					current_event = timer.addEvent(name, now, now + frequency, absolute, this );	
 				}
 			}
 		}

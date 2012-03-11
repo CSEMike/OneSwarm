@@ -49,7 +49,7 @@ PHETester
 {
 	private final VirtualChannelSelector connect_selector = new VirtualChannelSelector( "PHETester", VirtualChannelSelector.OP_CONNECT, true );
 	 
-	private byte[]	TEST_HEADER	= "TestHeader".getBytes();
+	private final byte[]	TEST_HEADER	= "TestHeader".getBytes();
 	
 	private static boolean	OUTGOING_PLAIN = false;
 	
@@ -66,7 +66,8 @@ PHETester
 					0, 
 					new VirtualServerChannelSelector.SelectListener() 
 					{
-						public void 
+						@Override
+                        public void 
 						newConnectionAccepted( 
 							ServerSocketChannel	server,
 							SocketChannel 		channel ) 
@@ -79,7 +80,8 @@ PHETester
 	
 		new Thread()
 		{
-			public void
+			@Override
+            public void
 			run()
 			{
 				while( true ){
@@ -111,7 +113,8 @@ PHETester
 						null,
 						new ProtocolDecoderAdapter()
 						{
-							public void
+							@Override
+                            public void
 							decodeComplete(
 								ProtocolDecoder	decoder,
 								ByteBuffer		remaining_initial_data )
@@ -123,7 +126,8 @@ PHETester
 								writeStream( "ten fat monkies", decoder.getFilter() );
 							}
 							
-							public void
+							@Override
+                            public void
 							decodeFailed(
 								ProtocolDecoder	decoder,
 								Throwable			cause )
@@ -131,19 +135,22 @@ PHETester
 								System.out.println( "incoming decode failed: " + Debug.getNestedExceptionMessage(cause));
 							}
 							
-							public void
+							@Override
+                            public void
 							gotSecret(
 								byte[]				session_secret )
 							{
 							}
 
-							public int
+							@Override
+                            public int
 							getMaximumPlainHeaderLength()
 							{
 								return( TEST_HEADER.length );
 							}
 							
-							public int
+							@Override
+                            public int
 							matchPlainHeader(
 								ByteBuffer			buffer )
 							{
@@ -202,7 +209,8 @@ PHETester
 					channel,
 					new VirtualSelectorListener()
 					{
-						public boolean 
+						@Override
+                        public boolean 
 						selectSuccess(
 							VirtualChannelSelector selector, SocketChannel sc, Object attachment)
 						{
@@ -224,7 +232,8 @@ PHETester
 							}
 						}
 	
-						public void 
+						@Override
+                        public void 
 						selectFailure(
 								VirtualChannelSelector selector, SocketChannel sc, Object attachment, Throwable msg)
 						{
@@ -263,7 +272,8 @@ PHETester
 						null,
 						new ProtocolDecoderAdapter()
 						{
-							public void
+							@Override
+                            public void
 							decodeComplete(
 								ProtocolDecoder	decoder,
 								ByteBuffer		remaining_initial_data )
@@ -277,7 +287,8 @@ PHETester
 								writeStream( "two jolly porkers", decoder.getFilter() );
 							}
 							
-							public void
+							@Override
+                            public void
 							decodeFailed(
 								ProtocolDecoder	decoder,
 								Throwable			cause )
@@ -286,19 +297,22 @@ PHETester
 	
 							}
 							
-							public void
+							@Override
+                            public void
 							gotSecret(
 								byte[]				session_secret )
 							{	
 							}
 							
-							public int
+							@Override
+                            public int
 							getMaximumPlainHeaderLength()
 							{
 								throw( new RuntimeException());
 							}
 							
-							public int
+							@Override
+                            public int
 							matchPlainHeader(
 								ByteBuffer			buffer )
 							{
@@ -322,7 +336,8 @@ PHETester
 				((TCPTransportHelper)filter.getHelper()).getSocketChannel(),
 				new VirtualSelectorListener()
 				{
-					public boolean 
+					@Override
+                    public boolean 
 					selectSuccess(
 						VirtualChannelSelector selector, SocketChannel sc, Object attachment)
 					{
@@ -349,7 +364,8 @@ PHETester
 						}
 					}
 
-					public void 
+					@Override
+                    public void 
 					selectFailure(
 							VirtualChannelSelector selector, SocketChannel sc, Object attachment, Throwable msg)
 					{
@@ -404,7 +420,7 @@ PHETester
 	main(
 		String[]	args )
 	{
-		AEDiagnostics.startup();
+        AEDiagnostics.startup(false);
 		
 		// OUTGOING_PLAIN	= true;
 		

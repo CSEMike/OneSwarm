@@ -22,104 +22,307 @@
 
 package com.aelitis.azureus.core.util;
 
+import java.lang.ref.WeakReference;
 import java.util.*;
 
+import org.gudy.azureus2.core3.util.AEDiagnostics;
+import org.gudy.azureus2.core3.util.AEDiagnosticsEvidenceGenerator;
+import org.gudy.azureus2.core3.util.IndentWriter;
+
 public class 
-CopyOnWriteList 
+CopyOnWriteList<T> 
+implements Iterable<T>
 {
-	private volatile List	list = new ArrayList();
-	//private volatile int	version;
+	private static final boolean LOG_STATS = false;
 	
+	//private int mutation_count = 0;
+	
+	private List<T>	list = Collections.EMPTY_LIST;
+	
+	private boolean	visible = false;
+	
+	private int initialCapacity;
+	
+	private static CopyOnWriteList stats;
+	
+	static {
+		if (LOG_STATS) {
+			stats = new CopyOnWriteList(10);
+			AEDiagnostics.addEvidenceGenerator(new AEDiagnosticsEvidenceGenerator() {
+				public void generate(IndentWriter writer) {
+					writer.println("COWList Info");
+					writer.indent();
+					try {
+						long count = 0;
+						long size = 0;
+						for (Iterator iter = stats.iterator(); iter.hasNext();) {
+							WeakReference wf = (WeakReference) iter.next();
+							CopyOnWriteList cowList = (CopyOnWriteList) wf.get();
+							if (cowList != null) {
+								count++;
+								size += cowList.size();
+							}
+						}
+						writer.println(count + " lists with " + size + " total entries");
+						writer.println((size/count) + " avg size");
+					} catch (Throwable t) {
+					} finally {
+						writer.exdent();
+					}
+				}
+			});
+		}
+	}
+	
+	/**
+	 * @param i
+	 */
+	public CopyOnWriteList(int initialCapacity) {
+		this.initialCapacity = initialCapacity;
+		if (stats != null) {
+			stats.add(new WeakReference(this));
+		}
+	}
+
+	/**
+	 * 
+	 */
+	public CopyOnWriteList() {
+		// Smaller default initial capacity as most of our lists are small
+		// Last check on 7/24/2008: 444 lists with 456 total entries
+		this.initialCapacity = 1;
+		if (stats != null) {
+			stats.add(new WeakReference(this));
+		}
+	}
+
 	public void
 	add(
-		Object	obj )
+		T	obj )
 	{
-		synchronized( list ){
+		synchronized( this ){
 			
-			List	new_list = new ArrayList( list );
+			if ( visible ){
+				
+				List<T>	new_list = new ArrayList<T>( list );
+				
+				//mutated();
+				
+				new_list.add( obj );
 			
-			new_list.add( obj );
-		
-			list	= new_list;
+				list	= new_list;
 			
-			//version++;
+				visible = false;
+				
+			}else{
+				if (list == Collections.EMPTY_LIST) {
+					list = new ArrayList<T>(initialCapacity);
+				}
+				
+				list.add( obj );
+			}
+		}
+	}
+
+	public void
+	add(
+		int	index,
+		T	obj )
+	{
+		synchronized( this ){
+			
+			if ( visible ){
+				
+				List<T>	new_list = new ArrayList<T>( list );
+				
+				//mutated();
+				
+				new_list.add( index, obj );
+			
+				list	= new_list;
+			
+				visible = false;
+				
+			}else{
+				if (list == Collections.EMPTY_LIST) {
+					list = new ArrayList<T>(initialCapacity);
+				}
+				
+				list.add( index, obj );
+			}
+		}
+	}
+	
+	public void
+	addAll(
+		Collection<T>	c )
+	{
+		synchronized( this ){
+			
+			if ( visible ){
+				
+				List<T>	new_list = new ArrayList<T>( list );
+				
+				//mutated();
+				
+				new_list.addAll( c );
+			
+				list	= new_list;
+			
+				visible = false;
+				
+			}else{
+				if (list == Collections.EMPTY_LIST) {
+					list = new ArrayList<T>(initialCapacity);
+				}
+				
+				list.addAll( c );
+			}
+		}
+	}
+	
+	public T
+	get(
+		int		index )
+	{
+		synchronized( this ){
+			
+			return( list.get(index));
 		}
 	}
 	
 	public boolean
 	remove(
-		Object	obj )
+		T	obj )
 	{
-		synchronized( list ){
+		synchronized( this ){
 			
-			List	new_list = new ArrayList( list );
+			if ( visible ){
+
+				List<T>	new_list = new ArrayList<T>( list );
+				
+				//mutated();
+				
+				boolean result = new_list.remove( obj );
 			
-			boolean result = new_list.remove( obj );
-		
-			list	= new_list;
-			
-			//version++;
-			
-			return( result );
+				list	= new_list;
+						
+				visible = false;
+				
+				return( result );
+				
+			}else{
+				
+				return( list.remove( obj ));
+			}
 		}
 	}
 	
 	public void
 	clear()
 	{
-		synchronized( list ){
+		synchronized( this ){
 								
-			list	= new ArrayList();
+			list	= Collections.EMPTY_LIST;
 			
-			//version++;
+			visible = false;
 		}
 	}
 	
 	public boolean
 	contains(
-		Object	obj )
+		T	obj )
 	{
-		return( list.contains( obj ));
+		synchronized( this ){
+
+			return( list.contains( obj ));
+		}
 	}
 	
-	public Iterator
+	public Iterator<T>
 	iterator()
 	{
-		return( new CopyOnWriteListIterator( list.iterator()));
+		synchronized( this ){
+
+			visible = true;
+			
+			return( new CopyOnWriteListIterator( list.iterator()));
+		}
 	}
 	
-	public List
+	public List<T>
 	getList()
 	{
 			// TODO: we need to either make this a read-only-list or obey the copy-on-write semantics correctly...
 		
-		return( list );
+		synchronized( this ){
+
+			visible = true;
+			
+			return( list );
+		}
 	}
 	
 	public int
 	size()
 	{
-		return( list.size());
+		synchronized( this ){
+
+			return( list.size());
+		}
 	}
 	
-	/*
-	public int
-	getVersion()
+	public boolean 
+	isEmpty() 
 	{
-		return( version );
+		synchronized( this ){
+
+			return list.isEmpty();
+		}
+	}
+	
+	public Object[]
+	toArray()
+	{
+		synchronized( this ){
+
+			return( list.toArray());
+		}
+	}
+	
+	public T[]
+  	toArray(
+  		T[]	 x )
+  	{
+		synchronized( this ){
+
+			return( list.toArray(x));
+		}
+  	}
+	
+	/*
+	private void
+	mutated()
+	{
+		mutation_count++;
+		
+		if ( mutation_count%10 == 0 ){
+			
+			System.out.println( this + ": mut=" + mutation_count );
+		}
 	}
 	*/
 	
 	private class
 	CopyOnWriteListIterator
-		implements Iterator
+		implements Iterator<T>
 	{
-		private Iterator	it;
-		private Object		last;
+		private Iterator<T>	it;
+		private T			last;
 		
 		protected
 		CopyOnWriteListIterator(
-			Iterator		_it )
+			Iterator<T>		_it )
 		{
 			it		= _it;
 		}
@@ -130,7 +333,7 @@ CopyOnWriteList
 			return( it.hasNext());
 		}
 		
-		public Object
+		public T
 		next()
 		{
 			last	= it.next();
@@ -151,5 +354,13 @@ CopyOnWriteList
 			
 			CopyOnWriteList.this.remove( last );
 		}
+	}
+
+	public int getInitialCapacity() {
+		return initialCapacity;
+	}
+
+	public void setInitialCapacity(int initialCapacity) {
+		this.initialCapacity = initialCapacity;
 	}
 }

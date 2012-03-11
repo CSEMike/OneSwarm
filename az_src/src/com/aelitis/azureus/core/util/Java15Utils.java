@@ -21,53 +21,68 @@
 
 package com.aelitis.azureus.core.util;
 
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
+import java.net.Proxy;
+import java.net.URL;
 import java.net.URLConnection;
 
-public class
+
+public class 
 Java15Utils 
 {
-	private static Java15UtilsProvider	provider;
+	private static ThreadMXBean	thread_bean;
 	
-	public static void
-	setProvider(
-		Java15UtilsProvider		_provider )
-	{
-		provider	= _provider;
+	static{
+		try{
+			thread_bean = ManagementFactory.getThreadMXBean();
+			
+		}catch( Throwable e ){
+			
+			e.printStackTrace();
+		}
 	}
-	
+
 	public static void
 	setConnectTimeout(
-		URLConnection	con,
-		int				timeout )
+		URLConnection		con,
+		int					timeout )
 	{
-		if ( provider != null ){
-			
-			provider.setConnectTimeout( con, timeout );
-		}
+		con.setConnectTimeout( timeout );
 	}
 	
 	public static void
 	setReadTimeout(
-		URLConnection	con,
-		int				timeout )
+		URLConnection		con,
+		int					timeout )
 	{
-		if ( provider != null ){
-			
-			provider.setReadTimeout( con, timeout );
-		}
+		con.setReadTimeout( timeout );
 	}
 	
-	public interface
-	Java15UtilsProvider
+	public static long
+	getThreadCPUTime()
 	{
-		public void
-		setConnectTimeout(
-			URLConnection	con,
-			int				timeout );
+		if ( thread_bean == null ){
+			
+			return( 0 );
+		}
 		
-		public void
-		setReadTimeout(
-			URLConnection	con,
-			int				timeout );
+		return( thread_bean.getCurrentThreadCpuTime());
+	}
+	
+	public static void
+	dumpThreads()
+	{
+		AEThreadMonitor.dumpThreads();
+	}
+	
+	public static URLConnection 
+	openConnectionForceNoProxy(
+		URL url) 
+	
+		throws IOException 
+	{
+		return url.openConnection(Proxy.NO_PROXY);
 	}
 }

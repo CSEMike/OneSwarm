@@ -33,7 +33,7 @@ import java.util.List;
 
 
 public class 
-ByteArrayHashMap 
+ByteArrayHashMap<T>
 {
     /**
      * The default initial capacity - MUST be a power of two.
@@ -51,13 +51,14 @@ ByteArrayHashMap
     static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
  
-    private Entry[] table;
-    private int size;
+    protected Entry<T>[] table;
+    protected int size;
     private int threshold;
     final float loadFactor;
 
   
-    public ByteArrayHashMap(int initialCapacity, float loadFactor) {
+    @SuppressWarnings("unchecked")
+	public ByteArrayHashMap(int initialCapacity, float loadFactor) {
         if (initialCapacity < 0)
             throw new IllegalArgumentException("Illegal initial capacity: " +
                                                initialCapacity);
@@ -82,6 +83,7 @@ ByteArrayHashMap
         this(initialCapacity, DEFAULT_LOAD_FACTOR);
     }
 
+    @SuppressWarnings("unchecked")
     public ByteArrayHashMap() {
         this.loadFactor = DEFAULT_LOAD_FACTOR;
         threshold = (int)(DEFAULT_INITIAL_CAPACITY * DEFAULT_LOAD_FACTOR);
@@ -99,21 +101,21 @@ ByteArrayHashMap
         return size == 0;
     }
 
-    public Object get(byte[] key, int offset, int len )
+    public T get(byte[] key, int offset, int len )
     {
     	byte[]	k = new byte[len];
     	System.arraycopy( key, offset, k, 0, len );
     	return( get( k ));
     }
     
-    public Object get(byte[] key) {
+    public T get(byte[] key) {
         
         int hash = hash(key);
         int i = indexFor(hash, table.length);
-        Entry e = table[i]; 
+        Entry<T> e = table[i]; 
         while (true) {
             if (e == null)
-                return e;
+                return null;
             if (e.hash == hash && eq(key, e.key)) 
                 return e.value;
             e = e.next;
@@ -126,7 +128,7 @@ ByteArrayHashMap
     {
         int hash = hash(key);
         int i = indexFor(hash, table.length);
-        Entry e = table[i]; 
+        Entry<T> e = table[i]; 
         while (true) {
             if (e == null)
                 return( false );
@@ -136,13 +138,13 @@ ByteArrayHashMap
         }
     }
     
-    public Object put(byte[] key, Object value) {
+    public T put(byte[] key, T value) {
         int hash = hash(key);
         int i = indexFor(hash, table.length);
 
-        for (Entry e = table[i]; e != null; e = e.next) {
+        for (Entry<T> e = table[i]; e != null; e = e.next) {
             if (e.hash == hash && eq(key, e.key)) {
-                Object oldValue = e.value;
+                T oldValue = e.value;
                 e.value = value;
               
                 return oldValue;
@@ -154,27 +156,27 @@ ByteArrayHashMap
     }
 
  
-    public Object remove(byte[] key) {
-        Entry e = removeEntryForKey(key);
-        return (e == null ? e : e.value);
+    public T remove(byte[] key) {
+        Entry<T> e = removeEntryForKey(key);
+        return (e == null ? null : e.value);
     }
 
 
     public void clear() {
       
-        Entry tab[] = table;
+        Entry<T> tab[] = table;
         for (int i = 0; i < tab.length; i++) 
             tab[i] = null;
         size = 0;
     }
     
-    public List
+    public List<byte[]>
     keys()
     {
-    	List	res = new ArrayList();
+    	List<byte[]>	res = new ArrayList<byte[]>();
     	
         for (int j = 0; j < table.length; j++) {
-	         Entry e = table[j];
+	         Entry<T> e = table[j];
 	         while( e != null ){
                	res.add( e.key );
                 	
@@ -185,13 +187,13 @@ ByteArrayHashMap
         return( res );
     }
     
-    public List
+    public List<T>
     values()
     {
-    	List	res = new ArrayList();
+    	List<T>	res = new ArrayList<T>();
     	
         for (int j = 0; j < table.length; j++) {
-	         Entry e = table[j];
+	         Entry<T> e = table[j];
 	         while( e != null ){
                	res.add( e.value );
                 	
@@ -207,13 +209,13 @@ ByteArrayHashMap
      * @return
      */
     
-    public ByteArrayHashMap
+    public ByteArrayHashMap<T>
     duplicate()
     {
-    	ByteArrayHashMap	res = new ByteArrayHashMap(size,loadFactor);
+    	ByteArrayHashMap<T>	res = new ByteArrayHashMap<T>(size,loadFactor);
     	
         for (int j = 0; j < table.length; j++) {
-	         Entry e = table[j];
+	         Entry<T> e = table[j];
 	         while( e != null ){
               	res.put( e.key, e.value );
                	
@@ -226,30 +228,31 @@ ByteArrayHashMap
     
     	//////////////////////////////////
     
+    @SuppressWarnings("unchecked")
     void resize(int newCapacity) {
-        Entry[] oldTable = table;
+        Entry<T>[] oldTable = table;
         int oldCapacity = oldTable.length;
         if (oldCapacity == MAXIMUM_CAPACITY) {
             threshold = Integer.MAX_VALUE;
             return;
         }
 
-        Entry[] newTable = new Entry[newCapacity];
+        Entry<T>[] newTable = new Entry[newCapacity];
         transfer(newTable);
         table = newTable;
         threshold = (int)(newCapacity * loadFactor);
     }
 
   
-    void transfer(Entry[] newTable) {
-        Entry[] src = table;
+    void transfer(Entry<T>[] newTable) {
+        Entry<T>[] src = table;
         int newCapacity = newTable.length;
         for (int j = 0; j < src.length; j++) {
-            Entry e = src[j];
+            Entry<T> e = src[j];
             if (e != null) {
                 src[j] = null;
                 do {
-                    Entry next = e.next;
+                    Entry<T> next = e.next;
                     int i = indexFor(e.hash, newCapacity);  
                     e.next = newTable[i];
                     newTable[i] = e;
@@ -260,14 +263,14 @@ ByteArrayHashMap
     }
 
  
-    Entry removeEntryForKey(byte[] key) {
+    Entry<T> removeEntryForKey(byte[] key) {
         int hash = hash(key);
         int i = indexFor(hash, table.length);
-        Entry prev = table[i];
-        Entry e = prev;
+        Entry<T> prev = table[i];
+        Entry<T> e = prev;
 
         while (e != null) {
-            Entry next = e.next;
+            Entry<T> next = e.next;
             if (e.hash == hash && eq(key, e.key)) {
                
                 size--;
@@ -287,16 +290,16 @@ ByteArrayHashMap
 
  
 
-    static class Entry{
-        final byte[] key;
-        Object value;
-        final int hash;
-        Entry next;
+    protected static class Entry<S>{
+    	public final byte[] key;
+        public S value;
+        public final int hash;
+        public Entry<S> next;
 
         /**
          * Create new entry.
          */
-        Entry(int h, byte[] k, Object v, Entry n) { 
+        Entry(int h, byte[] k, S v, Entry<S> n) { 
             value = v; 
             next = n;
             key = k;
@@ -307,22 +310,22 @@ ByteArrayHashMap
             return key;
         }
 
-        public Object getValue() {
+        public S getValue() {
             return value;
         }
 
     }
 
  
-    void addEntry(int hash, byte[] key, Object value, int bucketIndex) {
-        table[bucketIndex] = new Entry(hash, key, value, table[bucketIndex]);
+    void addEntry(int hash, byte[] key, T value, int bucketIndex) {
+        table[bucketIndex] = new Entry<T>(hash, key, value, table[bucketIndex]);
         if (size++ >= threshold) 
             resize(2 * table.length);
     }
 
  
-    void createEntry(int hash, byte[] key, Object value, int bucketIndex) {
-        table[bucketIndex] = new Entry(hash, key, value, table[bucketIndex]);
+    void createEntry(int hash, byte[] key, T value, int bucketIndex) {
+        table[bucketIndex] = new Entry<T>(hash, key, value, table[bucketIndex]);
         size++;
     }
     

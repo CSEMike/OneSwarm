@@ -22,6 +22,10 @@
 
 package com.aelitis.azureus.core.util.bloom.impl;
 
+import java.util.Map;
+
+import com.aelitis.azureus.core.util.bloom.BloomFilter;
+
 public class 
 BloomFilterAddRemove8Bit
 	extends BloomFilterImpl
@@ -35,6 +39,30 @@ BloomFilterAddRemove8Bit
 		super( _max_entries );
 			
 		map	= new byte[getMaxEntries()];
+	}
+	
+	public
+	BloomFilterAddRemove8Bit(
+		Map<String,Object>		x )
+	{
+		super( x );
+		
+		map = (byte[])x.get( "map" );
+	}
+	
+	protected void
+	serialiseToMap(
+		Map<String,Object>		x )
+	{
+		super.serialiseToMap( x );
+		
+		x.put( "map", map.clone());
+	}
+	
+	public BloomFilter 
+	getReplica() 
+	{
+		return( new BloomFilterAddRemove8Bit( getMaxEntries()));
 	}
 	
 	protected int

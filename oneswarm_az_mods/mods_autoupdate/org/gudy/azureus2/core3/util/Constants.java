@@ -102,6 +102,7 @@ Constants
 
 //  public static final String AZUREUS_NAME	  = "Azureus";
   public static final String AZUREUS_NAME	  = "OneSwarm";
+    public static final String APP_NAME = AZUREUS_NAME;
 //  public static final String AZUREUS_VERSION  = "3.0.5.0";  //3.0.5.1_CVS
     public static final String AZUREUS_VERSION = "0.7.6.0";
 
@@ -284,6 +285,8 @@ Constants
   {
   	return( isCVSVersion( AZUREUS_VERSION ));
   }
+
+    public static boolean IS_CVS_VERSION = isCVSVersion();
 
   public static boolean
   isCVSVersion(

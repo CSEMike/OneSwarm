@@ -22,15 +22,23 @@
 
 package com.aelitis.azureus.core.util.bloom.impl;
 
-import java.math.BigInteger;
+import java.lang.reflect.Constructor;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
+import org.gudy.azureus2.core3.util.Debug;
+
 import com.aelitis.azureus.core.util.bloom.BloomFilter;
+import com.aelitis.azureus.util.MapUtils;
+
 
 public abstract class 
 BloomFilterImpl
 	implements BloomFilter
 {
+	protected static final String MY_PACKAGE = "com.aelitis.azureus.core.util.bloom.impl";
+
 	/*
 	private static final boolean	USE_BIG_INTS	= false;
 	private static final char[]	HEX_CHARS = "0123456789ABCDEF".toCharArray();
@@ -56,11 +64,37 @@ BloomFilterImpl
 	private static final int	b3		= 145;
 	private static final int	b4		= 216;
 	
+	public static BloomFilter
+	deserialiseFromMap(
+		Map<String,Object>	map )
+	{
+		String	impl = MapUtils.getMapString( map, "_impl", "" );
+		
+		if ( impl.startsWith( "." )){
+			
+			impl = MY_PACKAGE + impl;
+		}
+		
+		try{
+			Class<BloomFilterImpl> cla = (Class<BloomFilterImpl>)Class.forName( impl );
+			
+			Constructor<BloomFilterImpl> cons = cla.getDeclaredConstructor( Map.class );
+			
+			cons.setAccessible( true );
+			
+			return( cons.newInstance( map ));
+			
+		}catch( Throwable e ){
 
+			Debug.out( "Can't construct bloom filter for " + impl, e );
+			
+			return( null );
+		}
+	}
 	
 
 	private int			max_entries;
-	private BigInteger	bi_max_entries;
+	//private BigInteger	bi_max_entries;
 	
 	private int			entry_count;
 	
@@ -68,9 +102,44 @@ BloomFilterImpl
 	BloomFilterImpl(
 		int		_max_entries )
 	{
-		bi_max_entries	= new BigInteger( ""+(((_max_entries/2)*2)+1));
+		//bi_max_entries	= new BigInteger( ""+(((_max_entries/2)*2)+1));
 				
-		max_entries	= bi_max_entries.intValue();
+		max_entries	= ((_max_entries/2)*2)+1;
+	}
+	
+	public
+	BloomFilterImpl(
+		Map<String,Object>		x )
+	{
+		max_entries = ((Long)x.get( "_max" )).intValue();
+		
+		entry_count = ((Long)x.get( "_count" )).intValue();
+	}
+	protected void
+	serialiseToMap(
+		Map<String,Object>		x )
+	{
+		String	cla = this.getClass().getName();
+		
+		if ( cla.startsWith( MY_PACKAGE )){
+			
+			cla = cla.substring( MY_PACKAGE.length());
+		}
+		
+		x.put( "_impl", cla );
+		
+		x.put( "_max", new Long( max_entries ));
+		x.put( "_count", new Long( entry_count ));
+	}
+	
+	public Map<String, Object> 
+	serialiseToMap() 
+	{
+		Map<String, Object>  m = new HashMap<String, Object>();
+		
+		serialiseToMap( m );
+		
+		return( m );
 	}
 	
 	protected int
@@ -495,6 +564,12 @@ BloomFilterImpl
 		    return full_address;
 	}
 	 
+	public String
+	getString()
+	{
+		return( "ent=" + entry_count + ",max=" + max_entries );
+	}
+	
 	public static void
 	main(
 		String[]	args )

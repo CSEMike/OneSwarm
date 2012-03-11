@@ -31,6 +31,12 @@ public abstract class
 ThreadPoolTask
 	extends AERunnable
 {
+	static final int RELEASE_AUTO = 0x00;
+	static final int RELEASE_MANUAL = 0x01;
+	static final int RELEASE_MANUAL_ALLOWED = 0x02;
+	
+	int manualRelease;
+	
 	protected ThreadPool.threadPoolWorker		worker;
 	
 	public void
@@ -63,5 +69,50 @@ ThreadPoolTask
 	public void
 	taskCompleted()
 	{
+	}
+	
+	/**
+	 * only invoke this method after the first run of the threadpooltask as it is only meant to join
+	 * on a task when it has child tasks and thus is running in manual release mode
+	 */
+	synchronized void join()
+	{
+		while(manualRelease != RELEASE_AUTO)
+		{
+			try
+			{
+				wait();
+			} catch (Exception e)
+			{
+				Debug.printStackTrace(e);
+			}
+		}
+	}
+
+	/**
+	 * only invoke this method after the first run of the threadpooltask as it is only meant to
+	 * update the state of a task when it has child tasks and thus is running in manual release mode
+	 */
+	synchronized boolean isAutoReleaseAndAllowManual()
+	{
+		if(manualRelease == RELEASE_MANUAL)
+			manualRelease = RELEASE_MANUAL_ALLOWED;
+		return manualRelease == RELEASE_AUTO;
+	}
+	
+	public synchronized void releaseToPool()
+	{
+		// releasing before the initial run finished, so just let the runner do the cleanup
+		if(manualRelease == RELEASE_MANUAL)
+			manualRelease = RELEASE_AUTO;
+		else if(manualRelease == RELEASE_MANUAL_ALLOWED)
+		{
+			taskCompleted();
+			worker.getOwner().releaseManual(this);
+			manualRelease = RELEASE_AUTO;
+		} else if(manualRelease == RELEASE_AUTO)
+			Debug.out("this should not happen");
+		
+		notifyAll();
 	}
 }

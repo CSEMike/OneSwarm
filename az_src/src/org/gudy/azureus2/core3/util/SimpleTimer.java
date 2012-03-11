@@ -45,6 +45,8 @@ SimpleTimer
 		
 		timer.setWarnWhenFull();
 		
+		// timer.setLogCPU();
+		
 		// timer.setLogging(true);
 	}
 	
@@ -59,6 +61,18 @@ SimpleTimer
 		return( res );
 	}
 	
+	public static TimerEvent
+	addEvent(
+		String				name,
+		long				when,
+		boolean				absolute,
+		TimerEventPerformer	performer )
+	{
+		TimerEvent	res = timer.addEvent( name, when, absolute, performer );
+				
+		return( res );
+	}
+	
 	public static TimerEventPeriodic
 	addPeriodicEvent(
 		String				name,
@@ -66,6 +80,18 @@ SimpleTimer
 		TimerEventPerformer	performer )
 	{
 		TimerEventPeriodic	res = timer.addPeriodicEvent( name, frequency, performer );
+				
+		return( res );
+	}
+	
+	public static TimerEventPeriodic
+	addPeriodicEvent(
+		String				name,
+		long				frequency,
+		boolean				absolute,
+		TimerEventPerformer	performer )
+	{
+		TimerEventPeriodic	res = timer.addPeriodicEvent( name, frequency, absolute, performer );
 				
 		return( res );
 	}

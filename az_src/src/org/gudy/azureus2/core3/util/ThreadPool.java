@@ -26,16 +26,18 @@ package org.gudy.azureus2.core3.util;
  *
  */
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.config.ParameterListener;
 
+import com.aelitis.azureus.core.util.Java15Utils;
+
 public class 
 ThreadPool 
 {
-	private static final int	IDLE_LINGER_TIME	= 10000;
-	
 	private static final boolean	LOG_WARNINGS	= false;
 	private static final int		WARN_TIME		= 10000;
 	
@@ -116,12 +118,11 @@ ThreadPool
 	
 	private long	execution_limit;
 	
-	private Stack	thread_pool;
 	private List	busy;
 	private boolean	queue_when_full;
 	private List	task_queue	= new ArrayList();
 	
-	private AESemaphore	thread_sem;
+	AESemaphore	thread_sem;
 	
 	private int			thread_priority	= Thread.NORM_PRIORITY;
 	private boolean		warn_when_full;
@@ -129,6 +130,8 @@ ThreadPool
 	private long		task_total;
 	private long		task_total_last;
 	private Average		task_average	= Average.getInstance( WARN_TIME, 120 );
+	
+	private boolean		log_cpu	= false || AEThread2.TRACE_TIMES;
 	
 	public
 	ThreadPool(
@@ -150,8 +153,6 @@ ThreadPool
 		
 		thread_sem = new AESemaphore( "ThreadPool::" + name, _max_size );
 		
-		thread_pool	= new Stack();
-					
 		busy		= new ArrayList( _max_size );
 	}
 
@@ -159,13 +160,19 @@ ThreadPool
 	generateEvidence(
 		IndentWriter		writer )
 	{
-		writer.println( name + ": max=" + max_size +",qwf=" + queue_when_full + ",queue=" + task_queue.size() + ",busy=" + busy.size() + ",pool=" + thread_pool.size() + ",total=" + task_total + ":" + DisplayFormatters.formatDecimal(task_average.getDoubleAverage(),2) + "/sec");
+		writer.println( name + ": max=" + max_size +",qwf=" + queue_when_full + ",queue=" + task_queue.size() + ",busy=" + busy.size() + ",total=" + task_total + ":" + DisplayFormatters.formatDecimal(task_average.getDoubleAverage(),2) + "/sec");
 	}
 	
 	public void
 	setWarnWhenFull()
 	{
 		warn_when_full	= true;
+	}
+	
+	public void
+	setLogCPU()
+	{
+		log_cpu	= true;
 	}
 	
 	public int
@@ -188,25 +195,24 @@ ThreadPool
 		execution_limit	= millis;
 	}
 	
-	public threadPoolWorker
-	run(
-		AERunnable	runnable )
-	{
-		return( run( runnable, false ));
+	public threadPoolWorker run(AERunnable runnable) {
+		return( run(runnable, false, false));
 	}
+
 	
-		/**
-		 * 
-		 * @param runnable
-		 * @param high_priority		inserts at front if tasks queueing
-		 * @return
-		 */
-	
-	public threadPoolWorker
-	run(
-		AERunnable	runnable,
-		boolean		high_priority )
-	{
+	/**
+	 * 
+	 * @param runnable
+	 * @param high_priority
+	 *            inserts at front if tasks queueing
+	 */
+	public threadPoolWorker run(AERunnable runnable, boolean high_priority, boolean manualRelease) {
+		
+		if(manualRelease && !(runnable instanceof ThreadPoolTask))
+			throw new IllegalArgumentException("manual release only allowed for ThreadPoolTasks");
+		else if(manualRelease)
+			((ThreadPoolTask)runnable).manualRelease = ThreadPoolTask.RELEASE_MANUAL;
+		
 		// System.out.println( "Thread pool:" + name + " - sem = " + thread_sem.getValue() + ", queue = " + task_queue.size());
 		
 			// not queueing, grab synchronous sem here
@@ -229,7 +235,7 @@ ThreadPool
 	
 				}else{
 						// run immediately
-							
+											
 					if ( runnable instanceof ThreadPoolTask ){
 						
 						ThreadPoolTask task = (ThreadPoolTask)runnable;
@@ -239,7 +245,9 @@ ThreadPool
 						try{
 							task.taskStarted();
 							
-							task.run();
+							runIt( runnable );
+							
+							task.join();
 							
 						}finally{
 							
@@ -247,9 +255,9 @@ ThreadPool
 						}
 					}else{
 					
-						runnable.runSupport();
+						runIt( runnable );
 					}
-					
+
 					return( recursive_worker );
 				}
 			}
@@ -259,116 +267,111 @@ ThreadPool
 						
 		synchronized( this ){
 		
-				// reserve if available is non-blocking
+			if ( high_priority )				
+				task_queue.add( 0, runnable );
+			else
+				task_queue.add( runnable );
 			
+			// reserve if available is non-blocking
+		
 			if ( queue_when_full && !thread_sem.reserveIfAvailable()){
 			
 				allocated_worker	= null;
 			
 				checkWarning();
 				
-				if ( high_priority ){
-					
-					task_queue.add( 0, runnable );
-					
-				}else{
-				
-					task_queue.add( runnable );
-				}
 			}else{
 				
-				if ( thread_pool.isEmpty()){
-							
-					allocated_worker = new threadPoolWorker();	
-		
-				}else{
-									
-					allocated_worker = (threadPoolWorker)thread_pool.pop();
-				}
+				allocated_worker = new threadPoolWorker();	
 				
-				if ( runnable instanceof ThreadPoolTask ){
-					
-					((ThreadPoolTask)runnable).worker = allocated_worker;
-				}
-				
-				allocated_worker.run( runnable );
 			}
 		}
 		
-		return( queue_when_full?null:allocated_worker );
+		return( allocated_worker );
 	}
 	
 	protected void
-	checkWarning()
+	runIt(
+		AERunnable	runnable )
 	{
-		if ( warn_when_full ){
+		if ( log_cpu ){
 			
-			String	task_names = "";
+			long	start_cpu = log_cpu?Java15Utils.getThreadCPUTime():0;
+			long	start_time	= SystemTime.getHighPrecisionCounter();
 			
-			try{
-				synchronized( ThreadPool.this ){
-						
-					for (int i=0;i<busy.size();i++){
-							
-						threadPoolWorker	x = (threadPoolWorker)busy.get(i);
-												
-						AERunnable r = x.runnable;
+			runnable.run();
+			
+			if ( start_cpu > 0 ){
+				
+				long	end_cpu = log_cpu?Java15Utils.getThreadCPUTime():0;
+				
+				long	diff_cpu = ( end_cpu - start_cpu ) / 1000000;
+			
+				long	end_time	= SystemTime.getHighPrecisionCounter();
+
+				long	diff_millis = ( end_time - start_time ) / 1000000;
+				
+				if ( diff_cpu > 10 || diff_millis > 10){
+				
+					System.out.println( TimeFormatter.milliStamp() + ": Thread: " + Thread.currentThread().getName() + ": " + runnable + " -> " + diff_cpu + "/" + diff_millis );
+				}
+			}	
+		}else{
+			
+			runnable.run();
+		}
+	}
 	
-						if ( x != null ){
-							
-							String	name;
-							
-							if ( r instanceof ThreadPoolTask ){
-								
-								name = ((ThreadPoolTask)r).getName();
-								
-							}else{
-								
+	protected void checkWarning() {
+		if (warn_when_full)
+		{
+			String task_names = "";
+			try
+			{
+				synchronized (ThreadPool.this)
+				{
+					for (int i = 0; i < busy.size(); i++)
+					{
+						threadPoolWorker x = (threadPoolWorker) busy.get(i);
+						AERunnable r = x.runnable;
+						if (x != null)
+						{
+							String name;
+							if (r instanceof ThreadPoolTask)
+								name = ((ThreadPoolTask) r).getName();
+							else
 								name = x.getClass().getName();
-							}
-							
-							task_names += (task_names.length()==0?"":",") + name;
+							task_names += (task_names.length() == 0 ? "" : ",") + name;
 						}
 					}
 				}
-			}catch( Throwable e ){
-			}
-			
-			Debug.out( "Thread pool '" + getName() + "' is full (busy=" + task_names + ")" );
-			
-			warn_when_full	= false;
+			} catch (Throwable e)
+			{}
+			Debug.out("Thread pool '" + getName() + "' is full (busy=" + task_names + ")");
+			warn_when_full = false;
 		}
 	}
 	
-	public AERunnable[]
-	getQueuedTasks()
-	{
-		synchronized( this ){
-
-			AERunnable[]	res = new AERunnable[task_queue.size()];
-			
+	public AERunnable[] getQueuedTasks() {
+		synchronized (this)
+		{
+			AERunnable[] res = new AERunnable[task_queue.size()];
 			task_queue.toArray(res);
-			
-			return( res );
+			return (res);
 		}
 	}
 	
-	public int
-	getQueueSize()
-	{
-		synchronized( this ){
-			
-			return( task_queue.size());
+	public int getQueueSize() {
+		synchronized (this)
+		{
+			return task_queue.size();
 		}
 	}
 	
-	public boolean
-	isQueued(
-		AERunnable	task )
-	{
-		synchronized( this ){
-
-			return( task_queue.contains( task ));
+	public boolean isQueued(AERunnable task) {
+		synchronized (this)
+		{
+			return task_queue.contains(task);
 		}
 	}
 	
@@ -401,10 +404,41 @@ ThreadPool
 		return( res );
 	}
 	
+	public int
+  	getRunningCount()
+  	{
+  		int	res = 0;
+  		
+  		synchronized( this ){
+
+  			Iterator	it = busy.iterator();
+  			
+  			while( it.hasNext()){
+  				
+  				threadPoolWorker	worker = (threadPoolWorker)it.next();
+  				
+  				AERunnable	runnable = worker.getRunnable();
+  				
+  				if ( runnable != null ){
+  					
+  					res++;
+  				}
+  			}
+  		}
+  			
+  		return( res );
+  	}
+	              	
+	public boolean
+	isFull()
+	{
+		return( thread_sem.getValue() == 0 );
+	}
+	
 	protected void
 	checkTimeouts()
 	{
-		synchronized( ThreadPool.this ){
+		synchronized( this ){
 		
 			long	diff = task_total - task_total_last;
 			
@@ -414,7 +448,7 @@ ThreadPool
 			
 			if ( debug_thread_pool_log_on ){
 				
-				System.out.println( "ThreadPool '" + getName() + "'/" + thread_name_index + ": max=" + max_size + ",sem=[" + thread_sem.getString() + "],pool=" + thread_pool.size() + ",busy=" + busy.size() + ",queue=" + task_queue.size());
+				System.out.println( "ThreadPool '" + getName() + "'/" + thread_name_index + ": max=" + max_size + ",sem=[" + thread_sem.getString() + "],busy=" + busy.size() + ",queue=" + task_queue.size());
 			}
 			
 			long	now = SystemTime.getCurrentTime();
@@ -452,7 +486,7 @@ ThreadPool
 									
 								}else{
 									
-									x.worker_thread.interrupt();
+									x.interrupt();
 								}
 							}catch( Throwable e ){
 								
@@ -465,269 +499,213 @@ ThreadPool
 		}
 	}
 	
-	public class
-	threadPoolWorker
-	{
-		private final String	worker_name;
-		
-		private final AEThread2	worker_thread;
-		
-		private AESemaphore my_sem = new AESemaphore("TPWorker");
-		
-		private volatile AERunnable	runnable;
-		
-		private long		run_start_time;
-		private int			warn_count;
-		
-		private String	state	= "<none>";
-		
-		protected
-		threadPoolWorker()
-		{			
-			worker_name = name + "[" + (thread_name_index++) +  "]";
+	public String getName() {
+		return (name);
+	}
+
+	void releaseManual(ThreadPoolTask toRelease) {
+		if(!busy.contains(toRelease.worker) || toRelease.manualRelease != ThreadPoolTask.RELEASE_MANUAL_ALLOWED)
+			throw new IllegalStateException("task already released or not manually releasable");
+
+		synchronized (this)
+		{
+			long elapsed = SystemTime.getCurrentTime() - toRelease.worker.run_start_time;
+			if (elapsed > WARN_TIME && LOG_WARNINGS)
+				DebugLight.out(toRelease.worker.getWorkerName() + ": terminated, elapsed = " + elapsed + ", state = " + toRelease.worker.state);
 			
-			worker_thread = new AEThread2( worker_name, true )
+			busy.remove(toRelease.worker);
+			
+			// if debug is on we leave the pool registered so that we
+			// can trace on the timeout events
+			if (busy.size() == 0 && !debug_thread_pool)
+				synchronized (busy_pools)
 				{
-					public void 
-					run()
+					busy_pools.remove(this);
+				}
+
+			if(busy.size() == 0)
+				thread_sem.release();
+			else
+				new threadPoolWorker();		
+		}
+
+	}
+	
+	public void registerThreadAsChild(threadPoolWorker parent)
+	{
+		if(tls.get() == null || tls.get() == parent)
+			tls.set(parent);
+		else
+			throw new IllegalStateException("another parent is already set for this thread");
+	}
+	
+	public void deregisterThreadAsChild(threadPoolWorker parent)
+	{
+		if(tls.get() == parent)
+			tls.set(null);
+		else
+			throw new IllegalStateException("tls is not set to parent");
+	}
+
+	
+	class threadPoolWorker extends AEThread2 {
+		private final String		worker_name;
+		private volatile AERunnable	runnable;
+		private long				run_start_time;
+		private int					warn_count;
+		private String				state	= "<none>";
+
+		protected threadPoolWorker()
+		{
+			super(name + "[" + (thread_name_index++) + "]",true);
+			setPriority(thread_priority);
+			worker_name = name + "[" + (thread_name_index++) + "]";
+			start();
+		}
+		
+		public void run() {
+			tls.set(threadPoolWorker.this);
+			
+			boolean autoRelease = true;
+
+			try
+			{
+				do
+				{
+					try
 					{
-						if ( thread_priority != Thread.NORM_PRIORITY ){
-							
-							setPriority( thread_priority );
+						synchronized (ThreadPool.this)
+						{
+							if (task_queue.size() > 0)
+								runnable = (AERunnable) task_queue.remove(0);
+							else
+								break;
 						}
 						
-						tls.set( threadPoolWorker.this );
-						
-						boolean	time_to_die = false;
-			
-outer:
-						while(true){
-							
-							try{
-								while( !my_sem.reserve(IDLE_LINGER_TIME)){
-																		
-									synchronized( ThreadPool.this ){
-										
-										if ( runnable == null ){
-											
-											time_to_die	= true;
-											
-											thread_pool.remove( threadPoolWorker.this );
-																						
-											break outer;
+						synchronized (ThreadPool.this)
+						{
+							run_start_time = SystemTime.getCurrentTime();
+							warn_count = 0;
+							busy.add(threadPoolWorker.this);
+							task_total++;
+							if (busy.size() == 1)
+							{
+								synchronized (busy_pools)
+								{
+									if (!busy_pools.contains(ThreadPool.this))
+									{
+										busy_pools.add(ThreadPool.this);
+										if (!busy_pool_timer_set)
+										{
+											// we have to defer this action rather
+											// than running as a static initialiser
+											// due to the dependency between
+											// ThreadPool, Timer and ThreadPool again
+											COConfigurationManager.addAndFireParameterListeners(new String[] { "debug.threadpool.log.enable", "debug.threadpool.debug.trace" }, new ParameterListener()
+											{
+												public void parameterChanged(String name) {
+													debug_thread_pool = COConfigurationManager.getBooleanParameter("debug.threadpool.log.enable", false);
+													debug_thread_pool_log_on = COConfigurationManager.getBooleanParameter("debug.threadpool.debug.trace", false);
+												}
+											});
+											busy_pool_timer_set = true;
+											SimpleTimer.addPeriodicEvent("ThreadPool:timeout", WARN_TIME, new TimerEventPerformer()
+											{
+												public void perform(TimerEvent event) {
+													checkAllTimeouts();
+												}
+											});
 										}
 									}
-								}
-								
-								while( runnable != null ){
-									
-									try{
-										
-										synchronized( ThreadPool.this ){
-												
-											run_start_time	= SystemTime.getCurrentTime();
-											warn_count		= 0;
-											
-											busy.add( threadPoolWorker.this );
-											
-											task_total++;
-											
-											if ( busy.size() == 1 ){
-												
-												synchronized( busy_pools ){
-													
-													if ( !busy_pools.contains( ThreadPool.this  )){
-														
-														busy_pools.add( ThreadPool.this );
-														
-														if  ( !busy_pool_timer_set ){
-															
-																// we have to defer this action rather
-																// than running as a static initialiser
-																// due to the dependency between
-																// ThreadPool, Timer and ThreadPool again
-															
-															COConfigurationManager.addAndFireParameterListeners(
-																	new String[]{ "debug.threadpool.log.enable", "debug.threadpool.debug.trace" },
-																	new ParameterListener()
-																	{
-																		public void 
-																		parameterChanged(
-																			String name )
-																		{
-																			debug_thread_pool 			= COConfigurationManager.getBooleanParameter( "debug.threadpool.log.enable", false );
-																			debug_thread_pool_log_on 	= COConfigurationManager.getBooleanParameter( "debug.threadpool.debug.trace", false );
-																		}
-																	});
-																
-															busy_pool_timer_set	= true;
-															
-															SimpleTimer.addPeriodicEvent(
-																	"ThreadPool:timeout",
-																	WARN_TIME,
-																	new TimerEventPerformer()
-																	{
-																		public void
-																		perform(
-																			TimerEvent	event )
-																		{
-																			checkAllTimeouts();
-																		}
-																	});
-														}
-													}
-												}
-											}
-										}
-										
-										if ( runnable instanceof ThreadPoolTask ){
-										
-											ThreadPoolTask	tpt = (ThreadPoolTask)runnable;
-											
-											String	task_name = tpt.getName();
-																
-											try{
-												if ( task_name != null ){
-													
-													setName( worker_name + "{" + task_name + "}" );
-												}
-							
-												tpt.taskStarted();
-												
-												runnable.run();
-												
-											}finally{
-												
-												if ( task_name != null ){
-													
-													setName( worker_name );
-												}
-												
-												tpt.taskCompleted();
-											}
-										}else{
-											
-											runnable.run();
-										}
-										
-									}catch( Throwable e ){
-										
-										DebugLight.printStackTrace( e );		
-	
-									}finally{
-																					
-										synchronized( ThreadPool.this ){
-												
-											long	elapsed = SystemTime.getCurrentTime() - run_start_time;
-											
-											if ( elapsed > WARN_TIME && LOG_WARNINGS ){
-												
-												DebugLight.out( getWorkerName() + ": terminated, elapsed = " + elapsed + ", state = " + state );
-											}
-											
-											busy.remove( threadPoolWorker.this );
-											
-												// if debug is on we leave the pool registered so that we
-												// can trace on the timeout events
-											
-											if ( busy.size() == 0 && !debug_thread_pool ){
-												
-												synchronized( busy_pools ){
-												
-													busy_pools.remove( ThreadPool.this );
-												}
-											}
-										
-											if ( task_queue.size() > 0 ){
-												
-												runnable = (AERunnable)task_queue.remove(0);
-												
-											}else{
-											
-												runnable	= null;
-											}
-										}
-									}
-								}
-							}catch( Throwable e ){
-									
-								DebugLight.printStackTrace( e );
-											
-							}finally{
-										
-								if ( !time_to_die ){
-									
-									synchronized( ThreadPool.this ){
-											
-										if ( thread_pool.contains( threadPoolWorker.this )){
-											
-											Debug.out( "Thread pool already contains worker!" );
-										}
-										
-										thread_pool.push( threadPoolWorker.this );
-									}
-								
-									thread_sem.release();
 								}
 							}
 						}
+						
+						if (runnable instanceof ThreadPoolTask)
+						{
+							ThreadPoolTask tpt = (ThreadPoolTask) runnable;
+							tpt.worker = this;
+							String task_name = tpt.getName();
+							try
+							{
+								if (task_name != null)
+									setName(worker_name + "{" + task_name + "}");
+								tpt.taskStarted();
+								runIt(runnable);
+							} finally
+							{
+								if (task_name != null)
+									setName(worker_name);
+								
+								if(tpt.isAutoReleaseAndAllowManual())
+									tpt.taskCompleted();
+								else
+								{
+									autoRelease = false;
+									break;
+								}
+									
+							}
+						} else
+							runIt(runnable);
+
+					} catch (Throwable e)
+					{
+						DebugLight.printStackTrace(e);
+					} finally
+					{
+						if(autoRelease)
+						{
+							synchronized (ThreadPool.this)
+							{
+								long elapsed = SystemTime.getCurrentTime() - run_start_time;
+								if (elapsed > WARN_TIME && LOG_WARNINGS)
+									DebugLight.out(getWorkerName() + ": terminated, elapsed = " + elapsed + ", state = " + state);
+								
+								busy.remove(threadPoolWorker.this);
+								
+								// if debug is on we leave the pool registered so that we
+								// can trace on the timeout events
+								if (busy.size() == 0 && !debug_thread_pool)
+									synchronized (busy_pools)
+									{
+										busy_pools.remove(ThreadPool.this);
+									}
+							}							
+						}
 					}
-				};
-							
-			worker_thread.start();
-		}
-		
-		public void
-		setState(
-			String	_state )
-		{
-			//System.out.println( "state = " + _state );
-			
-			state	= _state;
-		}
-		
-		public String
-		getState()
-		{
-			return( state );
-		}
-		
-		protected String
-		getWorkerName()
-		{
-			return( worker_name );
-		}
-		
-		protected ThreadPool
-		getOwner()
-		{
-			return( ThreadPool.this );
-		}
-		
-		protected void
-		run(
-			AERunnable	_runnable )
-		{
-			if ( runnable != null ){
+				} while (runnable != null);
+			} catch (Throwable e)
+			{
+				DebugLight.printStackTrace(e);
+			} finally
+			{
+				if(autoRelease)
+					thread_sem.release();
 				
-				Debug.out( "Runnable already set" );
+				tls.set(null);
 			}
-			
-			runnable	= _runnable;
-			
-			my_sem.release();
 		}
 		
-		protected AERunnable
-		getRunnable()
-		{
-			return( runnable );
+		public void setState(String _state) {
+			//System.out.println( "state = " + _state );
+			state = _state;
 		}
-	}
-	
-	public String
-	getName()
-	{
-		return( name );
+
+		public String getState() {
+			return (state);
+		}
+
+		protected String getWorkerName() {
+			return (worker_name);
+		}
+
+		protected ThreadPool getOwner() {
+			return (ThreadPool.this);
+		}
+
+		protected AERunnable getRunnable() {
+			return (runnable);
+		}
 	}
 }

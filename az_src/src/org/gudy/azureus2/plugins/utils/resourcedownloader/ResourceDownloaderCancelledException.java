@@ -1,7 +1,7 @@
 /*
- * Created on 29-Apr-2005
- * Created by Paul Gardner
- * Copyright (C) 2005, 2006 Aelitis, All Rights Reserved.
+ * Created on 21 Apr 2008
+ * Created by Allan Crooks
+ * Copyright (C) 2007 Aelitis, All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,54 +17,21 @@
  * 
  * AELITIS, SAS au capital de 46,603.30 euros
  * 8 Allee Lenotre, La Grille Royale, 78600 Le Mesnil le Roi, France.
- *
+ */
+package org.gudy.azureus2.plugins.utils.resourcedownloader;
+
+/**
+ * @since 3.0.5.3
  */
 
-package com.aelitis.azureus.core.util.bloom;
-
-import java.util.Map;
-
-public interface 
-BloomFilter 
+public class 
+ResourceDownloaderCancelledException 
+	extends ResourceDownloaderException 
 {
-	public int
-	add(
-		byte[]		value );
-	
-	public int
-	remove(
-		byte[]		value );
-	
-	public boolean
-	contains(
-		byte[]		value );
-	
-	public int
-	count(
-		byte[]		value );
-	
-		/**
-		 * Returns number of unique entries
-		 * @return
-		 */
-	
-	public int
-	getEntryCount();
-	
-		/**
-		 * Returns overall capacity
-		 * @return
-		 */
-	
-	public int
-	getSize();
-	
-	public BloomFilter
-	getReplica();
-	
-	public Map<String,Object>
-	serialiseToMap();
-	
-	public String
-	getString();
+	public 
+	ResourceDownloaderCancelledException(
+		ResourceDownloader		rd )
+	{
+		super( rd, "Download cancelled" );
+	}
 }

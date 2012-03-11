@@ -22,6 +22,10 @@
 
 package com.aelitis.azureus.core.util.bloom.impl;
 
+import java.util.Map;
+
+import com.aelitis.azureus.core.util.bloom.BloomFilter;
+
 public class 
 BloomFilterAddRemove4Bit
 	extends BloomFilterImpl
@@ -37,6 +41,30 @@ BloomFilterAddRemove4Bit
 		// 4 bits per entry
 	
 		map	= new byte[(getMaxEntries()+1)/2];
+	}
+	
+	public
+	BloomFilterAddRemove4Bit(
+		Map<String,Object>		x )
+	{
+		super( x );
+		
+		map = (byte[])x.get( "map" );
+	}
+	
+	protected void
+	serialiseToMap(
+		Map<String,Object>		x )
+	{
+		super.serialiseToMap( x );
+		
+		x.put( "map", map.clone());
+	}
+	
+	public BloomFilter 
+	getReplica() 
+	{
+		return( new BloomFilterAddRemove4Bit( getMaxEntries()));
 	}
 	
 	protected int

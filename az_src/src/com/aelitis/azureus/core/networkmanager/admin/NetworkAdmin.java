@@ -79,6 +79,10 @@ NetworkAdmin
 	public abstract boolean
 	hasIPV6Potential();
 
+    public boolean hasDHTIPV6() {
+        return false;
+    }
+
 	public abstract NetworkAdminProtocol[]
 	getOutboundProtocols();
 	
