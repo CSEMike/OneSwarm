@@ -1,0 +1,795 @@
+VUZE CHANGELOG
+-----------------
+
+2012.xx.xx | Vuze 4.7.0.3
+
+
+
+2011.12.02 | Vuze 4.7.0.2
+
+FEATURE: Core | Initial support for portable Windows Vuze installs (see http://wiki.vuze.com/w/Portable_Vuze) [Parg]
+FEATURE: UI   | Toggle Fullscreen mode using Command-Shift-F (Mac) or Control-Shift-F (Non-Mac) [TuxPaper]
+FEATURE: UI   | Added filter mode to files view [Parg]
+FEATURE: UI   | Added text-alignment option to column setup [Parg]
+
+BUGFIX: Core  | Fixed version server check protocol fallback bug [Parg]
+BUGFIX: UI		| Fixed image management resource leak [Parg]
+
+
+
+2011.09.21 | Vuze 4.7.0.0
+
+FEATURE: Device | Improved Device Playback support: improved compatibility and many new devices added [TuxPaper]
+
+CHANGE: Core    | Moved some device detection code out of core [TuxPaper]
+CHANGE: Plug    | Removed IView, AbstractIView, SWTManager and other deprecated plugin APIs [TuxPaper]
+CHANGE: Device  | Button for "Do Not Transcode" [TuxPaper]
+CHANGE: Device  | Sidebar icon for devices that supply one [TuxPaper]
+CHANGE: UI      | Switched all views using IView to UISWTVIew [TuxPaper]
+CHANGE: UI      | Moved all non UI table refreshing code out of SWT thread (should result in faster UI) [TuxPaper]
+CHANGE: Misc    | Removed various left over and unused code (saved a measly 200k) [TuxPaper]
+
+BUGFIX: Core    | Fix OSX Lion problems
+
+
+
+2011.03.10 | Vuze 4.6.0.4
+
+CHANGE: UIv3  | Better messaging for Plus users on license expiry
+CHANGE: UI    | 50% faster table redraw on Windows when cell value changes [TuxPaper]
+
+BUGFIX: UI    | Fixed some dialogs that could open larger than the screen size [TuxPaper]
+
+
+
+2011.02.01 | Vuze 4.6.0.2
+
+FEATURE: Core | Relocate MOOV atoms to front of mp4 files for streaming [Parg]
+FEATURE: Core | Allow specification of IP address restriction for device content availability [Parg]
+FEATURE: Core | Grab <torrent> entities from RSS feed if present [Parg]
+FEATURE: Plug | Rate limit download speeds when play-now active to avoid disk contention [Parg]
+FEATURE: UI   | Add 'Play Now' column for streaming [TuxPaper]
+
+CHANGE: UI    | Added visual indication to first level menu for auto-device xcode selection [Parg]
+CHANGE: UI    | Support drag-n-drop onto classic share view [Parg]
+
+BUGFIX: Core  | Fix rare case where torrent at top of queue doesn't start & one later in the queue continues to download [TuxPaper]
+BUGFIX: Core  | Fix case where certain non-ASCII chars were causing metasearch config bloat [Parg]
+BUGFIX: Core  | Fix incorrect handling of reload of upnpav plugin resulting in xcodes disappearing until restart [Parg]
+BUGFIX: Plug  | Restore AV 'scanning' spinner icon [Parg]
+BUGFIX: UI    | Fix missing columns in "New" view [TuxPaper]
+BUGFIX: UI    | Fix drag indicator when prioritizing torrents in Library [TuxPaper]
+BUGFIX: UI    | Fix case where certain non-ASCII categories were causing azureus.config to bloat [TuxPaper]
+BUGFIX: UI    | Fix cases where Web Search wasn't opening results in external browser [TuxPaper]
+BUGFIX: UI    | Fix incorrect toolbar selection when in files view [Parg]
+BUGFIX: UI    | Fix incorrect handing of devices set to 'never transcode' [Parg]
+
+
+
+2011.01.13 | Vuze 4.6.0.0
+
+FEATURE: Core | UDP NAT Test tool [Parg]
+FEATURE: Core | Added device export/import feature [Parg]
+FEATURE: Plug | uTP support [Parg]
+FEATURE: Plug | Streaming playback [Parg]
+FEATURE: Plug | Added simple HTML view and explicit download option to device RSS feed [Parg]
+FEATURE: UI   | Add menu link from sidebar entries to plugin options where applicable [Parg]
+FEATURE: UI   | Option for what happens when pressing delete key or tb delete in My Torrents/Library [TuxPaper]
+FEATURE: UI   | Allow dropping torrent URLs onto sidebar (to add torrent) [TuxPaper]
+
+CHANGE: Core  | Prevent UDP scrape probes and DHT fallback scrape values from overriding more relevant values [Parg]
+CHANGE: Core  | Added some more client type peer-id decodes [Parg]
+CHANGE: Core  | Ensure piece picker file priorities take precedence over first/last piece [Parg]
+CHANGE: Core  | Don't auto-xcode low noise torrents [Parg]
+CHANGE: Core  | Propagate cookies across http->https redirects [Parg]
+CHANGE: Core  | Various minor startup tweaks to increase startup performance [TuxPaper]
+CHANGE: Plug  | Bump up the DHT minimum supported version [Parg]
+CHANGE: Plug  | Added option to force delayed restart on install [Parg]
+CHANGE: UI    | Rate limit various update operations to improve performance [Parg]
+CHANGE: UI    | Make tracker update button scrape torrents that are stopped [Parg]
+CHANGE: UI    | Wire up play button to xcoded content [Parg]
+CHANGE: UI    | Sidebar redesign [TuxPaper]
+CHANGE: UI    | Categories can now be shown in sidebar [TuxPaper]
+CHANGE: UI    | Filter text in Config view now gets highlighted [TuxPaper]
+
+BUGFIX: Core  | Fix poor perf with large peer connection count [Parg]
+BUGFIX: Core  | Pickup changes in transcode file categories [Parg]
+BUGFIX: Core  | Disable outbound UDP data connections if proxy set [Parg]
+BUGFIX: Core  | Fix reading some rare .torrent files with only UTF-8 keys [TuxPaper]
+BUGFIX: Core  | Fix bug when loading multiple .torrent files at once when they have the same URL filename [TuxPaper]
+BUGFIX: Plug  | Fixup names displayed during plugin load/init [Parg]
+BUGFIX: UI    | Prevent sources from being added multiple times [Parg]
+
+
+
+2010.10.05 | Vuze 4.5.1.0
+
+FEATURE: Core | Monitor available JVM memory and warn user if it is running out and auto increase (Windows only) [Parg]
+FEATURE: UI   | Support opening .vuze files from URLs [Parg]
+FEATURE: UI   | Allow setting of JVM direct memory max from UI (Windows only) [Parg]
+FEATURE: UI   | Added 'protocol' column to peers view [Parg]
+FEATURE: UI   | Expanded state of Sidebar entries are now remembered [TuxPaper]
+FEATURE: UI   | (Windows) Added Closeable Games sidebar entry [TuxPaper]
+
+CHANGE: Core  | Changed the trigger for upload rate bias when unlimited upload and inactive downloads [Parg]
+CHANGE: Core  | Permit export of all search templates [Parg]
+CHANGE: Core  | Reduce debug messages for connection-refused type tracker errors [Parg]
+CHANGE: Core  | Reduce version-check timeouts to prevent version server errors from adversely affecting Vuze [Parg]
+CHANGE: Core  | Be more tolerant of large PEX messages as clients are sending valid exchanges that exceeded our old limits [Parg]
+CHANGE: Core  | Improve detection of devices [TuxPaper]
+CHANGE: Core  | Report better error messages for failed plugin installs [Parg]
+CHANGE: Core  | Add alert details to alert log [Parg]
+CHANGE: Core  | Log plugin load-at-start state to diagnostics [Parg]
+CHANGE: UI    | Better handling in in-client browser for search engines and (blocking) pop-ups [TuxPaper]
+CHANGE: UI    | Device status column now reports when a file is being copied to the device [TuxPaper]
+
+BUGFIX: Core  | Fixes to superseeding mode [thanks Mmore1q3]
+BUGFIX: Core  | Fixed up disabling of UDP tracker protocol and added option to control UDP probing [Parg]
+BUGFIX: Core  | Fixed bug involving switching search template from manual to auto mode [Parg]
+BUGFIX: Core  | Immediately drop incoming connections for stopped downloads (they used to persist and timeout later) [Parg]
+BUGFIX: Core  | Fixed bug whereby add-for-seeding torrents with reorder-piece file mode and move-to dirs resulted in download being marked as incomplete [Parg]
+BUGFIX: Core  | OSX - handle UTF-8 BOM in plist [Parg]
+BUGFIX: UI    | Sort column editor available table correctly [Parg]
+BUGFIX: UI    | Fix case where sidebar doesn't display properly at startup [TuxPaper]
+BUGFIX: UI    | Changing name of Device should now be remembered [TuxPaper]
+BUGFIX: *     | Fix various Null Pointer Exceptions [TuxPaper]
+
+
+
+2010.09.01 | Vuze 4.5.0.4
+
+FEATURE: Core | Allow multiple primordial UDP handlers [Parg]
+FEATURE: UI   | Ability to auto-send crash logs [TuxPaper]
+FEATURE: UI   | Members of the Beta Program now get a Sidebar entry which will one day have useful beta information [TuxPaper]
+
+CHANGE: UI    | Improved languages change detection so more of the text now shows in the new language (unfortunately not all) [TuxPaper]
+CHANGE: UI    | (Windows) Bigger click area around the "X" in the Library's filter box [TuxPaper]
+CHANGE: UI    | (Windows) Triple click in search box now selects all the text [TuxPaper]
+CHANGE: UI    | Replaced "Remove And.." menu tree from Library's content menu with "Remove..." entry that gives you the same options.  Two related configs are in Options->Files->"File Deletion" [TuxPaper]
+
+BUGFIX: Core  | (Windows) Fix drive detection/removal when multiple drives get added/removed at once [TuxPaper]
+BUGFIX: Core  | (Windows) Fix drive with letters D: H: L: P: T: X: not being detected when plugged in while Vuze was running [TuxPaper]
+BUGFIX: Core  | Fixed some hard drives incorrectly being added as a Device and shown in the sidebar [TuxPaper]
+BUGFIX: Core  | (OSX) Add additional (new?) crash log directory to crash log generator (debug.zip) [TuxPaper]
+BUGFIX: Core  | (OSX) Fixed two cases where main window would not show after clicking the dock icon [TuxPaper]
+BUGFIX: Core  | Don't open files with write-access unless required [Parg]
+BUGFIX: Core  | Ensure new profiles are picked up when xcode plugin reloads [Parg]
+BUGFIX: Core  | Correctly sequence plugin events to ensure that listeners see the correct plugin state [Parg]
+BUGFIX: Core  | Delete .vuze files when subscriptions are removed [Parg]
+BUGFIX: UI    | (*nix) Fix table cells not getting click events (affected triggering the "New" column's state) [TuxPaper]
+BUGFIX: UI    | Fix case where scrolling right in a table view (Library) didn't draw the newly visible columns [TuxPaper]
+BUGFIX: UI    | Fixed some cases where column re-ordering was not being remembered [TuxPaper]
+BUGFIX: UI    | Fix Help->Check for Updates not notifying user there were no new updates found [TuxPaper]
+BUGFIX: UI    | Fixed visual problems with Tracker Status column when "Don't Scrape Stopped" is enabled [TuxPaper]
+BUGFIX: UI    | Fixed Queue and Stop not working on Torrent menu and right click of Sidebar's download's details item [TuxPaper]
+BUGFIX: UI    | (OSX) Fixed bug where a false double click was registered when Vuze did not have the focus and you single clicked on a row in the Library [TuxPaper]
+BUGFIX: UI    | Fixed subscription name and count on Sidebar not redrawing when either changes [TuxPaper]
+
+
+
+2010.08.06 | Vuze 4.5.0.2
+
+CHANGE: Core  | Prevent device manager initialisation in classic UI [Parg]
+
+BUGFIX: UI    | Setting files to 'delete' state corrupting internal view of a torrent's files [Parg]
+BUGFIX: UI    | Added reworked progress column to library view by default in place of completion date to allow file manipulation from that view [Parg]
+BUGFIX: UI    | Consistently show the file-expand twisty [Parg]
+
+
+
+2010.08.04 | Vuze 4.5.0.0
+
+FEATURE: Plug | Android Devices support
+
+CHANGE: Core  | Try alternative trackers when seeding and zero connected peers [Parg]
+
+BUGFIX: UI    | Layout improvements in torrent Info view [Parg]
+BUGFIX: UI    | Fixed occasional crash when twisting twistie on Windows 7
+
+
+
+2010.07.31 | Vuze 4.4.1.0
+
+FEATURE: Core | Handle "bc://" URLs [TuxPaper]
+FEATURE: Core | Switched to piece-reordering based file storage on OSX by default (option for other OS) [Parg]
+FEATURE: Core | Recover out-of-order pieces on recheck [Parg]
+FEATURE: Core | Added numeric file priorities to allow more than just 'high' and 'normal' priorities [Parg]
+FEATURE: Core | Basic streaming playback support, relegated to CVS only on release due to lack of time to tidy up UI [Parg]
+FEATURE: Core | New speed test [Parg,Tux]
+FEATURE: Core | Bias upload to incomplete downloads [Parg]
+FEATURE: UIvz | Library view entries can now be expanded to see individual files [TuxPaper]
+FEATURE: UI   | Added [Reset] button to Torrent->Rename.. dialog [TuxPaper]
+
+CHANGE: Core  | Proxy UDP tracker conns through socks when enabled [Parg]
+CHANGE: Core  | Clear out unused subscriptions [Parg]
+CHANGE: Core  | Grab default SSL certs from Java on init [Parg]
+CHANGE: Core  | Some packeting optimisations with crypto [Parg]
+CHANGE: Core  | Fixed some issues to allow plugins to be network position providers [Parg]
+CHANGE: UI    | Show zero length files as completed rather than 0% done [Parg]
+CHANGE: Plug  | Various enhancements to facilitate the writing of cache peers [Parg]
+
+BUGFIX: Core  | Better handle torrents with valid UTF8 name, but invalid (to user's locale) non-UTF name. [TuxPaper]
+BUGFIX: Core  | Fix slow core closedown caused by subscription updates [Parg]
+BUGFIX: Core  | Fix a few places where only subscribed subscriptions should be used [Parg]
+BUGFIX: Core  | Fix webseed handling for files bigger than 2GB (ish) [Parg]
+BUGFIX: Core  | Ensure all file handles released when closing down streams [Parg]
+BUGFIX: Core  | Removed double timestamps from some logs [Parg]
+BUGFIX: Core  | For trackerless torrents fix to use cached peers on startup [Parg]
+BUGFIX: Core  | Fix bug where DHT wasn't re-publishing values correctly [Parg]
+
+
+
+2010.06.04 | Vuze 4.4.0.6
+
+CHANGE: Core  | Improved logging
+BUGFIX: Core  | Search edge case
+
+
+
+2010.05.08 | Vuze 4.4.0.4
+
+BUGFIX: Core  | Fix PEX bug [Parg]
+BUGFIX: Core  | Fix "Error Running Veto Check" error [TuxPaper]
+BUGFIX: Core  | (*nix) Fix client not launching after launched once [TuxPaper]
+BUGFIX: UI    | Fix late-loading sidebar entries not auto-opening [TuxPaper]
+
+
+
+2010.05.03 | Vuze 4.4.0.2
+
+CHANGE: UI    | (OSX) Prep client for SWT 3.6 (M7 and later) [TuxPaper]
+CHANGE: UI    | (OSX) Use Java calls for moveToTrash and showInFinder [TuxPaper] 
+CHANGE: UI    | Double click in library view on incomplete downloads no longer invokes the launch manager for permission [Parg]
+CHANGE: Core  | Added some new message types to help diagnose connection speed issues [Parg]
+CHANGE: Core  | Removal of various useless debug generation [Parg]
+CHANGE: Core  | Use UTF-8 for debug files [Parg]
+
+BUGFIX: Plug  | If EMP is disabled fall back to default player [Parg]
+BUGFIX: Core  | Fix deadlock condition in devices view [Parg]
+BUGFIX: Core  | Prevent single key failure from exiting select result processing [Parg]
+BUGFIX: Core  | Fix deadlock when download stopped while move-on-complete in progress [Parg]
+BUGFIX: Core  | Various fixes to handle restarts with non-ascii user directory name [Parg]
+BUGFIX: Core  | Ensure plugin verification works with internationalised plugin dir name [Parg]
+BUGFIX: UIvz  | Fix bug where toolbar was hidden with no way of showing it [TuxPaper]
+BUGFIX: UIvz  | Fix bug where DVD Burn sidebar entry would reappear after removing it and restarting [TuxPaper]
+BUGFIX: UIvz  | When doubleclick in Library is set to show details, don't show AntiVirus warning [TuxPaper]
+BUGFIX: UIvz  | Fix OSX case where client could not be started due to old SWT version [TuxPaper]
+BUGFIX: UIvz  | Fix case where there was nothing downloading, but the download spinner in the sidebar was still present [TuxPaper]
+
+
+
+2010.04.05 | Vuze 4.4.0.0
+
+FEATURE: Core | Feature manager [Parg]
+FEATURE: Core | Added mechanism to add virtual devices [Parg]
+FEATURE: Core | On-demand media analysis [Parg]
+FEATURE: Core | Added a few hooks to ease third party use of code [Parg]
+FEATURE: Core | Added means to hook into content launch operations [Parg]
+FEATURE: Core | Allow devices to be specified as 'no xcode required' [Parg]
+FEATURE: Core | Added option to prevent IP filters being cleared on reload [Parg]
+FEATURE: Core | Re-attempt torrent download via magnet if possible [Parg]
+FEATURE: Plug | Added mechanism for a cache-plugin to reserve pieces for their cache-peer [Parg]
+FEATURE: Plug | Added mechanism for plugins to specify executable properties of installed files [parg]
+FEATURE: Plug | Added method for testing if move-on-complete actions are active [Parg]
+FEATURE: UI   | Toolbar support for selecting files in file-view [Parg]
+FEATURE: UI   | Feature Manager UI [TuxPaper]
+FEATURE: UI   | Better Drag&Drop indication on sidebar [TuxPaper]
+FEATURE: UI   | Better pop-out/pop-up supression from Search Results pages [TuxPaper]
+
+CHANGE: Core  | Added ability to add xcodes in stopped state [Parg]
+CHANGE: Core  | When there's only one transcode profile available, don't allow user to make a (non-existant) choice [Parg]
+CHANGE: Core  | Added country-code to version server response [Parg]
+CHANGE: Core  | Don't push direct file reads through the file cache [Parg]
+CHANGE: Plug  | Allow plugins to force their columns to be visible [Parg]
+CHANGE: Core  | Allow the removal of transcode jobs to be vetoed [Parg]
+CHANGE: Core  | Take USB detection off init thread in case it hangs [Parg]
+CHANGE: Core  | Added download property to allow force and direct deletion to be specified [Parg]
+CHANGE: Core  | Enforce update action ordering [Parg]
+CHANGE: Plug  | Added swt info to update check to allow different plugin versions for different swt [Parg]
+CHANGE: UI    | Limit max torrent file size to prevent bad behaviour when large files dropped onto UI [Parg]
+CHANGE: UI    | Truncation percentages shown for xcode to avoid useless ".0" [Parg]
+CHANGE: UI    | Restructure Sidebar/Tab system into a common MDI structure [TuxPaper]
+CHANGE: UI    | Some dialogs now switch Ok/Cancel to Cancel/Ok on OSX [TuxPaper]
+
+BUGFIX: Core  | Fix 'no space' display for offline downloaders [Parg] 
+BUGFIX: Core  | Fixed opening torrent from Finder bug under OSX 10.4 [TuxPaper]
+BUGFIX: Core  | Magnet download of large torrent files speed up [Parg]
+BUGFIX: Core  | Resource downloader was firing complete events twice sometimes [Parg]
+BUGFIX: Core  | File channel support for 2GB+ files [Parg]
+BUGFIX: Core  | Update pending files in xcode view when files deletes [Parg]
+BUGFIX: Core  | Fix relayout bug in status bar [Parg]
+BUGFIX: Core  | Fix various places where linked files were being ignored [Parg]
+BUGFIX: Core  | Fix rare case where Donation window was popping up too often [TuxPaper]
+BUGFIX: Plug  | Ensure that reloaded plugin's message resources are loaded [Parg] 
+BUGFIX: Plug  | Ensure installation failures are reported [Parg]
+BUGFIX: UI    | Extend cell refresh logic to include those with refresh listeners [Parg]
+BUGFIX: UI    | Fix rare case where table sort order is incorrect after raid data updates [TuxPaper]
+BUGFIX: UI    | Patch case where Vuze prevents Windows 7 from shutting down [TuxPaper]
+BUGFIX: UI    | Fix buttons having ugly BG on Win7 [TuxPaper]
+BUGFIX: UI    | Fix some columns not showing up in "All Torrents" views [TuxPaper]
+BUGFIX: UI    | Fix clipboard menu not working for some columns (Torrent Name Column) [TuxPaper]
+
+
+
+2010.02.09 | Vuze 4.3.1.4
+
+BUGFIX: Core  | Fixed bug whereby HAVE_ALL messages were failing to set the last bit of the bit-flags [Parg] 
+
+
+
+2010.02.01 | Vuze 4.3.1.2
+
+FEATURE: Core | Added .vuze file format to trigger a search operation [Parg]
+
+CHANGE: Core  | Disable IPv6 under Windows by default, as it needs Java7 to work properly [Nolar]
+CHANGE: Core  | Added system property to disable instance manager [Parg]
+CHANGE: Core  | Give user friendlier error message when offline-downloader disconnected [Parg]
+CHANGE: Core  | Auto-dump threads if shutdown takes > 30 seconds [Parg]
+CHANGE: UI    | Permit deletion of classicaly shared content from download/seeding views [Parg]
+
+BUGFIX: Core  | Wait until sid registered before attempting pairing test [Parg]
+BUGFIX: Core  | Various pairing HTTPS fixes [Parg]
+BUGFIX: Core  | Fix missing 'logout' button when paired with no authentication [Parg]
+BUGFIX: UI    | Windows - Vuze now pops up if closed to system tray and user launches exe [TuxPaper]
+BUGFIX: UI    | Fixup some Remote Pairing dialog edge case bugs [TuxPaper]
+BUGFIX: UI    | OSX - Fix sidebar animations sometimes not animating [TuxPaper]
+BUGFIX: UI    | OSX - Text in table views are now the correct color (white) when selected [TuxPaper]
+BUGFIX: UI    | Protect against case where Main Window's stored dimensions area invalid or stupidly small [TuxPaper]
+BUGFIX: UI    | Fix invalid thread access and NPE when closing pairing dialog [Parg]
+BUGFIX: UI    | Fixed case where status bar was blank after deiconifying [TuxPaper]
+
+
+
+2010.01.23 | Vuze 4.3.1.0
+
+FEATURE: Core | Option to auto-start Vuze on login on Windows and OSX [Parg]
+FEATURE: Core | Option to close Vuze when downloads/seeding complete [Parg]
+FEATURE: Core | Sources details view and tracking enhancements [Parg]
+FEATURE: Core | Option to automatically set upload slots and connections limits based on measured line speed [Parg]
+FEATURE: Core | Added support for fast-allowed pieces [Parg]
+FEATURE: Core | Extract downloaded values if returned by tracker [Parg]
+FEATURE: Plug | Added auto-authorisation default to pairing enabled web plugins [Parg]
+FEATURE: Core | Windows - added JVM max/min memory configuration to the options [Parg] 
+FEATURE: Core | Added support for webseeds in magnet links [Parg]
+FEATURE: Core | Added support for less-verbose auto-full-update [Parg]
+FEATURE: Core | Completed the 'pairing' feature [Parg]
+FEATURE: UI   | Added Pairing dialog [TuxPaper]
+
+CHANGE: Core  | Added local network interfaces to pairing details [Parg]
+CHANGE: Core  | Drop the half-open TCP socket limits for Vista SP2+ and Windows 7 [Parg]
+CHANGE: Core  | Modify connection timeouts if sufficient peers available [Parg]
+CHANGE: Core  | Ignore HTTP seeds if we're seeding [Parg]
+CHANGE: Core  | Vary min requests when starting up [Parg] 
+CHANGE: Core  | Changed metasearch default to auto=true [Parg]
+CHANGE: Core  | Default save directory for new installs switched from 'Azureus Downloads' to 'Vuze Downloads' [Parg]
+CHANGE: Core  | Auto-enable the 'connections per torrent when seeding' default and set to half the normal number of connections [The8472]
+CHANGE: Core  | When force-closing Vuze delete any outstanding updates to prevent them being applied [Parg]
+CHANGE: Plug  | Make WebPlugin configuration parameters amendable without requiring a Vuze restart [Parg]
+CHANGE: UI    | Added arrows to swarm view and differentiate unchokes/fast requests [Parg]
+CHANGE: UI    | Moved slideys that were System Notifications to statusbar [TuxPaper]
+
+BUGFIX: Core  | Fix remembering of auto-speed settings on restart [Parg]
+BUGFIX: Core  | Fix initial storing of search engine rank bias [Parg]
+BUGFIX: Core  | Fix LT Peer-Exchange bug [Parg]
+BUGFIX: Core  | Remove HTTP seeds when stopping download [Parg]
+BUGFIX: UIvz  | Fix list view modes (menu and button display) being grayed out when toolbar is in "No Text" mode [TuxPaper]
+BUGFIX: UI    | Remove cached peers from swarm view on data source change [Parg]
+BUGFIX: UI    | When upgrading SWT, dialog box now shows correct platform (Cocoa, Carbon) [TuxPaper]
+
+
+
+2009.12.10 | Vuze 4.3.0.6
+
+BUGFIX: Core  | Fixed bug where compact file types could lead to spurious 'file length too large' errors [Parg]
+
+
+
+2009.11.20 | Vuze 4.3.0.4
+
+BUGFIX: UI    | Prevent main window from popping up when adding a torrent and "Add Torrent Silently" set [TuxPaper]
+BUGFIX: UI    | Ensure that the correct progress reports are passed to listeners [Parg]
+BUGFIX: UI    | Fixed bug whereby the destruction of the torrent-open window was cancelling torrent download dialogs [Parg]
+BUGFIX: UI    | (OSX) Fixed bug where scrollers on some mice would cause table to blank [TuxPaper]
+BUGFIX: UIvz  | Handle magnet links within internal browser [TuxPaper]
+BUGFIX: Plug  | Improved the fallback lookup service by passing the all params [Parg]
+BUGFIX: Plug  | Verify that downloaded torrents are valid before passing to caller [Parg]
+
+
+
+2009.11.19 | Vuze 4.3.0.2
+
+FEATURE: Core | Support per-url config for http seeds and max_speed setting [Parg]
+FEATURE: Plug | Start of a fallback magnet lookup service [Parg]
+FEATURE: UI   | Clicking on dock icon always opens main window [TuxPaper]
+
+CHANGE: Core  | Parse hex-encoded magnet URIs too [The 8472]
+CHANGE: Core  | Immediate-close option for tracker socket connections [Parg]
+CHANGE: Core  | Return IP address instead of DNS names for external seeds [Parg]
+CHANGE: Core  | Support more non-conformant RSS feed dates [Parg]
+CHANGE: Core  | Auto-speed bias towards min ping times rather than pure average [Parg]
+
+BUGFIX: Core  | Reverted socket handling to initial 1.6 fix status to fix with network binding/stall problems [Parg]
+BUGFIX: Core  | Added option to disable all IPv6 support and defaulted to 'disable' on OSX as some users experiencing crash when enabled [Parg] 
+BUGFIX: Plug  | Don't cause all dht torrents to perform an 'announce' when 'pause-all' selected [Parg]
+BUGFIX: Plug  | Webplugin config section override was using the wrong variable prefix [Parg]
+BUGFIX: UI    | Fixed name column sort [TuxPaper]
+BUGFIX: UI    | (OSX) Fixed opening .vuze files when client isn't running [TuxPaper]
+BUGFIX: UI    | Fixed table view not loading (showing gray area) sometimes [TuxPaper]
+BUGFIX: UI    | (Windows) "Open Containing Folder" in default "folder association" app [TuxPaper]
+BUGFIX: UI    | (*nix) Fixed name column blanking [TuxPaper]
+BUGFIX: UI    | (OSX) Fixed Password option hanging UI [TuxPaper]
+BUGFIX: UI    | Fixed sidebar font sizes (mostly for *nix) [TuxPaper]
+BUGFIX: UI    | (OSX) Opening .torrent file when "Add Silently" is enable should no longer activate the main window [TuxPaper]
+BUGFIX: UI    | Fix losing cursor indication on Sashes (and other widgets) [TuxPaper]
+BUGFIX: UI    | Sidebar now accepts dropping torrents [TuxPaper] 
+
+
+
+2009.11.11 | Vuze 4.3.0.0
+
+FEATURE: Core | Added support for UPnP based offline-downloader services [Parg]
+FEATURE: Core | Obfuscated lookups for the DHT to prevent leakage of key values during lookup stage [Parg]
+FEATURE: Core | Support copying of .mp3 and .wma files to PSP [Parg]
+FEATURE: Core | Implementation of a piece-reordering file manager [Parg]
+FEATURE: Core | DHT replication controls [Parg]
+FEATURE: Core | Initial pairing support [Parg]
+FEATURE: Core | Parse seed/leecher values from subscription text if found [Parg]
+FEATURE: Core | Added bloom-filter persistence [Parg]
+FEATURE: Core | Support ".utf-8" suffix for keys in .torrent files [TuxPaper] 
+FEATURE: Plug | Added download-flags to Download object [Parg]
+FEATURE: Plug | Plugin access to subscriptions [Parg]
+FEATURE: Plug | Added verified plugins [Parg]
+FEATURE: UIvz | Added "Reset Columns" ability to some views (in Column Setup) [TuxPaper]
+FEATURE: UIvz | Client now opens to last used static view, or Library by default [TuxPaper]
+FEATURE: UI   | Support for switching between carbon and cocoa on OSX [Parg]
+FEATURE: UI   | Generic filter support for our tables [Parg]
+FEATURE: UI   | Support for showing real SI values rather than just changing units displayed [Parg]
+FEATURE: UI   | Advanced menu option for editing http seeds [Parg]
+
+CHANGE: Core  | Remove replicate-on-join from DHT as causing excessive key storage [Parg]
+CHANGE: Core  | Roll up subscription warnings when not expanded [Parg]
+CHANGE: Core  | Improved IPv6-handshaking and reconnects with other clients (see http://wiki.vuze.com/w/IPv6_compatibility for supported systems) [The 8472]
+CHANGE: Core  | Switch back to k-select on OSX [Nolar]
+CHANGE: Core  | Reduce CPU used for node-id calculation via MRU cache [Parg]
+CHANGE: Core  | Remove LAN transfer totals from data reported to tracker [Parg]
+CHANGE: Core  | Implemented port restriction for DHT node id generation [Parg]
+CHANGE: Core  | Reduce memory/CPU by disabling the largely unused Vivaldi V2 impl [Parg]
+CHANGE: Core  | Reduce DHT load by removing network-position derived tracking targets [Parg]
+CHANGE: Core  | Back off the initial DHT seeding [Parg]
+CHANGE: Core  | Cache redirects for http seeds
+CHANGE: Core  | Use async keep-alive test to reduce thread creation on magnet download [Parg]
+CHANGE: Core  | Change defaults for I2P and Tor networks to fase [Parg]
+CHANGE: Core  | Support http seeds that don't support partial content [Parg]
+CHANGE: Core  | Added option to disable TiVo support completely [Parg]
+CHANGE: Core  | Support RSS feeds with incorrect 'summary' instead of 'description' entries [Parg]
+CHANGE: Core  | Support trackers that returned gzipped torrents even when not asked to [Parg]
+CHANGE: Core  | Migrate away from system-managed private keys [Parg]
+CHANGE: Core  | Support meta-search incremental result injection [Parg]
+CHANGE: Core  | Use cached scrape values on startup for DHT torrents to reduce thrashing [Parg]
+CHANGE: Core  | Switch version check to use HTTP by default [Parg]
+CHANGE: Core  | Resource resources by grabbing piecemap once during piece pick operation [Parg]
+CHANGE: Core  | Reduce cost of handling DHT store operations [Parg]
+CHANGE: Core  | Remove 'force write' option from random access file access [Parg]
+CHANGE: Core  | Move a few things to use the less costly stepped-monotime method [Parg]
+CHANGE: Core  | Re-use http connections when messaging the platform [Parg]
+CHANGE: Core  | Don't write diagnostic files to disk by default [Parg]
+CHANGE: Core  | Reduce small scratch file creation on startup [Parg]
+CHANGE: Core  | Don't write tables.config every start [Parg]
+CHANGE: Core  | If we don't have hosted content, don't write the config file [Parg]
+CHANGE: Core  | Potentially less Tracker Announces for those trackers not supplying "min interval" [TuxPaper]
+CHANGE: Plug  | Reduce frequency of UPnP device specification download attempts [Parg]
+CHANGE: UIvz  | Removed Login and Friends, Content Networks menu [TuxPaper]
+CHANGE: UI    | Order files in file view by torrent index if piece numbers same [Parg]
+CHANGE: UI    | Pulled out the RSS feed generation for devices and put into common location [Parg]
+CHANGE: UI    | Allows addition of http seeds to decentralised torrents [Parg]
+CHANGE: UI    | Make regex matching mode more obvious [Parg]
+CHANGE: UI    | Better "Associated Application" icon logic [TuxPaper]
+CHANGE: UI    | (OSX) Switch to SWT for Cocoa Framework [TuxPaper]
+
+BUGFIX: Core  | Don't reset manually selected Vuze meta search templates on load [Parg]
+BUGFIX: Core  | Removed 'watched' tag from torrents on import [Parg]
+BUGFIX: Core  | index-out-of-bounds fix when global peer limit reached [Parg]
+BUGFIX: Core  | Fix incorrect sync of scrape hashes [Parg]
+BUGFIX: Core  | Prevent unwanted selection of in-error subscriptions [Parg]
+BUGFIX: Plug  | Force UPnP operations not to use socks/http proxy when defined [Parg]
+BUGFIX: UI    | Fixed case where Open Torrents Window might erase existing files [TuxPaper]
+BUGFIX: UI    | Fixed context menus sometimes hanging client on Windows 7 [TuxPaper]
+BUGFIX: UI    | Fix missing icons for pause/resume in all-transfers bar [Parg]
+BUGFIX: UI    | Fix invalid thread access in parameter change logic [Parg]
+BUGFIX: UI    | Fix progress-dialog feedback for magnet downloads [Parg]
+BUGFIX: UI    | Fix cases on OSX where a modal dialog box ended up under main window [TuxPaper]
+
+
+
+2009.08.27 | Vuze 4.2.0.8
+
+FEATURE: Core | Drive Detection for Devices for OSX (for PSP devices) [TuxPaper]
+FEATURE: Core | Factory option to allow switchable unchoke algorithms [Parg]
+
+CHANGE: UI    | Less CPU usage for Seeding Rules [TuxPaper]
+CHANGE: Core  | Only create the transcode directories when required [Parg]
+CHANGE: Core  | Allow OSX platform component to be updated properly [Parg]
+
+BUGFIX: UI    | Fixed Speedtest not working [TuxPaper]
+BUGFIX: UI    | OSX 10.6 support (opening torrent from file) [TuxPaper]
+BUGFIX: Core  | OSX 10.6 support (not getting data from connected peers) [Parg]
+BUGFIX: Core  | Fixed deadlock during UI initialisation [Parg]
+
+
+
+2009.08.06 | Vuze 4.2.0.6
+
+FEATURE: UI   | Support delete key for deleting transcoded content [Parg]
+FEATURE: UI   | Added visual indication of buddy shares [Parg]
+FEATURE: UI   | Added toolbar enablers for deleting subscriptions and devices [Parg]
+FEATURE: Core | Support for TiVo device [Parg]
+FEATURE: Core | Support for PSP device [Parg;TuxPaper]
+FEATURE: Core | Added RSS feed generation for device's transcoded content [Parg]
+FEATURE: Core | File-based RSS feeds [Parg]
+FEATURE: Core | Added ability to set category for downloads from a subscription [Parg]
+
+CHANGE: UI    | Moved Column Setup and column related menu items to right click of column header [TuxPaper]
+CHANGE: UI    | Made Library/My Torrents filter more visible [TuxPaper]
+CHANGE: UI    | Moved "Rename" context menu in Library to context menu of Name column only [TuxPaper]
+CHANGE: UI    | Gray out non-active devices [Parg]
+CHANGE: Core  | Added more meta data for devices RSS Feed [TuxPaper]
+CHANGE: Plug  | Added lifetime controls to DHT puts [Parg]
+
+BUGFIX: Core  | HTTP seeding was incorrectly handling byte range requests [Parg]
+BUGFIX: Core  | Catch failed transcodes and prevent partial files from being produced [Parg]
+BUGFIX: Core  | Fixed potential deadlock on startup with Device loading [Parg]
+BUGFIX: Core  | Support UTF marker chars in RSS feeds [Parg]
+
+
+
+2009.07.08 | Vuze 4.2.0.4
+
+FEATURE: Core | Subscription options for auto-starting auto-downloads [Parg]
+FEATURE: Core | Support for sharing .vuze files [Parg]
+FEATURE: Core | Added support for adding categories to transcoded content [Parg]
+FEATURE: Core | Added default transcode dir option [Parg]
+FEATURE: Core | Support for keep-alive and more gzip on web contexts [Parg]
+FEATURE: Core | Added percentage complete and eta to content descriptor [Parg]
+FEATURE: UIvz | UI displays while core initializes [TuxPaper]
+FEATURE: Plug | Plugin interface to the search functionality [Parg]
+
+CHANGE: Core | Added another non-standard RSS date format [Parg]
+CHANGE: Core | Allow HTTP seeding for simple torrents without knowledge of file name [Parg]
+CHANGE: Core | Keep log files open rather than continually opening and closing them [Parg]
+CHANGE: Core | Improved reporting of 'no disk space' errors for FAT32 [Parg]
+CHANGE: Core | Improved logging performance [Parg]
+CHANGE: Core | Support for updated via installer as opposed to incremental updates [Parg]
+
+BUGFIX: Core | Work around for broken socket handling on freebsd7.x [Parg]
+BUGFIX: Core | Recover from borked transcode queue config [Parg]
+BUGFIX: Core | Fix xml stats export with undefined characters [Parg] 
+BUGFIX: Core | Support >2GB resource downloads [Parg]
+BUGFIX: Core | Fixed HTTP seeding when switching content on a keep-alive connection [Parg]
+BUGFIX: Core | Fix tracker announcer to pay attention to user options correctly [Parg]
+BUGFIX: Core | Multi-file torrents were borked in content directory [Parg]
+BUGFIX: UI   | Set speeds in bits/sec when bits/sec display is selected [Parg]
+
+
+
+2009.04.09 | Vuze 4.2.0.2
+
+BUGFIX: UI   | Fix wrap on category buttons [TuxPaper]
+BUGFIX: UI   | Fix rare case when last sash position in My Torrents wasn't being obeyed [TuxPaper]
+BUGFIX: UI   | Remove device toolbar when device feature not avail [TuxPaper]
+BUGFIX: Core | Fix hang on startup with some UPnP devices [Parg]
+BUGFIX: Plug | Force decode of HTTP headers to lowercase using ISO8859-1 charset to fix matching error in Turkish [Parg]
+
+
+
+2009.03.23 | Vuze 4.2.0.0
+
+FEATURE: Core | Devices [parg]
+FEATURE: UIvz | UI for Devices panel, individual Device panel, Device chooser, and Device Profile Chooser [TuxPaper]
+FEATURE: Plug | Transcoding [gudy,parg]
+
+BUGFIX: Core  | Fix IP binding error when performing a NAT test under Vista [The 8472]
+BUGFIX: UIvz  | Fix some notifications not getting pulled [TuxPaper]
+
+
+
+2009.02.25 | Vuze 4.1.0.4
+   
+FEATURE: UI   | Donation Window [TuxPaper]
+
+
+   
+2009.02.05 | Vuze 4.1.0.2
+
+FEATURE: UI   | Config option for max stalled seeding torrents (was hardcoded in 4100) [TuxPaper]
+
+BUGFIX: Core  | Fix null-pointer-exception when initiasing old categorised shares [Parg]
+BUGFIX: Core  | Remove accidental invocation of the get-networks Vuze RPC when running in classic UI [Parg]
+BUGFIX: Core  | Remove null-pointer-exception in TCP connection manager [Parg]
+BUGFIX: Core  | Fix subscription auto-download with sites where supplied referer caused error [Parg]
+BUGFIX: UIvz  | Click area for Friend's "chat thought bubble" was wrong, preventing click to chat in some cases [TuxPaper]
+BUGFIX: UIvz  | Fix share of vuze content (users could only share non-vuze content) [TuxPaper]
+BUGFIX: UI    | Column Setup visual fixes for gtk [TuxPaper]
+BUGFIX: UI    | Revert category buttons to working state [TuxPaper]
+BUGFIX: UI    | Fixed memory leak in All-Peers view [Parg]
+BUGFIX: UI    | Fixed resource disposal in config view causing some status bar icons to not draw [TuxPaper]
+
+CHANGE: Core  | Remove various debug-spew [Parg]
+
+
+
+2009.01.26 | Vuze 4.1.0.0
+
+FEATURE: Core | New FP Ignore rule: Ignore 1st Priority after X hours of idle upload speed (default 24h) [TuxPaper] 
+FEATURE: Core | Support for loading torrents when the HTTP response is an error (like 404, 500) but the data is still a torrent [TuxPaper] 
+FEATURE: UIvz | Support multiple Content Networks [parg,tuxpaper]
+FEATURE: UI   | Experimental neuronal speed algorithm [Gudy]
+FEATURE: UI   | Added AS/ASN peer column [Parg]
+FEATURE: UI   | Added properties view to buddies avatar widget [Parg]
+FEATURE: UI   | Control+I in library to open torrent info (torrent details) page [TuxPaper]
+FEATURE: Plug | Share categories with friends as subscriptions [Parg]
+FEATURE: Plug | Support table column removal [Parg]
+FEATURE: Plug | Added getComputerName method [Parg]
+FEATURE: Plug | Cache connected friend details for faster reconnect on startup [Parg]
+
+CHANGE: Core  | Pulled out Vuze related operations into ContentNetwork [Parg]
+CHANGE: Core  | Go to CDP when torrent unauthorised if possible [Parg]
+CHANGE: Core  | Added date field an modified case of response HTTP headers to improve behaviour of SSDP clients [Parg]
+CHANGE: Core  | Limit # of stalled 'seeding' torrents to prevent cases where all completed torrents could start up [TuxPaper] 
+CHANGE: Core  | Give stalled torrents a seeding rank handicap based on how long they've been stalled for [TuxPaper] 
+CHANGE: UI    | (Memory) Images that are unused after 60 seconds are now disposed of [TuxPaper]
+CHANGE: UI    | Fixed regression of Auto Open Tabs not opening seeding torrents (Config option now split) [TuxPaper]
+CHANGE: UI    | Bring back classic-share menu for non-basic mode users [Parg]
+
+BUGFIX: Core  | Setting files as do-not-download was deleting files [Parg]
+BUGFIX: Core  | IPv6 compact tracker support [Parg]
+BUGFIX: Core  | Fix possible deadlock in generic connection handling [Parg]
+BUGFIX: Core  | Disable if-modified logic when editting RSS search templates to allow retrieval of results [Parg]
+BUGFIX: Core  | Clear down TLS stuff to reduce memory usage when plugins unloaded [Parg]
+BUGFIX: UI    | Fixed rare case where table rows would display blank [TuxPaper]
+BUGFIX: UI    | Fixed 'close all details' in classic UI [Parg]
+BUGFIX: UI    | Prevent constuction of mytorrents context menu from flipping download stats [Parg]
+BUGFIX: UI    | Fix cursor transition in table cell [Parg]
+BUGFIX: UI    | Fix incorrect handling of weak references for UI views that resulted in them never being released [Parg]
+BUGFIX: Plug  | Various fixes to correctly release unloaded plugin resources [Parg]
+
+
+
+2008.11.20 | Vuze 4.0.0.4
+
+FEATURE: UIvz | Ability to change List modes in View menu [TuxPaper]
+FEATURE: UI   | Added a 'mark all results unread' menu item [Parg]
+FEATURE: UI   | Added specification of data save directory to config wizard [Parg]
+FEATURE: Core | Added subscription support to customisations [Parg]
+FEATURE: Core | Added an 'azplug' URL protocol to allow plugins to handle URLs [Parg]
+FEATURE: Core | Allow subscriptions to handle azplug protocols thus allowing plugins to be the source of subscription content [Parg]
+FEATURE: Core | Allow magnet links in search results [Parg]
+
+CHANGE: UIvz  | Deleting via toolbar now lets you apply action to all selected entries [TuxPaper] 
+CHANGE: UIvz  | Search bar shrinks a bit when there's not enough width to display all toolbar buttons [TuxPaper] 
+CHANGE: UI    | Date Column auto-sizer now shows day of month (mm/dd) instead of year (yy/mm) when column is small [TuxPaper]
+CHANGE: Core  | Only show feed errors after 3 consecutive fails to avoid distracting transient errors [Parg]
+CHANGE: Core  | Add asset hash to subscriptions and auto-associate existing content on subscribe if avail [Parg]
+CHANGE: Core  | Various performance improvements [Parg]
+CHANGE: Core  | Modify DHT size calc algorithm to take account of firewalled contact [Parg]
+CHANGE: Plug  | Assume buddies support chat [Parg]
+
+BUGFIX: UIvz  | "Mark All Watched" now only affects completed content (which is also what Unwatched only shows) [TuxPaper]
+BUGFIX: UIvz  | Fix Global Rating column not sorting properly [TuxPaper]
+BUGFIX: UIvz  | (Mac) Fixed closing sidebar entries sometimes showing a blank area instead of selecting a new sidebar entry [TuxPaper]
+BUGFIX: UIvz  | Fixed bug where "My Library" info bar displayed on Downloading sidebar entry [TuxPaper]
+BUGFIX: UIvz  | Fix some notification entries losing their related avatar image [TuxPaper]
+BUGFIX: UIvz  | Log View's "Show Config" button wasn't going to proper config section [TuxPaper]
+BUGFIX: UIvz  | Fix default visible columns, order, and sort column for new installs for "Advanced" library Lists [TuxPaper]
+BUGFIX: UI    | "Show Time" state on date columns now remembered across sessions [TuxPaper]
+BUGFIX: UI    | Fix "Pieces" column in Library view not updating unless you clicked it [TuxPaper]
+BUGFIX: UI    | Info tab in Torrent Details now displays more columns that it couldn't before (like share ratio) [TuxPaper]
+BUGFIX: UI    | Localize the date in the subscription view correctly [Parg]
+BUGFIX: Core  | Synchonize access to file operations so that an close op can't be interleaved with file facade switching and bork disk channel operation [Parg]
+BUGFIX: Core  | Filter out duplicate skew reports to get more accurate figures [Parg]
+BUGFIX: Core  | Avoid NPE in chat when buddy unauthorised [Parg]
+BUGFIX: Core  | Preserve argument case in magnet link operations [Parg]
+BUGFIX: Core  | Fix mem leak when DHT router IP changed [Parg]
+BUGFIX: Plug  | Use UTF-8 when decoding plugin descriptions [Parg]
+
+
+
+2008.10.24 | Vuze 4.0.0.2
+
+FEATURE: UIvz | Added column to detail the linkage between content and associated subscription, where present [Parg]
+FEATURE: UIvz | Simple view menu
+ 
+CHANGE: Core  | Remove restriction on uniqueness of subscriptions names [Parg]
+CHANGE: Core  | Add popularity to subscription properties and size better [Parg]
+CHANGE: Core  | Impose lower limits on download and upload when auto-speed running [Parg]
+CHANGE: Core  | Reduce subscription publication concurrency [Parg]
+CHANGE: Core  | Reduce acceptance of inaccurate DHT store operations [Parg] 
+CHANGE: Core  | Auto-download content when marked as unread in an auto-download enabled subscription [Parg]
+CHANGE: UIvz  | Image on left of search box now activates search when clicked [TuxPaper]
+CHANGE: UIvz  | Toolbar's "Show Text" state now remembered across sessions [TuxPaper] 
+CHANGE: UIvz  | Classic users upgrading via the installer will start up in My Library in "small" mode (classic My Torrents View).  Previously, only "Advanced UI" users got this. [TuxPaper]
+CHANGE: UIvz  | If you hold the mouse down for a period of time on Up and Down toolbar items, it will move the selected items to the top/bottom (this was present in 4000, but now the tooltip says it) [TuxPaper]  
+CHANGE: UIvz  | Added tooltip to subscription wizard to show more details on subscription [Parg]
+CHANGE: UIvz  | Drop into edit mode after creating an RSS subscription [Parg]
+CHANGE: UIvz  | Reduce size shown for downloads to 3 digits max for subscriptions and searches [Parg]
+CHANGE: UIVz  | In Library view fix sort so 'new' entries do sort to top [Parg]
+CHANGE: Plug  | Reduce derived tracker targets by raising swarm size limits [Parg]
+
+BUGFIX: Core  | Fix auto-subscription of DHT located singleton subscriptions [Parg]
+BUGFIX: Core  | Subscription to already cached, unsubscribed subscriptions wasn't working [Parg]
+BUGFIX: Core  | Fix 100% CPU problem due to unsafe HashSet modification [Parg]
+BUGFIX: Core  | Remove duplicate results from subscriptions [Parg]
+BUGFIX: Core  | Report subscription creation errors to user [Parg]
+BUGFIX: Core  | If a subscription was deleted which being processed it used to report errors [Parg]
+BUGFIX: Core  | Set subscription popularity on selection [Parg]
+BUGFIX: UIvz  | Fixed missing of all incomplete-specific and complete-specific torrent columns in My Library in "big" mode [TuxPaper]
+BUGFIX: UIvz  | If you previously chose top bar to be visible, and you aren't in advanced user mode, there was no way to remove top bar.  Fixed by not showing top bar in non-advanced user mode [TuxPaper]
+BUGFIX: UIvz  | Fixed sidebar sash disappearing when moving beyond minimum size [TuxPaper]
+BUGFIX: UIvz  | Fixed "Close All Details" menu item always being disabled [TuxPaper] 
+BUGFIX: UIvz  | Fixed extremely slow Library view when one column was animating [TuxPaper] 
+BUGFIX: UI    | Table cells with cutoff text should show tooltip now [TuxPaper]
+BUGFIX: UI    | Fixed copying cell's text to clipboard [TuxPaper] 
+BUGFIX: UI    | Info tab in Torrent Details now displays some columns that it couldn't before [TuxPaper] 
+BUGFIX: UI    | Clear log view widgets when not visible to reduce memory [Parg]
+BUGFIX: UI    | Fix sub tabs in Torrent Details view not remembering their view after restoring from min. state [TuxPaper]
+
+
+2008.10.15 | Vuze 4.0.0.0
+
+FEATURE: Core | Async request processing for non-blocking tracker [Parg]
+FEATURE: Core | Support HTTP redirects between http/https protocols in resource downloader [Parg]
+FEATURE: Core | Add content to UPnP authentication dialogs [Parg]
+FEATURE: Core | Support PList mods for app registration on OSX [Parg]
+FEATURE: Core | Added http auth helper to support authenticated search templates/subscriptions [Parg]
+FEATURE: Core | Fix built in RSS feed parser to handle Atom feeds [Parg]
+FEATURE: Core | RSS based search templates [Parg]
+FEATURE: Core | Light weight seeds to allow seeding of simple content such as subscriptions [Parg]
+FEATURE: Core | Subscriptions [Parg]
+FEATURE: Core | Added a 'prefer UDP connections' option [Parg]
+FEATURE: Core | Config options for max queued outgoing connections [Parg]
+FEATURE: Core | Support dht:// URL protocol [Parg]
+FEATURE: Core | Advanced options for specifying TCP select timeouts [Parg]
+FEATURE: UI   | Added "Column Setup" icon to the iconbar [amc1]
+FEATURE: UI   | New console command - "plugin". Displays plugin information and can toggle startup status [amc1]
+FEATURE: UI   | Console command "show" can now filter to list only torrents which are transferring [amc1]
+FEATURE: UIvz | SideBar (F7 to Hide/Show) [TuxPaper]
+FEATURE: UIvz | New ToolBar with hideable text [TuxPaper]
+FEATURE: UIvz | Library now has Large and Small view modes.  Small view mode is classic My Torrents [TuxPaper]
+FEATURE: Plug | Added option to remove originators IP address from stored values [Parg]
+
+CHANGE: Core  | Improve app startup time [Parg]
+CHANGE: Core  | Make full name and namespace URI available to simple XML parser users [Parg]
+CHANGE: Core  | Improved handling of mixed IPv4 and IPv6 bindings [The 8472]
+CHANGE: Core  | New option to refresh UPnP mappings when we become firewalled [amc1]
+CHANGE: UI    | Improve performance with single data source dispatch aggregator [Parg]
+CHANGE: UI    | Debug messages are no longer displayed by default when running the console UI [amc1]
+CHANGE: UI    | The comment icon column now displays a blank icon if there is no comment (rather than no icon) [amc1]
+CHANGE: UI    | Delete priority is now properly reflected in the Priority column [The 8472]
+CHANGE: UIvz  | Faster Startup [parg,TuxPaper]
+CHANGE: UIvz  | Reduced UI memory footprint [TuxPaper]
+CHANGE: UIvz  | Friends moved to the bottom of the sidebar [Khai]
+CHANGE: UIvz  | All table views (Library, Notifications) now use native table widget [TuxPaper]
+CHANGE: Plug  | Essential plugins are now automatically re-enabled if previously disabled by user [amc1]
+                 - the "Start / Stop Rules" plugin was disabled by users in the past, this was causing torrents to be stuck in "waiting" state
+CHANGE: Plug  | New command line option - "azureus.safemode", to disable lots of functionality when debugging problems [amc1]                 
+CHANGE: Plug  | Client ID plugin is removed [amc1]
+CHANGE: Plug  | New command line option - "azureus.loadplugins", to skip plugins being loaded at startup [amc1]
+CHANGE: Plug  | Accept store operations from furher away contacts to decrease store fails [Parg]
+CHANGE: Plug  | Evict contacts sooner from DHT router to improve liveness [Parg]
+CHANGE: Plug  | Delay DHT task init to save memory [Parg]
+CHANGE: Plug  | Finer-mesh for DHT network position derived tracking [Parg]
+CHANGE: Plug  | De-prioritise DHT tracker put ops [Parg]
+
+BUGFIX: Core  | Fixed problem on Vista where "Failed to establish listen on port UDP:xxxxx" errors may be reported [parg]
+BUGFIX: Core  | Treat any address binds as no bind IP when rewriting URLs [Parg]
+BUGFIX: Core  | Added third party impressions urls for torrent ads [JR]
+BUGFIX: Core  | Fix timer cancellation behaviour [Parg]
+BUGFIX: Core  | Fixed DND deleting files in single-file torrents [The 8472]
+BUGFIX: Core  | Fixed occasional deadlocks on startup under linux [The 8472]
+BUGFIX: Core  | Fixed rare situation where user was prompted for authentication to connect to trackers which didn't need it [amc1]
+BUGFIX: Core  | Made the load and unload buttons on the plugin page behave properly [amc1]
+BUGFIX: Core  | Fixed problem where queueing rules do not enter "seeding-only" mode when there are queued downloads [amc1]
+BUGFIX: Plug  | DHT storage manager key removal fix [Parg]
+BUGFIX: Plug  | Various fixes to avoid DHT running out of control under extreme diversifications
+BUGFIX: Plug  | Fix magnet download timeouts [Parg]
+BUGFIX; Plug  | Fix DHT operation timeout bug introduced when moving to async exec [Parg]
+BUGFIX: Plug  | Limit buddy reconnect to avoid thrashing [Parg]
