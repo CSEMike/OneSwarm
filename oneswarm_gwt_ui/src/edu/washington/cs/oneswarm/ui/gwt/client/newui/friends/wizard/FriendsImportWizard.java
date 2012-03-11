@@ -29,7 +29,8 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
     private static OSMessages msg = OneSwarmGWT.msg;
 
     public final static String FRIEND_SRC_COMMUNITY = msg.add_friends_wizard_src_community();
-    private final static String FRIEND_SRC_GTALK = msg.add_friends_wizard_src_gtalk();
+    // private final static String FRIEND_SRC_GTALK =
+    // msg.add_friends_wizard_src_gtalk();
     private final static String FRIEND_SRC_LAN = msg.add_friends_wizard_src_lan();
     private final static String FRIEND_SRC_MANUAL = msg.add_friends_wizard_src_manual();
     private final static String FRIEND_SRC_INVITATIONS = msg.add_friends_wizard_src_invites();
@@ -37,12 +38,11 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
     private final static String FRIENDS_SRC_DEFAULT = FRIEND_SRC_COMMUNITY;
 
     private static final int HEIGHT = 400;
-    private final static String[] IMPORT_SOURCES = { FRIEND_SRC_COMMUNITY, FRIEND_SRC_GTALK,
-            FRIEND_SRC_LAN, FRIEND_SRC_MANUAL, FRIEND_SRC_INVITATIONS };
+    private final static String[] IMPORT_SOURCES = { FRIEND_SRC_COMMUNITY, FRIEND_SRC_LAN,
+            FRIEND_SRC_MANUAL, FRIEND_SRC_INVITATIONS };
     private final static String[] IMPORT_SOURCES_KEYS = {
             FriendsImportCommunityServer.FRIEND_NETWORK_COMMUNITY_NAME,
-            FriendsImportGtalk.FRIEND_NETWORK_GTALK_NAME, FriendsImportLAN.FRIEND_NETWORK_LAN_NAME,
-            "", "Invitation" };
+            FriendsImportLAN.FRIEND_NETWORK_LAN_NAME, "", "Invitation" };
     public static final int WIDTH = 400;
     public static final int BWIDTH = 405;
     private final ClickHandler cancelListener = new ClickHandler() {
@@ -287,11 +287,6 @@ public class FriendsImportWizard extends OneSwarmDialogBox {
                 }
                 if (mSelectImportMethod.startsWith(FRIEND_SRC_COMMUNITY)) {
                     show_community_import(null);
-                } else if (mSelectImportMethod.startsWith(FRIEND_SRC_GTALK)) {
-                    setText(msg.add_friends_wizard_title_gtalk(getText()));
-                    VerticalPanel gtalkP = new FriendsImportGtalk(friendWizardCallback);
-                    panel.clear();
-                    panel.add(gtalkP);
                 } else if (mSelectImportMethod.startsWith(FRIEND_SRC_LAN)) {
                     setText(msg.add_friends_wizard_title_local_network(getText()));
                     VerticalPanel lanP = new FriendsImportLAN(friendWizardCallback);
