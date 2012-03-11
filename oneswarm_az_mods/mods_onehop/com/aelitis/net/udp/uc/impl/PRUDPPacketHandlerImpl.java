@@ -623,7 +623,8 @@ PRUDPPacketHandlerImpl
 				request_packet	= false;
 				
 				packet = PRUDPPacketReply.deserialiseReply( 
-					this,
+this, (InetSocketAddress) dg_packet
+                        .getSocketAddress(),
 					new DataInputStream(new ByteArrayInputStream( packet_data, 0, packet_len)));
 				
 			}else{

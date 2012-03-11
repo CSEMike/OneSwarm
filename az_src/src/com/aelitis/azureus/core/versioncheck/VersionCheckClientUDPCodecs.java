@@ -23,16 +23,12 @@
 
 package com.aelitis.azureus.core.versioncheck;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.*;
+import java.net.InetSocketAddress;
+import java.util.*;
 
-import com.aelitis.net.udp.uc.PRUDPPacketHandler;
-import com.aelitis.net.udp.uc.PRUDPPacketReply;
-import com.aelitis.net.udp.uc.PRUDPPacketReplyDecoder;
-import com.aelitis.net.udp.uc.PRUDPPacketRequest;
-import com.aelitis.net.udp.uc.PRUDPPacketRequestDecoder;
+import com.aelitis.net.udp.uc.*;
+
 
 public class 
 VersionCheckClientUDPCodecs 
@@ -58,6 +54,7 @@ VersionCheckClientUDPCodecs
 				public PRUDPPacketReply
 				decode(
 					PRUDPPacketHandler	handler,
+					InetSocketAddress	originator,
 					DataInputStream		is,
 					int					action,
 					int					transaction_id )
@@ -78,7 +75,7 @@ VersionCheckClientUDPCodecs
 				}
 			};
 					
-		Map	reply_decoders = new HashMap();
+		Map<Integer,PRUDPPacketReplyDecoder>	reply_decoders = new HashMap<Integer,PRUDPPacketReplyDecoder>();
 		
 		reply_decoders.put( new Integer( ACT_VERSION_REPLY ), reply_decoder );
 		
@@ -98,6 +95,7 @@ VersionCheckClientUDPCodecs
 					throws IOException
 				{
 					switch( action ){
+					
 						case ACT_VERSION_REQUEST:
 						{
 							return( new VersionCheckClientUDPRequest(is, connection_id, transaction_id ));
@@ -110,7 +108,7 @@ VersionCheckClientUDPCodecs
 				}
 			};
 
-		Map	request_decoders = new HashMap();
+		Map<Integer,PRUDPPacketRequestDecoder>	request_decoders = new HashMap<Integer,PRUDPPacketRequestDecoder>();
 		
 		request_decoders.put( new Integer( ACT_VERSION_REQUEST ), request_decoder );
 		

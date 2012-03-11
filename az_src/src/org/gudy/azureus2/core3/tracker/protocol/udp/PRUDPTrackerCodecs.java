@@ -24,6 +24,7 @@ package org.gudy.azureus2.core3.tracker.protocol.udp;
 
 import java.io.*;
 import java.util.*;
+import java.net.*;
 
 import com.aelitis.net.udp.uc.PRUDPPacketHandler;
 import com.aelitis.net.udp.uc.PRUDPPacketReply;
@@ -58,6 +59,7 @@ PRUDPTrackerCodecs
 				public PRUDPPacketReply
 				decode(
 					PRUDPPacketHandler	handler,
+					InetSocketAddress	originator,
 					DataInputStream		is,
 					int					action,
 					int					transaction_id )

@@ -25,6 +25,7 @@ package com.aelitis.azureus.core.networkmanager.admin.impl;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -62,6 +63,7 @@ NetworkAdminNATUDPCodecs
 				public PRUDPPacketReply
 				decode(
 					PRUDPPacketHandler	handler,
+					InetSocketAddress	originator,
 					DataInputStream		is,
 					int					action,
 					int					transaction_id )

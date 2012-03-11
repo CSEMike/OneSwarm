@@ -81,7 +81,8 @@ DHTUDPPacketHelper
 		PRUDPPacketRequestDecoder	request_decoder =
 			new PRUDPPacketRequestDecoder()
 			{
-				public PRUDPPacketRequest
+				@Override
+                public PRUDPPacketRequest
 				decode(
 					PRUDPPacketHandler	handler,
 					DataInputStream		is,
@@ -168,7 +169,8 @@ DHTUDPPacketHelper
 		PRUDPPacketReplyDecoder	reply_decoder =
 			new PRUDPPacketReplyDecoder()
 			{
-				public PRUDPPacketReply
+				@Override
+                public PRUDPPacketReply
 				decode(
 					PRUDPPacketHandler	handler,
 					InetSocketAddress	originator,
@@ -235,7 +237,7 @@ DHTUDPPacketHelper
 							throw( new IOException( "Unknown action type" ));
 						}
 					}
-				}
+            }
 			};
 			
 		Map	reply_decoders = new HashMap();

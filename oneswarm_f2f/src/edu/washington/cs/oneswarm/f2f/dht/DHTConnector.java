@@ -470,6 +470,39 @@ public class DHTConnector {
             throw new RuntimeException("Unsupported");
         }
 
+        @Override
+        public DistributedDatabaseContact importContact(InetSocketAddress address,
+                byte protocol_version) throws DistributedDatabaseException {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public DistributedDatabaseContact importContact(InetSocketAddress address,
+                byte protocol_version, int preferred_dht) throws DistributedDatabaseException {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public void delete(DistributedDatabaseListener listener, DistributedDatabaseKey key,
+                DistributedDatabaseContact[] targets) throws DistributedDatabaseException {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void addListener(DistributedDatabaseListener l) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void removeListener(DistributedDatabaseListener l) {
+            // TODO Auto-generated method stub
+
+        }
+
     };
     AtomicBoolean dhtGetCalled = new AtomicBoolean(false);
 

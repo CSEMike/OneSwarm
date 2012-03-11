@@ -27,6 +27,7 @@ package com.aelitis.net.udp.uc;
  */
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.util.*;
 
 import org.gudy.azureus2.core3.util.AEMonitor;
@@ -98,6 +99,7 @@ PRUDPPacketReply
 	public static PRUDPPacketReply
 	deserialiseReply(
 		PRUDPPacketHandler	handler,
+		InetSocketAddress	originator,
 		DataInputStream		is )
 	
 		throws IOException
@@ -113,7 +115,7 @@ PRUDPPacketReply
 		
 		int		transaction_id	= is.readInt();
 
-		return( decoder.decode( handler, is, action, transaction_id ));
+		return( decoder.decode( handler, originator, is, action, transaction_id ));
 	}
 	
 	public String

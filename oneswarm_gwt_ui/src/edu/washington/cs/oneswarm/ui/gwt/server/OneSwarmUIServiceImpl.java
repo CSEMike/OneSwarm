@@ -2808,6 +2808,12 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
                             + target.getAddress().getAddress().getHostAddress() + "\n");
                 }
             }
+
+            @Override
+            public void starts(byte[] key) {
+                // TODO Auto-generated method stub
+
+            }
         };
 
         System.out.println("debug, which: " + which);
@@ -4189,6 +4195,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
         }
     }
 
+    @Override
     public ArrayList<ClientServiceDTO> getClientServices() {
         List<ClientService> clientServices = ServiceSharingManager.getInstance()
                 .getClientServices();
@@ -4199,6 +4206,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
         return serviceDTOs;
     }
 
+    @Override
     public ArrayList<SharedServiceDTO> getSharedServices() {
         List<SharedService> sharesServices = ServiceSharingManager.getInstance()
                 .getSharedServices();
@@ -4209,10 +4217,12 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
         return serviceDTOs;
     }
 
+    @Override
     public void saveClientServices(ArrayList<ClientServiceDTO> services) {
         ServiceSharingManager.getInstance().updateClients(services);
     }
 
+    @Override
     public void saveSharedServices(ArrayList<SharedServiceDTO> services) throws OneSwarmException {
         try {
             ServiceSharingManager.getInstance().updateSharedServices(services);

@@ -23,6 +23,7 @@
 package com.aelitis.net.udp.uc;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 
 /**
  * @author parg
@@ -35,6 +36,7 @@ PRUDPPacketReplyDecoder
 	public PRUDPPacketReply
 	decode(
 		PRUDPPacketHandler	handler,
+		InetSocketAddress	originator,
 		DataInputStream		is,
 		int					action,
 		int					transaction_id )
