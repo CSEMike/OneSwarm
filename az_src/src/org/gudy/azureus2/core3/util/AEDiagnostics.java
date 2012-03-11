@@ -163,7 +163,8 @@ AEDiagnostics
 				},
 				new ParameterListener()
 				{
-					public void 
+					@Override
+                    public void 
 					parameterChanged(
 						String parameterName) 
 					{			
@@ -182,12 +183,14 @@ AEDiagnostics
 			
 			new AEThread2( "asyncify", true )
 			{
-				public void
+				@Override
+                public void
 				run()
 				{
 					SimpleTimer.addEvent("AEDiagnostics:logCleaner",SystemTime.getCurrentTime() + 60000
 							+ (int) (Math.random() * 15000), new TimerEventPerformer() {
-						public void perform(TimerEvent event) {
+						@Override
+                        public void perform(TimerEvent event) {
 							cleanOldLogs();
 						}
 					});
@@ -240,7 +243,7 @@ AEDiagnostics
 			
 			AEThreadMonitor.initialise();
 			
-			AEMemoryMonitor.initialise();
+            // AEMemoryMonitor.initialise();
 			
 		}catch( Throwable e ){
 			

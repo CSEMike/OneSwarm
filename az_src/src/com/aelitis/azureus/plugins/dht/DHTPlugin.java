@@ -819,11 +819,7 @@ DHTPlugin
 							
 							status_area.setText( "Initialising" );
 							
-							final DelayedTask dt = plugin_interface.getUtilities().createDelayedTask(new Runnable()
-							{
-								public void 
-								run() 
-								{
+							
 										// go async again as don't want to block other tasks
 									
 									new AEThread2(  "DHTPlugin.init2", true )
@@ -954,10 +950,7 @@ DHTPlugin
 											}
 										}
 									}.start();
-								}
-							});
-							
-							dt.queue();
+								
 								
 							went_async = true;
 							

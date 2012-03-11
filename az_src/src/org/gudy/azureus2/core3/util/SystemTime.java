@@ -18,7 +18,10 @@
  */
 package org.gudy.azureus2.core3.util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Utility class to retrieve current system time, and catch clock backward time
@@ -27,13 +30,19 @@ import java.util.*;
 public class SystemTime {
 	public static final long			TIME_GRANULARITY_MILLIS	= 25;	//internal update time ms
 	private static SystemTimeProvider	instance;
+	
+	// can't do that without some safeguarding code.
+	// monotime does guarantee that time neither goes backwards nor performs leaps into the future.
+	// the HPC doesn't jump backward but can jump forward in time
+	private static final boolean		SOD_IT_LETS_USE_HPC = false;//	= Constants.isCVSVersion();
+	
 	static
 	{
 		try
 		{
 			if (System.getProperty("azureus.time.use.raw.provider", "0").equals("1"))
 			{
-				System.out.println("Warning: Using Raw Provider, monotonous time might be inaccurate");
+				System.out.println("Warning: Using Raw Provider");
 				instance = new RawProvider();
 			} else
 			{
@@ -49,6 +58,8 @@ public class SystemTime {
 	public static void useRawProvider() {
 		if (!(instance instanceof RawProvider))
 		{
+			Debug.out( "Whoa, someone already created a non-raw provider!" );
+			
 			instance = new RawProvider();
 		}
 	}
@@ -56,29 +67,39 @@ public class SystemTime {
 	private static volatile List		systemTimeConsumers		= new ArrayList();
 	private static volatile List		monotoneTimeConsumers	= new ArrayList();
 	private static volatile List		clock_change_list		= new ArrayList();
-	private static HighPrecisionCounter	high_precision_counter;
 	private static long					hpc_base_time;
 	private static long					hpc_last_time;
+	private static boolean				no_hcp_logged;
 
 	protected interface SystemTimeProvider {
 		public long getTime();
 
 		public long getMonoTime();
+		
+		public long
+		getSteppedMonoTime();
 	}
 
 	protected static class SteppedProvider implements SystemTimeProvider {
 		private static final int	STEPS_PER_SECOND	= (int) (1000 / TIME_GRANULARITY_MILLIS);
+		private static final long	HPC_START = getHighPrecisionCounter()/1000000L;
+		
 		private final Thread		updater;
 		private volatile long		stepped_time;
 		private volatile long		currentTimeOffset = System.currentTimeMillis();
-		private volatile long		last_approximate_time;
+		private AtomicLong 			last_approximate_time = new AtomicLong(); 
+		//private volatile long		last_approximate_time;
 		private volatile int		access_count;
 		private volatile int		slice_access_count;
 		private volatile int		access_average_per_slice;
 		private volatile int		drift_adjusted_granularity;
+		
+		private volatile long		stepped_mono_time;
 
 		private SteppedProvider()
 		{
+			// System.out.println("SystemTime: using stepped time provider");
+			
 			stepped_time = 0;
 			
 			updater = new Thread("SystemTime")
@@ -149,6 +170,8 @@ public class SystemTime {
 						}
 						slice_access_count = 0;
 						
+						stepped_mono_time = stepped_time;
+						
 						// copy reference since we use unsynced COW semantics
 						List consumersRef = monotoneTimeConsumers;
 						for (int i = 0; i < consumersRef.size(); i++)
@@ -202,36 +225,58 @@ public class SystemTime {
 		}
 
 		public long getMonoTime() {
-			long adjusted_time = stepped_time;
-			long averageSliceStep = access_average_per_slice;
-			if (averageSliceStep > 0)
-			{
-				long sliceStep = (drift_adjusted_granularity * slice_access_count) / averageSliceStep;
-				if (sliceStep >= drift_adjusted_granularity)
+			if ( SOD_IT_LETS_USE_HPC ){
+				
+				return( ( getHighPrecisionCounter()/1000000) - HPC_START );
+				
+			}else{
+				long adjusted_time;
+				long averageSliceStep = access_average_per_slice;
+				if (averageSliceStep > 0)
 				{
-					sliceStep = drift_adjusted_granularity - 1;
-				}
-				adjusted_time += sliceStep;
+					long sliceStep = (drift_adjusted_granularity * slice_access_count) / averageSliceStep;
+					if (sliceStep >= drift_adjusted_granularity)
+					{
+						sliceStep = drift_adjusted_granularity - 1;
+					}
+					adjusted_time = sliceStep + stepped_time;
+				} else
+					adjusted_time = stepped_time;
+				access_count++;
+				slice_access_count++;
+	
+				// make sure we don't go backwards and our reference value for going backwards doesn't go backwards either
+				long approxBuffered = last_approximate_time.get(); 
+				if (adjusted_time < approxBuffered)
+					adjusted_time = approxBuffered;				
+				else
+					last_approximate_time.compareAndSet(approxBuffered, adjusted_time);
+	
+				return adjusted_time;
 			}
-			access_count++;
-			slice_access_count++;
-			// make sure we don't go backwards
-			if (adjusted_time < last_approximate_time)
-				adjusted_time = last_approximate_time;
-			else
-				last_approximate_time = adjusted_time;
-			return adjusted_time;
+		}
+		
+		public long getSteppedMonoTime() {
+
+			if ( SOD_IT_LETS_USE_HPC ){
+				
+				return( getHighPrecisionCounter()/1000000 );
+				
+			}else{
+				
+				return( stepped_mono_time );
+			}
 		}
 	}
-
+	
 	protected static class RawProvider implements SystemTimeProvider {
 		private static final int	STEPS_PER_SECOND	= (int) (1000 / TIME_GRANULARITY_MILLIS);
 		private final Thread		updater;
-		private volatile long		adjustedTimeOffset;
 
 		private RawProvider()
 		{
 			System.out.println("SystemTime: using raw time provider");
+			
 			updater = new Thread("SystemTime")
 			{
 				long	last_time;
@@ -246,10 +291,9 @@ public class SystemTime {
 							if (offset < 0 || offset > 5000)
 							{
 								// clock's changed
-								adjustedTimeOffset += offset;
 								Iterator it = clock_change_list.iterator();
 								while (it.hasNext())
-								{
+								{									
 									((ChangeListener) it.next()).clockChanged(current_time, offset);
 								}
 							}
@@ -268,18 +312,21 @@ public class SystemTime {
 							}
 						}
 						consumer_list_ref = monotoneTimeConsumers;
-						long adjustedTime = current_time - adjustedTimeOffset;
+						
+						long	mono_time = getMonoTime();
+						
 						for (int i = 0; i < consumer_list_ref.size(); i++)
 						{
 							TickConsumer cons = (TickConsumer) consumer_list_ref.get(i);
 							try
 							{
-								cons.consume(adjustedTime);
+								cons.consume(mono_time);
 							} catch (Throwable e)
 							{
 								Debug.printStackTrace(e);
 							}
 						}
+						
 						try
 						{
 							Thread.sleep(TIME_GRANULARITY_MILLIS);
@@ -306,7 +353,11 @@ public class SystemTime {
 		 * TIME_GRANULARITY_MILLIS
 		 */
 		public long getMonoTime() {
-			return getTime() - adjustedTimeOffset;
+			return getHighPrecisionCounter()/1000000;
+		}
+		
+		public long getSteppedMonoTime() {
+			return getMonoTime();
 		}
 	}
 
@@ -327,9 +378,6 @@ public class SystemTime {
 	 * 
 	 * <b>Do not mix times retrieved by this method with normal time!</b>
 	 * 
-	 * TODO once we move to java 1.5 use atomic stuff to harden the guarantee
-	 * (multithreaded access can weaken it at the moment)
-	 * 
 	 * @return the amount of real time passed since the program start in
 	 *         milliseconds
 	 */
@@ -337,6 +385,17 @@ public class SystemTime {
 		return instance.getMonoTime();
 	}
 
+		/**
+		 * Like getMonotonousTime but only updated at TIME_GRANULARITY_MILLIS intervals (not interpolated)
+		 * As such it is likely to be cheaper to obtain
+		 * @return
+		 */
+	
+	public static long getSteppedMonotonousTime() {
+		return instance.getSteppedMonoTime();
+	}
+
+	
 	public static long getOffsetTime(long offsetMS) {
 		return instance.getTime() + offsetMS;
 	}
@@ -403,36 +462,10 @@ public class SystemTime {
 		public void clockChanged(long current_time, long change_millis);
 	}
 
-	public static long getHighPrecisionCounter() {
-		if (high_precision_counter == null)
-		{
-			AEDiagnostics.load15Stuff();
-			synchronized (SystemTime.class)
-			{
-				long now = getCurrentTime();
-				if (now < hpc_last_time)
-				{
-					// clock's gone back, by at least
-					long gone_back_by_at_least = hpc_last_time - now;
-					// all we can do is move the logical start time back too to ensure that our
-					// counter doesn't got backwards
-					hpc_base_time -= gone_back_by_at_least;
-				}
-				hpc_last_time = now;
-				return ((now - hpc_base_time) * 1000000);
-			}
-		} else
-		{
-			return (high_precision_counter.nanoTime());
-		}
-	}
-
-	public static void registerHighPrecisionCounter(HighPrecisionCounter counter) {
-		high_precision_counter = counter;
-	}
-
-	public interface HighPrecisionCounter {
-		public long nanoTime();
+	public static long 
+	getHighPrecisionCounter() 
+	{
+		return( System.nanoTime());
 	}
 
 	public static void main(String[] args) {

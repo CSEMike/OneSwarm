@@ -134,28 +134,29 @@ DHTTrackerPlugin
 	private TorrentAttribute 	ta_networks;
 	private TorrentAttribute 	ta_peer_sources;
 
-	private Map					interesting_downloads 	= new HashMap();
+	private final Map					interesting_downloads 	= new HashMap();
 	private int					interesting_published	= 0;
 	private int					interesting_pub_max		= INTERESTING_PUB_MAX_DEFAULT;
-	private Map					running_downloads 		= new HashMap();
-	private Map					registered_downloads 	= new HashMap();
+	private final Map					running_downloads 		= new HashMap();
+	private final Map					registered_downloads 	= new HashMap();
 	
-	private Map					limited_online_tracking	= new HashMap();
-	private Map					query_map			 	= new HashMap();
+	private final Map					limited_online_tracking	= new HashMap();
+	private final Map					query_map			 	= new HashMap();
 	
-	private Map					in_progress				= new HashMap();
+	private final Map					in_progress				= new HashMap();
 	
 	private BooleanParameter	track_normal_when_offline;
 	private BooleanParameter	track_limited_when_online;
 	
 	private LoggerChannel		log;
 	
-	private Map					scrape_injection_map = new WeakHashMap();
+	private final Map					scrape_injection_map = new WeakHashMap();
 	
-	private AEMonitor	this_mon	= new AEMonitor( "DHTTrackerPlugin" );
+	private final AEMonitor	this_mon	= new AEMonitor( "DHTTrackerPlugin" );
 	
 	
-	public void
+	@Override
+    public void
 	initialize(
 		PluginInterface 	_plugin_interface )
 	{
@@ -188,7 +189,8 @@ DHTTrackerPlugin
 		track_limited_when_online.addListener(
 			new ParameterListener()
 			{
-				public void
+				@Override
+                public void
 				parameterChanged(
 					Parameter	param )
 				{
@@ -199,7 +201,8 @@ DHTTrackerPlugin
 		track_normal_when_offline.addListener(
 			new ParameterListener()
 			{
-				public void
+				@Override
+                public void
 				parameterChanged(
 					Parameter	param )
 				{
@@ -231,7 +234,8 @@ DHTTrackerPlugin
 		log.addListener(
 				new LoggerChannelListener()
 				{
-					public void
+					@Override
+                    public void
 					messageLogged(
 						int		type,
 						String	message )
@@ -239,7 +243,8 @@ DHTTrackerPlugin
 						model.getLogArea().appendText( message+"\n");
 					}
 					
-					public void
+					@Override
+                    public void
 					messageLogged(
 						String		str,
 						Throwable	error )
@@ -255,7 +260,8 @@ DHTTrackerPlugin
 		plugin_interface.addListener(
 			new PluginListener()
 			{
-				public void
+				@Override
+                public void
 				initializationComplete()
 				{
 					final PluginInterface dht_pi = 
@@ -269,7 +275,8 @@ DHTTrackerPlugin
 						AEThread2	t = 
 							new AEThread2( "DHTTrackerPlugin:init", true )
 							{
-								public void
+								@Override
+                                public void
 								run()
 								{
 									try{
@@ -313,13 +320,15 @@ DHTTrackerPlugin
 					}
 				}
 				
-				public void
+				@Override
+                public void
 				closedownInitiated()
 				{
 					
 				}
 				
-				public void
+				@Override
+                public void
 				closedownComplete()
 				{
 					
@@ -333,7 +342,8 @@ DHTTrackerPlugin
 		plugin_interface.getDownloadManager().addListener(
 				new DownloadManagerListener()
 				{
-					public void
+					@Override
+                    public void
 					downloadAdded(
 						final Download	download )
 					{
@@ -344,7 +354,8 @@ DHTTrackerPlugin
 							download.addListener(
 								new DownloadListener()
 								{
-									public void
+									@Override
+                                    public void
 									stateChanged(
 										final Download		download,
 										int					old_state,
@@ -358,62 +369,72 @@ DHTTrackerPlugin
 											download.setAnnounceResult(
 														new DownloadAnnounceResult()
 														{
-															public Download
+															@Override
+                                                            public Download
 															getDownload()
 															{
 																return( download );
 															}
 																										
-															public int
+															@Override
+                                                            public int
 															getResponseType()
 															{
 																return( DownloadAnnounceResult.RT_ERROR );
 															}
 																									
-															public int
+															@Override
+                                                            public int
 															getReportedPeerCount()
 															{
 																return( 0 );
 															}
 															
 														
-															public int
+															@Override
+                                                            public int
 															getSeedCount()
 															{
 																return( 0 );
 															}
 															
-															public int
+															@Override
+                                                            public int
 															getNonSeedCount()
 															{
 																return( 0 );
 															}
 															
-															public String
+															@Override
+                                                            public String
 															getError()
 															{
 																return( "Distributed Database Offline" );
 															}
 																										
-															public URL
+															@Override
+                                                            public URL
 															getURL()
 															{
 																return( download.getTorrent().getAnnounceURL());
 															}
 															
-															public DownloadAnnounceResultPeer[]
+															@Override
+                                                            public DownloadAnnounceResultPeer[]
 															getPeers()
 															{
 																return( new DownloadAnnounceResultPeer[0] );
 															}
 															
-															public long
+															@Override
+                                                            public long
 															getTimeToWait()
 															{
 																return( 0 );
 															}
 															
-															public Map
+															@Override
+                                                            public Map
 															getExtensions()
 															{
 																return( null );
@@ -422,7 +443,8 @@ DHTTrackerPlugin
 										}
 									}
 									
-									public void
+									@Override
+                                    public void
 									positionChanged(
 										Download		download, 
 										int 			oldPosition,
@@ -436,55 +458,64 @@ DHTTrackerPlugin
 							download.setScrapeResult(
 									new DownloadScrapeResult()
 									{
-										public Download
+										@Override
+                                        public Download
 										getDownload()
 										{
 											return( download );
 										}
 										
-										public int
+										@Override
+                                        public int
 										getResponseType()
 										{
 											return( RT_ERROR );
 										}
 										
-										public int
+										@Override
+                                        public int
 										getSeedCount()
 										{
 											return( -1 );
 										}
 										
-										public int
+										@Override
+                                        public int
 										getNonSeedCount()
 										{
 											return( -1 );
 										}
 
-										public long
+										@Override
+                                        public long
 										getScrapeStartTime()
 										{
 											return( SystemTime.getCurrentTime());
 										}
 											
-										public void 
+										@Override
+                                        public void 
 										setNextScrapeStartTime(
 											long nextScrapeStartTime)
 										{
 										}
 
-										public long
+										@Override
+                                        public long
 										getNextScrapeStartTime()
 										{
 											return( -1 );
 										}
 										
-										public String
+										@Override
+                                        public String
 										getStatus()
 										{
 											return( "Distributed Database Offline" );
 										}
 
-										public URL
+										@Override
+                                        public URL
 										getURL()
 										{
 											return( download.getTorrent().getAnnounceURL());
@@ -493,7 +524,8 @@ DHTTrackerPlugin
 						}
 					}
 					
-					public void
+					@Override
+                    public void
 					downloadRemoved(
 						Download	download )
 					{
@@ -509,7 +541,8 @@ DHTTrackerPlugin
 				{
 					Random	random = new Random();
 					
-					public void
+					@Override
+                    public void
 					downloadAdded(
 						Download	download )
 					{
@@ -578,7 +611,8 @@ DHTTrackerPlugin
 						checkDownloadForRegistration( download, true );
 					}
 					
-					public void
+					@Override
+                    public void
 					downloadRemoved(
 						Download	download )
 					{
@@ -610,7 +644,8 @@ DHTTrackerPlugin
 			{
 				private int	ticks;
 				
-				public void 
+				@Override
+                public void 
 				perform(
 					UTTimerEvent event) 
 				{
@@ -626,7 +661,8 @@ DHTTrackerPlugin
 			});
 	}
 	
-	public void
+	@Override
+    public void
 	propertyChanged(
 		Download				download,
 		DownloadPropertyEvent	event )
@@ -641,14 +677,16 @@ DHTTrackerPlugin
 		}
 	}
 	
-	public void
+	@Override
+    public void
 	scrapeResult(
 		DownloadScrapeResult	result )
 	{
 		checkDownloadForRegistration( result.getDownload(), false );
 	}
 	
-	public void
+	@Override
+    public void
 	announceResult(
 		DownloadAnnounceResult	result )
 	{
@@ -1028,7 +1066,7 @@ DHTTrackerPlugin
 		  					
 		  		  		while( tok.hasMoreTokens()){
 		  				
-		  		  			String	this_address = (String)tok.nextToken().trim();
+		  		  			String	this_address = tok.nextToken().trim();
 		  				
 		  		  			if ( this_address.length() > 0 ){
 		  					
@@ -1234,26 +1272,30 @@ DHTTrackerPlugin
 					flags,
 					new DHTPluginOperationListener()
 					{
-						public void
+						@Override
+                        public void
 						diversified()
 						{
 						}
 						
-						public void
+						@Override
+                        public void
 						valueRead(
 							DHTPluginContact	originator,
 							DHTPluginValue		value )
 						{							
 						}
 						
-						public void
+						@Override
+                        public void
 						valueWritten(
 							DHTPluginContact	target,
 							DHTPluginValue		value )
 						{	
 						}
 	
-						public void
+						@Override
+                        public void
 						complete(
 							byte[]	key,
 							boolean	timeout_occurred )
@@ -1265,6 +1307,12 @@ DHTTrackerPlugin
 							
 							// decreaseActive( dl );
 						}
+
+                        @Override
+                        public void starts(byte[] key) {
+                            // TODO Auto-generated method stub
+
+                        }
 					});
 		}
 	}
@@ -1305,12 +1353,14 @@ DHTTrackerPlugin
 						int		seed_count;
 						int		leecher_count;
 						
-						public void
+						@Override
+                        public void
 						diversified()
 						{
 						}
 						
-						public void
+						@Override
+                        public void
 						valueRead(
 							DHTPluginContact	originator,
 							DHTPluginValue		value )
@@ -1396,14 +1446,16 @@ DHTTrackerPlugin
 							}
 						}
 						
-						public void
+						@Override
+                        public void
 						valueWritten(
 							DHTPluginContact	target,
 							DHTPluginValue		value )
 						{
 						}
 	
-						public void
+						@Override
+                        public void
 						complete(
 							byte[]	key,
 							boolean	timeout_occurred )
@@ -1464,37 +1516,43 @@ DHTTrackerPlugin
 								peers_for_announce.add(
 									new DownloadAnnounceResultPeer()
 									{
-										public String
+										@Override
+                                        public String
 										getSource()
 										{
 											return( PEPeerSource.PS_DHT );
 										}
 										
-										public String
+										@Override
+                                        public String
 										getAddress()
 										{
 											return((String)addresses.get(f_i));
 										}
 										
-										public int
+										@Override
+                                        public int
 										getPort()
 										{
 											return(((Integer)ports.get(f_i)).intValue());
 										}
 										
-										public int
+										@Override
+                                        public int
 										getUDPPort()
 										{
 											return(((Integer)udp_ports.get(f_i)).intValue());
 										}
 										
-										public byte[]
+										@Override
+                                        public byte[]
 										getPeerID()
 										{
 											return( null );
 										}
 										
-										public short
+										@Override
+                                        public short
 										getProtocol()
 										{
 											String	flag = (String)flags.get(f_i);
@@ -1526,61 +1584,71 @@ DHTTrackerPlugin
 								download.setAnnounceResult(
 										new DownloadAnnounceResult()
 										{
-											public Download
+											@Override
+                                            public Download
 											getDownload()
 											{
 												return( download );
 											}
 																						
-											public int
+											@Override
+                                            public int
 											getResponseType()
 											{
 												return( DownloadAnnounceResult.RT_SUCCESS );
 											}
 																					
-											public int
+											@Override
+                                            public int
 											getReportedPeerCount()
 											{
 												return( peers.length);
 											}
 													
-											public int
+											@Override
+                                            public int
 											getSeedCount()
 											{
 												return( seed_count );
 											}
 											
-											public int
+											@Override
+                                            public int
 											getNonSeedCount()
 											{
 												return( leecher_count );	
 											}
 											
-											public String
+											@Override
+                                            public String
 											getError()
 											{
 												return( null );
 											}
 																						
-											public URL
+											@Override
+                                            public URL
 											getURL()
 											{
 												return( url_to_report );
 											}
 											
-											public DownloadAnnounceResultPeer[]
+											@Override
+                                            public DownloadAnnounceResultPeer[]
 											getPeers()
 											{
 												return( peers );
 											}
 											
-											public long
+											@Override
+                                            public long
 											getTimeToWait()
 											{
 												return( retry/1000 );
 											}
 											
-											public Map
+											@Override
+                                            public Map
 											getExtensions()
 											{
 												return( null );
@@ -1658,55 +1726,64 @@ DHTTrackerPlugin
 								download.setScrapeResult(
 									new DownloadScrapeResult()
 									{
-										public Download
+										@Override
+                                        public Download
 										getDownload()
 										{
 											return( download );
 										}
 										
-										public int
+										@Override
+                                        public int
 										getResponseType()
 										{
 											return( RT_SUCCESS );
 										}
 										
-										public int
+										@Override
+                                        public int
 										getSeedCount()
 										{
 											return( f_adj_seeds );
 										}
 										
-										public int
+										@Override
+                                        public int
 										getNonSeedCount()
 										{
 											return( f_adj_leechers );
 										}
 	
-										public long
+										@Override
+                                        public long
 										getScrapeStartTime()
 										{
 											return( start );
 										}
 											
-										public void 
+										@Override
+                                        public void 
 										setNextScrapeStartTime(
 											long nextScrapeStartTime)
 										{
 											
 										}
-										public long
+										@Override
+                                        public long
 										getNextScrapeStartTime()
 										{
 											return( SystemTime.getCurrentTime() + retry );
 										}
 										
-										public String
+										@Override
+                                        public String
 										getStatus()
 										{
 											return( "OK" );
 										}
 	
-										public URL
+										@Override
+                                        public URL
 										getURL()
 										{
 											return( url_to_report );
@@ -1714,6 +1791,12 @@ DHTTrackerPlugin
 									});
 								}	
 						}
+
+                        @Override
+                        public void starts(byte[] key) {
+                            // TODO Auto-generated method stub
+
+                        }
 					});
 		}
 	}
@@ -1765,26 +1848,30 @@ DHTTrackerPlugin
 						"Tracker deregistration of '" + download.getName() + "' " + target.getDesc(),
 						new DHTPluginOperationListener()
 						{
-							public void
+							@Override
+                            public void
 							diversified()
 							{
 							}
 							
-							public void
+							@Override
+                            public void
 							valueRead(
 								DHTPluginContact	originator,
 								DHTPluginValue		value )
 							{								
 							}
 							
-							public void
+							@Override
+                            public void
 							valueWritten(
 								DHTPluginContact	target,
 								DHTPluginValue		value )
 							{
 							}	
 		
-							public void
+							@Override
+                            public void
 							complete(
 								byte[]	key,
 								boolean	timeout_occurred )
@@ -1795,6 +1882,12 @@ DHTTrackerPlugin
 								
 								decreaseActive( download );
 							}
+
+                    @Override
+                    public void starts(byte[] key) {
+                        // TODO Auto-generated method stub
+
+                    }
 						});
 			}
 		}
@@ -1997,13 +2090,15 @@ DHTTrackerPlugin
 								private boolean diversified;
 								private int total = 0;
 								
-								public void
+								@Override
+                                public void
 								diversified()
 								{
 									diversified	= true;
 								}
 								
-								public void
+								@Override
+                                public void
 								valueRead(
 									DHTPluginContact	originator,
 									DHTPluginValue		value )
@@ -2011,14 +2106,16 @@ DHTTrackerPlugin
 									total++;
 								}
 								
-								public void
+								@Override
+                                public void
 								valueWritten(
 									DHTPluginContact	target,
 									DHTPluginValue		value )
 								{
 								}
 								
-								public void
+								@Override
+                                public void
 								complete(
 									byte[]	key,
 									boolean	timeout_occurred )
@@ -2066,42 +2163,60 @@ DHTTrackerPlugin
 												(byte)0,
 												new DHTPluginOperationListener()
 												{
-													public void
+													@Override
+                                                    public void
 													diversified()
 													{
 													}
 													
-													public void
+													@Override
+                                                    public void
 													valueRead(
 														DHTPluginContact	originator,
 														DHTPluginValue		value )
 													{
 													}
 													
-													public void
+													@Override
+                                                    public void
 													valueWritten(
 														DHTPluginContact	target,
 														DHTPluginValue		value )
 													{
 													}
 													
-													public void
+													@Override
+                                                    public void
 													complete(
 														byte[]	key,
 														boolean	timeout_occurred )
 													{
 													}
+
+                                                @Override
+                                                public void starts(byte[] key) {
+                                                    // TODO Auto-generated
+                                                    // method stub
+
+                                                }
 												});
 	
 									}
 								}
+
+                            @Override
+                            public void starts(byte[] key) {
+                                // TODO Auto-generated method stub
+
+                            }
 							});
 	
 			}
 		}
 	}
 	
-	public void
+	@Override
+    public void
 	stateChanged(
 		Download		download,
 		int				old_state,
@@ -2156,7 +2271,8 @@ DHTTrackerPlugin
 		}		
 	}
 	
-	public void
+	@Override
+    public void
 	positionChanged(
 		Download		download, 
 		int 			oldPosition,
@@ -2192,12 +2308,14 @@ DHTTrackerPlugin
 				false, false,
 				new DHTPluginOperationListener()
 				{
-					public void
+					@Override
+                    public void
 					diversified()
 					{
 					}
 					
-					public void
+					@Override
+                    public void
 					valueRead(
 						DHTPluginContact	originator,
 						DHTPluginValue		value )
@@ -2212,20 +2330,28 @@ DHTTrackerPlugin
 						}
 					}
 					
-					public void
+					@Override
+                    public void
 					valueWritten(
 						DHTPluginContact	target,
 						DHTPluginValue		value )
 					{
 					}
 
-					public void
+					@Override
+                    public void
 					complete(
 						byte[]	key,
 						boolean	timeout_occurred )
 					{
 						sem.release();
 					}
+
+                    @Override
+                    public void starts(byte[] key) {
+                        // TODO Auto-generated method stub
+
+                    }
 				});
 
 		sem.reserve();
@@ -2233,55 +2359,64 @@ DHTTrackerPlugin
 		return(
 				new DownloadScrapeResult()
 				{
-					public Download
+					@Override
+                    public Download
 					getDownload()
 					{
 						return( null );
 					}
 					
-					public int
+					@Override
+                    public int
 					getResponseType()
 					{
 						return( RT_SUCCESS );
 					}
 					
-					public int
+					@Override
+                    public int
 					getSeedCount()
 					{
 						return( seeds[0] );
 					}
 					
-					public int
+					@Override
+                    public int
 					getNonSeedCount()
 					{
 						return( leechers[0] );
 					}
 
-					public long
+					@Override
+                    public long
 					getScrapeStartTime()
 					{
 						return( 0 );
 					}
 						
-					public void 
+					@Override
+                    public void 
 					setNextScrapeStartTime(
 						long nextScrapeStartTime)
 					{
 					}
 					
-					public long
+					@Override
+                    public long
 					getNextScrapeStartTime()
 					{
 						return( 0 );
 					}
 					
-					public String
+					@Override
+                    public String
 					getStatus()
 					{
 						return( "OK" );
 					}
 
-					public URL
+					@Override
+                    public URL
 					getURL()
 					{
 						return( null );
@@ -2358,8 +2493,8 @@ DHTTrackerPlugin
 	protected static class
 	RegistrationDetails
 	{
-		private String	port_details;
-		private byte	flags;
+		private final String	port_details;
+		private final byte	flags;
 		
 		protected
 		RegistrationDetails(
@@ -2386,9 +2521,9 @@ DHTTrackerPlugin
 	protected static class
 	trackerTarget
 	{
-		private String		desc;
-		private	byte[]		hash;
-		private int			type;
+		private final String		desc;
+		private final	byte[]		hash;
+		private final int			type;
 		
 		protected
 		trackerTarget(

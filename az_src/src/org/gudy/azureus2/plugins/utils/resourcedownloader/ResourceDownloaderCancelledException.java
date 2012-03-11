@@ -32,6 +32,6 @@ ResourceDownloaderCancelledException
 	ResourceDownloaderCancelledException(
 		ResourceDownloader		rd )
 	{
-		super( rd, "Download cancelled" );
+        super("Download cancelled");
 	}
 }

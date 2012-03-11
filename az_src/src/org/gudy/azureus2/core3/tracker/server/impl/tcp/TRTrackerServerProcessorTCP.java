@@ -66,8 +66,8 @@ TRTrackerServerProcessorTCP
 	protected static final byte[]	HTTP_RESPONSE_END_GZIP 		= (NL + "Content-Encoding: gzip" + NL + NL).getBytes();
 	protected static final byte[]	HTTP_RESPONSE_END_NOGZIP 	= (NL + NL).getBytes();
 	
-	private TRTrackerServerTCP	server;
-	private String				server_url;
+	private final TRTrackerServerTCP	server;
+	private final String				server_url;
 	
 	private boolean			disable_timeouts 	= false;
 
@@ -452,7 +452,8 @@ TRTrackerServerProcessorTCP
 						if ( lhs.equals( "aznp" )){
 
 							try{
-								network_position = DHTNetworkPositionManager.deserialisePosition( Base32.decode( rhs ));
+                                network_position = DHTNetworkPositionManager.deserialisePosition(
+                                        client_address.getAddress(), Base32.decode(rhs));
 																
 							}catch( Throwable e ){
 								
