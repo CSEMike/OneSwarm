@@ -68,8 +68,11 @@ DHTUDPPacketNetworkHandler
 	process(
 		PRUDPPacketRequest	_request )
 	{
-		DHTUDPPacketRequest	request = (DHTUDPPacketRequest)_request;
+		if ( _request instanceof DHTUDPPacketRequest ){
 		
-		factory.process( port, request );
+			DHTUDPPacketRequest	request = (DHTUDPPacketRequest)_request;
+		
+			factory.process( port, request );
+		}
 	}
 }

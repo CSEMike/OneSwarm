@@ -26,14 +26,18 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import org.gudy.azureus2.core3.util.Debug;
 import org.gudy.azureus2.core3.util.SHA1Simple;
+import org.gudy.azureus2.core3.util.SystemTime;
 
 
 import com.aelitis.azureus.core.dht.DHT;
+import com.aelitis.azureus.core.dht.impl.DHTLog;
 import com.aelitis.azureus.core.dht.netcoords.DHTNetworkPosition;
 import com.aelitis.azureus.core.dht.netcoords.DHTNetworkPositionManager;
 import com.aelitis.azureus.core.dht.transport.DHTTransportContact;
@@ -51,17 +55,20 @@ public class
 DHTUDPUtils 
 {
 	protected static final int	CT_UDP		= 1;
-	
-	private static ThreadLocal		tls	= 
-		new ThreadLocal()
+			
+	private static Map<String,byte[]>	node_id_history = 
+		new LinkedHashMap<String,byte[]>(128,0.75f,true)
 		{
-			public Object
-			initialValue()
+			protected boolean 
+			removeEldestEntry(
+		   		Map.Entry<String,byte[]> eldest) 
 			{
-				return( new SHA1Simple());
+				return size() > 128;
 			}
 		};
 		
+	private static SHA1Simple	hasher = new SHA1Simple();
+	
 	protected static byte[]
 	getNodeID(
 		InetSocketAddress	address,
@@ -79,26 +86,73 @@ DHTUDPUtils
 			
 		}else{
 			
-			SHA1Simple	hasher = (SHA1Simple)tls.get();
+			String	key;
 			
-			byte[]	res;
-			
-			if ( protocol_version >= DHTTransportUDP.PROTOCOL_VERSION_RESTRICT_ID_PORTS ){
+			if ( protocol_version >= DHTTransportUDP.PROTOCOL_VERSION_RESTRICT_ID3 ){
 				
-					// limit range to around 2000 (1999 is prime)
+				byte[] bytes = ia.getAddress();
 				
-				res = hasher.calculateHash(
-						(	ia.getHostAddress() + ":" + ( address.getPort() % 1999)).getBytes());
+				if ( bytes.length == 4 ){
+					
+					//final long K0	= Long.MAX_VALUE;	
+					//final long K1	= Long.MAX_VALUE;	
+					
+						// restrictions suggested by UoW researchers as effective at reducing Sybil opportunity but 
+						// not so restrictive as to impact DHT performance
+					
+					final long K2	= 2500;
+					final long K3	= 50;
+					final long K4	= 5;
 
-			}else{
+					long	result = address.getPort() % K4;
+					
+					result = ((((long)bytes[3] << 8 ) &0x000000ff00L ) | result ) % K3;
+					result = ((((long)bytes[2] << 16 )&0x0000ff0000L ) | result ) % K2;
+					result = ((((long)bytes[1] << 24 )&0x00ff000000L ) | result ); // % K1;
+					result = ((((long)bytes[0] << 32 )&0xff00000000L ) | result ); // % K0;
+
+					key = String.valueOf( result );
+										
+				}else{
+
+						// stick with existing approach for IPv6 at the moment
+					
+					key = ia.getHostAddress() + ":" + ( address.getPort() % 8 );
+				}
+			}else if ( protocol_version >= DHTTransportUDP.PROTOCOL_VERSION_RESTRICT_ID_PORTS2 ){
+
+					// more draconian limit, analysis shows that of 500,000 node addresses only
+					// 0.01% had >= 8 ports active. ( 1% had 2 ports, 0.1% 3)
+					// Having > 1 node with the same ID doesn't actually cause too much grief
+		
+				key = ia.getHostAddress() + ":" + ( address.getPort() % 8 );
 				
-				res = hasher.calculateHash(
-							(	ia.getHostAddress() + ":" + address.getPort()).getBytes());
+			}else if ( protocol_version >= DHTTransportUDP.PROTOCOL_VERSION_RESTRICT_ID_PORTS ){
+
+					// limit range to around 2000 (1999 is prime)
+
+				key = ia.getHostAddress() + ":" + ( address.getPort() % 1999 );
+				
+			}else{
+			
+				key = ia.getHostAddress() + ":" + address.getPort();
 			}
 			
-			//System.out.println( "NodeID: " + address + " -> " + DHTLog.getString( res ));
+			synchronized( node_id_history ){
+				
+				byte[]	res = node_id_history.get( key );
+				
+				if ( res == null ){
+									
+					res = hasher.calculateHash( key.getBytes());
 			
-			return( res );
+					node_id_history.put( key, res );
+				}
+				
+				// System.out.println( "NodeID: " + address + " -> " + DHTLog.getString( res ));
+			
+				return( res );
+			}
 		}
 	}
 	
@@ -122,7 +176,7 @@ DHTUDPUtils
 	{
 		if ( len > max_length ){
 			
-			throw( new IOException( "Invalid data length" ));
+			throw( new IOException( "Invalid DHT data length: max=" + max_length + ",actual=" + len ));
 		}
 		
 		if ( max_length < 256 ){
@@ -163,7 +217,7 @@ DHTUDPUtils
 		
 		if ( len > max_length ){
 			
-			throw( new IOException( "Invalid data length" ));
+			throw( new IOException( "Invalid DHT data length: max=" + max_length + ",actual=" + len ));
 		}
 		
 		return( len );
@@ -331,15 +385,13 @@ DHTUDPUtils
 	
 		throws IOException, DHTTransportException
 	{
-		if ( contact instanceof DHTTransportUDPContactImpl ){
+		if ( contact.getTransport() instanceof DHTTransportUDP ){
 			
 			os.writeByte( CT_UDP );		// 1
 			
 			os.writeByte( contact.getProtocolVersion());	// 2
-			
-			DHTTransportUDPContactImpl c = (DHTTransportUDPContactImpl)contact;
-								
-			serialiseAddress( os, c.getExternalAddress() );	// 2 + address
+											
+			serialiseAddress( os, contact.getExternalAddress() );	// 2 + address
 			
 		}else{
 			
@@ -455,6 +507,28 @@ DHTUDPUtils
 		
 		final int flags	= is.readByte()&0xff;
 		
+		final int life_hours;
+		
+		if ( packet.getProtocolVersion() >= DHTTransportUDP.PROTOCOL_VERSION_LONGER_LIFE ){
+
+			life_hours = is.readByte()&0xff;
+			
+		}else{
+			
+			life_hours = 0;
+		}
+		
+		final byte rep_control;
+		
+		if ( packet.getProtocolVersion() >= DHTTransportUDP.PROTOCOL_VERSION_REPLICATION_CONTROL ){
+
+			rep_control = is.readByte();
+			
+		}else{
+			
+			rep_control = DHT.REP_FACT_DEFAULT;
+		}
+		
 		DHTTransportValue value = 
 			new DHTTransportValue()
 			{
@@ -494,17 +568,44 @@ DHTUDPUtils
 					return( flags );
 				}
 				
+				public int
+				getLifeTimeHours()
+				{
+					return( life_hours );
+				}
+				
+				public byte
+				getReplicationControl()
+				{
+					return( rep_control );
+				}
+				
+				public byte 
+				getReplicationFactor() 
+				{
+					return( rep_control == DHT.REP_FACT_DEFAULT?DHT.REP_FACT_DEFAULT:(byte)(rep_control&0x0f));
+				}
+				
+				public byte 
+				getReplicationFrequencyHours() 
+				{
+					return( rep_control == DHT.REP_FACT_DEFAULT?DHT.REP_FACT_DEFAULT:(byte)(rep_control>>4));
+				}
+				
 				public String
 				getString()
 				{
-					return( new String(getValue()));
+					long	now = SystemTime.getCurrentTime();
+					
+					return( DHTLog.getString( value_bytes ) + " - " + new String(value_bytes) + "{v=" + version + ",f=" + 
+							Integer.toHexString(flags) + ",l=" + life_hours + ",r=" + Integer.toHexString(getReplicationControl()) + ",ca=" + (now - created ) + ",or=" + originator.getString() +"}" );
 				}
 			};
 			
 		return( value );
 	}
 	
-	public static final int DHTTRANSPORTVALUE_SIZE_WITHOUT_VALUE	= 15 + DHTTRANSPORTCONTACT_SIZE;
+	public static final int DHTTRANSPORTVALUE_SIZE_WITHOUT_VALUE	= 17 + DHTTRANSPORTCONTACT_SIZE;
 		
 	protected static void
 	serialiseTransportValue(
@@ -538,6 +639,16 @@ DHTUDPUtils
 		serialiseContact( os, value.getOriginator());	// 12 + 2+X + contact
 		
 		os.writeByte( value.getFlags());	// 13 + 2+ X + contact
+		
+		if ( packet.getProtocolVersion() >= DHTTransportUDP.PROTOCOL_VERSION_LONGER_LIFE ){
+
+			os.writeByte( value.getLifeTimeHours()); // 14 + 2+ X + contact
+		}
+		
+		if ( packet.getProtocolVersion() >= DHTTransportUDP.PROTOCOL_VERSION_REPLICATION_CONTROL ){
+			
+			os.writeByte( value.getReplicationControl()); // 15 + 2+ X + contact
+		}
 	}
 	
 	protected static void
@@ -671,7 +782,7 @@ DHTUDPUtils
 				byte	type = is.readByte();
 				byte	size = is.readByte();
 				
-				DHTNetworkPosition	np = DHTNetworkPositionManager.deserialise( type, is );
+				DHTNetworkPosition	np = DHTNetworkPositionManager.deserialise( reply.getAddress().getAddress(), type, is );
 				
 				if ( np == null ){
 					
@@ -705,7 +816,7 @@ DHTUDPUtils
 			}
 		}else{
 			
-			nps = new DHTNetworkPosition[]{ DHTNetworkPositionManager.deserialise( DHTNetworkPosition.POSITION_TYPE_VIVALDI_V1, is )};	
+			nps = new DHTNetworkPosition[]{ DHTNetworkPositionManager.deserialise( reply.getAddress().getAddress(), DHTNetworkPosition.POSITION_TYPE_VIVALDI_V1, is )};	
 		}
 		
 		boolean	v1_found = false;
@@ -769,6 +880,15 @@ DHTUDPUtils
 			os.writeLong( stats.getDBKeysBlocked());
 			os.writeLong( stats.getTotalKeyBlocksReceived());
 		}
+		
+		if ( version >= DHTTransportUDP.PROTOCOL_VERSION_MORE_STATS ){
+			
+			os.writeLong( stats.getDBKeyCount());
+			os.writeLong( stats.getDBValueCount());
+			os.writeLong( stats.getDBStoreSize());
+			os.writeLong( stats.getDBKeyDivFreqCount());
+			os.writeLong( stats.getDBKeyDivSizeCount());
+		}
 	}
 	
 	protected static DHTTransportFullStats
@@ -812,8 +932,31 @@ DHTUDPUtils
 			db_keys_blocked				= is.readLong();
 			total_key_blocks_received	= is.readLong();
 		}else{
-			db_keys_blocked				= 0;
-			total_key_blocks_received	= 0;
+			db_keys_blocked				= -1;
+			total_key_blocks_received	= -1;
+		}
+		
+		final long db_key_count;
+		final long db_value_count;
+		final long db_store_size;
+		final long db_freq_divs;
+		final long db_size_divs;
+		
+		if ( version >= DHTTransportUDP.PROTOCOL_VERSION_MORE_STATS ){
+			
+			db_key_count 	= is.readLong();
+			db_value_count	= is.readLong();
+			db_store_size	= is.readLong();
+			db_freq_divs	= is.readLong();
+			db_size_divs	= is.readLong();
+			
+		}else{
+			
+			db_key_count 	= -1;
+			db_value_count	= -1;
+			db_store_size	= -1;
+			db_freq_divs	= -1;
+			db_size_divs	= -1;
 		}
 		
 		DHTTransportFullStats	res = 
@@ -829,6 +972,36 @@ DHTUDPUtils
 				getDBKeysBlocked()
 				{
 					return( db_keys_blocked );
+				}
+				
+				public long
+				getDBValueCount()
+				{
+					return( db_value_count );
+				}
+				
+				public long
+				getDBKeyCount()
+				{
+					return( db_key_count );
+				}
+								
+				public long
+				getDBKeyDivSizeCount()
+				{
+					return( db_size_divs );
+				}
+				
+				public long
+				getDBKeyDivFreqCount()
+				{
+					return( db_freq_divs );
+				}
+
+				public long
+				getDBStoreSize()
+				{
+					return( db_store_size );
 				}
 				
 					// Router
@@ -977,8 +1150,13 @@ DHTUDPUtils
 							getRouterLeaves() + "," +
 							getRouterContacts() + 
 							",database:" +
-							getDBValuesStored()+ "," +
-							getDBKeysBlocked()+
+							getDBKeyCount() + ","+
+							getDBValueCount() + ","+
+							getDBValuesStored() + ","+
+							getDBStoreSize() + ","+
+							getDBKeyDivFreqCount() + ","+
+							getDBKeyDivSizeCount() + ","+
+							getDBKeysBlocked()+ 
 							",version:" + getVersion()+","+
 							getRouterUptime() + ","+
 							getRouterCount());

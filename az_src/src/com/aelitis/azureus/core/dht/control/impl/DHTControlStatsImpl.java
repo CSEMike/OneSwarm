@@ -51,7 +51,8 @@ DHTControlStatsImpl
 
 	private DHTTransportStats	transport_snapshot;
 	private long[]				router_snapshot;
-		
+	private int[]				value_details_snapshot;
+	
 	protected
 	DHTControlStatsImpl(
 		DHTControlImpl		_control )
@@ -100,6 +101,8 @@ DHTControlStatsImpl
 		transport_snapshot	= t_stats;
 		
 		router_snapshot	= control.getRouter().getStats().getStats();
+		
+		value_details_snapshot = null;
 	}
 	
 	public long
@@ -186,10 +189,39 @@ DHTControlStatsImpl
 	}
 		// DB
 	
+	protected int[]
+	getValueDetails()
+	{
+		int[] vd = value_details_snapshot;
+		
+		if ( vd == null ){
+			
+			vd = control.getDataBase().getStats().getValueDetails();
+			
+			value_details_snapshot = vd;
+		}
+		
+		return( vd );
+	}
+	
 	public long
 	getDBValuesStored()
 	{
-		return( control.getDataBase().getStats().getValueDetails()[ DHTDBStats.VD_VALUE_COUNT ]);
+		int[]	vd = getValueDetails();
+		
+		return( vd[ DHTDBStats.VD_VALUE_COUNT ]);
+	}
+	
+	public long
+	getDBKeyCount()
+	{
+		return( control.getDataBase().getStats().getKeyCount());
+	}
+	
+	public long
+	getDBValueCount()
+	{
+		return( control.getDataBase().getStats().getValueCount());
 	}
 	
 	public long
@@ -197,6 +229,29 @@ DHTControlStatsImpl
 	{
 		return( control.getDataBase().getStats().getKeyBlockCount());
 	}
+	
+	public long
+	getDBKeyDivSizeCount()
+	{
+		int[]	vd = getValueDetails();
+		
+		return( vd[ DHTDBStats.VD_DIV_SIZE ]);
+	}
+	
+	public long
+	getDBKeyDivFreqCount()
+	{
+		int[]	vd = getValueDetails();
+		
+		return( vd[ DHTDBStats.VD_DIV_FREQ ]);
+	}
+
+	public long
+	getDBStoreSize()
+	{
+		return( control.getDataBase().getStats().getSize());
+	}
+	
 		// Router
 	
 	public long
@@ -264,8 +319,13 @@ DHTControlStatsImpl
 				getRouterLeaves() + "," +
 				getRouterContacts() + 
 				",database:" +
-				getDBValuesStored()+ ","+
-				getDBKeysBlocked()+
+				getDBKeyCount() + ","+
+				getDBValueCount() + ","+
+				getDBValuesStored() + ","+
+				getDBStoreSize() + ","+
+				getDBKeyDivFreqCount() + ","+
+				getDBKeyDivSizeCount() + ","+
+				getDBKeysBlocked()+ 
 				",version:" + getVersion()+","+
 				getRouterUptime() + ","+
 				getRouterCount());

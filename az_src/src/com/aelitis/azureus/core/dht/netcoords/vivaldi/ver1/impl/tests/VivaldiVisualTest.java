@@ -53,7 +53,7 @@ public class VivaldiVisualTest {
     Thread runner = new Thread("Viviladi Simulator") {
       public void run() {
         VivaldiPosition positions[][] = new VivaldiPosition[ELEMENTS_X][ELEMENTS_Y];
-        final List lPos = new ArrayList(ELEMENTS_X*ELEMENTS_Y);        
+        final List<VivaldiPosition> lPos = new ArrayList<VivaldiPosition>(ELEMENTS_X*ELEMENTS_Y);        
         HeightCoordinatesImpl realCoordinates[][] = new HeightCoordinatesImpl[ELEMENTS_X][ELEMENTS_Y];
         //Init all
         for(int i = 0 ; i < ELEMENTS_X ; i++) {

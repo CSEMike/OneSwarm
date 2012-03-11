@@ -26,6 +26,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import com.aelitis.azureus.core.dht.transport.udp.DHTTransportUDP;
 import com.aelitis.azureus.core.dht.transport.udp.impl.packethandler.DHTUDPPacketNetworkHandler;
 
 
@@ -39,6 +40,9 @@ DHTUDPPacketRequestFindNode
 	extends DHTUDPPacketRequest
 {
 	private byte[]		id;
+	
+	private int			node_status;
+	private int			estimated_dht_size;
 	
 	public
 	DHTUDPPacketRequestFindNode(
@@ -63,6 +67,12 @@ DHTUDPPacketRequestFindNode
 		
 		id = DHTUDPUtils.deserialiseByteArray( is, 64 );
 		
+		if ( getProtocolVersion() >= DHTTransportUDP.PROTOCOL_VERSION_MORE_NODE_STATUS ){
+
+			node_status 		= is.readInt();
+			estimated_dht_size 	= is.readInt();
+		}
+		
 		super.postDeserialise(is);
 	}
 	
@@ -75,6 +85,13 @@ DHTUDPPacketRequestFindNode
 		super.serialise(os);
 		
 		DHTUDPUtils.serialiseByteArray( os, id, 64 );
+		
+		if ( getProtocolVersion() >= DHTTransportUDP.PROTOCOL_VERSION_MORE_NODE_STATUS ){
+
+			 os.writeInt( node_status );
+			
+			 os.writeInt( estimated_dht_size );
+		}
 		
 		super.postSerialise( os );
 	}
@@ -90,6 +107,32 @@ DHTUDPPacketRequestFindNode
 	getID()
 	{
 		return( id );
+	}
+	
+	protected void
+	setNodeStatus(
+		int		ns )
+	{
+		node_status	= ns;
+	}
+	
+	protected int
+	getNodeStatus()
+	{
+		return( node_status );
+	}
+		
+	protected void
+	setEstimatedDHTSize(
+		int	s )
+	{
+		estimated_dht_size	= s;
+	}
+	
+	protected int
+	getEstimatedDHTSize()
+	{
+		return( estimated_dht_size );
 	}
 	
 	public String

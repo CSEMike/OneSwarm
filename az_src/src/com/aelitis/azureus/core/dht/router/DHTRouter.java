@@ -66,7 +66,7 @@ DHTRouter
 		 * @return
 		 */
 	
-	public DHTRouterContact
+	public void
 	contactKnown(
 		byte[]						node_id,
 		DHTRouterContactAttachment	attachment );
@@ -100,12 +100,13 @@ DHTRouter
 		byte[]	node_id );	
 
 		/**
-		 * Returns K or a few more closest contacts, unordered
+		 * Returns num_to_return or a few more closest contacts, unordered
 		 */
 	
-	public List
+	public List<DHTRouterContact>
 	findClosestContacts(
 		byte[]		node_id,
+		int			num_to_return,
 		boolean		live_only );
 		
 	public void
@@ -129,7 +130,7 @@ DHTRouter
 		 * @return
 		 */
 	
-	public List
+	public List<DHTRouterContact>
 	findBestContacts(
 		int		max );
 	
@@ -138,7 +139,7 @@ DHTRouter
 		 * @return
 		 */
 	
-	public List
+	public List<DHTRouterContact>
 	getAllContacts();
 	
 	public DHTRouterStats

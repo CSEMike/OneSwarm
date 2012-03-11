@@ -27,6 +27,8 @@ package com.aelitis.azureus.core.dht.transport;
  *
  */
 
+import java.util.*;
+
 public interface 
 DHTTransportRequestHandler 
 {
@@ -49,6 +51,12 @@ DHTTransportRequestHandler
 		DHTTransportContact contact, 
 		byte[][]				keys,
 		DHTTransportValue[][]	value_sets );
+	
+	public DHTTransportQueryStoreReply
+	queryStoreRequest(
+		DHTTransportContact 	contact, 
+		int						header_len,
+		List<Object[]>			keys );
 	
 	public DHTTransportContact[]
 	findNodeRequest(

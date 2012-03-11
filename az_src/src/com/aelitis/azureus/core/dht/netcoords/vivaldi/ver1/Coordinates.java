@@ -40,6 +40,9 @@ public interface Coordinates {
   
   public Coordinates unity();
   
+  public double[]
+  getCoordinates();
+  
   public boolean
   atOrigin();
   

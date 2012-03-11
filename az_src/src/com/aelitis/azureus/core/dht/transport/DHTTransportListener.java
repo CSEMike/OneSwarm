@@ -35,6 +35,9 @@ DHTTransportListener
 		DHTTransportContact	local_contact );
 	
 	public void
+	resetNetworkPositions();
+	
+	public void
 	currentAddress(
 		String		address );
 	

@@ -27,6 +27,7 @@ package com.aelitis.azureus.core.dht.transport;
  *
  */
 
+import java.util.*;
 import java.io.*;
 import java.net.InetSocketAddress;
 
@@ -66,10 +67,18 @@ DHTTransportContact
 	public InetSocketAddress
 	getAddress();
 	
+	public InetSocketAddress
+	getExternalAddress();
+	
 	public boolean
 	isAlive(
 		long		timeout );
 
+	public void
+	isAlive(
+		DHTTransportReplyHandler	handler,
+		long						timeout );
+	
 	public boolean
 	isValid();
 	
@@ -90,7 +99,14 @@ DHTTransportContact
 	sendStore(
 		DHTTransportReplyHandler	handler,
 		byte[][]					keys,
-		DHTTransportValue[][]		value_sets );
+		DHTTransportValue[][]		value_sets,
+		boolean						immediate );
+	
+	public void
+	sendQueryStore(
+		DHTTransportReplyHandler	handler,
+		int							header_length,
+		List<Object[]>				key_details );
 	
 	public void
 	sendFindNode(
@@ -122,6 +138,10 @@ DHTTransportContact
 	public void
 	remove();
 	
+	public void
+	createNetworkPositions(
+		boolean		is_local );
+			
 	public DHTNetworkPosition[]
 	getNetworkPositions();
 	

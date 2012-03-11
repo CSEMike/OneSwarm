@@ -27,6 +27,7 @@ package com.aelitis.azureus.core.dht.transport.udp.impl;
  */
 
 import java.io.*;
+import java.net.InetSocketAddress;
 
 import com.aelitis.azureus.core.dht.transport.DHTTransportContact;
 import com.aelitis.azureus.core.dht.transport.udp.DHTTransportUDP;
@@ -52,12 +53,13 @@ DHTUDPPacketReplyStore
 	protected
 	DHTUDPPacketReplyStore(
 		DHTUDPPacketNetworkHandler		network_handler,
+		InetSocketAddress				originator,
 		DataInputStream					is,
 		int								trans_id )
 	
 		throws IOException
 	{
-		super( network_handler, is, DHTUDPPacketHelper.ACT_REPLY_STORE, trans_id );
+		super( network_handler, originator, is, DHTUDPPacketHelper.ACT_REPLY_STORE, trans_id );
 		
 		if ( getProtocolVersion() >= DHTTransportUDP.PROTOCOL_VERSION_DIV_AND_CONT ){
 			

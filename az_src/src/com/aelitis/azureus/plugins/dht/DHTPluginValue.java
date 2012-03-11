@@ -39,6 +39,9 @@ DHTPluginValue
 	public long
 	getVersion();
 	
+	public boolean
+	isLocal();
+	
 	public int
 	getFlags();
 }

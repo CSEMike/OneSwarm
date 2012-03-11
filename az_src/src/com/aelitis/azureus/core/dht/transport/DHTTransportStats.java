@@ -54,6 +54,9 @@ DHTTransportStats
 	getStores();
 	
 	public long[]
+	getQueryStores();
+	
+	public long[]
 	getData();
 	
 	public long[]
@@ -67,6 +70,7 @@ DHTTransportStats
 	public static final int AT_STATS			= 3; 
 	public static final int AT_STORE			= 4; 
 	public static final int AT_KEY_BLOCK		= 5; 
+	public static final int AT_QUERY_STORE		= 6; 
 	
 	public long[]
 	getAliens();
@@ -91,6 +95,17 @@ DHTTransportStats
 	
 	public DHTTransportStats
 	snapshot();
+	
+	public long
+	getSkewAverage();
+	
+		/**
+		 * -1 if stats not yet available 
+		 * @return
+		 */
+	
+	public int
+	getRouteablePercentage();
 	
 	public String
 	getString();

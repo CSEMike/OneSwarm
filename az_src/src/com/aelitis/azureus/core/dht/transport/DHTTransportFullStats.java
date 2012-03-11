@@ -33,11 +33,26 @@ DHTTransportFullStats
 		// DB
 	
 	public long
+	getDBValueCount();
+	
+	public long
+	getDBKeyCount();
+
+	public long
 	getDBValuesStored();
 	
 	public long
 	getDBKeysBlocked();
 	
+	public long
+	getDBKeyDivSizeCount();
+	
+	public long
+	getDBKeyDivFreqCount();
+
+	public long
+	getDBStoreSize();
+
 		// Router
 	
 	public long

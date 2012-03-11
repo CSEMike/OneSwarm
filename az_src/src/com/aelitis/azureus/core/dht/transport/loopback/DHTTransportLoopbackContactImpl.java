@@ -24,6 +24,8 @@ package com.aelitis.azureus.core.dht.transport.loopback;
 
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.Map;
 
 import com.aelitis.azureus.core.dht.impl.DHTLog;
 import com.aelitis.azureus.core.dht.netcoords.DHTNetworkPosition;
@@ -118,6 +120,12 @@ DHTTransportLoopbackContactImpl
 		return( null );
 	}
 	
+	public InetSocketAddress 
+	getExternalAddress() 
+	{
+		return null;
+	}
+	
 	public boolean
 	isAlive(
 		long		timeout )
@@ -125,6 +133,14 @@ DHTTransportLoopbackContactImpl
 		return( true );
 	}
 
+	public void 
+	isAlive(
+		DHTTransportReplyHandler 	handler, 
+		long 						timeout )
+	{
+		transport.sendPing( this, handler );
+	}
+	
 	public void
 	sendPing(
 		DHTTransportReplyHandler	handler )
@@ -160,9 +176,19 @@ DHTTransportLoopbackContactImpl
 	sendStore(
 		DHTTransportReplyHandler	handler,
 		byte[][]					keys,
-		DHTTransportValue[][]		value_sets )
+		DHTTransportValue[][]		value_sets,
+		boolean						immediate )
 	{
-		transport.sendStore( this, handler, keys, value_sets );
+		transport.sendStore( this, handler, keys, value_sets, false );
+	}
+	
+	public void 
+	sendQueryStore(
+		DHTTransportReplyHandler 	handler,
+		int							header_length,
+		List<Object[]>			 	key_details ) 
+	{
+		transport.sendQueryStore( this, handler, header_length, key_details);
 	}
 	
 	public void
@@ -208,6 +234,12 @@ DHTTransportLoopbackContactImpl
 	remove()
 	{
 		transport.removeContact( this );
+	}
+	
+	public void 
+	createNetworkPositions(
+		boolean is_local) 
+	{
 	}
 	
 	public DHTNetworkPosition[]

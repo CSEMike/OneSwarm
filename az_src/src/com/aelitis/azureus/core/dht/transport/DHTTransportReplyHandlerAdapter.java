@@ -22,6 +22,8 @@
 
 package com.aelitis.azureus.core.dht.transport;
 
+import java.util.List;
+
 import org.gudy.azureus2.core3.util.Debug;
 
 /**
@@ -34,25 +36,6 @@ DHTTransportReplyHandlerAdapter
 	implements DHTTransportReplyHandler
 {
 	private int		elapsed;
-	// PIAMOD -- for dht speedup mods
-	private long creation;
-	private DHTTransportContact tgt;
-	
-	public long getCreation() {
-		return creation;
-	}
-
-	public void setCreation(long creation) {
-		this.creation = creation;
-	}
-
-	public DHTTransportContact getTgt() {
-		return tgt;
-	}
-
-	public void setTgt(DHTTransportContact tgt) {
-		this.tgt = tgt;
-	}
 	
 	public void
 	pingReply(
@@ -89,6 +72,14 @@ DHTTransportReplyHandlerAdapter
 	storeReply(
 		DHTTransportContact contact,
 		byte[]				diversifications )
+	{
+		throw( new RuntimeException( "Not implemented" ));
+	}
+	
+	public void
+	queryStoreReply(
+		DHTTransportContact contact,
+		List<byte[]>		response )
 	{
 		throw( new RuntimeException( "Not implemented" ));
 	}

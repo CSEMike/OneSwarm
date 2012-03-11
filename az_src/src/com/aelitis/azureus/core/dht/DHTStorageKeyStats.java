@@ -36,4 +36,7 @@ DHTStorageKeyStats
 	
 	public byte
 	getDiversification();
+	
+	public String
+	getString();
 }

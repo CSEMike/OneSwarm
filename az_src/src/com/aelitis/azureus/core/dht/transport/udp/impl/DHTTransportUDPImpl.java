@@ -28,8 +28,10 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.security.SecureRandom;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
+import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.internat.MessageText;
 import org.gudy.azureus2.core3.ipfilter.IpFilter;
 import org.gudy.azureus2.core3.ipfilter.IpFilterManagerFactory;
@@ -39,10 +41,13 @@ import org.gudy.azureus2.core3.util.AESemaphore;
 import org.gudy.azureus2.core3.util.AEThread2;
 import org.gudy.azureus2.core3.util.Average;
 import org.gudy.azureus2.core3.util.ByteFormatter;
+import org.gudy.azureus2.core3.util.Constants;
 import org.gudy.azureus2.core3.util.Debug;
 import org.gudy.azureus2.core3.util.DelayedEvent;
 import org.gudy.azureus2.core3.util.HashWrapper;
+import org.gudy.azureus2.core3.util.RandomUtils;
 import org.gudy.azureus2.core3.util.SimpleTimer;
+import org.gudy.azureus2.core3.util.SystemProperties;
 import org.gudy.azureus2.core3.util.SystemTime;
 import org.gudy.azureus2.core3.util.TimerEvent;
 import org.gudy.azureus2.core3.util.TimerEventPerformer;
@@ -53,6 +58,7 @@ import com.aelitis.azureus.core.dht.impl.DHTLog;
 import com.aelitis.azureus.core.dht.netcoords.DHTNetworkPosition;
 import com.aelitis.azureus.core.dht.netcoords.DHTNetworkPositionManager;
 import com.aelitis.azureus.core.dht.netcoords.DHTNetworkPositionProvider;
+import com.aelitis.azureus.core.dht.netcoords.DHTNetworkPositionProviderListener;
 import com.aelitis.azureus.core.dht.transport.*;
 import com.aelitis.azureus.core.dht.transport.udp.*;
 import com.aelitis.azureus.core.dht.transport.udp.impl.packethandler.DHTUDPPacketHandler;
@@ -61,6 +67,8 @@ import com.aelitis.azureus.core.dht.transport.udp.impl.packethandler.DHTUDPPacke
 import com.aelitis.azureus.core.dht.transport.udp.impl.packethandler.DHTUDPPacketReceiver;
 import com.aelitis.azureus.core.dht.transport.udp.impl.packethandler.DHTUDPRequestHandler;
 import com.aelitis.azureus.core.dht.transport.util.DHTTransportRequestCounter;
+import com.aelitis.azureus.core.util.average.AverageFactory;
+import com.aelitis.azureus.core.util.average.MovingImmediateAverage;
 import com.aelitis.azureus.core.util.bloom.BloomFilter;
 import com.aelitis.azureus.core.util.bloom.BloomFilterFactory;
 import com.aelitis.net.udp.uc.PRUDPPacketHandler;
@@ -83,6 +91,11 @@ DHTTransportUDPImpl
 	public static final long	READ_XFER_REREQUEST_DELAY	= 5000;
 	public static final long	WRITE_REPLY_TIMEOUT			= 60000;		
 	
+	public static final int		MIN_ADDRESS_CHANGE_PERIOD_INIT_DEFAULT	= 5*60*1000;
+	public static final int		MIN_ADDRESS_CHANGE_PERIOD_NEXT_DEFAULT	= 10*60*1000;
+	
+	public static final int		STORE_TIMEOUT_MULTIPLIER = 2;
+	
 	private static boolean	XFER_TRACE	= false;
 	
 	static{
@@ -93,6 +106,7 @@ DHTTransportUDPImpl
 	
 	
 	private String				external_address;
+	private int					min_address_change_period = MIN_ADDRESS_CHANGE_PERIOD_INIT_DEFAULT;
 	
 	private byte				protocol_version;
 	private int					network;
@@ -140,33 +154,34 @@ DHTTransportUDPImpl
 	private static final int CONTACT_HISTORY_MAX 		= 32;
 	private static final int CONTACT_HISTORY_PING_SIZE	= 24;
 	
-	private Map	contact_history = 
-		new LinkedHashMap(CONTACT_HISTORY_MAX,0.75f,true)
+	private Map<InetSocketAddress,DHTTransportContact>	contact_history = 
+		new LinkedHashMap<InetSocketAddress,DHTTransportContact>(CONTACT_HISTORY_MAX,0.75f,true)
 		{
 			protected boolean 
 			removeEldestEntry(
-		   		Map.Entry eldest) 
+		   		Map.Entry<InetSocketAddress,DHTTransportContact> eldest) 
 			{
 				return size() > CONTACT_HISTORY_MAX;
 			}
 		};
 		
-	private static final int ROUTABLE_CONTACT_HISTORY_MAX 		= 32;
+	private static final int ROUTABLE_CONTACT_HISTORY_MAX 		= 128;
 
-	private Map	routable_contact_history = 
-		new LinkedHashMap(ROUTABLE_CONTACT_HISTORY_MAX,0.75f,true)
+	private Map<InetSocketAddress,DHTTransportContact>	routable_contact_history = 
+		new LinkedHashMap<InetSocketAddress,DHTTransportContact>(ROUTABLE_CONTACT_HISTORY_MAX,0.75f,true)
 		{
 			protected boolean 
 			removeEldestEntry(
-		   		Map.Entry eldest) 
+		   		Map.Entry<InetSocketAddress,DHTTransportContact> eldest) 
 			{
 				return size() > ROUTABLE_CONTACT_HISTORY_MAX;
 			}
 		};
 			
 		
-	private long	other_routable_total;
-	private long	other_non_routable_total;
+	private long					other_routable_total;
+	private long					other_non_routable_total;
+	private MovingImmediateAverage	routeable_percentage_average = AverageFactory.MovingImmediateAverage(8);
 	
 	private static final int RECENT_REPORTS_HISTORY_MAX = 32;
 
@@ -203,6 +218,7 @@ DHTTransportUDPImpl
 	private AEMonitor	this_mon	= new AEMonitor( "DHTTransportUDP" );
 
 	private boolean		initial_address_change_deferred;
+	private boolean		address_changing;
 	
 	public
 	DHTTransportUDPImpl(
@@ -237,16 +253,23 @@ DHTTransportUDPImpl
 		reachable				= _initial_reachability;
 		logger					= _logger;
 				
-		store_timeout			= request_timeout * 2;
+		store_timeout			= request_timeout * STORE_TIMEOUT_MULTIPLIER;
 		
 		try{
-			random = new SecureRandom();
+			random = RandomUtils.SECURE_RANDOM;
 			
 		}catch( Throwable e ){
 			
 			random	= new Random();
 			
 			logger.log( e );
+		}
+		
+		int last_pct = COConfigurationManager.getIntParameter( "dht.udp.net" + network + ".routeable_pct", -1 );
+		
+		if ( last_pct > 0 ){
+			
+			routeable_percentage_average.update( last_pct );
 		}
 		
 		createPacketHandler();
@@ -256,11 +279,13 @@ DHTTransportUDPImpl
 			STATS_PERIOD,
 			new TimerEventPerformer()
 			{
+				private int tick_count;
+				
 				public void
 				perform(
 					TimerEvent	event )
 				{
-					updateStats();
+					updateStats( tick_count++);
 				}
 			});
 		
@@ -270,6 +295,54 @@ DHTTransportUDPImpl
 		
 		InetSocketAddress	address = new InetSocketAddress( external_address, port );
 
+		DHTNetworkPositionManager.addProviderListener(
+			new DHTNetworkPositionProviderListener()
+			{
+				public void
+				providerAdded(
+					DHTNetworkPositionProvider		provider )
+				{
+					if ( local_contact != null ){
+						
+						local_contact.createNetworkPositions( true );
+						
+						try{
+							this_mon.enter();
+
+							for ( DHTTransportContact c: contact_history.values()){
+								
+								c.createNetworkPositions( false );
+							}
+
+							for ( DHTTransportContact c: routable_contact_history.values()){
+								
+								c.createNetworkPositions( false );
+							}
+						}finally{
+							
+							this_mon.exit();
+						}
+						
+						for (int i=0;i<listeners.size();i++){
+							
+							try{
+								((DHTTransportListener)listeners.get(i)).resetNetworkPositions();
+								
+							}catch( Throwable e ){
+								
+								Debug.printStackTrace(e);
+							}
+						}
+					}
+				}
+				
+				public void
+				providerRemoved(
+					DHTNetworkPositionProvider		provider )
+				{				
+				}
+			});
+		
 		logger.log( "Initial external address: " + address );
 		
 		local_contact = new DHTTransportUDPContactImpl( true, this, address, address, protocol_version, random.nextInt(), 0 );
@@ -309,7 +382,7 @@ DHTTransportUDPImpl
 		
 		if ( stats == null ){
 			
-			stats =  new DHTTransportUDPStatsImpl( protocol_version, packet_handler.getStats());
+			stats =  new DHTTransportUDPStatsImpl( this, protocol_version, packet_handler.getStats());
 			
 		}else{
 			
@@ -318,7 +391,8 @@ DHTTransportUDPImpl
 	}
 	
 	protected void
-	updateStats()
+	updateStats(
+		int	tick_count )
 	{
 		long	alien_count	= 0;
 		
@@ -348,13 +422,21 @@ DHTTransportUDPImpl
 				// only fiddle with the initial view of reachability when things have had
 				// time to stabilise
 			
+			if ( Constants.isCVSVersion()){
+							
+				long fv_average 		= alien_fv_average.getAverage();
+				long all_average 		= alien_average.getAverage();
+			
+				logger.log( "Aliens for net " + network + ": " + fv_average + "/" + all_average );
+			}
+			
 			if ( now - stats_start_time > STATS_INIT_PERIOD ){
 				
 				reachable_accurate	= true;
 				
 				boolean	old_reachable	= reachable;
 				
-				if ( alien_fv_average.getAverage() > 0 ){
+				if ( alien_fv_average.getAverage() > 1 ){
 					
 					reachable	= true;
 					
@@ -383,9 +465,27 @@ DHTTransportUDPImpl
 			}
 		}
 		
+		int	pct = getRouteablePercentage();
+			
+		if ( pct > 0 ){
+			
+			COConfigurationManager.setParameter("dht.udp.net" + network + ".routeable_pct", pct );
+		}
+		
 		// System.out.println( "routables=" + other_routable_total + ", non=" + other_non_routable_total );
 		
 		// System.out.println( "net " + network + ": aliens = " + alien_average.getAverage() + ", alien fv = " + alien_fv_average.getAverage());
+	}
+	
+	protected void
+	recordSkew(
+		InetSocketAddress	originator_address,
+		long				skew )
+	{
+		if ( stats != null ){
+		
+			stats.recordSkew( originator_address, skew );
+		}
 	}
 	
 	protected int
@@ -446,10 +546,37 @@ DHTTransportUDPImpl
 		setLocalContact();
 	}
 	
+	public long
+	getTimeout()
+	{
+		return( request_timeout );
+	}
+	
+	public void
+	setTimeout(
+		long		timeout )
+	{
+		if ( request_timeout == timeout ){
+			
+			return;
+		}
+		
+		request_timeout = timeout;
+		store_timeout   = request_timeout * STORE_TIMEOUT_MULTIPLIER;
+		
+		packet_handler.setDelays( dht_send_delay, dht_receive_delay, (int)request_timeout );
+	}
+	
 	public int
 	getNetwork()
 	{
 		return( network );
+	}
+	
+	public boolean 
+	isIPV6() 
+	{
+		return( v6 );
 	}
 	
 	public void
@@ -731,7 +858,7 @@ DHTTransportUDPImpl
 	
 			long	now = SystemTime.getCurrentTime();
 	
-			if ( now - last_address_change < 5*60*1000 ){
+			if ( now - last_address_change < min_address_change_period ){
 				
 				return;
 			}
@@ -789,6 +916,12 @@ DHTTransportUDPImpl
 			
 			last_address_change	= now;
 			
+				// bump up min period for subsequent changes 
+			
+			if ( min_address_change_period == MIN_ADDRESS_CHANGE_PERIOD_INIT_DEFAULT ){
+				
+				min_address_change_period = MIN_ADDRESS_CHANGE_PERIOD_NEXT_DEFAULT;
+			}
 		}finally{
 			
 			this_mon.exit();
@@ -806,17 +939,46 @@ DHTTransportUDPImpl
 			public void
 			run()
 			{
-				getExternalAddress( new_ip, logger );
-				
-				if ( old_external_address.equals( external_address )){
+				try{
+					this_mon.enter();
+
+					if ( address_changing ){
+						
+						return;
+					}
 					
-						// address hasn't changed, notifier must be perceiving different address
-						// due to proxy or something
-									
-					return;
+					address_changing	= true;
+					
+				}finally{
+					
+					this_mon.exit();
 				}
-				
-				setLocalContact();
+					
+				try{
+					getExternalAddress( new_ip, logger );
+					
+					if ( old_external_address.equals( external_address )){
+						
+							// address hasn't changed, notifier must be perceiving different address
+							// due to proxy or something
+										
+						return;
+					}
+					
+					setLocalContact();
+					
+				}finally{
+					
+					try{
+						this_mon.enter();
+
+						address_changing	= false;
+						
+					}finally{
+						
+						this_mon.exit();
+					}
+				}
 			}
 		}.start();
 	}
@@ -842,7 +1004,27 @@ DHTTransportUDPImpl
 		try{
 			this_mon.enter();
 			
-			Collection vals = routable_contact_history.values();
+			Collection<DHTTransportContact> vals = routable_contact_history.values();
+			
+			DHTTransportContact[]	res = new DHTTransportContact[vals.size()];
+			
+			vals.toArray( res );
+			
+			return( res );
+			
+		}finally{
+			
+			this_mon.exit();
+		}
+   	}
+	
+	public DHTTransportContact[]
+   	getRecentContacts()
+   	{
+		try{
+			this_mon.enter();
+			
+			Collection<DHTTransportContact> vals = contact_history.values();
 			
 			DHTTransportContact[]	res = new DHTTransportContact[vals.size()];
 			
@@ -859,7 +1041,8 @@ DHTTransportUDPImpl
 	protected void
 	updateContactStatus(
 		DHTTransportUDPContactImpl	contact,
-		int							status )
+		int							status,
+		boolean						incoming )
 	{
 		try{
 			this_mon.enter();
@@ -872,15 +1055,25 @@ DHTTransportUDPImpl
 					
 					boolean	other_routable = (status & DHTTransportUDPContactImpl.NODE_STATUS_ROUTABLE) != 0;
 					
+						// only maintain stats on incoming requests so we get a fair sample. 
+						// in general we'll only get replies from routable contacts so if we
+						// take this into account then everything gets skewed
+					
 					if ( other_routable ){
 						
-						other_routable_total++;
-						
+						if ( incoming ){
+							
+							other_routable_total++;
+						}
+												
 						routable_contact_history.put( contact.getTransportAddress(), contact );
 						
 					}else{
 						
-						other_non_routable_total++;
+						if ( incoming ){
+							
+							other_non_routable_total++;
+						}
 					}
 				}
 			}
@@ -888,6 +1081,70 @@ DHTTransportUDPImpl
 		}finally{
 			
 			this_mon.exit();
+		}
+	}
+	
+	public int 
+	getRouteablePercentage() 
+	{
+		synchronized( routeable_percentage_average ){
+		
+			double	average = routeable_percentage_average.getAverage();
+			
+			long	both_total = other_routable_total + other_non_routable_total;
+			
+			int	current_percent;
+			
+			if ( both_total == 0 ){
+				
+				current_percent = 0;
+				
+			}else{
+				
+				current_percent = (int)(( other_routable_total * 100 )/ both_total );
+			}
+			 
+			if ( both_total >= 300 ){
+				
+					// add current to average and reset
+				
+				if ( current_percent > 0 ){
+				
+					average = routeable_percentage_average.update( current_percent );
+					
+					other_routable_total = other_non_routable_total = 0;
+				}
+			}else if ( both_total >= 100 ){
+				
+					// if we have enough samples and no existing average then use current
+				
+				if ( average == 0 ){
+					
+					average = current_percent;
+					
+				}else{
+					
+						// factor in current percantage
+					
+					int samples = routeable_percentage_average.getSampleCount();
+					
+					if ( samples > 0 ){
+						
+						average = (( samples * average ) + current_percent ) / ( samples + 1 );
+					}
+				}
+			}
+			
+			int result = (int)average;
+			
+			if ( result == 0 ){
+				
+					// -1 indicates we have no usable value
+				
+				result = -1;
+			}
+			
+			return( result );
 		}
 	}
 	
@@ -927,6 +1184,8 @@ DHTTransportUDPImpl
 			local_contact = new DHTTransportUDPContactImpl( true, DHTTransportUDPImpl.this, s_address, s_address, protocol_version, random.nextInt(), 0);
 	
 			logger.log( "External address changed: " + s_address );
+			
+			Debug.out( "DHTTransport: address changed to " + s_address );
 			
 			for (int i=0;i<listeners.size();i++){
 				
@@ -1480,7 +1739,8 @@ DHTTransportUDPImpl
 		final DHTTransportUDPContactImpl	contact,
 		final DHTTransportReplyHandler		handler,
 		byte[][]							keys,
-		DHTTransportValue[][]				value_sets )
+		DHTTransportValue[][]				value_sets,
+		int									priority )
 	{
 		final long	connection_id = getConnectionID();
 		
@@ -1682,7 +1942,7 @@ DHTTransportUDPImpl
 						}
 					},
 					store_timeout,
-					PRUDPPacketHandler.PRIORITY_LOW );
+					priority );
 
 			}
 		}catch( Throwable e ){
@@ -1693,6 +1953,221 @@ DHTTransportUDPImpl
 								
 				handler.failed( contact, e );
 			}
+		}
+	}
+	
+		// QUERY STORE
+	
+	public void 
+	sendQueryStore(
+		final DHTTransportUDPContactImpl	contact,
+		final DHTTransportReplyHandler 		handler,
+		int									header_size,
+		List<Object[]>						key_details )
+	{
+		try{
+			checkAddress( contact );
+			
+			final long	connection_id = getConnectionID();
+			
+			Iterator<Object[]> it = key_details.iterator();
+			
+			byte[]				current_prefix			= null;
+			Iterator<byte[]>	current_suffixes 		= null;
+						
+			List<DHTUDPPacketRequestQueryStorage> requests = new ArrayList<DHTUDPPacketRequestQueryStorage>();
+	
+outer:	
+			while( it.hasNext()){
+
+				int	space = DHTUDPPacketRequestQueryStorage.SPACE;
+
+				DHTUDPPacketRequestQueryStorage	request = 
+					new DHTUDPPacketRequestQueryStorage( this, connection_id, local_contact, contact );
+
+				List<Object[]> packet_key_details = new ArrayList<Object[]>();
+				
+				while( space > 0 && it.hasNext()){
+					
+					if ( current_prefix == null ){
+					
+						Object[] entry = it.next();
+					
+						current_prefix = (byte[])entry[0];
+					
+						List<byte[]> l = (List<byte[]>)entry[1];
+						
+						current_suffixes = l.iterator();
+					}
+					
+					if ( current_suffixes.hasNext()){
+						
+						int	min_space = header_size + 3;	// 1 byte prefix len, 2 byte num suffix
+						
+						if ( space < min_space ){
+							
+							request.setDetails( header_size, packet_key_details );
+							
+							requests.add( request );
+							
+							continue outer ;
+						}
+						
+						List<byte[]> s = new ArrayList<byte[]>();
+						
+						packet_key_details.add( new Object[]{ current_prefix, s });
+						
+						int	prefix_size = current_prefix.length;
+						int	suffix_size = header_size - prefix_size;
+
+						space -= ( 3 + prefix_size );
+						
+						while( space >= suffix_size && current_suffixes.hasNext()){
+							
+							s.add( current_suffixes.next());
+						}
+						
+					}else{
+						
+						current_prefix = null;
+					}
+				}
+				
+				if ( !it.hasNext()){
+					
+					request.setDetails( header_size, packet_key_details );
+					
+					requests.add( request );
+				}
+			}
+
+			final Object[] replies = new Object[ requests.size() ];
+							
+			for ( int i=0;i<requests.size();i++){
+				
+				DHTUDPPacketRequestQueryStorage request = requests.get(i);
+				
+				final int f_i = i;
+					
+				stats.queryStoreSent( request );
+							
+				requestSendRequestProcessor( contact, request );
+	
+				packet_handler.sendAndReceive(
+					request,
+					contact.getTransportAddress(),
+					new DHTUDPPacketReceiver()
+					{					
+						public void
+						packetReceived(
+							DHTUDPPacketReply	packet,
+							InetSocketAddress	from_address,
+							long				elapsed_time )
+						{
+							try{														
+								if ( packet.getConnectionId() != connection_id ){
+									
+									throw( new Exception( "connection id mismatch" ));
+								}
+	
+								contact.setInstanceIDAndVersion( packet.getTargetInstanceID(), packet.getProtocolVersion());
+								
+								requestSendReplyProcessor( contact, handler, packet, elapsed_time );
+									
+								DHTUDPPacketReplyQueryStorage	reply = (DHTUDPPacketReplyQueryStorage)packet;
+								
+									// copy out the random id in preparation for a possible subsequent
+									// store operation
+								
+								contact.setRandomID( reply.getRandomID());
+																							
+								stats.queryStoreOK();
+									
+								synchronized( replies ){
+									
+									replies[f_i] = reply;
+									
+									checkComplete();
+								}
+								
+							}catch( DHTUDPPacketHandlerException e ){
+								
+								error( e );
+								
+							}catch( Throwable e ){
+								
+								Debug.printStackTrace(e);
+								
+								error( new DHTUDPPacketHandlerException( "queryStore failed", e ));
+							}
+						}
+						
+						public void
+						error(
+							DHTUDPPacketHandlerException	e )
+						{
+							stats.queryStoreFailed();
+							
+							synchronized( replies ){
+								
+								replies[f_i] = e;
+								
+								checkComplete();
+							}
+						}
+						
+						protected void
+						checkComplete()
+						{
+							DHTUDPPacketHandlerException last_error = null;
+							
+							for ( int i=0;i<replies.length;i++ ){
+							
+								Object o = replies[i];
+								
+								if ( o == null ){
+									
+									return;
+								}
+								
+								if ( o instanceof DHTUDPPacketHandlerException ){
+									
+									last_error = (DHTUDPPacketHandlerException)o;
+								}
+							}
+							
+							if ( last_error != null ){
+							
+								handler.failed( contact, last_error );
+								
+							}else{
+							
+								if ( replies.length == 1 ){
+									
+									handler.queryStoreReply( contact, ((DHTUDPPacketReplyQueryStorage)replies[0]).getResponse());
+									
+								}else{
+									
+									List<byte[]> response = new ArrayList<byte[]>();
+							
+									for ( int i=0;i<replies.length;i++ ){
+									
+										response.addAll(((DHTUDPPacketReplyQueryStorage)replies[0]).getResponse());
+									}
+								
+									handler.queryStoreReply( contact, response );
+								}
+							}
+						}
+					},
+					request_timeout, PRUDPPacketHandler.PRIORITY_MEDIUM );
+			}
+			
+		}catch( Throwable e ){
+			
+			stats.queryStoreFailed();
+			
+			handler.failed( contact, e );
 		}
 	}
 	
@@ -1715,6 +2190,10 @@ DHTTransportUDPImpl
 			stats.findNodeSent( request );
 			
 			request.setID( nid );
+			
+			request.setNodeStatus( getNodeStatus());
+			
+			request.setEstimatedDHTSize( request_handler.getTransportEstimatedDHTSize());
 			
 			requestSendRequestProcessor( contact, request );
 
@@ -1746,7 +2225,7 @@ DHTTransportUDPImpl
 							
 							contact.setRandomID( reply.getRandomID());
 														
-							updateContactStatus( contact, reply.getNodeStatus());
+							updateContactStatus( contact, reply.getNodeStatus(), false );
 							
 							request_handler.setTransportEstimatedDHTSize( reply.getEstimatedDHTSize());
 							
@@ -2120,9 +2599,11 @@ DHTTransportUDPImpl
 		
 		if ( handler == null ){
 			
-			logger.log( "No transfer handler registered for key '" + ByteFormatter.encodeString(transfer_key) + "'" );
+			// can get a lot of these on startup so we'll downgrade to just ignoring
+			//logger.log( "No transfer handler registered for key '" + ByteFormatter.encodeString(transfer_key) + "'" );
+			//throw( new DHTTransportException( "No transfer handler registered for " + ByteFormatter.encodeString(transfer_key) ));
 			
-			throw( new DHTTransportException( "No transfer handler registered" ));
+			return( -1 );
 		}
 
 		if ( data == null ){
@@ -3174,6 +3655,31 @@ DHTTransportUDPImpl
 							packet_handler.send( reply, request.getAddress());
 						}
 					}
+				}else if ( request instanceof DHTUDPPacketRequestQueryStorage ){
+					
+					DHTUDPPacketRequestQueryStorage	query_request = (DHTUDPPacketRequestQueryStorage)request;
+					
+					DHTTransportQueryStoreReply	res = 
+						request_handler.queryStoreRequest(
+									originating_contact,
+									query_request.getHeaderLength(),
+									query_request.getKeys());		
+					
+					DHTUDPPacketReplyQueryStorage	reply = 
+						new DHTUDPPacketReplyQueryStorage(
+								this,
+								request.getTransactionId(),
+								request.getConnectionId(),
+								local_contact,
+								originating_contact );
+							
+					reply.setRandomID( originating_contact.getRandomID());
+						
+					reply.setResponse( res.getHeaderSize(), res.getEntries());
+					
+					requestReceiveReplyProcessor( originating_contact, reply );
+
+					packet_handler.send( reply, request.getAddress());
 					
 				}else if ( request instanceof DHTUDPPacketRequestFindNode ){
 					
@@ -3186,6 +3692,8 @@ DHTTransportUDPImpl
 					
 					if ( bootstrap_node ){
 						
+							// log( originating_contact );
+						
 							// let bad originators through to aid bootstrapping with bad IP
 						
 						acceptable = bad_originator || Arrays.equals( find_request.getID(), originating_contact.getID());
@@ -3196,6 +3704,13 @@ DHTTransportUDPImpl
 					}
 					
 					if ( acceptable ){
+						
+						if ( find_request.getProtocolVersion() >= DHTTransportUDP.PROTOCOL_VERSION_MORE_NODE_STATUS ){
+						
+							updateContactStatus( originating_contact, find_request.getNodeStatus(), true );
+											
+							request_handler.setTransportEstimatedDHTSize( find_request.getEstimatedDHTSize());
+						}
 						
 						DHTTransportContact[]	res = 
 							request_handler.findNodeRequest(
@@ -3713,6 +4228,50 @@ DHTTransportUDPImpl
 			}
 		}
 	}
+	
+	/*
+	private PrintWriter	contact_log;
+	private int			contact_log_entries;
+	private SimpleDateFormat	contact_log_format = new SimpleDateFormat( "dd/MM/yyyy HH:mm:ss");
+	{
+		contact_log_format.setTimeZone( TimeZone.getTimeZone( "UTC" ));
+	}
+	
+	protected void
+	log(
+		DHTTransportUDPContactImpl		contact )
+	{
+		if ( network == DHT.NW_MAIN ){
+			
+			synchronized( this ){
+		
+				try{
+					if ( contact_log == null ){
+						
+						contact_log = new PrintWriter( new FileWriter( new File( SystemProperties.getUserPath(), "contact_log" )));
+					}
+					
+					contact_log_entries++;
+					
+					InetSocketAddress address = contact.getAddress();
+					
+					contact_log.println( contact_log_format.format( new Date()) + ", " + address.getAddress().getHostAddress() + ", " + address.getPort());
+					
+					if ( contact_log_entries % 1000 == 0 ){
+						
+						System.out.println( "contact-log: " + contact_log_entries );
+						
+						contact_log.flush();
+					}
+					
+				}catch( Throwable e ){
+					
+					Debug.out( e );
+				}
+			}
+		}
+	}
+	*/
 	
 	protected class
 	transferHandlerInterceptor

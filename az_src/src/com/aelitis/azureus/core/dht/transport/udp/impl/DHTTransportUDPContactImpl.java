@@ -25,6 +25,8 @@ package com.aelitis.azureus.core.dht.transport.udp.impl;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.Map;
 
 import org.gudy.azureus2.core3.util.AESemaphore;
 
@@ -35,6 +37,7 @@ import com.aelitis.azureus.core.dht.netcoords.DHTNetworkPositionManager;
 import com.aelitis.azureus.core.dht.netcoords.vivaldi.ver1.VivaldiPositionProvider;
 import com.aelitis.azureus.core.dht.transport.*;
 import com.aelitis.azureus.core.dht.transport.udp.*;
+import com.aelitis.net.udp.uc.PRUDPPacketHandler;
 
 
 /**
@@ -96,8 +99,8 @@ DHTTransportUDPContactImpl
 
 			id = DHTUDPUtils.getNodeID( external_address, protocol_version );
 		}
-		
-		network_positions	= DHTNetworkPositionManager.createPositions( id==null?DHTUDPUtils.getBogusNodeID():id, _is_local );
+
+		createNetworkPositions( _is_local );
 	}
 	
 	public DHTTransport
@@ -268,6 +271,14 @@ DHTTransportUDPContactImpl
 		}
 	}
 
+	public void 
+	isAlive(
+		DHTTransportReplyHandler 	handler, 
+		long 						timeout )
+	{
+		transport.sendPing( this, handler, timeout, PRUDPPacketHandler.PRIORITY_IMMEDIATE );		
+	}
+	
 	public void
 	sendPing(
 		DHTTransportReplyHandler	handler )
@@ -294,9 +305,21 @@ DHTTransportUDPContactImpl
 	sendStore(
 		DHTTransportReplyHandler	handler,
 		byte[][]					keys,
-		DHTTransportValue[][]		value_sets )
+		DHTTransportValue[][]		value_sets,
+		boolean						immediate )
 	{
-		transport.sendStore( this, handler, keys, value_sets );
+		transport.sendStore( 
+				this, handler, keys, value_sets, 
+				immediate?PRUDPPacketHandler.PRIORITY_IMMEDIATE:PRUDPPacketHandler.PRIORITY_LOW );
+	}
+	
+	public void 
+	sendQueryStore(
+		DHTTransportReplyHandler 	handler,
+		int							header_length,
+		List<Object[]>			 	key_details ) 
+	{
+		transport.sendQueryStore( this, handler, header_length, key_details);
 	}
 	
 	public void
@@ -385,6 +408,13 @@ DHTTransportUDPContactImpl
   	{
   		network_positions	= positions;
   	}
+	
+	public void
+	createNetworkPositions(
+		boolean  is_local )
+	{
+		network_positions	= DHTNetworkPositionManager.createPositions( id==null?DHTUDPUtils.getBogusNodeID():id, is_local );
+	}
 	
 	public DHTNetworkPosition[]
   	getNetworkPositions()

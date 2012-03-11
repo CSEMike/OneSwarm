@@ -28,12 +28,16 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
 
 
 import org.gudy.azureus2.core3.util.Constants;
 import org.gudy.azureus2.core3.util.Debug;
 import org.gudy.azureus2.core3.util.FileUtil;
+import org.gudy.azureus2.core3.util.HashWrapper;
 import org.gudy.azureus2.core3.util.SystemTime;
 import org.gudy.azureus2.plugins.*;
 import org.gudy.azureus2.plugins.download.Download;
@@ -52,7 +56,9 @@ import com.aelitis.azureus.core.dht.DHTOperationListener;
 import com.aelitis.azureus.core.dht.DHTStorageKeyStats;
 
 import com.aelitis.azureus.core.dht.control.DHTControlStats;
+import com.aelitis.azureus.core.dht.db.DHTDB;
 import com.aelitis.azureus.core.dht.db.DHTDBStats;
+import com.aelitis.azureus.core.dht.db.DHTDBValue;
 import com.aelitis.azureus.core.dht.nat.DHTNATPuncherAdapter;
 import com.aelitis.azureus.core.dht.router.DHTRouterStats;
 import com.aelitis.azureus.core.dht.transport.DHTTransportContact;
@@ -85,11 +91,8 @@ public class
 DHTPluginImpl
 {
 	private static final String	SEED_ADDRESS_V4	= Constants.DHT_SEED_ADDRESS_V4;
-//	private static final String	SEED_ADDRESS_V4	= "128.208.4.242";
-	
 	private static final String	SEED_ADDRESS_V6	= Constants.DHT_SEED_ADDRESS_V6;
 	private static final int	SEED_PORT		= 6881;
-//	private static final int	SEED_PORT		= 55519;
 		
 	private static final long	MIN_ROOT_SEED_IMPORT_PERIOD	= 8*60*60*1000;
 	
@@ -151,7 +154,7 @@ DHTPluginImpl
 			
 			final PluginConfig conf = plugin_interface.getPluginconfig();
 			
-			int	send_delay = conf.getPluginIntParameter( "dht.senddelay", 50 );
+			int	send_delay = conf.getPluginIntParameter( "dht.senddelay", 25 );
 			int	recv_delay	= conf.getPluginIntParameter( "dht.recvdelay", 25 );
 			
 			boolean	bootstrap	= conf.getPluginBooleanParameter( "dht.bootstrapnode", false );
@@ -168,9 +171,9 @@ DHTPluginImpl
 						_ip,
 						storage_manager.getMostRecentAddress(),
 						_port, 
-						4,
-						2,
-						20000, 	// udp timeout - tried less but a significant number of 
+						3,
+						1,
+						10000, 	// udp timeout - tried less but a significant number of 
 								// premature timeouts occurred
 						send_delay, recv_delay, 
 						bootstrap,
@@ -190,6 +193,11 @@ DHTPluginImpl
 							
 							adapter.localContactChanged( getLocalAddress());
 						}
+					}
+					
+					public void
+					resetNetworkPositions()
+					{
 					}
 					
 					public void
@@ -383,6 +391,12 @@ DHTPluginImpl
 		}
 	}
 	
+	public long
+	getClockSkew()
+	{
+		return( transport.getStats().getSkewAverage());
+	}
+	
 	public void
 	logStats()
 	{
@@ -463,7 +477,7 @@ DHTPluginImpl
 				
 			log.log( "DHT " + (first?"":"re-") + "integration complete: elapsed = " + (end-start));
 			
-			dht.print();
+			dht.print( false );
 			
 		}finally{
 			
@@ -632,6 +646,10 @@ outer:
 	{
 		try{
 			return( InetAddress.getByName( v6?SEED_ADDRESS_V6:SEED_ADDRESS_V4 ));
+		}
+		catch (java.net.UnknownHostException e) {
+			Debug.out("Could not get DHT seed address: " + e);
+			return null;
 			
 		}catch( Throwable e ){
 				
@@ -651,42 +669,65 @@ outer:
 
 	public void
 	put(
+		byte[]						key,
+		String						description,
+		byte[]						value,
+		byte						flags,
+		DHTPluginOperationListener	listener)
+	{		
+		put( key, description, value, flags, true, listener );
+	}
+	
+	public void
+	put(
 		final byte[]						key,
 		final String						description,
 		final byte[]						value,
 		final byte							flags,
+		final boolean						high_priority,
 		final DHTPluginOperationListener	listener)
 	{		
 		dht.put( 	key, 
 					description,
 					value,
 					flags,
+					high_priority,
 					new DHTOperationListener()
 					{
+						private boolean started;
+						
 						public void
 						searching(
 							DHTTransportContact	contact,
 							int					level,
 							int					active_searches )
 						{
-							String	indent = "";
-							
-							for (int i=0;i<level;i++){
+							if ( listener != null ){
 								
-								indent += "  ";
+								synchronized( this ){
+									
+									if ( started ){
+										
+										return;
+									}
+									
+									started = true;
+								}
+								
+								listener.starts( key );
 							}
-							
-							// log.log( indent + "Put: level = " + level + ", active = " + active_searches + ", contact = " + contact.getString());
 						}
 
 						public void
-						diversified()
+						diversified(
+							String		desc )
 						{
 						}
 						
 						public void
 						found(
-							DHTTransportContact	contact )
+							DHTTransportContact	contact,
+							boolean				is_closest )
 						{
 						}
 
@@ -740,6 +781,28 @@ outer:
 		return( mapValue( val ));
 	}
 	
+	public List<DHTPluginValue>
+	getValues()
+	{
+		DHTDB	db = dht.getDataBase();
+		
+		Iterator<HashWrapper>	keys = db.getKeys();
+		
+		List<DHTPluginValue>	vals = new ArrayList<DHTPluginValue>();
+		
+		while( keys.hasNext()){
+			
+			DHTDBValue val = db.getAnyValue( keys.next());
+			
+			if ( val != null ){
+				
+				vals.add( mapValue( val ));
+			}
+		}
+		
+		return( vals );
+	}
+	
 	public void
 	get(
 		final byte[]								key,
@@ -754,26 +817,33 @@ outer:
 		dht.get( 	key, description, flags, max_values, timeout, exhaustive, high_priority, 
 					new DHTOperationListener()
 					{
+						private boolean	started = false;
+						
 						public void
 						searching(
 							DHTTransportContact	contact,
 							int					level,
 							int					active_searches )
 						{
-							/*
-							String	indent = "";
-							
-							for (int i=0;i<level;i++){
+							if ( listener != null ){
 								
-								indent += "  ";
+								synchronized( this ){
+									
+									if ( started ){
+										
+										return;
+									}
+									
+									started = true;
+								}
+								
+								listener.starts( key );
 							}
-							
-							log.log( indent + "Get: level = " + level + ", active = " + active_searches + ", contact = " + contact.getString());
-							*/
 						}
 						
 						public void
-						diversified()
+						diversified(
+							String		desc )
 						{
 							if ( listener != null ){
 								
@@ -783,7 +853,8 @@ outer:
 						
 						public void
 						found(
-							DHTTransportContact	contact )
+							DHTTransportContact	contact,
+							boolean				is_closest )
 						{
 						}
 
@@ -832,30 +903,130 @@ outer:
 						description,
 						new DHTOperationListener()
 						{
+							private boolean started;
+							
 							public void
 							searching(
 								DHTTransportContact	contact,
 								int					level,
 								int					active_searches )
 							{
-								String	indent = "";
-								
-								for (int i=0;i<level;i++){
+								if ( listener != null ){
 									
-									indent += "  ";
-								}
-								
-								// log.log( indent + "Remove: level = " + level + ", active = " + active_searches + ", contact = " + contact.getString());
+									synchronized( this ){
+										
+										if ( started ){
+											
+											return;
+										}
+										
+										started = true;
+									}
+									
+									listener.starts( key );
+								}							
 							}
-							
+		
 							public void
 							found(
-								DHTTransportContact	contact )
+								DHTTransportContact	contact,
+								boolean				is_closest )
 							{
 							}
 
 							public void
-							diversified()
+							diversified(
+								String		desc )
+							{
+							}
+							
+							public void
+							read(
+								DHTTransportContact	contact,
+								DHTTransportValue	value )
+							{
+								// log.log( "Remove: read " + value.getString() + " from " + contact.getString());
+							}
+							
+							public void
+							wrote(
+								DHTTransportContact	contact,
+								DHTTransportValue	value )
+							{
+								// log.log( "Remove: wrote " + value.getString() + " to " + contact.getString());
+								if ( listener != null ){
+									
+									listener.valueWritten( new DHTPluginContactImpl( DHTPluginImpl.this, contact ), mapValue( value ));
+								}
+							}
+							
+							public void
+							complete(
+								boolean				timeout )
+							{
+								// log.log( "Remove: complete, timeout = " + timeout );
+							
+								if ( listener != null ){
+								
+									listener.complete( key, timeout );
+								}
+							}			
+						});
+	}
+	
+	public void
+	remove(
+		final DHTPluginContact[]			targets,
+		final byte[]						key,
+		final String						description,
+		final DHTPluginOperationListener	listener )
+	{
+		DHTTransportContact[]	t_contacts = new DHTTransportContact[ targets.length ];
+		
+		for (int i=0;i<targets.length;i++){
+			
+			t_contacts[i] = ((DHTPluginContactImpl)targets[i]).getContact();
+		}
+		
+		dht.remove( 	t_contacts,
+						key,
+						description,
+						new DHTOperationListener()
+						{
+							private boolean started;
+							
+							public void
+							searching(
+								DHTTransportContact	contact,
+								int					level,
+								int					active_searches )
+							{
+								if ( listener != null ){
+									
+									synchronized( this ){
+										
+										if ( started ){
+											
+											return;
+										}
+										
+										started = true;
+									}
+									
+									listener.starts( key );
+								}
+							}
+							
+							public void
+							found(
+								DHTTransportContact	contact,
+								boolean				is_closest )
+							{
+							}
+
+							public void
+							diversified(
+								String		desc )
 							{
 							}
 							
@@ -905,6 +1076,22 @@ outer:
 	{
 		try{
 			return( new DHTPluginContactImpl( this, transport.importContact( address, protocol_version )));
+			
+		}catch( DHTTransportException	e ){
+			
+			Debug.printStackTrace(e);
+			
+			return( null );
+		}
+	}
+	
+	public DHTPluginContact
+	importContact(
+		InetSocketAddress				address,
+		byte							version )
+	{
+		try{
+			return( new DHTPluginContactImpl( this, transport.importContact( address, version )));
 			
 		}catch( DHTTransportException	e ){
 			

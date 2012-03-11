@@ -58,6 +58,12 @@ DHTTransportLoopbackImpl
 		return( DHT.NW_MAIN );
 	}
 	
+	public boolean 
+	isIPV6() 
+	{
+		return( false );
+	}
+	
 	public static void
 	setLatency(
 		int	_latency )
@@ -197,6 +203,19 @@ DHTTransportLoopbackImpl
 		return( 0 );
 	}
 	
+	
+	public long 
+	getTimeout() 
+	{
+		return( 0 );
+	}
+	
+	public void 
+	setTimeout(
+		long 	millis ) 
+	{
+	}
+	
 	public boolean
 	isReachable()
 	{
@@ -205,6 +224,12 @@ DHTTransportLoopbackImpl
 	
 	public DHTTransportContact[]
 	getReachableContacts()
+	{
+		return( new DHTTransportContact[0] );
+	}
+	
+	public DHTTransportContact[]
+	getRecentContacts()
 	{
 		return( new DHTTransportContact[0] );
 	}
@@ -458,7 +483,8 @@ DHTTransportLoopbackImpl
 		final DHTTransportContact		contact,
 		final DHTTransportReplyHandler	handler,
 		final byte[][]					keys,
-		final DHTTransportValue[][]		value_sets )
+		final DHTTransportValue[][]		value_sets,
+		final boolean					immediate )
 	{
 		AERunnable	runnable = 
 			new AERunnable()
@@ -514,6 +540,18 @@ DHTTransportLoopbackImpl
 				handler.storeReply( contact, rep.getDiversificationTypes());
 			}
 		}
+	}
+	
+		// QUERY STORE
+	
+	public void 
+	sendQueryStore(
+		DHTTransportContact			contact,
+		DHTTransportReplyHandler 	handler,
+		int							header_length,
+		List<Object[]>				key_details ) 
+	{
+		handler.failed( contact, new Throwable( "not implemented" ));
 	}
 	
 		// FIND NODE

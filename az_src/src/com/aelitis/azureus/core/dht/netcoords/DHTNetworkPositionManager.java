@@ -27,13 +27,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.gudy.azureus2.core3.util.Debug;
 
 import com.aelitis.azureus.core.dht.DHTStorageAdapter;
 import com.aelitis.azureus.core.dht.impl.DHTLog;
+import com.aelitis.azureus.core.util.CopyOnWriteList;
 
 public class 
 DHTNetworkPositionManager 
@@ -41,6 +44,9 @@ DHTNetworkPositionManager
 	private static DHTNetworkPositionProvider[]	providers = new DHTNetworkPositionProvider[0];
 	
 	private static DHTStorageAdapter	storage_adapter = null;
+	
+	private static CopyOnWriteList<DHTNetworkPositionProviderListener>	provider_listeners = new CopyOnWriteList<DHTNetworkPositionProviderListener>();
+	private static CopyOnWriteList<DHTNetworkPositionListener>			position_listeners;
 	
 	public static void
 	initialise(
@@ -72,7 +78,12 @@ DHTNetworkPositionManager
 	startUp(
 		DHTNetworkPositionProvider	provider )
 	{
-		byte[] data = storage_adapter.getStorageForKey( "NPP:" + provider.getPositionType());
+		byte[] data = null;
+		
+		if ( storage_adapter != null ){
+			
+			data = storage_adapter.getStorageForKey( "NPP:" + provider.getPositionType());
+		}
 		
 		if ( data == null ){
 			
@@ -81,6 +92,29 @@ DHTNetworkPositionManager
 		
 		try{
 			provider.startUp( new DataInputStream( new ByteArrayInputStream( data )));
+			
+		}catch( Throwable e ){
+			
+			Debug.printStackTrace( e );
+		}
+	}
+	
+	private static void
+	shutDown(
+		DHTNetworkPositionProvider	provider )
+	{
+		try{			
+			ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+			
+			DataOutputStream	dos = new DataOutputStream( baos );
+			
+			provider.shutDown( dos );
+			
+			dos.flush();
+			
+			byte[]	data = baos.toByteArray();
+			
+			storage_adapter.setStorageForKey( "NPP:" + provider.getPositionType(), data );
 			
 		}catch( Throwable e ){
 			
@@ -98,25 +132,7 @@ DHTNetworkPositionManager
 
 				for (int i=0;i<providers.length;i++){
 
-					try{
-						DHTNetworkPositionProvider	provider = providers[i];
-						
-						ByteArrayOutputStream	baos = new ByteArrayOutputStream();
-						
-						DataOutputStream	dos = new DataOutputStream( baos );
-						
-						provider.shutDown( dos );
-						
-						dos.flush();
-						
-						byte[]	data = baos.toByteArray();
-						
-						storage_adapter.setStorageForKey( "NPP:" + provider.getPositionType(), data );
-						
-					}catch( Throwable e ){
-						
-						Debug.printStackTrace( e );
-					}
+					shutDown( providers[i] );
 				}
 				
 				storage_adapter	= null;
@@ -128,19 +144,65 @@ DHTNetworkPositionManager
 	registerProvider(
 		final DHTNetworkPositionProvider	provider )
 	{
+		boolean	fire_added = false;
+		
 		synchronized( providers ){
 	
-			DHTNetworkPositionProvider[]	p = new DHTNetworkPositionProvider[providers.length + 1 ];
+			boolean						found 		= false;
+			DHTNetworkPositionProvider	type_found	= null;
 			
-			System.arraycopy( providers, 0, p, 0, providers.length );
+			for ( DHTNetworkPositionProvider p: providers ){
+				
+				if ( p == provider ){
+					
+					found = true;
+					
+					break;
+					
+				}else if ( p.getPositionType() == provider.getPositionType()){
+					
+					type_found = p;
+				}
+			}
 			
-			p[providers.length] = provider;
+			if ( !found ){
+				
+				if ( type_found != null ){
+					
+					Debug.out( "Registration of " + provider + " found previous provider for same position type, removing it" );
+					
+					unregisterProviderSupport( type_found );
+				}
+				
+				DHTNetworkPositionProvider[]	new_providers = new DHTNetworkPositionProvider[providers.length + 1 ];
+				
+				System.arraycopy( providers, 0, new_providers, 0, providers.length );
+				
+				new_providers[providers.length] = provider;
+				
+				providers	= new_providers;
+				
+				if ( storage_adapter != null ){
+				
+					startUp( provider );
+				}
+				
+				fire_added = true;
+			}
+		}
+		
+		if ( fire_added ){
 			
-			providers	= p;
-			
-			if ( storage_adapter != null ){
-			
-				startUp( provider );
+			for ( DHTNetworkPositionProviderListener l: provider_listeners ){
+				
+				try{
+					
+					l.providerAdded( provider );
+					
+				}catch( Throwable e ){
+					
+					Debug.out( e );
+				}
 			}
 		}
 		
@@ -153,6 +215,67 @@ DHTNetworkPositionManager
 						DHTLog.log("NetPos " + provider.getPositionType() + ": " + log );
 					}
 				});
+	}
+	
+	public static void
+	unregisterProvider(
+		DHTNetworkPositionProvider	provider )
+	{
+		if ( unregisterProviderSupport( provider )){
+			
+			for ( DHTNetworkPositionProviderListener l: provider_listeners ){
+				
+				try{
+					
+					l.providerRemoved( provider );
+					
+				}catch( Throwable e ){
+					
+					Debug.out( e );
+				}
+			}
+		}
+	}
+	
+	private static boolean
+	unregisterProviderSupport(
+		DHTNetworkPositionProvider	provider )
+	{
+		boolean	removed = false;
+		
+		synchronized( providers ){
+	
+			if ( providers.length == 0 ){
+				
+				return( false );
+			}
+			
+			DHTNetworkPositionProvider[]	new_providers = new DHTNetworkPositionProvider[providers.length - 1 ];
+
+			int	pos = 0;
+			
+			for ( int i=0;i<providers.length;i++){
+				
+				if ( providers[i] == provider ){
+					
+					if ( storage_adapter != null ){
+						
+						shutDown( provider );
+					}
+				}else{
+					
+					new_providers[pos++] = providers[i];
+				}
+			}
+			if ( pos == new_providers.length ){
+			
+				providers = new_providers;
+				
+				removed = true;
+			}
+		}
+
+		return( removed );
 	}
 	
 	public static DHTNetworkPositionProvider
@@ -178,7 +301,7 @@ DHTNetworkPositionManager
 	{
 		DHTNetworkPositionProvider[]	prov = providers;
 		
-		List res = new ArrayList();
+		List<DHTNetworkPosition> res = new ArrayList<DHTNetworkPosition>();
 		
 		for (int i=0;i<prov.length;i++){
 			
@@ -195,7 +318,7 @@ DHTNetworkPositionManager
 			}
 		}
 		
-		return((DHTNetworkPosition[])res.toArray(new DHTNetworkPosition[res.size()])); 
+		return( res.toArray(new DHTNetworkPosition[res.size()])); 
 
 	}
 	
@@ -370,7 +493,8 @@ DHTNetworkPositionManager
 	
 	public static DHTNetworkPosition
    	deserialisePosition(
-   		byte[]		bytes )
+   		InetAddress				originator,
+   		byte[]					bytes )
    	
    		throws IOException
    	{
@@ -382,13 +506,14 @@ DHTNetworkPositionManager
    		
    		byte	position_type = dis.readByte();
    		
-   		return( deserialise( position_type, dis ));
+   		return( deserialise( originator, position_type, dis ));
    	}
 	
 	public static DHTNetworkPosition
 	deserialise(
-		byte			position_type,
-		DataInputStream	is )
+		InetAddress				originator,
+		byte					position_type,
+		DataInputStream			is )
 	
 		throws IOException
 	{
@@ -405,7 +530,23 @@ DHTNetworkPositionManager
 				try{
 					DHTNetworkPosition np = provider.deserialisePosition( is );
 					
-					// System.out.println( "Deserialised: " + np.getPositionType());
+					CopyOnWriteList<DHTNetworkPositionListener> listeners = position_listeners;
+					
+					if ( listeners != null ){
+						
+						Iterator<DHTNetworkPositionListener> it = listeners.iterator();
+						
+						while( it.hasNext()){
+							
+							try{
+								it.next().positionFound( provider, originator, np );
+								
+							}catch( Throwable e ){
+								
+								Debug.printStackTrace(e);
+							}
+						}
+					}
 					
 					return( np );
 					
@@ -421,5 +562,52 @@ DHTNetworkPositionManager
 		}
 		
 		return( null );
+	}
+	
+	public static void
+	addPositionListener(
+		DHTNetworkPositionListener		listener )
+	{
+		synchronized( DHTNetworkPositionManager.class ){
+		
+			if ( position_listeners == null ){
+				
+				position_listeners = new CopyOnWriteList<DHTNetworkPositionListener>();
+			}
+			
+			position_listeners.add( listener );
+		}
+	}
+	
+	public static void
+	removePositionListener(
+		DHTNetworkPositionListener		listener )
+	{
+		synchronized( DHTNetworkPositionManager.class ){
+		
+			if ( position_listeners != null ){
+				
+				position_listeners.remove( listener );
+				
+				if ( position_listeners.size() == 0 ){
+					
+					position_listeners = null;
+				}
+			}
+		}
+	}
+	
+	public static void
+	addProviderListener(
+		DHTNetworkPositionProviderListener		listener )
+	{
+		provider_listeners.add( listener );
+	}
+	
+	public static void
+	removeProviderListener(
+		DHTNetworkPositionProviderListener		listener )
+	{
+		provider_listeners.remove( listener );
 	}
 }

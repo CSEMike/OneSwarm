@@ -24,6 +24,7 @@ package com.aelitis.azureus.core.dht.db.impl;
 
 import org.gudy.azureus2.core3.util.SystemTime;
 
+import com.aelitis.azureus.core.dht.DHT;
 import com.aelitis.azureus.core.dht.db.DHTDBValue;
 import com.aelitis.azureus.core.dht.impl.DHTLog;
 import com.aelitis.azureus.core.dht.transport.DHTTransportContact;
@@ -38,12 +39,16 @@ public class
 DHTDBValueImpl
 	implements DHTDBValue
 {
+	private static final byte[] ZERO_LENGTH_BYTE_ARRAY = {};
+	
 	private long				creation_time;
 	private byte[]				value;
 	private DHTTransportContact	originator;
 	private DHTTransportContact	sender;
 	private boolean				local;
-	private int					flags;
+	private byte				flags;
+	private byte				life_hours;
+	private byte				rep_control;
 	private int					version;
 	
 	private long				store_time;
@@ -66,7 +71,9 @@ DHTDBValueImpl
 		DHTTransportContact	_originator,
 		DHTTransportContact	_sender,
 		boolean				_local,
-		int					_flags )
+		int					_flags,
+		int					_life_hours,
+		byte				_rep_control )
 	{
 		creation_time	= _creation_time;
 		value			= _value;
@@ -74,7 +81,16 @@ DHTDBValueImpl
 		originator		= _originator;
 		sender			= _sender;
 		local			= _local;
-		flags			= _flags;
+		flags			= (byte)_flags;
+		life_hours		= (byte)_life_hours;
+		rep_control		= _rep_control;
+		
+			// we get quite a few zero length values - optimise mem usage
+		
+		if ( value != null && value.length == 0 ){
+			
+			value = ZERO_LENGTH_BYTE_ARRAY;
+		}
 		
 		reset();
 	}
@@ -99,7 +115,9 @@ DHTDBValueImpl
 				_other.getOriginator(),
 				_sender,
 				_local,
-				_other.getFlags());
+				_other.getFlags(),
+				_other.getLifeTimeHours(),
+				_other.getReplicationControl());
 	}
 	
 	protected void
@@ -169,10 +187,11 @@ DHTDBValueImpl
 	{
 		return( sender );
 	}
+	
 	public int
 	getFlags()
 	{
-		return( flags );
+		return( flags&0xff );
 	}
 	
 	public void
@@ -180,6 +199,30 @@ DHTDBValueImpl
 		byte	_flags )
 	{
 		flags = _flags;
+	}
+	
+	public int 
+	getLifeTimeHours() 
+	{
+		return( life_hours&0xff );
+	}
+	
+	public byte
+	getReplicationControl()
+	{
+		return( rep_control );
+	}
+	
+	public byte 
+	getReplicationFactor() 
+	{
+		return( rep_control == DHT.REP_FACT_DEFAULT?DHT.REP_FACT_DEFAULT:(byte)(rep_control&0x0f));
+	}
+	
+	public byte 
+	getReplicationFrequencyHours() 
+	{
+		return( rep_control == DHT.REP_FACT_DEFAULT?DHT.REP_FACT_DEFAULT:(byte)((rep_control&0xf0)>>4));
 	}
 	
 	protected void
@@ -203,7 +246,7 @@ DHTDBValueImpl
 	{
 		DHTDBValueImpl	res = new DHTDBValueImpl( originator, this, local );
 		
-		res.value = new byte[0];	// delete -> 0 length value
+		res.value = ZERO_LENGTH_BYTE_ARRAY;	// delete -> 0 length value
 		
 		res.setCreationTime();
 		
@@ -218,7 +261,7 @@ DHTDBValueImpl
 		long	now = SystemTime.getCurrentTime();
 		
 		return( DHTLog.getString( value ) + " - " + new String(value) + "{v=" + version + ",f=" + 
-				Integer.toHexString(flags) +",ca=" + (now - creation_time ) + ",sa=" + (now-store_time)+
+				Integer.toHexString(flags) + ",l=" + life_hours + ",r=" + Integer.toHexString( rep_control ) + ",ca=" + (now - creation_time ) + ",sa=" + (now-store_time)+
 				",se=" + sender.getString() + ",or=" + originator.getString() +"}" );
 	}
 }

@@ -31,6 +31,10 @@ public interface
 DHTPluginOperationListener 
 {
 	public void
+	starts(
+		byte[]				key );
+	
+	public void
 	diversified();
 	
 	public void

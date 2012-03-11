@@ -40,11 +40,13 @@ DHTOperationListener
 		int					active_searches );
 	
 	public void
-	diversified();
+	diversified(
+		String				desc );
 	
 	public void
 	found(
-		DHTTransportContact	contact );
+		DHTTransportContact		contact,
+		boolean					is_closest );
 	
 	public void
 	read(

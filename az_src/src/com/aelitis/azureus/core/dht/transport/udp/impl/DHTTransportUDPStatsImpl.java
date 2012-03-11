@@ -36,16 +36,19 @@ public class
 DHTTransportUDPStatsImpl
 	extends 	DHTTransportStatsImpl
 {
+	private DHTTransportUDPImpl				transport;
 	private DHTUDPPacketHandlerStats		stats;
 	
 	protected
 	DHTTransportUDPStatsImpl(
+		DHTTransportUDPImpl				_transport,
 		byte							_pv,
 		DHTUDPPacketHandlerStats		_stats )
 	{
 		super( _pv );
 		
-		stats	= _stats;
+		transport	= _transport;
+		stats		= _stats;
 	}
 	
 	protected void
@@ -85,10 +88,16 @@ DHTTransportUDPStatsImpl
 		return( stats.getBytesReceived());
 	}
 	
+	public int 
+	getRouteablePercentage() 
+	{
+		return( transport.getRouteablePercentage());
+	}
+	
 	public DHTTransportStats
 	snapshot()
 	{
-		DHTTransportStatsImpl	res = new DHTTransportUDPStatsImpl( getProtocolVersion(), stats.snapshot());
+		DHTTransportStatsImpl	res = new DHTTransportUDPStatsImpl( transport, getProtocolVersion(), stats.snapshot());
 		
 		snapshotSupport( res );
 		

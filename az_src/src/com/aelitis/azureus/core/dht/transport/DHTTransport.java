@@ -38,6 +38,9 @@ DHTTransport
 	public int
 	getNetwork();
 
+	public boolean
+	isIPV6();
+	
 		/**
 		 * Gives access to the node ID for this transport 
 		 * @return
@@ -54,6 +57,13 @@ DHTTransport
 		int	port )
 	
 		throws DHTTransportException;
+	
+	public long
+	getTimeout();
+	
+	public void
+	setTimeout(
+		long		millis );
 	
 	public DHTTransportContact
 	importContact(
@@ -119,6 +129,9 @@ DHTTransport
 	
 	public DHTTransportContact[]
 	getReachableContacts();
+	
+	public DHTTransportContact[]
+	getRecentContacts();
 	
 	public void
 	addListener(

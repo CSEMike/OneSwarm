@@ -52,8 +52,8 @@ DHTUDPPacketHandler
 	
 	private boolean						test_network_alive	= true;
 
-	private int							BLOOM_FILTER_SIZE		= 5000;
-	private static final int			BLOOM_ROTATION_PERIOD	= 2*60*1000; 
+	private int							BLOOM_FILTER_SIZE		= 10000;
+	private static final int			BLOOM_ROTATION_PERIOD	= 3*60*1000; 
 	private BloomFilter					bloom1;
 	private BloomFilter					bloom2;
 	private long						last_bloom_rotation_time;
@@ -101,6 +101,29 @@ DHTUDPPacketHandler
 		return( network );
 	}
 	
+	protected void
+	updateBloom(
+		InetSocketAddress		destination_address )
+	{
+	    long diff = SystemTime.getCurrentTime() - last_bloom_rotation_time;
+	    
+	    if( diff < 0 || diff > BLOOM_ROTATION_PERIOD ) {
+	    
+	    	// System.out.println( "bloom rotate: entries = " + bloom1.getEntryCount() + "/" + bloom2.getEntryCount());
+	    	
+	    	bloom1 = bloom2;
+	    	
+	    	bloom2 = BloomFilterFactory.createAddOnly( BLOOM_FILTER_SIZE );
+	        
+	        last_bloom_rotation_time = SystemTime.getCurrentTime();
+	    }
+
+	    byte[]	address_bytes = destination_address.getAddress().getAddress();
+	    
+	    bloom1.add( address_bytes );
+	    bloom2.add( address_bytes );
+	}
+	
 	public void
 	sendAndReceive(
 		DHTUDPPacketRequest					request,
@@ -120,23 +143,7 @@ DHTUDPPacketHandler
 			
 			if ( test_network_alive ){
 				
-			    long diff = SystemTime.getCurrentTime() - last_bloom_rotation_time;
-			    
-			    if( diff < 0 || diff > BLOOM_ROTATION_PERIOD ) {
-			    
-			    	// System.out.println( "bloom rotate: entries = " + bloom1.getEntryCount() + "/" + bloom2.getEntryCount());
-			    	
-			    	bloom1 = bloom2;
-			    	
-			    	bloom2 = BloomFilterFactory.createAddOnly( BLOOM_FILTER_SIZE );
-			        
-			        last_bloom_rotation_time = SystemTime.getCurrentTime();
-			    }
-
-			    byte[]	address_bytes = destination_address.getAddress().getAddress();
-			    
-			    bloom1.add( address_bytes );
-			    bloom2.add( address_bytes );
+				updateBloom( destination_address );
 			    
 				packet_handler.sendAndReceive( 
 					request, 
@@ -159,7 +166,7 @@ DHTUDPPacketHandler
 								
 							}else{
 								
-								Debug.out( "Non-matching network reply received" );
+								Debug.out( "Non-matching network reply received: expected=" + network + ", actual=" + reply.getNetwork());
 								
 								receiver.error( new DHTUDPPacketHandlerException( new Exception( "Non-matching network reply received" )));
 							}
@@ -198,6 +205,8 @@ DHTUDPPacketHandler
 
 	{
 		destination_address	= AddressUtils.adjustDHTAddress( destination_address, true );
+		
+		updateBloom( destination_address );
 		
 			// one way send (no matching reply expected )
 		
@@ -264,7 +273,17 @@ DHTUDPPacketHandler
 				// an alien request is one that originates from a peer that we haven't recently
 				// talked to
 			
-			boolean	alien = !bloom1.contains( request.getAddress().getAddress().getAddress());
+			byte[] bloom_key = request.getAddress().getAddress().getAddress();
+			
+			boolean	alien = !bloom1.contains( bloom_key );
+			
+			if ( alien ){
+				
+					// avoid counting consecutive requests from same contact more than once
+			
+				bloom1.add( bloom_key );
+				bloom2.add( bloom_key );
+			}
 			
 			stats.packetReceived( request.getSerialisedSize());
 		

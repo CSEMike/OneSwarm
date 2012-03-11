@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.util.*;
 
+import org.gudy.azureus2.core3.util.ByteFormatter;
 import org.gudy.azureus2.core3.util.Debug;
 import org.gudy.azureus2.core3.util.HashWrapper;
 import org.gudy.azureus2.core3.util.SystemTime;
@@ -49,12 +50,13 @@ DHTDBMapping
 	
 	private DHTDBImpl			db;
 	private HashWrapper			key;
+	private ShortHash			short_key;
 	private DHTStorageKey		adapter_key;
 	
 		// maps are access order, most recently used at tail, so we cycle values
 		
-	private Map				direct_originator_map			= new LinkedHashMap(16, 0.75f, true );
-	private Map				indirect_originator_value_map	= new LinkedHashMap(16, 0.75f, true );
+	private Map<HashWrapper,DHTDBValueImpl>		direct_originator_map_may_be_null;
+	private Map<HashWrapper,DHTDBValueImpl>		indirect_originator_value_map		= createLinkedMap();
 	
 	private int				hits;
 	
@@ -68,7 +70,7 @@ DHTDBMapping
 
 		// 4 bit filter - counts up to 15
 	
-	private BloomFilter 	ip_count_bloom_filter = BloomFilterFactory.createAddRemove4Bit( IP_COUNT_BLOOM_SIZE_INCREASE_CHUNK );
+	private Object 	ip_count_bloom_filter;
 
 	protected
 	DHTDBMapping(
@@ -78,6 +80,8 @@ DHTDBMapping
 	{
 		db			= _db;
 		key			= _key;
+		
+		short_key = new ShortHash( key.getBytes());
 		
 		try{
 			if ( db.getAdapter() != null ){
@@ -95,12 +99,24 @@ DHTDBMapping
 		}
 	}
 	
+	protected  Map<HashWrapper,DHTDBValueImpl>
+	createLinkedMap()
+	{		
+		return( new LinkedHashMap<HashWrapper,DHTDBValueImpl>(1, 0.75f, true ));
+	}
+	
 	protected HashWrapper
 	getKey()
 	{
 		return( key );
 	}
 
+	protected ShortHash
+	getShortKey()
+	{
+		return( short_key );
+	}
+	
 	protected void
 	updateLocalContact(
 		DHTTransportContact		contact )
@@ -108,13 +124,18 @@ DHTDBMapping
 			// pull out all the local values, reset the originator and then
 			// re-add them
 		
-		List	changed = new ArrayList();
+		if ( direct_originator_map_may_be_null == null ){
+			
+			return;
+		}
 		
-		Iterator	it = direct_originator_map.values().iterator();
+		List<DHTDBValueImpl>	changed = new ArrayList<DHTDBValueImpl>();
+		
+		Iterator<DHTDBValueImpl>	it = direct_originator_map_may_be_null.values().iterator();
 		
 		while( it.hasNext()){
 		
-			DHTDBValueImpl	value = (DHTDBValueImpl)it.next();
+			DHTDBValueImpl	value = it.next();
 			
 			if ( value.isLocal()){
 			
@@ -134,7 +155,7 @@ DHTDBMapping
 		
 		for (int i=0;i<changed.size();i++){
 			
-			add((DHTDBValueImpl)changed.get(i));
+			add(changed.get(i));
 		}
 	}
 	
@@ -205,17 +226,17 @@ DHTDBMapping
 			
 				// remove any indirect values we might already have for this
 			
-			Iterator	it = indirect_originator_value_map.entrySet().iterator();
+			Iterator<Map.Entry<HashWrapper,DHTDBValueImpl>>	it = indirect_originator_value_map.entrySet().iterator();
 			
-			List	to_remove = new ArrayList();
+			List<HashWrapper>	to_remove = new ArrayList<HashWrapper>();
 			
 			while( it.hasNext()){
 				
-				Map.Entry	entry = (Map.Entry)it.next();
+				Map.Entry<HashWrapper,DHTDBValueImpl>	entry = it.next();
 				
-				HashWrapper		existing_key		= (HashWrapper)entry.getKey();
+				HashWrapper		existing_key	= entry.getKey();
 				
-				DHTDBValueImpl	existing_value	= (DHTDBValueImpl)entry.getValue();
+				DHTDBValueImpl	existing_value	= entry.getValue();
 	
 				if ( Arrays.equals( existing_value.getOriginator().getID(), originator.getID())){
 				
@@ -232,7 +253,8 @@ DHTDBMapping
 				// not direct. if we have a value already for this originator then
 				// we drop the value as the originator originated one takes precedence
 			
-			if ( direct_originator_map.get( originator_id ) != null ){
+			if ( 	direct_originator_map_may_be_null != null &&
+					direct_originator_map_may_be_null.get( originator_id ) != null ){
 				
 				return;
 			}
@@ -241,7 +263,7 @@ DHTDBMapping
 				
 			HashWrapper	originator_value_id = getOriginatorValueID( new_value );
 
-			DHTDBValueImpl existing_value = (DHTDBValueImpl)indirect_originator_value_map.get( originator_value_id );
+			DHTDBValueImpl existing_value = indirect_originator_value_map.get( originator_value_id );
 			
 			if ( existing_value != null ){
 				
@@ -351,7 +373,9 @@ DHTDBMapping
 								db.getLocalContact(),
 								db.getLocalContact(),
 								true,
-								DHT.FLAG_STATS )});
+								DHT.FLAG_STATS,
+								0,
+								DHT.REP_FACT_DEFAULT )});
 					
 				}catch( Throwable e ){
 					
@@ -362,27 +386,32 @@ DHTDBMapping
 			return( new DHTDBValueImpl[0] );
 		}
 		
-		List	res 		= new ArrayList();
+		List<DHTDBValueImpl>	res 		= new ArrayList<DHTDBValueImpl>();
 		
-		Set		duplicate_check = new HashSet();
+		Set<HashWrapper>		duplicate_check = new HashSet<HashWrapper>();
 		
-		Map[]	maps = new Map[]{ direct_originator_map, indirect_originator_value_map };
+		Map<HashWrapper,DHTDBValueImpl>[]	maps = new Map[]{ direct_originator_map_may_be_null, indirect_originator_value_map };
 		
 		for (int i=0;i<maps.length;i++){
 			
-			List	keys_used 	= new ArrayList();
-
-			Map			map	= maps[i];
+			Map<HashWrapper,DHTDBValueImpl>			map	= maps[i];
 			
-			Iterator	it = map.entrySet().iterator();
+			if ( map == null ){
+				
+				continue;
+			}
+			
+			List<HashWrapper>	keys_used 	= new ArrayList<HashWrapper>();
+
+			Iterator<Map.Entry<HashWrapper,DHTDBValueImpl>>	it = map.entrySet().iterator();
 		
 			while( it.hasNext() && ( max==0 || res.size()< max )){
 			
-				Map.Entry	entry = (Map.Entry)it.next();
+				Map.Entry<HashWrapper,DHTDBValueImpl>	entry = it.next();
 				
-				HashWrapper		entry_key		= (HashWrapper)entry.getKey();
+				HashWrapper		entry_key	= entry.getKey();
 				
-				DHTDBValueImpl	entry_value = (DHTDBValueImpl)entry.getValue();
+				DHTDBValueImpl	entry_value = entry.getValue();
 						
 				HashWrapper	x = new HashWrapper( entry_value.getValue());
 				
@@ -426,9 +455,46 @@ DHTDBMapping
 	{
 			// local get
 		
+		if ( direct_originator_map_may_be_null == null ){
+			
+			return( null );
+		}
+		
 		HashWrapper originator_id = new HashWrapper( originator.getID());
 		
-		DHTDBValueImpl	res = (DHTDBValueImpl)direct_originator_map.get( originator_id );
+		DHTDBValueImpl	res = (DHTDBValueImpl)direct_originator_map_may_be_null.get( originator_id );
+		
+		return( res );
+	}
+	
+	protected DHTDBValueImpl
+	getAnyValue(
+		DHTTransportContact 	originator )
+	{
+		DHTDBValueImpl	res = null;
+		
+		try{
+			Map<HashWrapper,DHTDBValueImpl> map = direct_originator_map_may_be_null;
+			
+			if ( map != null ){
+						
+				HashWrapper originator_id = new HashWrapper( originator.getID());
+			
+				res = (DHTDBValueImpl)map.get( originator_id );
+			}
+			
+			if ( res == null ){
+				
+				Iterator<DHTDBValueImpl> it = indirect_originator_value_map.values().iterator();
+				
+				if ( it.hasNext()){
+					
+					res = it.next();
+				}
+			}
+		}catch( Throwable e ){
+			// slight chance of conc exception here, don't care
+		}
 		
 		return( res );
 	}
@@ -450,22 +516,44 @@ DHTDBMapping
 	protected int
 	getValueCount()
 	{
-		return( direct_originator_map.size() + indirect_originator_value_map.size());
+		if ( direct_originator_map_may_be_null == null ){
+			
+			return( indirect_originator_value_map.size());
+		}
+		
+		return( direct_originator_map_may_be_null.size() + indirect_originator_value_map.size());
 	}
 	
-	protected Iterator
+	protected int
+	getDirectValueCount()
+	{
+		if ( direct_originator_map_may_be_null == null ){
+			
+			return( 0 );
+		}
+		
+		return( direct_originator_map_may_be_null.size());
+	}
+	
+	protected int
+	getIndirectValueCount()
+	{
+		return( indirect_originator_value_map.size());
+	}
+	
+	protected Iterator<DHTDBValueImpl>
 	getValues()
 	{
 		return( new valueIterator( true, true ));
 	}
 	
-	protected Iterator
+	protected Iterator<DHTDBValueImpl>
 	getDirectValues()
 	{
 		return( new valueIterator( true, false ));
 	}
 	
-	protected Iterator
+	protected Iterator<DHTDBValueImpl>
 	getIndirectValues()
 	{
 		return( new valueIterator( false, true ));
@@ -482,7 +570,12 @@ DHTDBMapping
 		HashWrapper		value_key,
 		DHTDBValueImpl	value )
 	{
-		DHTDBValueImpl	old = (DHTDBValueImpl)direct_originator_map.put( value_key, value );
+		if ( direct_originator_map_may_be_null == null ){
+			
+			direct_originator_map_may_be_null = createLinkedMap();
+		}
+		
+		DHTDBValueImpl	old = (DHTDBValueImpl)direct_originator_map_may_be_null.put( value_key, value );
 				
 		if ( old != null ){
 			
@@ -512,7 +605,7 @@ DHTDBMapping
 				
 					// put the old value back!
 				
-				direct_originator_map.put( value_key, old );
+				direct_originator_map_may_be_null.put( value_key, old );
 				
 				return;
 			}
@@ -555,7 +648,12 @@ DHTDBMapping
 	removeDirectValue(
 		HashWrapper		value_key )
 	{
-		DHTDBValueImpl	old = (DHTDBValueImpl)direct_originator_map.remove( value_key );
+		if ( direct_originator_map_may_be_null == null ){
+			
+			return( null );
+		}
+		
+		DHTDBValueImpl	old = (DHTDBValueImpl)direct_originator_map_may_be_null.remove( value_key );
 		
 		if ( old != null ){
 			
@@ -664,7 +762,7 @@ DHTDBMapping
 		}
 	}
 	
-	protected void
+	protected DHTDBValueImpl
 	removeIndirectValue(
 		HashWrapper		value_key )
 	{
@@ -681,6 +779,8 @@ DHTDBMapping
 			
 			informDeleted( old );
 		}
+		
+		return( old );
 	}
 	
 	protected void
@@ -689,7 +789,7 @@ DHTDBMapping
 		try{
 			if ( adapter_key != null ){
 				
-				Iterator	it = getValues();
+				Iterator<DHTDBValueImpl>	it = getValues();
 				
 				while( it.hasNext()){
 					
@@ -817,8 +917,34 @@ DHTDBMapping
 	
 
 		DHTTransportContact	originator = value.getOriginator();
+
+		byte[] address_bytes = originator.getAddress().getAddress().getAddress();
 		
-		int	hit_count = ip_count_bloom_filter.add( originator.getAddress().getAddress().getAddress());
+		// System.out.println( "addToBloom: existing=" + ip_count_bloom_filter );
+
+		if ( ip_count_bloom_filter == null ){
+			
+			ip_count_bloom_filter = address_bytes;
+			
+			return;
+		}
+		
+		BloomFilter filter;
+		
+		if ( ip_count_bloom_filter instanceof byte[] ){
+			
+			byte[]	existing_address = (byte[])ip_count_bloom_filter;
+			
+			ip_count_bloom_filter = filter = BloomFilterFactory.createAddRemove4Bit( IP_COUNT_BLOOM_SIZE_INCREASE_CHUNK );
+			
+			filter.add( existing_address );
+			
+		}else{
+			
+			filter = (BloomFilter)ip_count_bloom_filter;
+		}
+								
+		int	hit_count = filter.add( address_bytes );
 		
 		if ( DHTLog.LOCAL_BLOOM_TRACE ){
 		
@@ -827,7 +953,7 @@ DHTDBMapping
 
 			// allow up to 10% bloom filter utilisation
 		
-		if ( ip_count_bloom_filter.getSize() / ip_count_bloom_filter.getEntryCount() < 10 ){
+		if ( filter.getSize() / filter.getEntryCount() < 10 ){
 			
 			rebuildIPBloomFilter( true );
 		}
@@ -844,7 +970,28 @@ DHTDBMapping
 	{
 		DHTTransportContact	originator = value.getOriginator();
 		
-		int	hit_count = ip_count_bloom_filter.remove( originator.getAddress().getAddress().getAddress());
+		if ( ip_count_bloom_filter == null ){
+
+			return;
+		}
+		
+		byte[] address_bytes = originator.getAddress().getAddress().getAddress();
+
+		if ( ip_count_bloom_filter instanceof byte[] ){
+
+			byte[]	existing_address = (byte[])ip_count_bloom_filter;
+
+			if ( Arrays.equals( address_bytes, existing_address )){
+				
+				ip_count_bloom_filter = null;
+			}
+			
+			return;
+		}
+		
+		BloomFilter filter = (BloomFilter)ip_count_bloom_filter;
+		
+		int	hit_count = filter.remove( address_bytes );
 		
 		if (  DHTLog.LOCAL_BLOOM_TRACE ){
 		
@@ -858,27 +1005,37 @@ DHTDBMapping
 	{
 		BloomFilter	new_filter;
 		
-		if ( increase_size ){
+		int	old_size;
+		
+		if ( ip_count_bloom_filter instanceof BloomFilter ){
 			
-			new_filter = BloomFilterFactory.createAddRemove4Bit( ip_count_bloom_filter.getSize() + IP_COUNT_BLOOM_SIZE_INCREASE_CHUNK );
+			old_size = ((BloomFilter)ip_count_bloom_filter).getSize();
 			
 		}else{
 			
-			new_filter = BloomFilterFactory.createAddRemove4Bit( ip_count_bloom_filter.getSize());
+			old_size = IP_COUNT_BLOOM_SIZE_INCREASE_CHUNK;
+		}
+		
+		if ( increase_size ){
 			
+			new_filter = BloomFilterFactory.createAddRemove4Bit( old_size + IP_COUNT_BLOOM_SIZE_INCREASE_CHUNK );
+			
+		}else{
+			
+			new_filter = BloomFilterFactory.createAddRemove4Bit( old_size );
 		}
 		
 		try{
 				// only do flood prevention on direct stores as we can't trust the originator
 				// details for indirect and this can be used to DOS a direct store later
 			
-			Iterator	it = getDirectValues();
+			Iterator<DHTDBValueImpl>	it = getDirectValues();
 			
 			int	max_hits	= 0;
 			
 			while( it.hasNext()){
 				
-				DHTDBValueImpl	val = (DHTDBValueImpl)it.next();
+				DHTDBValueImpl	val = it.next();
 				
 				if ( !val.isLocal()){
 					
@@ -904,24 +1061,61 @@ DHTDBMapping
 		}
 	}
 	
+	protected void
+	print()
+	{
+		int	entries;
+		
+		if ( ip_count_bloom_filter == null ){
+			
+			entries = 0;
+			
+		}else if ( ip_count_bloom_filter instanceof byte[] ){
+			
+			entries = 1;
+			
+		}else{
+			
+			entries = ((BloomFilter)ip_count_bloom_filter).getEntryCount();
+		}
+		
+		System.out.println( 
+			ByteFormatter.encodeString( key.getBytes()) + ": " +
+			"dir=" + (direct_originator_map_may_be_null==null?0:direct_originator_map_may_be_null.size()) + "," +
+			"indir=" + indirect_originator_value_map.size() + "," +
+			"bloom=" + entries );	
+		
+		System.out.println( "    indirect" );
+		
+		Iterator<DHTDBValueImpl> it = getIndirectValues();
+				
+		while( it.hasNext()){
+			
+			DHTDBValueImpl val = (DHTDBValueImpl)it.next();
+			
+			System.out.println( "        " + val.getOriginator().getString() + ": " + new String( val.getValue()));
+		}
+	}
+	
 	protected class
 	valueIterator
-		implements Iterator
+		implements Iterator<DHTDBValueImpl>
 	{
-		private List	maps 		=	new ArrayList(2); 
+		private List<Map<HashWrapper,DHTDBValueImpl>>	maps 		=	new ArrayList<Map<HashWrapper,DHTDBValueImpl>>(2);
+		
 		private int		map_index 	= 0;
 		
-		private Map				map;
-		private Iterator		it;
-		private DHTDBValueImpl	value;
+		private Map<HashWrapper,DHTDBValueImpl>		map;
+		private Iterator<DHTDBValueImpl>			it;
+		private DHTDBValueImpl						value;
 		
 		protected
 		valueIterator(
 			boolean		direct,
 			boolean		indirect )
 		{
-			if ( direct ){
-				maps.add( direct_originator_map );
+			if ( direct && direct_originator_map_may_be_null != null ){
+				maps.add( direct_originator_map_may_be_null );
 			}
 			
 			if ( indirect ){
@@ -939,7 +1133,7 @@ DHTDBMapping
 			
 			while( map_index < maps.size() ){
 				
-				map = (Map)maps.get(map_index++);
+				map = maps.get(map_index++);
 				
 				it = map.values().iterator();
 				
@@ -952,7 +1146,7 @@ DHTDBMapping
 			return( false );
 		}
 		
-		public Object
+		public DHTDBValueImpl
 		next()
 		{
 			if ( hasNext()){
@@ -995,10 +1189,65 @@ DHTDBMapping
 				
 				informDeleted( value );
 				
+				value = null;
+				
 			}else{
 			
-				it.remove();
+				throw( new IllegalStateException());
 			}
+		}
+	}
+	
+	public static class 
+	ShortHash 
+	{
+		private byte[]	bytes;
+		private int		hash_code;
+		
+		protected
+		ShortHash(
+			byte[]		_bytes )
+		{
+			bytes	= _bytes;
+			
+			int	hc = 0;
+						
+			for (int i=0; i<DHTDBImpl.QUERY_STORE_REQUEST_ENTRY_SIZE; i++) {
+
+				hc = 31*hc + bytes[i];
+			}
+			
+			hash_code = hc;
+		}
+		
+		public final boolean 
+		equals(
+			Object o) 
+		{
+			if( !( o instanceof ShortHash )){
+				
+				return false;
+			}
+			
+			ShortHash other = (ShortHash)o;
+						
+			byte[]	other_hash 		= other.bytes;
+			
+			for ( int i=0;i<DHTDBImpl.QUERY_STORE_REQUEST_ENTRY_SIZE;i++){
+				
+				if ( bytes[i] != other_hash[i] ){
+					
+					return( false );
+				}
+			}
+			
+			return( true );
+		}
+
+		public int	 
+		hashCode() 
+		{
+			return( hash_code );
 		}
 	}
 }

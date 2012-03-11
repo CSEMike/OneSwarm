@@ -23,6 +23,7 @@
 package com.aelitis.azureus.core.dht.transport.udp.impl;
 
 import java.io.*;
+import java.net.*;
 import java.util.*;
 
 
@@ -61,6 +62,8 @@ DHTUDPPacketHelper
 	public static final int		ACT_DATA				= 1035;
 	public static final int		ACT_REQUEST_KEY_BLOCK	= 1036;
 	public static final int		ACT_REPLY_KEY_BLOCK		= 1037;
+	public static final int		ACT_REQUEST_QUERY_STORE	= 1038;
+	public static final int		ACT_REPLY_QUERY_STORE	= 1039;
 	
 	
 	private static boolean	registered				= false;
@@ -135,6 +138,10 @@ DHTUDPPacketHelper
 						{
 							return( new DHTUDPPacketRequestKeyBlock(network_handler,is, connection_id, transaction_id));
 						}
+						case ACT_REQUEST_QUERY_STORE:
+						{
+							return( new DHTUDPPacketRequestQueryStorage(network_handler,is, connection_id, transaction_id));
+						}
 						default:
 						{
 							throw( new IOException( "Unknown action type" ));
@@ -152,6 +159,7 @@ DHTUDPPacketHelper
 		request_decoders.put( new Integer( ACT_REQUEST_STATS ), request_decoder );		
 		request_decoders.put( new Integer( ACT_DATA ), request_decoder );
 		request_decoders.put( new Integer( ACT_REQUEST_KEY_BLOCK ), request_decoder );
+		request_decoders.put( new Integer( ACT_REQUEST_QUERY_STORE ), request_decoder );
 		
 		PRUDPPacketRequest.registerDecoders( request_decoders );	
 			
@@ -163,6 +171,7 @@ DHTUDPPacketHelper
 				public PRUDPPacketReply
 				decode(
 					PRUDPPacketHandler	handler,
+					InetSocketAddress	originator,
 					DataInputStream		is,
 					int					action,
 					int					transaction_id )
@@ -191,31 +200,35 @@ DHTUDPPacketHelper
 					
 						case ACT_REPLY_PING:
 						{
-							return( new DHTUDPPacketReplyPing(network_handler,is, transaction_id));
+							return( new DHTUDPPacketReplyPing(network_handler, originator, is, transaction_id));
 						}
 						case ACT_REPLY_STORE:
 						{
-							return( new DHTUDPPacketReplyStore(network_handler,is, transaction_id));
+							return( new DHTUDPPacketReplyStore(network_handler, originator, is, transaction_id));
 						}
 						case ACT_REPLY_FIND_NODE:
 						{
-							return( new DHTUDPPacketReplyFindNode(network_handler, is, transaction_id));
+							return( new DHTUDPPacketReplyFindNode(network_handler, originator, is, transaction_id));
 						}
 						case ACT_REPLY_FIND_VALUE:
 						{
-							return( new DHTUDPPacketReplyFindValue(network_handler, is, transaction_id));
+							return( new DHTUDPPacketReplyFindValue(network_handler, originator, is, transaction_id));
 						}
 						case ACT_REPLY_ERROR:
 						{
-							return( new DHTUDPPacketReplyError(network_handler, is, transaction_id));
+							return( new DHTUDPPacketReplyError(network_handler, originator, is, transaction_id));
 						}
 						case ACT_REPLY_STATS:
 						{
-							return( new DHTUDPPacketReplyStats( network_handler, is, transaction_id));
+							return( new DHTUDPPacketReplyStats( network_handler, originator, is, transaction_id));
 						}
 						case ACT_REPLY_KEY_BLOCK:
 						{
-							return( new DHTUDPPacketReplyKeyBlock( network_handler, is, transaction_id));
+							return( new DHTUDPPacketReplyKeyBlock( network_handler, originator, is, transaction_id));
+						}
+						case ACT_REPLY_QUERY_STORE:
+						{
+							return( new DHTUDPPacketReplyQueryStorage( network_handler, originator, is, transaction_id));
 						}
 						default:
 						{
@@ -234,6 +247,7 @@ DHTUDPPacketHelper
 		reply_decoders.put( new Integer( ACT_REPLY_ERROR ), reply_decoder );
 		reply_decoders.put( new Integer( ACT_REPLY_STATS ), reply_decoder );
 		reply_decoders.put( new Integer( ACT_REPLY_KEY_BLOCK ), reply_decoder );
+		reply_decoders.put( new Integer( ACT_REPLY_QUERY_STORE ), reply_decoder );
 		
 		PRUDPPacketReply.registerDecoders( reply_decoders );
 	}

@@ -57,6 +57,12 @@ DHTPluginValueImpl
 		return( value.getVersion());
 	}
 	
+	public boolean 
+	isLocal() 
+	{
+		return( value.isLocal());
+	}
+	
 	public int
 	getFlags()
 	{

@@ -71,6 +71,12 @@ DHTTransportLoopbackStatsImpl
 		return( 0 );
 	}
 	
+	public int 
+	getRouteablePercentage() 
+	{
+		return -1;
+	}
+	
 	public DHTTransportStats
 	snapshot()
 	{

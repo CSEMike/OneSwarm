@@ -26,6 +26,7 @@ public class
 DHTUDPPacketHandlerException
 	extends Exception
 {
+	
 	public
 	DHTUDPPacketHandlerException(
 		String		str )

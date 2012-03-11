@@ -31,6 +31,7 @@ public class
 DHTTransportException
 	extends Exception
 {
+	
 	public 
 	DHTTransportException(
 		String	str )

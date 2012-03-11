@@ -108,12 +108,14 @@ DHTImpl
 					
 					public byte[][]
 					diversify(
+						String				description,
 						DHTTransportContact	cause,
 						boolean				put_operation,
 						boolean				existing,
 						byte[]				key,
 						byte				type,
-						boolean				exhaustive )
+						boolean				exhaustive,
+						int					max_depth )
 					{
 						boolean	valid;
 						
@@ -132,11 +134,11 @@ DHTImpl
 							
 							if ( existing ){
 								
-								return( storage_adapter.getExistingDiversification( key, put_operation, exhaustive ));
+								return( storage_adapter.getExistingDiversification( key, put_operation, exhaustive, max_depth ));
 								
 							}else{
 								
-								return( storage_adapter.createNewDiversification( cause, key, put_operation, type, exhaustive ));
+								return( storage_adapter.createNewDiversification( description, cause, key, put_operation, type, exhaustive, max_depth ));
 							}
 						}else{
 							
@@ -209,7 +211,46 @@ DHTImpl
 		byte					flags,
 		DHTOperationListener	listener )
 	{
-		control.put( key, description, value, flags, listener );
+		control.put( key, description, value, flags, (byte)0, DHT.REP_FACT_DEFAULT, true, listener );
+	}
+	
+	public void
+	put(
+		byte[]					key,
+		String					description,
+		byte[]					value,
+		byte					flags,
+		boolean					high_priority,
+		DHTOperationListener	listener )
+	{
+		control.put( key, description, value, flags, (byte)0, DHT.REP_FACT_DEFAULT, high_priority, listener );
+	}
+	
+	public void
+	put(
+		byte[]					key,
+		String					description,
+		byte[]					value,
+		byte					flags,
+		byte					life_hours,
+		boolean					high_priority,
+		DHTOperationListener	listener )
+	{
+		control.put( key, description, value, flags, life_hours, DHT.REP_FACT_DEFAULT, high_priority, listener );
+	}
+	
+	public void
+	put(
+		byte[]					key,
+		String					description,
+		byte[]					value,
+		byte					flags,
+		byte					life_hours,
+		byte					replication_control,
+		boolean					high_priority,
+		DHTOperationListener	listener )
+	{
+		control.put( key, description, value, flags, life_hours, replication_control, high_priority, listener );
 	}
 	
 	public DHTTransportValue
@@ -240,6 +281,16 @@ DHTImpl
 		DHTOperationListener	listener )
 	{
 		return( control.remove( key, description, listener ));
+	}
+	
+	public byte[]
+	remove(
+		DHTTransportContact[]	contacts,
+		byte[]					key,
+		String					description,
+		DHTOperationListener	listener )
+	{
+		return( control.remove( contacts, key, description, listener ));
 	}
 	
 	public DHTTransport
@@ -340,8 +391,9 @@ DHTImpl
 	}
 	
 	public void
-	print()
+	print(
+		boolean	full )
 	{
-		control.print();
+		control.print( full );
 	}
 }

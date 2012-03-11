@@ -53,12 +53,18 @@ DHTControl
 	seed(
 		boolean		full_wait );
 		
+	public boolean
+	isSeeded();
+	
 	public void
 	put(
 		byte[]					key,
 		String					description,
 		byte[]					value,
 		byte					flags,
+		byte					life_hours,
+		byte					replication_control,
+		boolean					high_priority,
 		DHTOperationListener	listener );
 	
 	public boolean
@@ -82,6 +88,13 @@ DHTControl
 		
 	public byte[]
 	remove(
+		byte[]					key,
+		String					description,
+		DHTOperationListener	listener );
+	
+	public byte[]
+	remove(
+		DHTTransportContact[]	contacts,
 		byte[]					key,
 		String					description,
 		DHTOperationListener	listener );
@@ -116,14 +129,16 @@ DHTControl
 	
 		// support methods for DB
 	
-	public List
+	public List<DHTTransportContact>
 	getClosestKContactsList(
 		byte[]		id,
 		boolean		live_only );
 	
-	public List
-	sortContactsByDistance(
-		List		contacts );
+	public List<DHTTransportContact>
+	getClosestContactsList(
+		byte[]		id,
+		int			num_to_return,
+		boolean		live_only );
 	
 	public void
 	putEncodedKey(
@@ -135,16 +150,34 @@ DHTControl
 	
 	public void
 	putDirectEncodedKeys(
-		byte[][]				keys,
-		String					description,
-		DHTTransportValue[][]	value_sets,
-		List					contacts );
+		byte[][]					keys,
+		String						description,
+		DHTTransportValue[][]		value_sets,
+		List<DHTTransportContact>	contacts );
+	
+	public void
+	putDirectEncodedKeys(
+		byte[][]					keys,
+		String						description,
+		DHTTransportValue[][]		value_sets,
+		DHTTransportContact			contact,
+		DHTOperationListener		listener );
 	
 	public int
 	computeAndCompareDistances(
 		byte[]		n1,
 		byte[]		n2,
 		byte[]		pivot );
+	
+	public byte[]
+	computeDistance(
+		byte[]		n1,
+		byte[]		n2 );
+	
+	public int
+	compareDistances(
+		byte[]		n1,
+		byte[]		n2 );
 	
 	public boolean
 	verifyContact(
@@ -154,16 +187,30 @@ DHTControl
 	public boolean
 	lookup(
 		byte[]					id,
+		String					description,
 		long					timeout,
 		DHTOperationListener	listener );
 	
-	/**
-	 * Returns a list of DHTContact objects
-	 * @return
-	 */
+	public boolean
+	lookupEncoded(
+		byte[]					id,
+		String					description,
+		long					timeout,
+		boolean					high_priority,
+		DHTOperationListener	listener );
 	
-	public List
+	public byte[]
+	getObfuscatedKey(
+		byte[]		plain_key );
+	
+	
+	public List<DHTControlContact>
 	getContacts();
+	
+		// debug method only
+	
+	public void
+	pingAll();
 	
 	public void
 	addListener(
@@ -174,5 +221,6 @@ DHTControl
 		DHTControlListener	l );
 	
 	public void
-	print();
+	print(
+		boolean	full );
 }

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -33,7 +34,11 @@ import java.util.TreeSet;
 
 import org.gudy.azureus2.core3.util.AEMonitor;
 import org.gudy.azureus2.core3.util.Debug;
+import org.gudy.azureus2.core3.util.SimpleTimer;
 import org.gudy.azureus2.core3.util.SystemTime;
+import org.gudy.azureus2.core3.util.TimerEvent;
+import org.gudy.azureus2.core3.util.TimerEventPerformer;
+import org.gudy.azureus2.core3.util.TimerEventPeriodic;
 
 import com.aelitis.azureus.core.dht.DHTLogger;
 import com.aelitis.azureus.core.dht.impl.DHTLog;
@@ -44,6 +49,8 @@ import com.aelitis.azureus.core.dht.router.DHTRouterContactAttachment;
 import com.aelitis.azureus.core.dht.router.DHTRouterObserver;
 import com.aelitis.azureus.core.dht.router.DHTRouterStats;
 import com.aelitis.azureus.core.util.CopyOnWriteList;
+import com.aelitis.azureus.core.util.bloom.BloomFilter;
+import com.aelitis.azureus.core.util.bloom.BloomFilterFactory;
 
 /**
  * @author parg
@@ -88,6 +95,20 @@ DHTRouterImpl
 	
 	private final CopyOnWriteList	observers = new CopyOnWriteList();
 
+	private BloomFilter recent_contact_bloom = 
+		BloomFilterFactory.createRotating(
+			BloomFilterFactory.createAddOnly(10*1024),
+			2 );
+	
+	private TimerEventPeriodic	timer_event;
+	
+	private volatile int seed_in_ticks;
+	
+	private static final int	TICK_PERIOD 		= 10*1000;
+	private static final int	SEED_DELAY_PERIOD	= 60*1000;
+	private static final int	SEED_DELAY_TICKS	= SEED_DELAY_PERIOD/TICK_PERIOD;
+	
+	
 	public
 	DHTRouterImpl(
 		int										_K,
@@ -133,6 +154,29 @@ DHTRouterImpl
 		buckets.add( local_contact );
 		
 		root	= new DHTRouterNodeImpl( this, 0, true, buckets );
+		
+		timer_event = SimpleTimer.addPeriodicEvent(
+			"DHTRouter:pinger",
+			TICK_PERIOD,
+			new TimerEventPerformer()
+			{
+				public void 
+				perform(
+					TimerEvent event ) 
+				{
+					pingeroonies();
+					
+					if ( seed_in_ticks > 0 ){
+						
+						seed_in_ticks--;
+						
+						if ( seed_in_ticks == 0 ){
+							
+							seedSupport();
+						}
+					}
+				}
+			});
 	}
 	
 	protected void notifyAdded(DHTRouterContact contact) {
@@ -256,12 +300,19 @@ DHTRouterImpl
 		adapter	= _adapter;
 	}
 	
-	public DHTRouterContact
+	public void
 	contactKnown(
 		byte[]						node_id,
 		DHTRouterContactAttachment	attachment )
 	{
-		return( addContact( node_id, attachment, false ));
+		if ( recent_contact_bloom.contains( node_id )){
+
+			return;
+		}
+		
+		recent_contact_bloom.add( node_id );
+		
+		addContact( node_id, attachment, false );
 	}
 	
 	public DHTRouterContact
@@ -383,6 +434,14 @@ DHTRouterImpl
 		DHTRouterContactAttachment	attachment,
 		boolean						known_to_be_alive )
 	{		
+		if ( Arrays.equals( router_node_id, node_id )){
+			
+				// as we have reduced node id space the chance of us sharing a node id is higher. Easiest way to handle this is
+				// just to bail out here
+			
+			return( local_contact );
+		}
+		
 		DHTRouterNodeImpl	current_node = root;
 			
 		boolean	part_of_smallest_subtree	= false;
@@ -555,16 +614,17 @@ DHTRouterImpl
 	public List
 	findClosestContacts(
 		byte[]		node_id,
+		int			num_to_return,
 		boolean		live_only )
 	{
-			// find the K-ish closest nodes - consider all buckets, not just the closest
+			// find the num_to_return-ish closest nodes - consider all buckets, not just the closest
 
 		try{
 			this_mon.enter();
 		
 			List res = new ArrayList();
 				
-			findClosestContacts( node_id, 0, root, live_only, res );
+			findClosestContacts( node_id, num_to_return, 0, root, live_only, res );
 		
 			return( res );
 			
@@ -577,6 +637,7 @@ DHTRouterImpl
 	protected void
 	findClosestContacts(
 		byte[]					node_id,
+		int						num_to_return,
 		int						depth,
 		DHTRouterNodeImpl		current_node,
 		boolean					live_only,
@@ -619,11 +680,11 @@ DHTRouterImpl
 				worse_node = current_node.getLeft();
 			}
 	
-			findClosestContacts( node_id, depth+1, best_node, live_only, res  );
+			findClosestContacts( node_id, num_to_return, depth+1, best_node, live_only, res  );
 			
-			if ( res.size() < K ){
+			if ( res.size() < num_to_return ){
 				
-				findClosestContacts( node_id, depth+1, worse_node, live_only, res );
+				findClosestContacts( node_id, num_to_return, depth+1, worse_node, live_only, res );
 			}
 		}
 	}
@@ -858,6 +919,15 @@ DHTRouterImpl
 	public void
 	seed()
 	{
+			// defer this a while to see how much refreshing is done by the normal DHT traffic
+		
+		seed_in_ticks = SEED_DELAY_TICKS;
+	}
+	
+	protected void
+	seedSupport()
+	{
+			
 			// refresh all buckets apart from closest neighbour
 		
 		byte[]	path = new byte[router_node_id.length];
@@ -867,7 +937,7 @@ DHTRouterImpl
 		try{
 			this_mon.enter();
 			
-			refreshNodes( ids, root, path, true, 0 );
+			refreshNodes( ids, root, path, true, SEED_DELAY_PERIOD * 2 );
 			
 		}finally{
 			
@@ -1080,6 +1150,78 @@ DHTRouterImpl
 	}
 	
 	protected void
+	pingeroonies()
+	{
+		try{
+			this_mon.enter();
+		
+			DHTRouterNodeImpl	node = root;
+			
+			LinkedList	stack = new LinkedList();
+			
+			while( true ){
+				
+				List	buckets = node.getBuckets();
+				
+				if ( buckets == null ){
+					
+					if ( random.nextBoolean()){
+						
+						stack.add( node.getRight());
+
+						node = node.getLeft();						
+						
+					}else{
+						
+						stack.add( node.getLeft());
+
+						node = node.getRight();						
+					}
+				}else{
+					
+					int 					max_fails 			= 0;
+					DHTRouterContactImpl	max_fails_contact	= null;
+					
+					for (int i=0;i<buckets.size();i++){
+						
+						DHTRouterContactImpl	contact = (DHTRouterContactImpl)buckets.get(i);
+
+						if ( !contact.getPingOutstanding()){
+							
+							int	fails = contact.getFailCount();
+							
+							if ( fails > max_fails ){
+								
+								max_fails			= fails;
+								max_fails_contact	= contact;
+							}
+						}
+					}
+					
+					if ( max_fails_contact != null ){
+												
+						requestPing( max_fails_contact );
+						
+						return;
+					}
+					
+					if ( stack.size() == 0 ){
+						
+						break;
+					}
+					
+					node = (DHTRouterNodeImpl)stack.removeLast();
+				}
+			}
+		}finally{
+			
+			this_mon.exit();
+			
+			dispatchPings();
+		}
+	}
+	
+	protected void
 	requestNodeAdd(
 		DHTRouterContactImpl	contact )
 	{
@@ -1256,6 +1398,8 @@ DHTRouterImpl
 	public void
 	destroy()
 	{
+		timer_event.cancel();
+		
 		notifyDead();
 	}
 }

@@ -22,13 +22,12 @@
 
 package com.aelitis.azureus.core.dht.transport.udp.impl;
 
+import java.util.*;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import com.aelitis.azureus.core.dht.transport.DHTTransportException;
-import com.aelitis.azureus.core.dht.transport.DHTTransportValue;
-import com.aelitis.azureus.core.dht.transport.udp.DHTTransportUDP;
 import com.aelitis.azureus.core.dht.transport.udp.impl.packethandler.DHTUDPPacketNetworkHandler;
 
 
@@ -38,28 +37,28 @@ import com.aelitis.azureus.core.dht.transport.udp.impl.packethandler.DHTUDPPacke
  */
 
 public class 
-DHTUDPPacketRequestStore 
+DHTUDPPacketRequestQueryStorage 
 	extends DHTUDPPacketRequest
 {
-	public static final int	MAX_KEYS_PER_PACKET		= 255; // 1 byte DHTUDPPacket.PACKET_MAX_BYTES / 20;
-	public static final int	MAX_VALUES_PER_KEY		= 255; // 1 byte DHTUDPPacket.PACKET_MAX_BYTES / DHTUDPUtils.DHTTRANSPORTVALUE_SIZE_WITHOUT_VALUE;
+	protected static final int SPACE = 
+		DHTUDPPacketHelper.PACKET_MAX_BYTES - DHTUDPPacketRequest.DHT_HEADER_SIZE - 3;
 	
-	private int						random_id;
-	private byte[][]				keys;
-	private	DHTTransportValue[][]	value_sets;
+	private int						header_length;
+	private List<Object[]>			keys;
+	
 	
 	public
-	DHTUDPPacketRequestStore(
+	DHTUDPPacketRequestQueryStorage(
 		DHTTransportUDPImpl				_transport,
 		long							_connection_id,
 		DHTTransportUDPContactImpl		_local_contact,
 		DHTTransportUDPContactImpl		_remote_contact )
 	{
-		super( _transport, DHTUDPPacketHelper.ACT_REQUEST_STORE, _connection_id, _local_contact, _remote_contact );
+		super( _transport, DHTUDPPacketHelper.ACT_REQUEST_QUERY_STORE, _connection_id, _local_contact, _remote_contact );
 	}
 
 	protected
-	DHTUDPPacketRequestStore(
+	DHTUDPPacketRequestQueryStorage(
 		DHTUDPPacketNetworkHandler		network_handler,
 		DataInputStream					is,
 		long							con_id,
@@ -67,19 +66,40 @@ DHTUDPPacketRequestStore
 	
 		throws IOException
 	{
-		super( network_handler, is,  DHTUDPPacketHelper.ACT_REQUEST_STORE, con_id, trans_id );
+		super( network_handler, is,  DHTUDPPacketHelper.ACT_REQUEST_QUERY_STORE, con_id, trans_id );
 		
-		if ( getProtocolVersion() >= DHTTransportUDP.PROTOCOL_VERSION_ANTI_SPOOF ){
+		header_length = is.readByte()&0xff;
+		
+		int	num_keys = is.readShort();
+		
+		keys = new ArrayList<Object[]>( num_keys );
+		
+		for (int i=0;i<num_keys;i++){
 			
-			random_id	= is.readInt();
-		}
-
-		keys		= DHTUDPUtils.deserialiseByteArrayArray( is, MAX_KEYS_PER_PACKET );
-		
-			// times receieved are adjusted by + skew
+			int	prefix_length = is.readByte()&0xff;
+			
+			byte[]	prefix = new byte[prefix_length];
+			
+			is.read( prefix );
+			
+			short num_suffixes = is.readShort();
+			
+			List<byte[]> suffixes = new ArrayList<byte[]>( num_suffixes );
+			
+			keys.add( new Object[]{ prefix, suffixes });
+			
+			int	suffix_length = header_length - prefix_length;
+			
+			for (int j=0;j<num_suffixes;j++){
 				
-		value_sets 	= DHTUDPUtils.deserialiseTransportValuesArray( this, is, getClockSkew(), MAX_KEYS_PER_PACKET );
-		
+				byte[] suffix = new byte[ suffix_length ];
+				
+				is.read( suffix );
+				
+				suffixes.add( suffix );
+			}
+			
+		}
 		super.postDeserialise(is);
 	}
 	
@@ -91,58 +111,50 @@ DHTUDPPacketRequestStore
 	{
 		super.serialise(os);
 		
-		if ( getProtocolVersion() >= DHTTransportUDP.PROTOCOL_VERSION_ANTI_SPOOF ){
-			
-			os.writeInt( random_id );
-		}
+		os.writeByte( header_length&0xff );
 		
-		DHTUDPUtils.serialiseByteArrayArray( os, keys, MAX_KEYS_PER_PACKET );
+		os.writeShort( keys.size());
 		
-		try{
-			DHTUDPUtils.serialiseTransportValuesArray( this, os, value_sets, 0, MAX_KEYS_PER_PACKET );
+			// add anything here be sure to adjust the SPACE above
+		
+		for ( Object[] entry: keys ){
 			
-		}catch( DHTTransportException e ){
+			byte[] prefix = (byte[])entry[0];
 			
-			throw( new IOException( e.getMessage()));
+			os.writeByte( prefix.length );
+			
+			os.write( prefix );
+			
+			List<byte[]> suffixes = (List<byte[]>)entry[1];
+			
+			os.writeShort( suffixes.size());
+			
+			for ( byte[] suffix: suffixes ){
+				
+				os.write( suffix );
+			}
 		}
 		
 		super.postSerialise( os );
 	}
 
 	protected void
-	setRandomID(
-		int	_random_id )
+	setDetails(
+		int							_header_length,
+		List<Object[]>				_keys )
 	{
-		random_id	= _random_id;
+		header_length	= _header_length;
+		keys			= _keys;
 	}
 	
 	protected int
-	getRandomID()
+	getHeaderLength()
 	{
-		return( random_id );
+		return( header_length );
+		
 	}
 	
-	protected void
-	setValueSets(
-		DHTTransportValue[][]	_values )
-	{
-		value_sets	= _values;
-	}
-	
-	protected DHTTransportValue[][]
-	getValueSets()
-	{
-		return( value_sets );
-	}
-	
-	protected void
-	setKeys(
-		byte[][]		_key )
-	{
-		keys	= _key;
-	}
-	
-	protected byte[][]
+	protected List<Object[]>
 	getKeys()
 	{
 		return( keys );

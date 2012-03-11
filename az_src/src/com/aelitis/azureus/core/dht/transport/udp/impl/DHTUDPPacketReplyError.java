@@ -62,13 +62,14 @@ DHTUDPPacketReplyError
 	
 	protected
 	DHTUDPPacketReplyError(
-		DHTUDPPacketNetworkHandler		network_handler,		
+		DHTUDPPacketNetworkHandler		network_handler,
+		InetSocketAddress				originator,
 		DataInputStream					is,
 		int								trans_id )
 	
 		throws IOException
 	{
-		super( network_handler, is, DHTUDPPacketHelper.ACT_REPLY_ERROR, trans_id );
+		super( network_handler, originator, is, DHTUDPPacketHelper.ACT_REPLY_ERROR, trans_id );
 		
 		error_type = is.readInt();
 		

@@ -41,6 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.util.*;
 
 import com.aelitis.azureus.core.dht.DHT;
@@ -51,6 +52,7 @@ import com.aelitis.azureus.core.dht.DHTStorageKey;
 import com.aelitis.azureus.core.dht.DHTStorageKeyStats;
 import com.aelitis.azureus.core.dht.impl.DHTLog;
 import com.aelitis.azureus.core.dht.transport.DHTTransportContact;
+import com.aelitis.azureus.core.dht.transport.DHTTransportFullStats;
 import com.aelitis.azureus.core.dht.transport.DHTTransportValue;
 import com.aelitis.azureus.core.util.bloom.BloomFilter;
 import com.aelitis.azureus.core.util.bloom.BloomFilterFactory;
@@ -74,8 +76,8 @@ DHTPluginStorageManager
 	private static final long		DIV_EXPIRY_RAND			= 1*24*60*60*1000L;
 	private static final long		KEY_BLOCK_TIMEOUT_SECS	= 7*24*60*60;
 	
-	public static final int			LOCAL_DIVERSIFICATION_SIZE_LIMIT			= 4096;
-	public static final int			LOCAL_DIVERSIFICATION_ENTRIES_LIMIT			= 512;
+	public static final int			LOCAL_DIVERSIFICATION_SIZE_LIMIT			= 32*1024;
+	public static final int			LOCAL_DIVERSIFICATION_ENTRIES_LIMIT			= LOCAL_DIVERSIFICATION_SIZE_LIMIT/16;
 	public static final int			LOCAL_DIVERSIFICATION_READS_PER_MIN_SAMPLES	= 3;
 	public static final int			LOCAL_DIVERSIFICATION_READS_PER_MIN			= 30;
 	
@@ -96,11 +98,16 @@ DHTPluginStorageManager
 	
 	private Map					remote_diversifications	= new HashMap();
 	private Map					local_storage_keys		= new HashMap();
+	private int					remote_freq_div_count;
+	private int					remote_size_div_count;
+	
 	
 	private volatile ByteArrayHashMap	key_block_map_cow		= new ByteArrayHashMap();
 	private volatile DHTStorageBlock[]	key_blocks_direct_cow	= new DHTStorageBlock[0];
 	private BloomFilter					kb_verify_fail_bloom;
 	private long						kb_verify_fail_bloom_create_time;
+	
+	private long	suspend_divs_until;
 	
 	private static RSAPublicKey key_block_public_key;
 	
@@ -129,6 +136,53 @@ DHTPluginStorageManager
 		log			= _log;
 		data_dir	= _data_dir;
 		
+		if (  network == DHT.NW_CVS ){
+			
+				// work around issue whereby puts to the CVS dht went out of control and
+				// diversified everything
+			
+			String key_ver 	= "dht.plugin.sm.hack.kill.div.2.v";
+			String key 		= "dht.plugin.sm.hack.kill.div.2";
+			
+			final int 	HACK_VER 	= 6;
+			final long 	HACK_PERIOD = 3*24*60*60*1000L;
+			
+			long suspend_ver = COConfigurationManager.getLongParameter( key_ver, 0 );
+
+			long suspend_start;
+			
+			if ( suspend_ver < HACK_VER ){
+				
+				suspend_start = 0;
+				
+				COConfigurationManager.setParameter( key_ver, HACK_VER );
+				
+			}else{
+			
+				suspend_start = COConfigurationManager.getLongParameter( key, 0 );
+			}
+			
+			long now = SystemTime.getCurrentTime();
+			
+			if ( suspend_start == 0 ){
+				
+				suspend_start = now;
+				
+				COConfigurationManager.setParameter( key, suspend_start );
+			}
+			
+			suspend_divs_until = suspend_start + HACK_PERIOD;
+			
+			if ( suspendDivs()){
+				
+				writeMapToFile( new HashMap(), "diverse" );
+				
+			}else{
+				
+				suspend_divs_until = 0;
+			}
+		}
+		
 		FileUtil.mkdirs(data_dir);
 		
 		readRecentAddresses();
@@ -138,6 +192,12 @@ DHTPluginStorageManager
 		readVersionData();
 		
 		readKeyBlocks();
+	}
+	
+	public int 
+	getNetwork() 
+	{
+		return( network );
 	}
 	
 	protected void
@@ -543,6 +603,20 @@ DHTPluginStorageManager
 		}
 	}
 	
+	public int
+	getKeyCount()
+	{
+		try{
+			storage_mon.enter();
+		
+			return( local_storage_keys.size());
+			
+		}finally{
+			
+			storage_mon.exit();
+		}
+	}
+	
 	public void
 	keyRead(
 		DHTStorageKey			key,
@@ -614,6 +688,13 @@ DHTPluginStorageManager
 				getDiversification()
 				{
 					return( div );
+				}
+				
+				public String
+				getString()
+				{
+					return( "entries=" + getEntryCount() + ",size=" + getSize() + 
+								",rpm=" + getReadsPerMinute() + ",div=" + getDiversification());
 				}
 			});
 	}
@@ -697,8 +778,14 @@ DHTPluginStorageManager
 	getExistingDiversification(
 		byte[]			key,
 		boolean			put_operation,
-		boolean			exhaustive )
+		boolean			exhaustive,
+		int				max_depth )
 	{
+		if ( suspendDivs()){
+		
+			return( new byte[][]{ key });
+		}
+		
 		//System.out.println( "DHT get existing diversification: put = " + put_operation  );
 		
 		HashWrapper	wrapper = new HashWrapper( key );
@@ -708,9 +795,9 @@ DHTPluginStorageManager
 		try{
 			storage_mon.enter();
 		
-			byte[][]	res = followDivChain( wrapper, put_operation, exhaustive );
+			byte[][]	res = followDivChain( wrapper, put_operation, exhaustive, max_depth );
 			
-			if ( !Arrays.equals( res[0], key )){
+			if ( res.length > 0 && !Arrays.equals( res[0], key )){
 				
 				String	trace = "";
 				
@@ -731,13 +818,23 @@ DHTPluginStorageManager
 	
 	public byte[][]
 	createNewDiversification(
-		DHTTransportContact	cause,
-		byte[]				key,
+		final String				description,
+		final DHTTransportContact	cause,
+		byte[]						key,
 		boolean				put_operation,
 		byte				diversification_type,
-		boolean				exhaustive )
+		boolean				exhaustive,
+		int					max_depth )
 	{
-		//System.out.println( "DHT create new diversification: put = " + put_operation +", type = " + diversification_type );
+		if ( suspendDivs()){
+
+			if ( put_operation ){
+				
+				return( new byte[0][] );
+			}
+		}
+		
+		// System.out.println( "DHT create new diversification: desc=" + description + ", put=" + put_operation +", type=" + diversification_type );
 		
 		HashWrapper	wrapper = new HashWrapper( key );
 		
@@ -755,7 +852,7 @@ DHTPluginStorageManager
 				created	= true;			
 			}
 		
-			byte[][] res = followDivChain( wrapper, put_operation, exhaustive );
+			byte[][] res = followDivChain( wrapper, put_operation, exhaustive, max_depth );
 		
 			String	trace = "";
 			
@@ -765,12 +862,37 @@ DHTPluginStorageManager
 			}
 			
 			log.log( "SM: create div: " + DHTLog.getString2(key) + 
-						", new = " + created + ", put = " + put_operation + 
-						", exh = " + exhaustive + 
-						", type = " + DHT.DT_STRINGS[diversification_type] + " -> " + trace +
-						", cause = " + (cause==null?"<unknown>":cause.getString()));
+						", new=" + created + ", put = " + put_operation + 
+						", exh=" + exhaustive + 
+						", type=" + DHT.DT_STRINGS[diversification_type] + " -> " + trace +
+						", cause=" + (cause==null?"<unknown>":cause.getString()) +
+						", desc=" + description );
 			
-
+			/*
+			if ( cause == null ){
+				
+				Debug.out( description + ": DIV cause is null!" );
+				
+			}else{
+				
+				new AEThread2("")
+				{
+					public void
+					run()
+					{
+						DHTTransportFullStats stats = cause.getStats();
+						
+						if ( stats == null ){
+							
+							Debug.out( description + ": DIV stats is null!" );
+						}else{
+							Debug.out( description + ": DIV stats: " + stats.getString());
+						}
+					}
+				}.start();
+			}
+			*/
+			
 			return( res );
 			
 		}finally{
@@ -783,13 +905,14 @@ DHTPluginStorageManager
 	followDivChain(
 		HashWrapper	wrapper,
 		boolean		put_operation,
-		boolean		exhaustive )
+		boolean		exhaustive,
+		int			max_depth )
 	{
 		List	list = new ArrayList();
 		
 		list.add( wrapper );
 		
-		list	= followDivChain( list, put_operation, 0, exhaustive, new ArrayList());
+		list	= followDivChainSupport( list, put_operation, 0, exhaustive, new ArrayList(), max_depth );
 		
 		byte[][]	res = new byte[list.size()][];
 		
@@ -802,74 +925,84 @@ DHTPluginStorageManager
 	}
 	
 	protected List
-	followDivChain(
+	followDivChainSupport(
 		List		list_in,
 		boolean		put_operation,
 		int			depth,
 		boolean		exhaustive,
-		List		keys_done )
+		List		keys_done,
+		int			max_depth )
 	{
 		List	list_out = new ArrayList();
 	
-		/*
-		String	indent = "";
-		for(int i=0;i<depth;i++){
-			indent+= "  ";
-		}
-		System.out.println( indent + "->" );
-		*/
-		
-			// for each entry, if there are no diversifications then we just return the value
-			// for those with divs we replace their entry with the diversified set (which can
-			// include the entry itself under some circumstances )
-		
-		for (int i=0;i<list_in.size();i++){
+		if ( depth < max_depth ){
 			
-			HashWrapper	wrapper = (HashWrapper)list_in.get(i);
-		
-			diversification	div = lookupDiversification( wrapper );
-
-			if ( div == null ){
+			/*
+			String	indent = "";
+			for(int i=0;i<depth;i++){
+				indent+= "  ";
+			}
+			System.out.println( indent + "->" );
+			*/
+			
+				// for each entry, if there are no diversifications then we just return the value
+				// for those with divs we replace their entry with the diversified set (which can
+				// include the entry itself under some circumstances )
+			
+			for (int i=0;i<list_in.size();i++){
 				
-				if ( !list_out.contains( wrapper )){
-					
-					list_out.add(wrapper);
-				}
-				
-			}else{
-				
-				if ( keys_done.contains( wrapper )){
-					
-						// we've recursed on the key, this means that a prior diversification wanted
-						// the key included, so include it now
+				HashWrapper	wrapper = (HashWrapper)list_in.get(i);
+			
+				diversification	div = lookupDiversification( wrapper );
+	
+				if ( div == null ){
 					
 					if ( !list_out.contains( wrapper )){
 						
 						list_out.add(wrapper);
 					}
 					
-					continue;
-				}
-				
-				keys_done.add( wrapper );
-				
-					// replace this entry with the diversified keys 
-				
-				List	new_list = followDivChain( div.getKeys( put_operation, exhaustive ), put_operation, depth+1, exhaustive, keys_done );
-				
-				for (int j=0;j<new_list.size();j++){
+				}else{
 					
-					Object	entry =  new_list.get(j);
-					
-					if ( !list_out.contains( entry )){
+					if ( keys_done.contains( wrapper )){
 						
-						list_out.add(entry);
+							// we've recursed on the key, this means that a prior diversification wanted
+							// the key included, so include it now
+						
+						if ( !list_out.contains( wrapper )){
+							
+							list_out.add(wrapper);
+						}
+						
+						continue;
+					}
+					
+					keys_done.add( wrapper );
+					
+						// replace this entry with the diversified keys 
+					
+					List	new_list = followDivChainSupport( div.getKeys( put_operation, exhaustive ), put_operation, depth+1, exhaustive, keys_done, max_depth );
+					
+					for (int j=0;j<new_list.size();j++){
+						
+						Object	entry =  new_list.get(j);
+						
+						if ( !list_out.contains( entry )){
+							
+							list_out.add(entry);
+						}
 					}
 				}
 			}
+			// System.out.println( indent + "<-" );
+		}else{
+			
+			if ( Constants.isCVSVersion()){
+			
+				Debug.out( "Terminated div chain lookup (max depth=" + max_depth + ") - net=" + network );
+			}
 		}
-		// System.out.println( indent + "<-" );
-
+		
 		return( list_out );
 	}
 	
@@ -886,7 +1019,7 @@ DHTPluginStorageManager
 			
 			if ( local_storage_keys.size() >= MAX_STORAGE_KEYS ){
 				
-				res = new storageKey( this, DHT.DT_SIZE, key ); 
+				res = new storageKey( this, suspendDivs()?DHT.DT_NONE:DHT.DT_SIZE, key ); 
 
 				Debug.out( "DHTStorageManager: max key limit exceeded" );
 				
@@ -907,7 +1040,7 @@ DHTPluginStorageManager
 	deleteStorageKey(
 		storageKey		key )
 	{
-		if ( local_storage_keys.remove( key ) != null ){
+		if ( local_storage_keys.remove( key.getKey()) != null ){
 		
 			if ( key.getDiversificationType() != DHT.DT_NONE ){
 				
@@ -916,9 +1049,20 @@ DHTPluginStorageManager
 		}
 	}
 	
+	protected boolean
+	suspendDivs()
+	{
+		return( suspend_divs_until > 0 && suspend_divs_until > SystemTime.getCurrentTime());
+	}
+	
 	protected void
 	readDiversifications()
 	{
+		if ( suspendDivs()){
+			
+			return;
+		}
+		
 		try{
 			storage_mon.enter();
 			
@@ -946,6 +1090,7 @@ DHTPluginStorageManager
 					}
 				}
 			}
+			
 			List	divs = (List)map.get("remote");
 			
 			if ( divs != null ){
@@ -960,7 +1105,14 @@ DHTPluginStorageManager
 
 					if ( time_left > 0 ){
 					
-						remote_diversifications.put( d.getKey(), d );
+						diversification existing = (diversification)remote_diversifications.put( d.getKey(), d );
+						
+						if ( existing != null ){
+							
+							divRemoved( existing );
+						}
+						
+						divAdded( d );
 						
 					}else{
 						
@@ -978,6 +1130,11 @@ DHTPluginStorageManager
 	protected void
 	writeDiversifications()
 	{
+		if ( suspendDivs()){
+			
+			return;
+		}
+		
 		try{
 			storage_mon.enter();
 	
@@ -1036,6 +1193,8 @@ DHTPluginStorageManager
 
 				remote_diversifications.remove( wrapper );
 				
+				divRemoved( div );
+				
 				div = null;
 			}
 		}
@@ -1050,11 +1209,58 @@ DHTPluginStorageManager
 	{
 		diversification	div = new diversification( this, wrapper, type );
 			
-		remote_diversifications.put( wrapper, div );
+		diversification existing = (diversification)remote_diversifications.put( wrapper, div );
+		
+		if ( existing != null ){
+			
+			divRemoved( existing );
+		}
+	
+		divAdded( div );
 		
 		writeDiversifications();
 		
 		return( div );
+	}
+	
+	protected void
+	divAdded(
+		diversification	div )
+	{
+		if ( div.getType() == DHT.DT_FREQUENCY ){
+			
+			remote_freq_div_count++;
+			
+		}else{
+			
+			remote_size_div_count++;
+		}
+	}
+	
+	protected void
+	divRemoved(
+		diversification	div )
+	{
+		if ( div.getType() == DHT.DT_FREQUENCY ){
+			
+			remote_freq_div_count--;
+			
+		}else{
+			
+			remote_size_div_count--;
+		}
+	}
+	
+	public int
+	getRemoteFreqDivCount()
+	{
+		return( remote_freq_div_count );
+	}
+	
+	public int
+	getRemoteSizeDivCount()
+	{
+		return( remote_size_div_count );
 	}
 	
 	protected static String
@@ -1704,8 +1910,11 @@ DHTPluginStorageManager
 			
 			map.put( "fpo", offsets );
 			
-			manager.log.log( "SM: serialised div: " + DHTLog.getString2( key.getBytes()) + ", " + DHT.DT_STRINGS[type] + ", " + formatExpiry(expiry));
-
+			if ( Constants.isCVSVersion()){
+				
+				manager.log.log( "SM: serialised div: " + DHTLog.getString2( key.getBytes()) + ", " + DHT.DT_STRINGS[type] + ", " + formatExpiry(expiry));
+			}
+			
 			return( map );
 		}
 		
@@ -1742,6 +1951,12 @@ DHTPluginStorageManager
 		getExpiry()
 		{
 			return( expiry );
+		}
+		
+		protected byte
+		getType()
+		{
+			return( type );
 		}
 		
 		protected List
@@ -1838,23 +2053,37 @@ DHTPluginStorageManager
 			
 			return( keys );
 		}
-	
-		protected HashWrapper
-		diversifyKey(
-			HashWrapper		key_in,
-			int				offset )
-		{
-			byte[]	old_bytes	= key_in.getBytes();
-			
-			byte[]	bytes = new byte[old_bytes.length+1];
-			
-			System.arraycopy( old_bytes, 0, bytes, 0, old_bytes.length );
-			
-			bytes[old_bytes.length] = (byte)offset;
-			
-			return( new HashWrapper( new SHA1Simple().calculateHash( bytes )));
-		}
 	}
+	
+	public static HashWrapper
+	diversifyKey(
+		HashWrapper		key_in,
+		int				offset )
+	{	
+		return( new HashWrapper( diversifyKey( key_in.getBytes(), offset )));
+	}
+	
+	public static byte[]
+	diversifyKey(
+		byte[]			key_in,
+		int				offset )
+	{
+		return(new SHA1Simple().calculateHash( diversifyKeyLocal( key_in, offset )));
+	}
+	
+	public static byte[]
+   	diversifyKeyLocal(
+   		byte[]			key_in,
+   		int				offset )
+   	{
+   		byte[]	key_out = new byte[key_in.length+1];
+   		
+   		System.arraycopy( key_in, 0, key_out, 0, key_in.length );
+   		
+   		key_out[key_in.length] = (byte)offset;
+   		
+   		return( key_out );
+   	}
 	
 	protected static class
 	storageKey
@@ -2017,11 +2246,14 @@ DHTPluginStorageManager
 						
 						if ( ip_entries > LOCAL_DIVERSIFICATION_READS_PER_MIN * LOCAL_DIVERSIFICATION_READS_PER_MIN_SAMPLES ){
 						
-							type = DHT.DT_FREQUENCY;
-							
-							manager.log.log( "SM: sk freq created (" + ip_entries + "reads ) - " + DHTLog.getString2( key.getBytes()));
-							
-							manager.writeDiversifications();
+							if ( !manager.suspendDivs()){
+								
+								type = DHT.DT_FREQUENCY;
+								
+								manager.log.log( "SM: sk freq created (" + ip_entries + "reads ) - " + DHTLog.getString2( key.getBytes()));
+								
+								manager.writeDiversifications();
+							}
 						}
 					}
 										
@@ -2070,21 +2302,24 @@ DHTPluginStorageManager
 			
 			if ( type == DHT.DT_NONE ){
 				
-				if ( size > LOCAL_DIVERSIFICATION_SIZE_LIMIT ){
-				
-					type	= DHT.DT_SIZE;
+				if ( !manager.suspendDivs()){
 					
-					manager.log.log( "SM: sk size total created (size " + size + ") - " + DHTLog.getString2( key.getBytes()));
-
-					manager.writeDiversifications();
+					if ( size > LOCAL_DIVERSIFICATION_SIZE_LIMIT ){
 					
-				}else if ( entries > LOCAL_DIVERSIFICATION_ENTRIES_LIMIT ){
-					
-					type 	= DHT.DT_SIZE;
-					
-					manager.log.log( "SM: sk size entries created (" + entries + " entries) - " + DHTLog.getString2( key.getBytes()));
-
-					manager.writeDiversifications();
+						type	= DHT.DT_SIZE;
+						
+						manager.log.log( "SM: sk size total created (size " + size + ") - " + DHTLog.getString2( key.getBytes()));
+	
+						manager.writeDiversifications();
+						
+					}else if ( entries > LOCAL_DIVERSIFICATION_ENTRIES_LIMIT ){
+						
+						type 	= DHT.DT_SIZE;
+						
+						manager.log.log( "SM: sk size entries created (" + entries + " entries) - " + DHTLog.getString2( key.getBytes()));
+	
+						manager.writeDiversifications();
+					}
 				}
 			}
 			

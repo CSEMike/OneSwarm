@@ -36,7 +36,16 @@ DHTDBStats
 	getKeyCount();
 	
 	public int
+	getLocalKeyCount();
+	
+	public int
 	getKeyBlockCount();
+	
+	public int
+	getSize();
+	
+	public int
+	getValueCount();
 	
 		/**
 		 * returned values indexed by above VD_ constants for meaning

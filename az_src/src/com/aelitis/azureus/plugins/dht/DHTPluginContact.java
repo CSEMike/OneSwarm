@@ -25,6 +25,7 @@ package com.aelitis.azureus.plugins.dht;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
+
 /**
  * @author parg
  *
@@ -33,6 +34,9 @@ import java.util.Map;
 public interface 
 DHTPluginContact 
 {
+	public byte[]
+	getID();
+	
 	public String
 	getName();
 	
@@ -42,13 +46,28 @@ DHTPluginContact
 	public byte
 	getProtocolVersion();
 	
+	public int
+	getNetwork();
+	
 	public boolean
 	isAlive(
 		long		timeout );
+	
+	public void
+	isAlive(
+		long						timeout,
+		DHTPluginOperationListener	listener );
 	
 	public boolean
 	isOrHasBeenLocal();
 	
 	public Map
 	openTunnel();
+	
+	public byte[]
+	read(
+		final DHTPluginProgressListener	listener,
+		final byte[]					handler_key,
+		final byte[]					key,
+		final long						timeout );
 }

@@ -43,13 +43,15 @@ DHTOperationAdapter
 	}
 	
 	public void
-	diversified()
+	diversified(
+		String		desc )
 	{
 	}
-	
+		
 	public void
 	found(
-		DHTTransportContact	contact )
+		DHTTransportContact	contact,
+		boolean				is_closest )
 	{
 	}
 	

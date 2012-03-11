@@ -22,10 +22,17 @@
 
 package com.aelitis.azureus.core.dht.transport.util;
 
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+
+import org.gudy.azureus2.core3.util.SystemTime;
+
 import com.aelitis.azureus.core.dht.impl.DHTLog;
 import com.aelitis.azureus.core.dht.transport.DHTTransportStats;
 import com.aelitis.azureus.core.dht.transport.udp.impl.DHTUDPPacketHelper;
 import com.aelitis.azureus.core.dht.transport.udp.impl.DHTUDPPacketRequest;
+import com.aelitis.azureus.core.util.bloom.BloomFilter;
+import com.aelitis.azureus.core.util.bloom.BloomFilterFactory;
 
 /**
  * @author parg
@@ -38,15 +45,16 @@ DHTTransportStatsImpl
 {
 	private byte	protocol_version;
 	
-	private long[]	pings		= new long[4];
-	private long[]	find_nodes	= new long[4];
-	private long[]	find_values	= new long[4];
-	private long[]	stores		= new long[4];
-	private long[]	stats		= new long[4];
-	private long[]	data		= new long[4];
-	private long[]	key_blocks	= new long[4];
+	private long[]	pings			= new long[4];
+	private long[]	find_nodes		= new long[4];
+	private long[]	find_values		= new long[4];
+	private long[]	stores			= new long[4];
+	private long[]	stats			= new long[4];
+	private long[]	data			= new long[4];
+	private long[]	key_blocks		= new long[4];
+	private long[]	store_queries	= new long[4];
 	
-	private long[]	aliens		= new long[6];
+	private long[]	aliens		= new long[7];
 
 	private long	incoming_requests;
 	private long	outgoing_requests;
@@ -56,6 +64,16 @@ DHTTransportStatsImpl
 	private long	outgoing_version_requests;
 	private long[]	outgoing_request_versions;
 	
+	private static final int SKEW_VALUE_MAX	= 256;
+	private final int[]	skew_values = new int[SKEW_VALUE_MAX];
+	private int			skew_pos	= 0;
+	private long		last_skew_average;
+	private long		last_skew_average_time;
+	
+	private BloomFilter	skew_originator_bloom = 
+		BloomFilterFactory.createRotating(
+				BloomFilterFactory.createAddOnly( SKEW_VALUE_MAX*4 ),
+				2 );
 	protected
 	DHTTransportStatsImpl(
 		byte	_protocol_version )
@@ -64,6 +82,8 @@ DHTTransportStatsImpl
 		
 		incoming_request_versions = new long[protocol_version+1];
 		outgoing_request_versions = new long[protocol_version+1];
+		
+		Arrays.fill( skew_values, Integer.MAX_VALUE );
 	}
 	
 	protected byte
@@ -83,6 +103,7 @@ DHTTransportStatsImpl
 		add( stats, other.stats );
 		add( data, other.data );
 		add( key_blocks, other.key_blocks );
+		add( store_queries, other.store_queries );
 		add( aliens, other.aliens );
 		
 		incoming_requests += other.incoming_requests;
@@ -109,6 +130,7 @@ DHTTransportStatsImpl
 		clone.stores		= (long[])stores.clone();
 		clone.data			= (long[])data.clone();
 		clone.key_blocks	= (long[])key_blocks.clone();
+		clone.store_queries	= (long[])store_queries.clone();
 		clone.aliens		= (long[])aliens.clone();
 		
 		clone.incoming_requests	= incoming_requests;
@@ -177,6 +199,41 @@ DHTTransportStatsImpl
 	getKeyBlocks()
 	{
 		return( key_blocks );
+	}
+	
+		// store queries
+	
+	public void
+	queryStoreSent(
+		DHTUDPPacketRequest	request )
+	{
+		store_queries[STAT_SENT]++;
+					
+		outgoingRequestSent( request );
+	}
+	
+	public void
+	queryStoreOK()
+	{
+		store_queries[STAT_OK]++;
+	}
+	
+	public void
+	queryStoreFailed()
+	{
+		store_queries[STAT_FAILED]++;
+	}
+	
+	public void
+	queryStoreReceived()
+	{
+		store_queries[STAT_RECEIVED]++;
+	}
+	
+	public long[]
+	getQueryStores()
+	{
+		return( store_queries );
 	}
 	
 		// find node
@@ -315,9 +372,9 @@ DHTTransportStatsImpl
 	{
 		data[STAT_OK]++;
 	}
-	
-	public void
-	dayaFailed()
+
+    public void
+	dataFailed()
 	{
 		data[STAT_FAILED]++;
 	}
@@ -390,6 +447,8 @@ DHTTransportStatsImpl
 		
 		if ( alien ){
 			
+			// System.out.println( "Alien on net " + request.getNetwork() + " - sender=" + request.getAddress());
+			
 			int	type = request.getAction();
 			
 			if ( type == DHTUDPPacketHelper.ACT_REQUEST_FIND_NODE ){
@@ -415,6 +474,10 @@ DHTTransportStatsImpl
 			}else if ( type == DHTUDPPacketHelper.ACT_REQUEST_KEY_BLOCK ){
 				
 				aliens[AT_KEY_BLOCK]++;
+				
+			}else if ( type == DHTUDPPacketHelper.ACT_REQUEST_QUERY_STORE ){
+				
+				aliens[AT_QUERY_STORE]++;
 			}
 		}
 		
@@ -469,6 +532,93 @@ DHTTransportStatsImpl
 	getIncomingRequests()
 	{
 		return( incoming_requests );
+	}
+	
+	public void
+	recordSkew(
+		InetSocketAddress	originator_address,
+		long				skew )
+	{
+		byte[]	bytes = originator_address.getAddress().getAddress();
+		
+		if ( skew_originator_bloom.contains( bytes)){
+		
+			//System.out.println( "skipping skew: " + originator_address );
+			
+			return;
+		}
+		
+		skew_originator_bloom.add( bytes );
+		
+		//System.out.println( "adding skew: " + originator_address + "/" + skew );
+		
+		int	i_skew = skew<Integer.MAX_VALUE?(int)skew:(Integer.MAX_VALUE-1);
+		
+			// no sync here as not important so ensure things work ok
+		
+		int	pos = skew_pos;
+		
+		skew_values[ pos++ ] = i_skew;
+		
+		if ( pos == SKEW_VALUE_MAX ){
+			
+			pos	= 0;
+		}
+		
+		skew_pos = pos;
+	}
+	
+	public long
+	getSkewAverage()
+	{
+		long	now = SystemTime.getCurrentTime();
+		
+		if ( 	now < last_skew_average_time ||
+				now - last_skew_average_time > 30000 ){
+			
+			int[]	values = (int[])skew_values.clone();
+			
+			int		pos = skew_pos;
+			
+			int		num_values;
+			
+			if ( values[pos] == Integer.MAX_VALUE ){
+				
+				num_values = pos;
+			}else{
+				
+				num_values = SKEW_VALUE_MAX;
+			}
+			
+			Arrays.sort( values, 0, num_values );
+			
+				// remove outliers
+			
+			int	start 	= num_values/3;
+			int end		= 2*num_values/3;
+			
+			int	entries	= end - start;
+			
+			if ( entries < 5 ){
+				
+				last_skew_average = 0;
+				
+			}else{
+				
+				long	total = 0;
+				
+				for (int i=start;i<end;i++){
+					
+					total += (long)values[i];
+				}
+				
+				last_skew_average 		= total / entries;
+			}
+			
+			last_skew_average_time	= now;
+		}
+		
+		return( last_skew_average );
 	}
 	
 	public String

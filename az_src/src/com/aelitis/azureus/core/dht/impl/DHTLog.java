@@ -274,7 +274,7 @@ DHTLog
 				return( "<null>");
 			}
 			
-			return( getString(value.getValue()) + "<" + (value.isLocal()?"local":"remote" ) + ">" );
+			return( getString( value.getValue()) + " <" + (value.isLocal()?"loc":"rem" ) + ",flag=" + Integer.toHexString(value.getFlags()) + ",life=" + value.getLifeTimeHours() + ",rep=" + Integer.toHexString( value.getReplicationControl())+",orig=" + value.getOriginator().getExternalAddress() +">" );
 		}else{
 			return( "" );
 		}

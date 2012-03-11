@@ -62,6 +62,11 @@ public class VivaldiPositionImpl implements VivaldiPosition{
     return coordinates;
   }
   
+	public double[] getLocation() {
+		Coordinates coords = getCoordinates();
+		
+		return( coords.getCoordinates());
+	}
   public float getErrorEstimate() {
    return error;
   }

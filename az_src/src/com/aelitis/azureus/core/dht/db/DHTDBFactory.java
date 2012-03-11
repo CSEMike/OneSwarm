@@ -39,12 +39,14 @@ DHTDBFactory
 		DHTStorageAdapter	adapter,
 		int					original_republish_interval,
 		int					cache_republish_interval,
+		byte				protocol_version,
 		DHTLogger			logger )
 	{
 		return( new DHTDBImpl( 
 					adapter,
 					original_republish_interval, 
 					cache_republish_interval, 
+					protocol_version,
 					logger ));
 	}
 }

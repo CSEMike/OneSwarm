@@ -27,6 +27,8 @@ package com.aelitis.azureus.core.dht.transport;
  *
  */
 
+import java.util.*;
+
 public interface 
 DHTTransportReplyHandler 
 {
@@ -44,6 +46,11 @@ DHTTransportReplyHandler
 	storeReply(
 		DHTTransportContact contact,
 		byte[]				diversifications );
+	
+	public void
+	queryStoreReply(
+		DHTTransportContact contact,
+		List<byte[]>		response );
 	
 	public void
 	findNodeReply(

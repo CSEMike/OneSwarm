@@ -117,6 +117,12 @@ DHTRouterContactImpl
 		return( fail_count > 0 );
 	}
 	
+	protected int
+	getFailCount()
+	{
+		return( fail_count );
+	}
+	
 	public long
 	getTimeAlive()
 	{

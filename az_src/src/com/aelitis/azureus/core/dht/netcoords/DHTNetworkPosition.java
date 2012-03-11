@@ -62,6 +62,9 @@ DHTNetworkPosition
 	public boolean
 	isValid();
 	
+	public double[]
+	getLocation();
+	
 	public void
 	serialise(
 		DataOutputStream	os )

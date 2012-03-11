@@ -27,6 +27,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 import com.aelitis.azureus.core.dht.impl.DHTLog;
+import com.aelitis.azureus.core.dht.transport.udp.DHTTransportUDP;
 import com.aelitis.azureus.core.dht.transport.udp.impl.packethandler.DHTUDPPacketNetworkHandler;
 
 
@@ -80,7 +81,19 @@ DHTUDPPacketData
 		
 		packet_type		= is.readByte();
 		transfer_key	= DHTUDPUtils.deserialiseByteArray( is, 64 );
-		key				= DHTUDPUtils.deserialiseByteArray( is, 64 );
+
+		int	max_key_size;
+		
+		if ( getProtocolVersion() >= DHTTransportUDP.PROTOCOL_VERSION_REPLICATION_CONTROL ){
+
+			max_key_size = 255;
+			
+		}else{
+			
+			max_key_size = 64;
+		}
+		
+		key				= DHTUDPUtils.deserialiseByteArray( is, max_key_size );
 		start_position	= is.readInt();
 		length			= is.readInt();
 		total_length	= is.readInt();
@@ -99,7 +112,19 @@ DHTUDPPacketData
 		
 		os.writeByte( packet_type );
 		DHTUDPUtils.serialiseByteArray( os, transfer_key, 64 );
-		DHTUDPUtils.serialiseByteArray( os, key, 64 );
+		
+		int	max_key_size;
+		
+		if ( getProtocolVersion() >= DHTTransportUDP.PROTOCOL_VERSION_REPLICATION_CONTROL ){
+
+			max_key_size = 255;
+			
+		}else{
+			
+			max_key_size = 64;
+		}
+		
+		DHTUDPUtils.serialiseByteArray( os, key, max_key_size );
 		os.writeInt( start_position );
 		os.writeInt( length );
 		os.writeInt( total_length );

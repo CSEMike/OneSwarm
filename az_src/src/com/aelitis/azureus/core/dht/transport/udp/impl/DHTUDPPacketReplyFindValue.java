@@ -27,6 +27,7 @@ package com.aelitis.azureus.core.dht.transport.udp.impl;
  */
 
 import java.io.*;
+import java.net.InetSocketAddress;
 
 import com.aelitis.azureus.core.dht.DHT;
 import com.aelitis.azureus.core.dht.transport.DHTTransportContact;
@@ -63,13 +64,14 @@ DHTUDPPacketReplyFindValue
 	protected
 	DHTUDPPacketReplyFindValue(
 		DHTUDPPacketNetworkHandler		network_handler,
+		InetSocketAddress				originator,
 		DataInputStream					is,
 		int								trans_id )
 	
 		throws IOException
 	{
-		super( network_handler, is, DHTUDPPacketHelper.ACT_REPLY_FIND_VALUE, trans_id );
-		
+		super( network_handler, originator, is, DHTUDPPacketHelper.ACT_REPLY_FIND_VALUE, trans_id );
+				
 		if ( getProtocolVersion() >= DHTTransportUDP.PROTOCOL_VERSION_DIV_AND_CONT ){
 						
 			has_continuation	= is.readBoolean();

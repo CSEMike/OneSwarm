@@ -38,6 +38,9 @@ import com.aelitis.azureus.core.dht.transport.DHTTransportValue;
 public interface 
 DHTStorageAdapter 
 {
+	public int
+	getNetwork();
+	
 		// local value operations
 	
 		/**
@@ -91,15 +94,18 @@ DHTStorageAdapter
 	getExistingDiversification(
 		byte[]			key,
 		boolean			put_operation,
-		boolean			exhaustive_get );
+		boolean			exhaustive_get,
+		int				max_depth );
 	
 	public byte[][]
 	createNewDiversification(
+		String				description,
 		DHTTransportContact	cause,
 		byte[]				key,
 		boolean				put_operation,
 		byte				diversification_type,
-		boolean				exhaustive_get );
+		boolean				exhaustive_get,
+		int					max_depth );
 	
 	public int
 	getNextValueVersions(
@@ -130,4 +136,13 @@ DHTStorageAdapter
 	public byte[]
 	getStorageForKey(
 		String	key );
+	
+	public int
+	getRemoteFreqDivCount();
+	
+	public int
+	getRemoteSizeDivCount();
+	
+	public int
+	getKeyCount();
 }

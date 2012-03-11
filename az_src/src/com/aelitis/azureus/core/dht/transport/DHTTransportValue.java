@@ -48,6 +48,18 @@ DHTTransportValue
 	public int
 	getFlags();
 	
+	public int
+	getLifeTimeHours();
+	
+	public byte
+	getReplicationControl();
+	
+	public byte
+	getReplicationFactor();
+
+	public byte
+	getReplicationFrequencyHours();
+
 	public String
 	getString();
 }

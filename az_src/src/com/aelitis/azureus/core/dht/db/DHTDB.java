@@ -23,12 +23,14 @@
 package com.aelitis.azureus.core.dht.db;
 
 import java.util.Iterator;
+import java.util.List;
 
 import org.gudy.azureus2.core3.util.HashWrapper;
 
 import com.aelitis.azureus.core.dht.DHTStorageBlock;
 import com.aelitis.azureus.core.dht.control.DHTControl;
 import com.aelitis.azureus.core.dht.transport.DHTTransportContact;
+import com.aelitis.azureus.core.dht.transport.DHTTransportQueryStoreReply;
 import com.aelitis.azureus.core.dht.transport.DHTTransportValue;
 
 /**
@@ -55,7 +57,9 @@ DHTDB
 	store(
 		HashWrapper		key,
 		byte[]			value,
-		byte			flags );
+		byte			flags,
+		byte			life_hours,
+		byte			replication_control );
 	
 		/**
 		 * Remote store
@@ -72,6 +76,12 @@ DHTDB
 		HashWrapper				key,
 		DHTTransportValue[]		values );
 	
+	public DHTTransportQueryStoreReply
+	queryStore(
+		DHTTransportContact 		originating_contact, 
+		int							header_len,
+		List<Object[]>				keys );
+	
 		/**
 		 * Internal lookup for locally originated values
 		 * @param key
@@ -80,6 +90,20 @@ DHTDB
 	
 	public DHTDBValue
 	get(
+		HashWrapper		key );
+	
+		/**
+		 * Returns a value for the given key (local or remote) if found
+		 * @param key
+		 * @return
+		 */
+	
+	public DHTDBValue
+	getAnyValue(
+		HashWrapper		key );
+	
+	public boolean
+	hasKey(
 		HashWrapper		key );
 	
 	public DHTDBLookupResult
@@ -128,12 +152,13 @@ DHTDB
 		 * @return
 		 */
 	
-	public Iterator
+	public Iterator<HashWrapper>
 	getKeys();
 	
 	public DHTDBStats
 	getStats();
 	
 	public void
-	print();
+	print(
+		boolean		full );
 }

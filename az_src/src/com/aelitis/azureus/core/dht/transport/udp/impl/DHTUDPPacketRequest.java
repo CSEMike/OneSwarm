@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 
 import org.gudy.azureus2.core3.util.SystemTime;
 
+import com.aelitis.azureus.core.dht.DHT;
 import com.aelitis.azureus.core.dht.transport.DHTTransportException;
 import com.aelitis.azureus.core.dht.transport.udp.DHTTransportUDP;
 import com.aelitis.azureus.core.dht.transport.udp.impl.packethandler.DHTUDPPacketNetworkHandler;
@@ -111,11 +112,6 @@ DHTUDPPacketRequest
 		
 		protocol_version	= is.readByte();
 		
-		if ( protocol_version < DHTTransportUDP.PROTOCOL_VERSION_MIN ){
-			
-			throw( new IOException( "Invalid DHT protocol version, please update Azureus" ));
-		}
-		
 		if ( protocol_version >= DHTTransportUDP.PROTOCOL_VERSION_VENDOR_ID ){
 			
 			vendor_id	= is.readByte();			
@@ -126,6 +122,11 @@ DHTUDPPacketRequest
 			network	= is.readInt();
 		}
 
+		if ( protocol_version < ( network == DHT.NW_CVS?DHTTransportUDP.PROTOCOL_VERSION_MIN_CVS:DHTTransportUDP.PROTOCOL_VERSION_MIN )){
+			
+			throw( new IOException( "Invalid DHT protocol version, please update Azureus" ));
+		}
+		
 			// we can only get the correct transport after decoding the network...
 	
 		transport = network_handler.getTransport( this );
@@ -162,6 +163,8 @@ DHTUDPPacketRequest
 			// put the time into their frame of reference.
 		
 		skew = SystemTime.getCurrentTime() - originator_time;
+		
+		transport.recordSkew( originator_address, skew );
 	}
 	
 	protected void

@@ -93,6 +93,10 @@ public class HeightCoordinatesImpl implements Coordinates {
     return this.scale(1/measure);
   }
   
+  public double[] getCoordinates() {
+	  return( new double[]{ x, y } );
+  }
+  
   public String toString() {
     return (int)x + "," + (int)y + "," + (int)h;
   }
