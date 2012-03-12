@@ -41,6 +41,8 @@ import org.gudy.azureus2.pluginsimpl.local.PluginInitializer;
 
 import com.aelitis.azureus.plugins.dht.DHTPluginProgressListener;
 
+import edu.washington.cs.oneswarm.f2f.permissions.PermissionsDAO;
+
 /**
  * @author parg
  *
@@ -246,6 +248,19 @@ DDBaseTTTorrent
 					// download
 				
 				return( null );
+			}
+			
+			if(!PermissionsDAO.get().hasPublicPermission(torrent.getHash())){
+
+			    Debug.out( "Attempt to download f2f torrent" );
+                
+                ddb.log( "TorrentDownload: request from " + originator + "  for '" + download.getName() + "' denied as it is f2f only" );
+                
+                    // should never happen as f2f torrents are not tracked so they can't be found for
+                    // download
+                
+                return( null );
+			    
 			}
 			
 			String	msg = "TorrentDownload: request from " + originator + "  for '" + download.getName() + "' OK";		
