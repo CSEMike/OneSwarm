@@ -207,7 +207,7 @@ public class TestUtils {
             latch.countDown();
         }
         try {
-            if (!latch.await(60, TimeUnit.SECONDS)) {
+            if (!latch.await(120, TimeUnit.SECONDS)) {
                 Assert.fail();
             }
         } catch (InterruptedException e) {
