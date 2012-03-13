@@ -70,14 +70,20 @@ public class TwoProcessTestBase extends LocalProcessesTestBase {
             UIFunctionsManager.getUIFunctions().requestShutdown();
         }
         logger.info("Sending shutdown to oop instance");
-        localOneSwarm.getCoordinator().addCommand("shutdown");
-        new ConditionWaiter(new ConditionWaiter.Predicate() {
-            @Override
-            public boolean satisfied() {
-                return localOneSwarm.getCoordinator().getPendingCommands().size() == 0;
-            }
-        }, 10000).awaitFail();
-        localOneSwarm.stop();
+        if (localOneSwarm != null && localOneSwarm.getCoordinator() != null) {
+            localOneSwarm.getCoordinator().addCommand("shutdown");
+
+            new ConditionWaiter(new ConditionWaiter.Predicate() {
+                @Override
+                public boolean satisfied() {
+                    return localOneSwarm.getCoordinator().getPendingCommands().size() == 0;
+                }
+            }, 10000).awaitFail();
+        }
+        if (localOneSwarm != null) {
+            localOneSwarm.stop();
+        }
+
         logger.info("selenium.stop()");
         // Quit browser
         if (selenium != null) {
