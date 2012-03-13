@@ -21,6 +21,14 @@ public class DatagramRateLimiter {
         }
     };
 
+    /**
+     * Add tokens to this bucket.
+     * 
+     * @param tokens
+     *            The maximum number of tokens to add.
+     * 
+     * @return The number of tokens actually added.
+     */
     public int refillBucket(int tokens) {
         int toRefill = Math.min(tokens, maxAvailableTokens - availableTokens);
         availableTokens += toRefill;
