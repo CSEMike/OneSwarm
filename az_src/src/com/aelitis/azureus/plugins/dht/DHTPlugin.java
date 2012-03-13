@@ -815,7 +815,7 @@ DHTPlugin
 						
 						enabled = VersionCheckClient.getSingleton().DHTEnableAllowed();
 						
-						if ( enabled ){
+						if ( enabled && COConfigurationManager.getBooleanParameter( "dht.enabled" )) {
 							
 							status_area.setText( "Initialising" );
 							

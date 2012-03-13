@@ -665,7 +665,7 @@ public class ConfigurationDefaults {
         def.put("dht.enabled", TRUE);
 
         // fwd prob
-        def.put("f2f_forward_search_probability", new Float(0.95));
+        def.put("f2f_forward_search_probability", new Float(0.50));
 
         // search forward delay
         def.put("f2f_search_forward_delay", new Long(150));
