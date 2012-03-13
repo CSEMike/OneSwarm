@@ -51,14 +51,12 @@ public class DatagramRateLimiter {
         logger.finest(toString() + ": fair share: " + fairShare);
         for (int i = 0; i < queueNum; i++) {
             DatagramRateLimiter queue = queues.get(i);
-            availableTokens -= fairShare;
-            int leftOvers = fairShare - queue.refillBucket(fairShare);
+            int tokensUsed = queue.refillBucket(fairShare);
+            availableTokens -= tokensUsed;
             queue.allocateTokens();
             int queuesLeft = queueNum - (i + 1);
-            if (leftOvers > 0 && queuesLeft > 0) {
-                availableTokens += leftOvers;
-                int queuesRemaining = queuesLeft;
-                fairShare = availableTokens / queuesRemaining;
+            if (tokensUsed < fairShare && queuesLeft > 0) {
+                fairShare = availableTokens / queuesLeft;
                 logger.finest(toString() + ": fair share updated: " + fairShare + " available="
                         + availableTokens + " queues_left=" + queuesLeft);
             }

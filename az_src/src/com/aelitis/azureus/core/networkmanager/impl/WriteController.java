@@ -220,8 +220,10 @@ public void
   private void writeProcessorLoop() {
     boolean check_high_first = true;
     
+    long last_event_progress = 0;
     while( true ) {
-            if (writeEventListener != null) {
+            if (writeEventListener != null && progress_count > last_event_progress) {
+                last_event_progress = progress_count;
                 writeEventListener.writeEvent();
             }
       try {

@@ -151,7 +151,7 @@ public class DatagramConnectionManagerImpl extends CoreWaiter implements Datagra
             return;
         }
         int available = handler.getCurrentNumBytesAllowed();
-        int added = datagramRateLimiter.refillBucket((int) Math.round(available * trafficShare));
+        int added = datagramRateLimiter.refillBucket((int) (available * trafficShare));
         handler.bytesProcessed(added);
     }
 

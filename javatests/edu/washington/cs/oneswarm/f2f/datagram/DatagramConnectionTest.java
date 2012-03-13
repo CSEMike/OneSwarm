@@ -2,6 +2,7 @@ package edu.washington.cs.oneswarm.f2f.datagram;
 
 import static edu.washington.cs.oneswarm.f2f.datagram.DatagramConnection.MAX_DATAGRAM_PAYLOAD_SIZE;
 import static edu.washington.cs.oneswarm.f2f.datagram.DatagramConnection.MAX_DATAGRAM_SIZE;
+import static org.testng.Assert.assertEquals;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -474,6 +475,16 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
         checkPacket(testData2);
         manager2.receive();
         checkPacket(testData1);
+
+        // Check that it won't eat tokens if full.
+        conn1.setTokenBucketSize(MAX_DATAGRAM_SIZE);
+        conn1.refillBucket(MAX_DATAGRAM_SIZE);
+
+        // No more tokens should be added.
+        assertEquals(conn1.refillBucket(1), 0);
+        conn1.allocateTokens();
+        conn1.refillBucket(MAX_DATAGRAM_SIZE);
+        assertEquals(conn1.refillBucket(1), 0);
     }
 
     @Test
