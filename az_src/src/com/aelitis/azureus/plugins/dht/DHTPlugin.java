@@ -813,9 +813,9 @@ DHTPlugin
 					
 					try{							
 						
-						enabled = VersionCheckClient.getSingleton().DHTEnableAllowed();
+						enabled = VersionCheckClient.getSingleton().DHTEnableAllowed() && COConfigurationManager.getBooleanParameter( "dht.enabled" );
 						
-						if ( enabled && COConfigurationManager.getBooleanParameter( "dht.enabled" )) {
+						if ( enabled ) {
 							
 							status_area.setText( "Initialising" );
 							
