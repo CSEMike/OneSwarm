@@ -14,6 +14,7 @@ public class LocalProcessesTestBase extends OneSwarmTestBase {
         // preConnectCommands.add("booleanSetting OSF2F.Use@DHT@Proxy false");
         // preConnectCommands.add("booleanSetting OSF2F.LanFriendFinder false");
         // preConnectCommands.add("booleanSetting dht.enabled false");
+        preConnectCommands.add("floatSetting f2f_forward_search_probability 1.0");
     }
 
     protected static void startLocalInstance() {
@@ -38,6 +39,9 @@ public class LocalProcessesTestBase extends OneSwarmTestBase {
         ConfigurationManager.getInstance().setParameter("OSF2F.Use DHT Proxy", false);
         ConfigurationManager.getInstance().setParameter("OSF2F.LanFriendFinder", false);
         ConfigurationManager.getInstance().setParameter("dht.enabled", false);
+        ConfigurationManager.getInstance().setParameter("f2f_forward_search_probability",
+                new Float(1.0));
+
         ConfigurationManager.getInstance().setDirty();
     }
 
