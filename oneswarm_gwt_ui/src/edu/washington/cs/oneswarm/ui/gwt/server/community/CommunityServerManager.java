@@ -138,7 +138,8 @@ public final class CommunityServerManager extends Thread {
                             long nextRun = System.currentTimeMillis()
                                     + RefreshCommunityServerTask.DEFAULT_DELAY_MS;
                             if (firstRun) {
-                                nextRun = 0;
+                                // Run in 10 seconds.
+                                nextRun = System.currentTimeMillis() + 10 * 1000;
                             }
 
                             if (oldServers.containsKey(server.getUrl()) == false) {
