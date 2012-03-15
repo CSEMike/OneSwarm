@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -57,6 +58,8 @@ public final class CommunityServerManager extends Thread {
     Set<FriendInfoLite> unmunched = new HashSet<FriendInfoLite>();
     ConcurrentMap<String, CommunityRecord> activeServers = new ConcurrentHashMap<String, CommunityRecord>();
     ConcurrentMap<CommunityRecord, CHTClientHTTP> addressResolvers = new ConcurrentHashMap<CommunityRecord, CHTClientHTTP>();
+
+    LinkedList<CommunityServerBlocker> blockers = new LinkedList<CommunityServerManager.CommunityServerBlocker>();
 
     F2FInterface f2f = null;
     int filteredSize = 0;
@@ -262,6 +265,13 @@ public final class CommunityServerManager extends Thread {
             if (activeServers.containsKey(server.getUrl()) == false) {
                 logger.fine("Skipping check of removed community server: " + server.getUrl());
                 return;
+            }
+
+            for (CommunityServerBlocker blocker : blockers) {
+                if (blocker.cancelRun()) {
+                    logger.info("Community server publish blocked");
+                    return;
+                }
             }
 
             logger.info("Refreshing community server: " + server.getUrl());
@@ -676,5 +686,13 @@ public final class CommunityServerManager extends Thread {
             return addressResolvers.get(server);
         }
         return null;
+    }
+
+    public void addCommunityServerBlocker(CommunityServerBlocker blocker) {
+        blockers.add(blocker);
+    }
+
+    public interface CommunityServerBlocker {
+        public boolean cancelRun();
     }
 }
