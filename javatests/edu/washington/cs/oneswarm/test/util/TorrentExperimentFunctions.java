@@ -256,13 +256,30 @@ public class TorrentExperimentFunctions {
     public void downloadAndStart(final String base64hash, final long delay) throws IOException,
             TOTorrentException {
         if (delay > 0) {
-            try {
-                Thread.sleep(delay);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+            Thread t = new Thread(new Runnable() {                
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(delay);
+                        _downloadAndStart(base64hash);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    } catch (TOTorrentException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+            });
+            t.setDaemon(true);
+            t.setName("delayed download");
+            t.start();
+        } else {
+            _downloadAndStart(base64hash);            
         }
+    }
+
+    private void _downloadAndStart(final String base64hash) throws TOTorrentException {
         int searchID = coreInterface.getF2FInterface().sendSearch("id:" + base64hash);
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         boolean requested = false;
