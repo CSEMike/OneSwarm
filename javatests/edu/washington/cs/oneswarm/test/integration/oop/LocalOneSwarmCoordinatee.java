@@ -51,6 +51,16 @@ public class LocalOneSwarmCoordinatee extends Thread {
                 }
 
                 Map<String, String> formParams = new HashMap<String, String>();
+
+                // Add pending commands first (so they don't override the global
+                // commands added below)
+                synchronized (this.pending) {
+                    for (Entry<String, String> entry : this.pending) {
+                        formParams.put(entry.getKey(), entry.getValue());
+                    }
+                    this.pending.clear();
+                }
+
                 formParams.put("started", started + "");
                 formParams.put("clock", System.currentTimeMillis() + "");
                 CoreInterface ci = ExperimentalHarnessManager.get().getCoreInterface();
@@ -61,12 +71,6 @@ public class LocalOneSwarmCoordinatee extends Thread {
                             ci.getF2FInterface().getFriends(false, false).length + "");
                 }
                 formParams.put("friendConnectorAvailable", connectorAvailable + "");
-                synchronized (this.pending) {
-                    for (Entry<String, String> entry : this.pending) {
-                        formParams.put(entry.getKey(), entry.getValue());
-                    }
-                    this.pending.clear();
-                }
 
                 logger.fine("Registering with: " + url);
                 HttpURLConnection conn = (HttpURLConnection) (new URL(url)).openConnection();
