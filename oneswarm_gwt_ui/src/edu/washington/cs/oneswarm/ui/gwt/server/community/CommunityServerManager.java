@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -57,6 +58,8 @@ public final class CommunityServerManager extends Thread {
     Set<FriendInfoLite> unmunched = new HashSet<FriendInfoLite>();
     ConcurrentMap<String, CommunityRecord> activeServers = new ConcurrentHashMap<String, CommunityRecord>();
     ConcurrentMap<CommunityRecord, CHTClientHTTP> addressResolvers = new ConcurrentHashMap<CommunityRecord, CHTClientHTTP>();
+
+    LinkedList<CommunityServerBlocker> blockers = new LinkedList<CommunityServerManager.CommunityServerBlocker>();
 
     F2FInterface f2f = null;
     int filteredSize = 0;
@@ -135,7 +138,8 @@ public final class CommunityServerManager extends Thread {
                             long nextRun = System.currentTimeMillis()
                                     + RefreshCommunityServerTask.DEFAULT_DELAY_MS;
                             if (firstRun) {
-                                nextRun = 0;
+                                // Run in 10 seconds.
+                                nextRun = System.currentTimeMillis() + 10 * 1000;
                             }
 
                             if (oldServers.containsKey(server.getUrl()) == false) {
@@ -263,37 +267,47 @@ public final class CommunityServerManager extends Thread {
                 logger.fine("Skipping check of removed community server: " + server.getUrl());
                 return;
             }
-
-            logger.info("Refreshing community server: " + server.getUrl());
-            /**
-             * don't actually run this as a thread when in timertask
-             */
-            KeyPublishOp req = null;
-            req = new KeyPublishOp(server, false);
-            int tid = BackendTaskManager.get().createTask("Refreshing community server",
-                    new CancellationListener() {
-                        @Override
-                        public void cancelled(int inID) {
-                        }
-                    });
-            BackendTaskManager.get().getTask(tid).setSummary(server.getUrl());
-            req.setTaskID(tid);
-            req.run();
-
             long delay = DEFAULT_DELAY_MS;
-            if (req.getRefreshInterval() != null) {
-                try {
-                    delay = Long.parseLong(req.getRefreshInterval()) * 1000;
-                    if (delay <= 0) {
-                        logger.warning("Non-positive delay! " + delay + " from " + server.getUrl());
-                        delay = DEFAULT_DELAY_MS;
-                    }
-                } catch (Exception e) {
+
+            boolean blocked = false;
+            for (CommunityServerBlocker blocker : blockers) {
+                if (blocker.cancelRun()) {
+                    logger.info("Community server publish blocked: " + server.getUrl());
+                    blocked = true;
                 }
-                ;
             }
 
-            delay = Math.max(delay, server.getMinimum_refresh_interval() * 60 * 1000);
+            if (!blocked) {
+                logger.info("Refreshing community server: " + server.getUrl());
+                /**
+                 * don't actually run this as a thread when in timertask
+                 */
+                KeyPublishOp req = null;
+                req = new KeyPublishOp(server, false);
+                int tid = BackendTaskManager.get().createTask("Refreshing community server",
+                        new CancellationListener() {
+                            @Override
+                            public void cancelled(int inID) {
+                            }
+                        });
+                BackendTaskManager.get().getTask(tid).setSummary(server.getUrl());
+                req.setTaskID(tid);
+                req.run();
+
+                if (req.getRefreshInterval() != null) {
+                    try {
+                        delay = Long.parseLong(req.getRefreshInterval()) * 1000;
+                        if (delay <= 0) {
+                            logger.warning("Non-positive delay! " + delay + " from "
+                                    + server.getUrl());
+                            delay = DEFAULT_DELAY_MS;
+                        }
+                    } catch (Exception e) {
+                    }
+                }
+
+                delay = Math.max(delay, server.getMinimum_refresh_interval() * 60 * 1000);
+            }
 
             logger.fine("Next refresh " + server.getUrl() + " in " + delay + " ("
                     + (new java.util.Date(System.currentTimeMillis() + delay)).toString() + ")");
@@ -320,7 +334,7 @@ public final class CommunityServerManager extends Thread {
                     }
                 }
 
-                Thread.sleep(1000);
+                Thread.sleep(5000);
             } catch (Exception e) {
                 e.printStackTrace();
                 logger.warning("*** Unhandled community server manager thread error: "
@@ -676,5 +690,13 @@ public final class CommunityServerManager extends Thread {
             return addressResolvers.get(server);
         }
         return null;
+    }
+
+    public void addCommunityServerBlocker(CommunityServerBlocker blocker) {
+        blockers.add(blocker);
+    }
+
+    public interface CommunityServerBlocker {
+        public boolean cancelRun();
     }
 }

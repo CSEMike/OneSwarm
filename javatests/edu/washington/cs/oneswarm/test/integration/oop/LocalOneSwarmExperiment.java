@@ -42,6 +42,7 @@ public class LocalOneSwarmExperiment implements ExperimentInterface {
     @SuppressWarnings("unchecked")
     @Override
     public void execute(String command) {
+        logger.info("parsing command: '" + command + "'");
         String[] toks = command.split("\\s+");
         toks[0] = toks[0].toLowerCase();
         if (toks[0].equals("port")) {

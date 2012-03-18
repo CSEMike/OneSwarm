@@ -240,7 +240,6 @@ public class OsgwtuiMain implements Plugin {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        CommunityServerManager.get();
 
         // Maybe initialize Experimental code for tests.
         ExperimentalHarnessManager ehm = ExperimentalHarnessManager.get();

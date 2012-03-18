@@ -117,7 +117,7 @@ public class ExperimentalHarnessManager {
                 ExperimentInterface experiment = (ExperimentInterface) Thread.currentThread()
                         .getContextClassLoader().loadClass(toks[1].trim()).getConstructor()
                         .newInstance();
-                logger.fine("Added experiments in " + toks[1]);
+                logger.info("Added experiments in " + toks[1]);
                 experiment.load();
                 experiments.add(experiment);
             } catch (Exception e) {
@@ -131,7 +131,7 @@ public class ExperimentalHarnessManager {
         for (ExperimentInterface ei : experiments) {
             for (String offer : ei.getKeys()) {
                 if (offer.equals(key)) {
-                    logger.finest(key + " was executed by " + ei.getClass().getName());
+                    logger.info(key + " is executed by " + ei.getClass().getName());
                     ei.execute(command);
                     return;
                 }
