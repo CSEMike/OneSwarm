@@ -1,13 +1,21 @@
 package net.sourceforge.jsocks.socks;
 
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.io.OutputStream;
+import java.io.PushbackInputStream;
+import java.net.ConnectException;
+import java.net.InetAddress;
+import java.net.NoRouteToHostException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.logging.Logger;
+
 import net.sourceforge.jsocks.socks.server.ServerAuthenticator;
 
 import org.apache.commons.lang.RandomStringUtils;
-import org.apache.log4j.Logger;
-
-import java.net.*;
-import java.util.Random;
-import java.io.*;
 
 /**
     SOCKS4 and SOCKS5 proxy, handles both protocols simultaniously.
@@ -47,11 +55,11 @@ public class ProxyServer implements Runnable{
    static int iddleTimeout	= 180000; //3 minutes
    static int acceptTimeout	= 180000; //3 minutes
 
-   private static final Logger LOG = Logger.getLogger(ProxyServer.class);
+    private static final Logger LOG = Logger.getLogger(ProxyServer.class.getName());
 
    static Proxy proxy;
    
-   private String connectionId;
+   private final String connectionId;
    
 
 //Public Constructors
@@ -197,7 +205,8 @@ public class ProxyServer implements Runnable{
 
 //Runnable interface
 ////////////////////
-   public void run(){
+   @Override
+public void run(){
       switch(mode){
         case START_MODE:
          try{
@@ -208,7 +217,7 @@ public class ProxyServer implements Runnable{
          }finally{
            abort();
            if(auth!=null) auth.endSession();
-           LOG.debug(connectionId + " Main thread(client->remote)stopped.");
+                LOG.fine(connectionId + " Main thread(client->remote)stopped.");
          }
         break;
         case ACCEPT_MODE:
@@ -223,7 +232,7 @@ public class ProxyServer implements Runnable{
             handleException(ioe);
           }finally{
             abort();
-            LOG.debug(connectionId + " Accept thread(remote->client) stopped");
+                LOG.fine(connectionId + " Accept thread(remote->client) stopped");
           }
         break;
         case PIPE_MODE:
@@ -232,7 +241,7 @@ public class ProxyServer implements Runnable{
          }catch(IOException ioe){
          }finally{
             abort();
-            LOG.debug(connectionId + " Support thread(remote->client) stopped");
+                LOG.fine(connectionId + " Support thread(remote->client) stopped");
          }
         break;
         case ABORT_MODE:
@@ -250,13 +259,13 @@ public class ProxyServer implements Runnable{
      try{
         auth = auth.startSession(sock);
      }catch(IOException ioe){
-       LOG.info(connectionId + " Auth exception", ioe);
+            LOG.info(connectionId + " Auth exception");
        auth = null;
        return;
      }
 
      if(auth == null){ //Authentication failed
-        LOG.warn(connectionId + " Authentication failed");
+            LOG.warning(connectionId + " Authentication failed");
         return;
      }
 
@@ -285,7 +294,7 @@ public class ProxyServer implements Runnable{
         }else
           throw new SocksException(Proxy.SOCKS_FAILURE);
       }
-      LOG.debug(connectionId + " " + msg);
+        LOG.fine(connectionId + " " + msg);
 
       switch(msg.command){
         case Proxy.SOCKS_CMD_CONNECT:
