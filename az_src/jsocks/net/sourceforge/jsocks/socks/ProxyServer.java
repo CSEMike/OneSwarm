@@ -15,7 +15,7 @@ import java.util.logging.Logger;
 
 import net.sourceforge.jsocks.socks.server.ServerAuthenticator;
 
-import org.apache.commons.lang.RandomStringUtils;
+import com.google.gwt.user.client.Random;
 
 /**
     SOCKS4 and SOCKS5 proxy, handles both protocols simultaniously.
@@ -189,7 +189,7 @@ public class ProxyServer implements Runnable{
     * @return a random-enough ID.
     */
    private String newConnectionId() {
-     return "[" + RandomStringUtils.randomAlphanumeric(4) + "]";
+        return "[" + Random.nextInt() + "]";
    }
 
   /**
