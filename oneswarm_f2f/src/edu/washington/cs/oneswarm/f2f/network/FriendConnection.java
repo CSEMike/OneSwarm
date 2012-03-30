@@ -744,7 +744,7 @@ public class FriendConnection implements DatagramListener {
     }
 
     public int getSendQueueCurrentCapacity(int channelId) {
-        if (udpConnection.isSendingActive()) {
+        if (udpConnection != null && udpConnection.isSendingActive()) {
             return udpConnection.getCapacityForChannel(channelId);
         } else {
             return (FriendConnectionQueue.MAX_FRIEND_QUEUE_LENGTH - friendConnectionQueue
@@ -753,7 +753,7 @@ public class FriendConnection implements DatagramListener {
     }
 
     public int getSendQueuePotentialCapacity(int channelId) {
-        if (udpConnection.isSendingActive()) {
+        if (udpConnection != null && udpConnection.isSendingActive()) {
             return udpConnection.getPotentialCapacityForChannel(channelId);
         } else {
             return (FriendConnectionQueue.MAX_FRIEND_QUEUE_LENGTH) / this.overlayTransports.size();
