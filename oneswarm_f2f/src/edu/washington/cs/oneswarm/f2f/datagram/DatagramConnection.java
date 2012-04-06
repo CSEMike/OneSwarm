@@ -605,6 +605,10 @@ public class DatagramConnection extends DatagramRateLimiter {
                 if (logger.isLoggable(Level.FINEST)) {
                     logger.finest("encrypting " + size + " bytes");
                 }
+                if (size > outgoingPacketBuf.length) {
+                    logger.warning("Attempting to encrypt over-full packet of size " + size
+                            + " bytes.");
+                }
                 // Encrypt the serialized payload into the payload buffer.
                 EncryptedPacket encrypted = encrypter.encrypt(unencryptedPayload, buffers,
                         outgoingPacketBuf);

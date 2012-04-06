@@ -131,7 +131,7 @@ public class ExperimentalHarnessManager {
         for (ExperimentInterface ei : experiments) {
             for (String offer : ei.getKeys()) {
                 if (offer.equals(key)) {
-                    logger.info(key + " is executed by " + ei.getClass().getName());
+                    logger.fine(key + " is executed by " + ei.getClass().getName());
                     ei.execute(command);
                     return;
                 }
