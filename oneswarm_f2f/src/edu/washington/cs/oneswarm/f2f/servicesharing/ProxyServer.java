@@ -8,6 +8,9 @@ import java.net.UnknownHostException;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Logger;
 
+import net.sourceforge.jsocks.socks.InetRange;
+import net.sourceforge.jsocks.socks.server.IdentAuthenticator;
+
 public class ProxyServer implements Runnable {
     public static Logger logger = Logger.getLogger(ProxyServer.class.getName());
 
@@ -53,8 +56,12 @@ public class ProxyServer implements Runnable {
 
     @Override
     public void run() {
+        IdentAuthenticator localAuth = new net.sourceforge.jsocks.socks.server.IdentAuthenticator();
+        InetRange hostRange = new net.sourceforge.jsocks.socks.InetRange();
+        hostRange.add("127.0.0.1");
+        localAuth.add(hostRange, null);
         net.sourceforge.jsocks.socks.ProxyServer server = new net.sourceforge.jsocks.socks.ProxyServer(
-                new net.sourceforge.jsocks.socks.server.ServerAuthenticatorNone());
+                localAuth);
         started.release();
         server.start(port);
     }

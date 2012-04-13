@@ -30,8 +30,6 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
     static final int SERVICE_MSG_BUFFER_SIZE = 1024 * COConfigurationManager.getIntParameter(
             "SERVICE_CLIENT_flow", 10);
 
-    private final int CHANNEL_BUFFER = 1024 * COConfigurationManager.getIntParameter(
-            "SERVICE_CLIENT_window", 4);
     protected final int MAX_CHANNELS = COConfigurationManager.getIntParameter(
             "SERVICE_CLIENT_channels", 4);
     protected final EnumSet<ServiceFeatures> FEATURES;
@@ -60,6 +58,7 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
     protected final boolean isOutgoing;
     protected final short subchannelId;
     protected int serviceSequenceNumber;
+    protected int windowSize = COConfigurationManager.getIntParameter("SERVICE_CLIENT_channels", 4);
 
     public ServiceConnection(boolean outgoing, short subchannel,
             final NetworkConnection serviceChannel) {
@@ -87,8 +86,8 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
             features.add(ServiceFeatures.ADAPTIVE_DUPLICATION);
         }
         this.FEATURES = EnumSet.copyOf(features);
-        logger.info("Service Connection active with settings: window = "
-                + (CHANNEL_BUFFER / 1024)
+        logger.info("Service Connection active with settings: start window = "
+                + (windowSize / 1024)
                 + ", flow="
                 + (SERVICE_MSG_BUFFER_SIZE / 1024)
                 + ", max="
@@ -289,6 +288,7 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
         if (msg.isAck()) {
             logger.fine("Acked msg " + msg.getSequenceNumber());
             mmt.onAck(msg);
+            windowSize += 1;
             return true;
         }
 

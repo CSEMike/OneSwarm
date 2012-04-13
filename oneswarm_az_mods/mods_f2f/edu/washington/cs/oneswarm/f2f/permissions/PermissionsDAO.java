@@ -141,7 +141,8 @@ public class PermissionsDAO {
 	 */
 	public synchronized void f2fInitialized() {
 		AzureusCoreImpl.getSingleton().getGlobalManager().addDownloadManagerInitialisationAdapter(new DownloadManagerInitialisationAdapter(){
-			public void initialised(DownloadManager manager) {
+			@Override
+            public void initialised(DownloadManager manager) {
 				try {
 					String hexHash = ByteFormatter.encodeString(manager.getTorrent().getHash());
 					ArrayList<GroupBean> groups = PermissionsDAO.this.getGroupsForHash(hexHash);
@@ -354,7 +355,7 @@ public class PermissionsDAO {
 					removeGroupID(base64Key_to_groupid.get(key), true);
 					save = true;
 				} catch (IOException e) {
-					e.printStackTrace();
+                    // e.printStackTrace();
 					logger.warning(e.toString());
 				}
 			}
@@ -619,22 +620,28 @@ public class PermissionsDAO {
 			if (dm != null) {
 				if (dm.getState() != DownloadManager.STATE_STOPPED || dm.getState() != DownloadManager.STATE_STOPPING) {
 					dm.addListener(new DownloadManagerListener() {
-						public void completionChanged(DownloadManager manager, boolean completed) {
+						@Override
+                        public void completionChanged(DownloadManager manager, boolean completed) {
 						}
 
-						public void downloadComplete(DownloadManager manager) {
+						@Override
+                        public void downloadComplete(DownloadManager manager) {
 						}
 
-						public void filePriorityChanged(DownloadManager download, DiskManagerFileInfo file) {
+						@Override
+                        public void filePriorityChanged(DownloadManager download, DiskManagerFileInfo file) {
 						}
 
-						public void positionChanged(DownloadManager download, int oldPosition, int newPosition) {
+						@Override
+                        public void positionChanged(DownloadManager download, int oldPosition, int newPosition) {
 						}
 
-						public void stateChanged(final DownloadManager manager, int state) {
+						@Override
+                        public void stateChanged(final DownloadManager manager, int state) {
 							if (state == DownloadManager.STATE_QUEUED) {
 								DownloadManagerStarter.startDownload(manager, new DownloadManagerStartListener() {
-									public void downloadStarted() {
+									@Override
+                                    public void downloadStarted() {
 										if (started_with_public == false && inGroups.contains(GroupBean.PUBLIC) == true) {
 											logger.finer("public network added, forcing tracker update");
 											manager.getTrackerClient().update(true);

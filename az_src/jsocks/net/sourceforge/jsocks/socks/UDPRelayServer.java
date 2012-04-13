@@ -1,11 +1,15 @@
 package net.sourceforge.jsocks.socks;
 
-import net.sourceforge.jsocks.socks.server.*;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.logging.Logger;
 
-import org.apache.log4j.Logger;
-
-import java.net.*;
-import java.io.*;
+import net.sourceforge.jsocks.socks.server.ServerAuthenticator;
 
 /**
  UDP Relay server, used by ProxyServer to perform udp forwarding.
@@ -28,7 +32,7 @@ class UDPRelayServer implements Runnable{
 
     long lastReadTime;
 
-    private static final Logger LOG = Logger.getLogger(UDPRelayServer.class);
+    private static final Logger LOG = Logger.getLogger(UDPRelayServer.class.getName());
     
     static Proxy proxy = null;
     static int datagramSize = 0xFFFF;//64K, a bit more than max udp size
@@ -143,6 +147,7 @@ class UDPRelayServer implements Runnable{
 
 //Runnable interface
 ////////////////////
+    @Override
     public void run(){
        try{
           if(Thread.currentThread().getName().equals("pipe1"))

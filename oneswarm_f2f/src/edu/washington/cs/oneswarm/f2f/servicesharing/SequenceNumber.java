@@ -54,4 +54,9 @@ class SequenceNumber {
     public short getFlow() {
         return flow;
     }
+
+    @Override
+    public String toString() {
+        return "[message " + this.number + "." + this.flow + "]";
+    }
 }

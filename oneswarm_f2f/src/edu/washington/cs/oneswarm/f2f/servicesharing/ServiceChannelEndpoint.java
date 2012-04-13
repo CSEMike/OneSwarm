@@ -217,8 +217,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
 
         long totalWritten = buffer.remaining(DirectByteBuffer.SS_MSG);
         if (logger.isLoggable(Level.FINEST)) {
-            logger.finest(String.format("Wrote msg to network. bytes: %d, sequence number: %d",
-                    length, num.getNum()));
+            logger.finest(String.format("Wrote %s to network. bytes: %d", num, length));
         }
         super.writeMessage(msg);
         bytesOut += totalWritten;
@@ -244,7 +243,11 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
     }
 
     public DirectByteBuffer getMessage(SequenceNumber num) {
-        return this.sentMessages.get(num).msg;
+        sentMessage m = this.sentMessages.get(num);
+        if (m != null) {
+            return m.msg;
+        }
+        return null;
     }
 
     /**
@@ -313,8 +316,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
             sentMessage self = sentMessages.remove(num);
             if (self != null && !closed) {
                 if (self.attempt == attempt) {
-                    logger.fine("Message with sequence number " + num.getNum()
-                            + " was retransmitted.");
+                    logger.fine(num + " was retransmitted.");
                     outstandingBytes -= length;
                     msg.position(ss, position);
                     writeMessage(num, msg, attempt + 1, datagram);

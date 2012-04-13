@@ -35,8 +35,8 @@ import edu.washington.cs.oneswarm.f2f.OSF2FMain;
 import edu.washington.cs.oneswarm.f2f.dht.DHTConnector;
 import edu.washington.cs.oneswarm.f2f.permissions.PermissionsDAO;
 import edu.washington.cs.oneswarm.f2f.xml.OSF2FXMLBeanReader;
-import edu.washington.cs.oneswarm.f2f.xml.OSF2FXMLBeanWriter;
 import edu.washington.cs.oneswarm.f2f.xml.OSF2FXMLBeanReader.OSF2FXMLBeanReaderCallback;
+import edu.washington.cs.oneswarm.f2f.xml.OSF2FXMLBeanWriter;
 import edu.washington.cs.publickey.PublicKeyFriend;
 
 public class FriendManager {
@@ -56,8 +56,8 @@ public class FriendManager {
 
     private final FriendImportManager friendImportManager;
 
-    private ConcurrentHashMap<FriendKey, Friend> friends;
-    private Set<String> ignoreFutureFriendRequestsFrom = Collections
+    private final ConcurrentHashMap<FriendKey, Friend> friends;
+    private final Set<String> ignoreFutureFriendRequestsFrom = Collections
             .synchronizedSet(new HashSet<String>());
 
     private final Map<FriendKey, Long> nonFriendConnectionAttempts = Collections
@@ -65,6 +65,7 @@ public class FriendManager {
                 private static final int MAX_ENTRIES = 20;
                 private static final long serialVersionUID = 1L;
 
+                @Override
                 protected boolean removeEldestEntry(Map.Entry<FriendKey, Long> eldest) {
                     return size() > MAX_ENTRIES;
                 }
@@ -429,12 +430,14 @@ public class FriendManager {
         OSF2FXMLBeanReader<FriendBean> reader = new OSF2FXMLBeanReader<FriendBean>(cl,
                 FriendBean.class, OSF2F_FRIEND_FILE, diskSemaphore,
                 new OSF2FXMLBeanReaderCallback<FriendBean>() {
+                    @Override
                     public void readObject(FriendBean object) {
                         Friend friend = getFriend(object);
                         FriendKey fk = new FriendKey(friend.getPublicKey());
                         friends.put(fk, friend);
                     }
 
+                    @Override
                     public void completed() {
                         // update community server friends to not request file
                         // list, can
@@ -463,39 +466,50 @@ public class FriendManager {
         // t.setDaemon(true);
         // t.start();
         logger.finer("reading friend file from disk, reading");
-        reader.run();
+        try {
+            reader.run();
+        } catch (Exception e) {
+            // TODO: Attempt recovery from backup.
+            e.printStackTrace();
+        }
         logger.finer("reading friend file from disk, completed");
     }
 
     private void registerShutdownHook() {
         AzureusCoreImpl.getSingleton().addLifecycleListener(new AzureusCoreLifecycleListener() {
 
+            @Override
             public void componentCreated(AzureusCore core, AzureusCoreComponent component) {
                 // TODO Auto-generated method stub
 
             }
 
+            @Override
             public boolean restartRequested(AzureusCore core) throws AzureusCoreException {
                 // TODO Auto-generated method stub
                 return false;
             }
 
+            @Override
             public void started(AzureusCore core) {
                 // TODO Auto-generated method stub
 
             }
 
+            @Override
             public void stopped(AzureusCore core) {
                 // TODO Auto-generated method stub
 
             }
 
+            @Override
             public void stopping(AzureusCore core) {
                 logger.fine("stopping, ");
                 flushToDisk(false, true, false);
 
             }
 
+            @Override
             public boolean stopRequested(AzureusCore core) throws AzureusCoreException {
                 // System.out
                 // .println("stop requested, flushing friends to disk");
@@ -503,6 +517,7 @@ public class FriendManager {
                 return true;
             }
 
+            @Override
             public boolean syncInvokeRequired() {
                 // TODO Auto-generated method stub
                 return false;
@@ -538,12 +553,13 @@ public class FriendManager {
     private class FriendKey {
         private int hash = 0;
         private String ip;
-        private byte[] publicKey;
+        private final byte[] publicKey;
 
         public FriendKey(byte[] publicKey) {
             this.publicKey = publicKey;
         }
 
+        @Override
         public boolean equals(Object obj) {
             if (obj instanceof FriendKey) {
                 FriendKey comp = (FriendKey) obj;
@@ -558,6 +574,7 @@ public class FriendManager {
             return publicKey;
         }
 
+        @Override
         public int hashCode() {
             if (hash == 0) {
                 hash = Arrays.hashCode(publicKey);

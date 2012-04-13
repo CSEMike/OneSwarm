@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 
@@ -18,6 +19,7 @@ import com.google.common.collect.HashMultimap;
  * 
  */
 public class MessageStreamMultiplexer {
+    public final static Logger logger = Logger.getLogger(MessageStreamMultiplexer.class.getName());
     private Integer next;
     private final short flow;
     private final HashMap<Integer, ServiceChannelEndpoint> channels;
@@ -72,7 +74,7 @@ public class MessageStreamMultiplexer {
             }
         }
         for (Integer num : retransmissions) {
-            System.out.println("Non outstanding packet acked: " + num);
+            logger.info("Non outstanding packet acked: " + num);
         }
     }
 
@@ -97,7 +99,10 @@ public class MessageStreamMultiplexer {
         Set<SequenceNumber> outstanding = channelOutstanding.get(channel.getChannelId());
         HashMap<SequenceNumber, DirectByteBuffer> mapping = new HashMap<SequenceNumber, DirectByteBuffer>();
         for (SequenceNumber s : outstanding) {
-            mapping.put(s, channel.getMessage(s));
+            DirectByteBuffer msg = channel.getMessage(s);
+            if (msg != null) {
+                mapping.put(s, msg);
+            }
         }
         return mapping;
     }
