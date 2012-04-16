@@ -35,8 +35,11 @@ import edu.washington.cs.oneswarm.f2f.network.OverlayTransport;
 public class ServiceChannelEndpoint extends OverlayEndpoint {
     public final static Logger logger = Logger.getLogger(ServiceChannelEndpoint.class.getName());
     private static final byte ss = 0;
+    // Moving average sampling weight for latency estimation.
     private static final double EWMA = 0.25;
-    private static final double RETRANSMISSION_PERIOD = 2;
+    // How long (in # RTT) before packet retransmission.
+    private static final double RETRANSMISSION_MIN = 2;
+    private static final double RETRANSMISSION_MAX = 3;
 
     public static final int MAX_SERVICE_MESSAGE_SIZE = 1024;
 
@@ -222,8 +225,10 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         super.writeMessage(msg);
         bytesOut += totalWritten;
 
+        double retransmit = RETRANSMISSION_MIN + (RETRANSMISSION_MAX - RETRANSMISSION_MIN)
+                * Math.random();
         // Remember the message may need to be retransmitted.
-        delayedExecutor.queue((long) (RETRANSMISSION_PERIOD * this.latency * (1 << attempt)), sent);
+        delayedExecutor.queue((long) (retransmit * this.latency * (1 << attempt)), sent);
     }
 
     public int getOutstanding() {
