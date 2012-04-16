@@ -9,8 +9,6 @@ import java.util.logging.Logger;
 
 import org.gudy.azureus2.core3.util.DirectByteBuffer;
 
-import com.google.common.collect.HashMultimap;
-
 /**
  * Multiplexes a stream of data, and tracks what is in
  * transit across channels.
@@ -25,19 +23,20 @@ public class MessageStreamMultiplexer {
     private final HashMap<Integer, ServiceChannelEndpoint> channels;
 
     private final HashMap<Integer, SequenceNumber> outstandingMessages;
-    private final HashMultimap<Integer, SequenceNumber> channelOutstanding;
+    private final HashMap<Integer, Set<SequenceNumber>> channelOutstanding;
     private final static byte ss = 44;
 
     public MessageStreamMultiplexer(short flow) {
         this.channels = new HashMap<Integer, ServiceChannelEndpoint>();
         this.outstandingMessages = new HashMap<Integer, SequenceNumber>();
-        this.channelOutstanding = HashMultimap.create();
+        this.channelOutstanding = new HashMap<Integer, Set<SequenceNumber>>();
         this.flow = flow;
         next = 0;
     }
 
     public void addChannel(ServiceChannelEndpoint s) {
         this.channels.put(s.getChannelId(), s);
+        this.channelOutstanding.put(s.getChannelId(), new HashSet<SequenceNumber>());
     }
 
     public void onAck(OSF2FServiceDataMsg message) {
@@ -65,7 +64,7 @@ public class MessageStreamMultiplexer {
             seq.ack();
             for (Integer channelId : seq.getChannels()) {
                 if (this.channels.get(channelId).forgetMessage(seq)) {
-                    channelOutstanding.remove(channelId, seq);
+                    channelOutstanding.get(channelId).remove(seq);
                     seq.removeChannel(channelId);
                 }
             }
@@ -88,7 +87,7 @@ public class MessageStreamMultiplexer {
     public void sendMsg(SequenceNumber msg, ServiceChannelEndpoint channel) {
         int channelId = channel.getChannelId();
         msg.addChannel(channelId);
-        channelOutstanding.put(channelId, msg);
+        channelOutstanding.get(channelId).add(msg);
     }
 
     public boolean hasOutstanding(ServiceChannelEndpoint channel) {
@@ -110,9 +109,12 @@ public class MessageStreamMultiplexer {
     public void removeChannel(ServiceChannelEndpoint channel) {
         int channelId = channel.getChannelId();
         channels.remove(channelId);
-        for (SequenceNumber s : channelOutstanding.get(channelId)) {
-            s.removeChannel(channelId);
+        Set<SequenceNumber> inFlight = channelOutstanding.get(channelId);
+        if (inFlight != null) {
+            for (SequenceNumber s : inFlight) {
+                s.removeChannel(channelId);
+            }
+            channelOutstanding.remove(channelId);
         }
-        channelOutstanding.removeAll(channelId);
     }
 }
