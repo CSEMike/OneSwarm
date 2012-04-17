@@ -39,7 +39,7 @@ public class MessageStreamMultiplexer {
         this.channelOutstanding.put(s.getChannelId(), new HashSet<SequenceNumber>());
     }
 
-    public void onAck(OSF2FServiceDataMsg message) {
+    public int onAck(OSF2FServiceDataMsg message) {
         // Parse acknowledged messages
         DirectByteBuffer payload = message.getPayload();
         HashSet<SequenceNumber> numbers = new HashSet<SequenceNumber>();
@@ -75,6 +75,7 @@ public class MessageStreamMultiplexer {
         for (Integer num : retransmissions) {
             logger.info("Non outstanding packet acked: " + num);
         }
+        return numbers.size();
     }
 
     public SequenceNumber nextMsg() {
