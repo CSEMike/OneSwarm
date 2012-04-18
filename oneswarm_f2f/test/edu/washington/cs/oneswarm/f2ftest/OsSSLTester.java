@@ -25,7 +25,6 @@ package edu.washington.cs.oneswarm.f2ftest;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 import org.gudy.azureus2.core3.config.COConfigurationManager;
@@ -33,8 +32,6 @@ import org.gudy.azureus2.core3.util.AEDiagnostics;
 import org.gudy.azureus2.core3.util.Debug;
 
 import com.aelitis.azureus.core.networkmanager.VirtualChannelSelector;
-import com.aelitis.azureus.core.networkmanager.VirtualServerChannelSelector;
-import com.aelitis.azureus.core.networkmanager.VirtualServerChannelSelectorFactory;
 import com.aelitis.azureus.core.networkmanager.VirtualChannelSelector.VirtualSelectorListener;
 import com.aelitis.azureus.core.networkmanager.impl.ProtocolDecoder;
 import com.aelitis.azureus.core.networkmanager.impl.ProtocolDecoderAdapter;
@@ -49,7 +46,7 @@ public class OsSSLTester {
     private final VirtualChannelSelector connect_selector = new VirtualChannelSelector("PHETester",
             VirtualChannelSelector.OP_CONNECT, true);
 
-    private byte[] TEST_HEADER = "TestHeader".getBytes();
+    private final byte[] TEST_HEADER = "TestHeader".getBytes();
 
     private static boolean OUTGOING_PLAIN = false;
 
@@ -92,6 +89,7 @@ public class OsSSLTester {
 
             final ProtocolDecoderInitial decoder = new ProtocolDecoderInitial(helper, null, false,
                     null, new ProtocolDecoderAdapter() {
+                        @Override
                         public void decodeComplete(ProtocolDecoder decoder,
                                 ByteBuffer remaining_initial_data) {
                             System.out.println("incoming decode complete: "
@@ -102,18 +100,22 @@ public class OsSSLTester {
                             writeStream("ten fat monkies", decoder.getFilter());
                         }
 
+                        @Override
                         public void decodeFailed(ProtocolDecoder decoder, Throwable cause) {
                             System.out.println("incoming decode failed: "
                                     + Debug.getNestedExceptionMessage(cause));
                         }
 
+                        @Override
                         public void gotSecret(byte[] session_secret) {
                         }
 
+                        @Override
                         public int getMaximumPlainHeaderLength() {
                             return (TEST_HEADER.length);
                         }
 
+                        @Override
                         public int matchPlainHeader(ByteBuffer buffer) {
                             int pos = buffer.position();
                             int lim = buffer.limit();
@@ -164,6 +166,7 @@ public class OsSSLTester {
             } else {
 
                 connect_selector.register(channel, new VirtualSelectorListener() {
+                    @Override
                     public boolean selectSuccess(VirtualChannelSelector selector, SocketChannel sc,
                             Object attachment) {
                         try {
@@ -184,6 +187,7 @@ public class OsSSLTester {
                         }
                     }
 
+                    @Override
                     public void selectFailure(VirtualChannelSelector selector, SocketChannel sc,
                             Object attachment, Throwable msg) {
                         msg.printStackTrace();
@@ -211,6 +215,7 @@ public class OsSSLTester {
 
                 final ProtocolDecoderInitial decoder = new ProtocolDecoderInitial(helper,
                         new byte[][] { shared_secret }, true, null, new ProtocolDecoderAdapter() {
+                            @Override
                             public void decodeComplete(ProtocolDecoder decoder,
                                     ByteBuffer remaining_initial_data) {
                                 System.out.println("outgoing decode complete: "
@@ -223,19 +228,23 @@ public class OsSSLTester {
                                 writeStream("two jolly porkers", decoder.getFilter());
                             }
 
+                            @Override
                             public void decodeFailed(ProtocolDecoder decoder, Throwable cause) {
                                 System.out.println("outgoing decode failed: "
                                         + Debug.getNestedExceptionMessage(cause));
 
                             }
 
+                            @Override
                             public void gotSecret(byte[] session_secret) {
                             }
 
+                            @Override
                             public int getMaximumPlainHeaderLength() {
                                 throw (new RuntimeException());
                             }
 
+                            @Override
                             public int matchPlainHeader(ByteBuffer buffer) {
                                 throw (new RuntimeException());
                             }
@@ -254,6 +263,7 @@ public class OsSSLTester {
                     .getReadSelector()
                     .register(((TCPTransportHelper) filter.getHelper()).getSocketChannel(),
                             new VirtualSelectorListener() {
+                                @Override
                                 public boolean selectSuccess(VirtualChannelSelector selector,
                                         SocketChannel sc, Object attachment) {
                                     ByteBuffer buffer = ByteBuffer.allocate(1024);
@@ -279,6 +289,7 @@ public class OsSSLTester {
                                     }
                                 }
 
+                                @Override
                                 public void selectFailure(VirtualChannelSelector selector,
                                         SocketChannel sc, Object attachment, Throwable msg) {
                                     msg.printStackTrace();
@@ -317,7 +328,7 @@ public class OsSSLTester {
 
     public static void main(String[] args) {
         // String[] encrProto = { "Plain", "XOR", "RC4", "AES", "SSL" };
-        AEDiagnostics.startup();
+        AEDiagnostics.startup(true);
 
         // OUTGOING_PLAIN = true;
 
