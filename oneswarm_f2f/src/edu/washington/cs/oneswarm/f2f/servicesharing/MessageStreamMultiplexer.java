@@ -100,7 +100,7 @@ public class MessageStreamMultiplexer {
         HashMap<SequenceNumber, DirectByteBuffer> mapping = new HashMap<SequenceNumber, DirectByteBuffer>();
         for (SequenceNumber s : outstanding) {
             DirectByteBuffer msg = channel.getMessage(s);
-            if (msg != null) {
+            if (msg != null && !s.isAcked()) {
                 mapping.put(s, msg);
             }
         }

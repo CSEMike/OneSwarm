@@ -81,6 +81,9 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
             this.delegateOrder.add(flow);
         }
         this.delegates.put(flow, d);
+        if (friendConnection.isReadyForWrite(null)) {
+            d.channelIsReady(this);
+        }
     }
 
     public void removeDelegate(ServiceChannelEndpointDelegate d) {
@@ -162,14 +165,16 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
             start();
         }
         if (!(msg instanceof OSF2FServiceDataMsg)) {
+            logger.warning("Msg wasn't SDM: " + msg.getDescription());
             return;
         }
         OSF2FServiceDataMsg newMessage = (OSF2FServiceDataMsg) msg;
         // logger.fine("Received msg with sequence number " +
         if (!newMessage.isAck()) {
-            logger.finest("ack enqueued for " + newMessage.getSequenceNumber());
+            logger.finest("ack enqueued for " + newMessage.getDescription());
             super.writeMessage(OSF2FServiceDataMsg.acknowledge(OSF2FMessage.CURRENT_VERSION,
-                    channelId, (short) 0, new int[] { newMessage.getSequenceNumber() }));
+                    channelId, newMessage.getSubchannel(),
+                    new int[] { newMessage.getSequenceNumber() }));
         }
 
         for (ServiceChannelEndpointDelegate d : this.delegates.values()) {
@@ -332,6 +337,12 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
                 if (self.attempt != attempt) {
                     logger.warning("Message queue concurency issues");
                     sentMessages.put(num, self);
+                    return;
+                }
+                if (self.creation + latency < System.currentTimeMillis()) {
+                    logger.warning("Holding off on agressive retransmission request.");
+                    sentMessages.put(num, self);
+                    return;
                 }
 
                 logger.fine("retransmitting " + num + ", try " + attempt);

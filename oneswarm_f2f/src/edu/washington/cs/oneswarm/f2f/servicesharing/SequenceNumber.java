@@ -57,6 +57,6 @@ class SequenceNumber {
 
     @Override
     public String toString() {
-        return "[message " + this.number + "." + this.flow + "]";
+        return "[flow " + this.flow + " message " + this.number + "]";
     }
 }
