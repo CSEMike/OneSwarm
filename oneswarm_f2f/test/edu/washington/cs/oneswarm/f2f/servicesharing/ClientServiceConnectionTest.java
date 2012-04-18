@@ -27,21 +27,17 @@ import edu.washington.cs.oneswarm.f2f.messaging.OSF2FMessageEncoder;
 import edu.washington.cs.oneswarm.f2f.network.FriendConnection;
 import edu.washington.cs.oneswarm.f2f.network.QueueManager;
 import edu.washington.cs.oneswarm.f2f.network.SearchManager;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ClientServiceConnection;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceChannelEndpoint;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingLoopback;
-import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
 import edu.washington.cs.oneswarm.test.integration.ServiceSharingClientTest;
 import edu.washington.cs.oneswarm.test.util.MessageStreamDecoderTestImpl;
 import edu.washington.cs.oneswarm.test.util.OneSwarmTestBase;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
 
 /**
- * Tests ClientServiceConnection, verifying that data put into its NetworkConnection
- * makes its way to one of its FriendConnections.
+ * Tests ServiceConnections, verifying that data put into its NetworkConnection
+ * makes its way to at least one of the connection endpoints.
  * 
  * @author Krysta
- *
+ * 
  */
 public class ClientServiceConnectionTest extends OneSwarmTestBase {
 
@@ -52,7 +48,7 @@ public class ClientServiceConnectionTest extends OneSwarmTestBase {
     private final static int NUM_FRIENDS = 2;
 
     /* The various layers of data-handling */
-    private static ClientServiceConnection clientConn;
+    private static ServiceConnection clientConn;
     private static NetworkConnection netConn;
     private static List<FriendConnection> friends;
     private static MessageStreamDecoderTestImpl decoder;
@@ -108,7 +104,7 @@ public class ClientServiceConnectionTest extends OneSwarmTestBase {
                 tcpEndpoint.getConnectionEndpoint(), new OSF2FMessageEncoder(), decoder,
                 false, false, null);
 
-        clientConn = ClientServiceConnection.getConnectionForTest(netConn);
+        clientConn = new ServiceConnection(true, (short) 0, netConn);
         friends = new ArrayList<FriendConnection>();
         QueueManager qMgr = new QueueManager();
         
@@ -116,8 +112,9 @@ public class ClientServiceConnectionTest extends OneSwarmTestBase {
             Friend remoteFriend = new Friend("", "Remote " + i, null, false);
             FriendConnection friend = FriendConnection.createStubForTests(qMgr, netConn, remoteFriend);
             friends.add(friend);
-            clientConn.addChannel(friend, new OSF2FHashSearch((byte) 0, 0, 0),
-                    new OSF2FHashSearchResp((byte) 0, 0, 0, 0));
+            ServiceChannelEndpoint ep = new ServiceChannelEndpoint(friend, new OSF2FHashSearch(
+                    (byte) 0, 0, 0), new OSF2FHashSearchResp((byte) 0, 0, 0, 0), true);
+            clientConn.addChannel(ep);
         }
     }
     
