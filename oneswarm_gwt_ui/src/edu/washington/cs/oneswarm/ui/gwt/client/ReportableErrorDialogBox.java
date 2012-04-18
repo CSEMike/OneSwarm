@@ -1,13 +1,13 @@
 package edu.washington.cs.oneswarm.ui.gwt.client;
 
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.ui.Button;
-import com.google.gwt.user.client.ui.ClickListener;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.TextArea;
 import com.google.gwt.user.client.ui.VerticalPanel;
-import com.google.gwt.user.client.ui.Widget;
 
 import edu.washington.cs.oneswarm.ui.gwt.client.i18n.OSMessages;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmException;
@@ -78,8 +78,9 @@ public class ReportableErrorDialogBox extends OneSwarmDialogBox {
         status_and_button.setCellHorizontalAlignment(statusLabel, HorizontalPanel.ALIGN_LEFT);
 
         mainPanel.add(status_and_button);
-        dismissButton.addClickListener(new ClickListener() {
-            public void onClick(Widget sender) {
+        dismissButton.addClickHandler(new ClickHandler() {
+            @Override
+            public void onClick(ClickEvent event) {
                 // statusLabel.setText("Sending report...");
                 // ((Button)sender).setEnabled(false);
                 //
@@ -98,9 +99,8 @@ public class ReportableErrorDialogBox extends OneSwarmDialogBox {
                 // onFailure(null);
                 // }
                 hide();
-                // }); // reportError RPC
-            } // report button onClick()
-        }); // add click listener
+            }
+        });
 
         setWidget(mainPanel);
 
