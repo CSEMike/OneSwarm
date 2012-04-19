@@ -221,7 +221,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         // Remember the message may need to be retransmitted.
         delayedExecutor.queue((long) (retransmit * this.latency * (1 << msg.attempt)), msg);
 
-        if (msg.creation + latency < System.currentTimeMillis()) {
+        if (msg.attempt > 0 && msg.creation + latency > System.currentTimeMillis()) {
             logger.warning("Skipping over-aggresive retransmission.");
             return;
         }
@@ -326,7 +326,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         private final int position;
         public long creation;
         private final SequenceNumber num;
-        private final int attempt;
+        private int attempt;
         private final boolean datagram;
         public final boolean rst;
 
@@ -356,6 +356,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
                     return;
                 }
 
+                this.attempt += 1;
                 logger.fine("retransmitting " + num + ", try " + attempt);
                 outstandingBytes -= length;
                 msg.position(ss, position);
