@@ -33,6 +33,8 @@ public class ServiceConnectionManager implements ServiceChannelEndpointDelegate 
         return instance;
     }
 
+    // Both are lists are keyed on service key. 1 endpoint per overlay path, 1
+    // serviceconnection per local connection.
     private final HashMap<Long, List<ServiceChannelEndpoint>> connections = new HashMap<Long, List<ServiceChannelEndpoint>>();
     private final HashMap<Long, List<ServiceConnection>> services = new HashMap<Long, List<ServiceConnection>>();
 
@@ -51,7 +53,7 @@ public class ServiceConnectionManager implements ServiceChannelEndpointDelegate 
         return channel;
     }
 
-    public void addChannel(ServiceChannelEndpoint channel) {
+    private void addChannel(ServiceChannelEndpoint channel) {
         logger.fine("Network Channel registered with Connection Manager");
         Long key = channel.getServiceKey();
         if (!this.connections.containsKey(key)) {
@@ -125,7 +127,8 @@ public class ServiceConnectionManager implements ServiceChannelEndpointDelegate 
             } else {
                 for (ServiceConnection c : existing) {
                     if (c.subchannelId == msg.getSubchannel()) {
-                        // Ignore duplicate syn messages.
+                        // Ignore duplicate syn messages - the connection will
+                        // handle it directly.
                         return false;
                     }
                 }

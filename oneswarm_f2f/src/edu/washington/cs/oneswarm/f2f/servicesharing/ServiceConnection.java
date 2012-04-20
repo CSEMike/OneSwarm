@@ -287,8 +287,7 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
 
         if (msg.isAck()) {
             logger.fine("Acked msg " + msg.getSequenceNumber());
-            mmt.onAck(msg);
-            windowSize += 1;
+            windowSize += mmt.onAck(msg);
             return true;
         }
 

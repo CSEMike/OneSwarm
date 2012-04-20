@@ -59,7 +59,7 @@ public abstract class OSF2FChannelMsg implements OSF2FMessage {
     }
 
     public void setDatagram(boolean datagram) {
-        this.datagram = true;
+        this.datagram = datagram;
     }
 
 }

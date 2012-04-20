@@ -298,7 +298,7 @@ public class DatagramConnection extends DatagramRateLimiter {
                     // The message length is 1 (for the type field) + the actual
                     // message length.
                     int messageLength = decryptBuffer.getInt();
-                    if (messageLength > MAX_DATAGRAM_SIZE) {
+                    if (messageLength > MAX_DATAGRAM_SIZE || messageLength < 0) {
                         logger.warning("got oversized length field!");
                         return false;
                     }

@@ -46,7 +46,7 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
     }
 
     static OSF2FServiceDataMsg acknowledge(byte _version, int channelID, short subchannel,
-            int[] acknowledgements) {
+            int[] acknowledgements, boolean datagram) {
         int payloadSize = acknowledgements.length - 1;
         DirectByteBuffer data = null;
         if (payloadSize > 0) {
@@ -58,6 +58,7 @@ public class OSF2FServiceDataMsg extends OSF2FChannelDataMsg {
         }
         OSF2FServiceDataMsg msg = new OSF2FServiceDataMsg(_version, channelID, acknowledgements[0],
                 subchannel, new int[0], data, (byte) 8);
+        msg.setDatagram(datagram);
         return msg;
     }
 

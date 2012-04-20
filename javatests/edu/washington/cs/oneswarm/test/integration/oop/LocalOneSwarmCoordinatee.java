@@ -1,6 +1,7 @@
 package edu.washington.cs.oneswarm.test.integration.oop;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
@@ -107,6 +108,9 @@ public class LocalOneSwarmCoordinatee extends Thread {
 
                 String response = commands.toString();
                 ExperimentalHarnessManager.get().enqueue(response.split("\n"));
+            } catch (FileNotFoundException e) {
+                // Server isn't up.
+                logger.fine("Server isn't up, will try again in a minute.");
             } catch (Exception e) {
                 e.printStackTrace();
             }
