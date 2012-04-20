@@ -174,7 +174,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
             logger.finest("ack enqueued for " + newMessage.getDescription());
             super.writeMessage(OSF2FServiceDataMsg.acknowledge(OSF2FMessage.CURRENT_VERSION,
                     channelId, newMessage.getSubchannel(),
-                    new int[] { newMessage.getSequenceNumber() }));
+                    new int[] { newMessage.getSequenceNumber() }, newMessage.isDatagram()));
         }
 
         for (ServiceChannelEndpointDelegate d : this.delegates.values()) {
