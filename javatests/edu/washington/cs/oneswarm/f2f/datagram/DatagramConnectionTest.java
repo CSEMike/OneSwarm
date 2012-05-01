@@ -97,6 +97,11 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
         public DatagramRateLimiter getMainRateLimiter() {
             return rateLimiter;
         }
+
+        @SuppressWarnings("unused")
+        public String getDesc() {
+            return this.desc;
+        }
     }
 
     MockDatagramConnectionManager manager1;
@@ -222,7 +227,7 @@ public class DatagramConnectionTest extends OneSwarmTestBase {
         // before the OK message, but in the test the ok message will arrive
         // before so we need to trigger a manual ok message since the first one
         // was dropped.
-        conn1.sendUpdOK();
+        conn1.sendUdpOK();
         manager2.receive();
 
         Assert.assertEquals(conn1.sendState, SendState.ACTIVE);
