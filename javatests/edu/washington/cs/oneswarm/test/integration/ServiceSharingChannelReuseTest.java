@@ -18,9 +18,9 @@ import org.junit.Test;
 import edu.washington.cs.oneswarm.f2f.servicesharing.EchoServer;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
-import edu.washington.cs.oneswarm.test.util.TwoProcessTestBase;
+import edu.washington.cs.oneswarm.test.util.ThreeProcessTestBase;
 
-public class ServiceSharingChannelReuseTest extends TwoProcessTestBase {
+public class ServiceSharingChannelReuseTest extends ThreeProcessTestBase {
     private static final int SEARCH_KEY = ServiceSharingSingleProcessTest.SEARCH_KEY;
     private final static int ECHO_PORT = ServiceSharingSingleProcessTest.ECHO_PORT;
     private final static int CLIENT_PORT = ServiceSharingSingleProcessTest.CLIENT_PORT;
@@ -30,8 +30,8 @@ public class ServiceSharingChannelReuseTest extends TwoProcessTestBase {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        TwoProcessTestBase.startSelenium = false;
-        TwoProcessTestBase.setUpClass();
+        ThreeProcessTestBase.startSelenium = false;
+        ThreeProcessTestBase.setUpClass();
     }
 
     @Before
@@ -39,6 +39,8 @@ public class ServiceSharingChannelReuseTest extends TwoProcessTestBase {
         logFinest(logger);
         logFinest(ServiceSharingSingleProcessTest.logger);
         logFinest(EchoServer.logger);
+        // logFinest(DatagramConnection.logger);
+        // logFinest(DatagramRateLimitedChannelQueue.logger);
         // logFinest(ReadController.logger);
 
         // logFinest(ServiceSharingManager.logger);
@@ -89,6 +91,9 @@ public class ServiceSharingChannelReuseTest extends TwoProcessTestBase {
         // test a couple of bytes
         writeReadVerify("hello".getBytes("UTF-8"), s1);
 
+        writeReadVerify("multiplex!".getBytes("UTF-8"), s2);
+        writeReadVerify("message3!".getBytes("UTF-8"), s2);
+
         s2.close();
 
         // Make sure the channel doesn't get killed by closing connections.
@@ -117,9 +122,9 @@ public class ServiceSharingChannelReuseTest extends TwoProcessTestBase {
     }
 
     private void tellRemoteToShareService(String name, long searchKey, String address, int port) {
-        localOneSwarm.getCoordinator().addCommand(
+        processB.getCoordinator().addCommand(
                 "inject edu.washington.cs.oneswarm.test.integration.ServiceSharingExperiment");
-        localOneSwarm.getCoordinator().addCommand(
+        processB.getCoordinator().addCommand(
                 "share_service " + name + " " + searchKey + " " + address + " " + port);
     }
 
