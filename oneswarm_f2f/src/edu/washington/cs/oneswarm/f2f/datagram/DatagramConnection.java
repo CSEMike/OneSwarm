@@ -557,7 +557,7 @@ public class DatagramConnection extends DatagramRateLimiter {
                                         packetNum, datagramSize, message.getDescription()));
                             }
                             // This is going to get sent, update the queue size
-                            queueLength -= datagramSize;
+                            queueLength -= messageSize + OSF2FMessage.MESSAGE_HEADER_LEN;
                             // Check if we can fit more packets in there.
                         } while ((message = messageQueue.peek()) != null
                                 && datagramSize + message.getMessageSize() <= MAX_DATAGRAM_PAYLOAD_SIZE
