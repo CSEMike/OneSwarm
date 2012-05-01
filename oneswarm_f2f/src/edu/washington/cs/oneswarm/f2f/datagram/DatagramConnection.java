@@ -373,7 +373,7 @@ public class DatagramConnection extends DatagramRateLimiter {
             sendState = SendState.ACTIVE;
             logger.fine(toString() + "State set to " + sendState);
         } else if (sendState == SendState.INIT_SENT) {
-            sendUpdOK();
+            sendUdpOK();
             sendState = SendState.UDP_OK_SENT;
         }
     }
@@ -417,7 +417,7 @@ public class DatagramConnection extends DatagramRateLimiter {
         }
     }
 
-    public void sendUpdOK() {
+    public void sendUdpOK() {
         // We need to have received the remote init packet to be able to send.
         if (!(receiveState == ReceiveState.OK_SENT || receiveState == ReceiveState.ACTIVE)) {
             return;

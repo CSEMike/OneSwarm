@@ -639,7 +639,7 @@ public class FriendConnection implements DatagramListener {
                     new BTKeepAlive(OSF2FMessage.CURRENT_VERSION), false);
         }
         if (udpConnection != null && udpConnection.getLastMessageSentTime() > KEEP_ALIVE_FREQ) {
-            udpConnection.sendUpdOK();
+            udpConnection.sendUdpOK();
         }
     }
 
