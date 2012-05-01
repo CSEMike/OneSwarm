@@ -18,25 +18,36 @@ public class OSF2FTextSearch extends OSF2FSearch implements OSF2FMessage {
 
     private String description;
     private DirectByteBuffer buffer;
-    private final static int BASE_MESSAGE_LENGTH = 5;
+    private final static int BASE_MESSAGE_LENGTH = 5; // 1 byte type, 4 byte id
     private final static int MAX_MESSAGE_LENGTH = 109;
 
-    private int messageLength;
+    private static final int MAX_SEARCH_STRING_LENGTH = MAX_MESSAGE_LENGTH - BASE_MESSAGE_LENGTH;
+
+    private final int messageLength;
 
     public OSF2FTextSearch(byte version, byte type, int searchID, String searchString) {
         super(version, searchID);
         this.searchString = searchString;
+        byte[] bytes;
         try {
-            this.searchStringBytes = searchString.getBytes("UTF-8");
+            bytes = searchString.getBytes("UTF-8");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
-            this.searchStringBytes = searchString.getBytes();
+            bytes = searchString.getBytes();
+        }
+        if (bytes.length <= MAX_SEARCH_STRING_LENGTH) {
+            this.searchStringBytes = bytes;
+        } else {
+            // Search string too large, crop it.
+            this.searchStringBytes = new byte[MAX_SEARCH_STRING_LENGTH];
+            System.arraycopy(bytes, 0, this.searchStringBytes, 0, MAX_SEARCH_STRING_LENGTH);
+            Debug.out("Search '" + searchString + "' too long, cropping.");
         }
         this.type = type;
-        this.messageLength = Math.min(MAX_MESSAGE_LENGTH, BASE_MESSAGE_LENGTH
-                + searchStringBytes.length);
+        this.messageLength = BASE_MESSAGE_LENGTH + searchStringBytes.length;
     }
 
+    @Override
     public OSF2FTextSearch clone() {
         return new OSF2FTextSearch(this.getVersion(), type, this.getSearchID(),
                 this.getSearchString());
@@ -46,26 +57,32 @@ public class OSF2FTextSearch extends OSF2FSearch implements OSF2FMessage {
         return searchString;
     }
 
+    @Override
     public String getID() {
         return OSF2FMessage.ID_OS_TEXT_SEARCH;
     }
 
+    @Override
     public byte[] getIDBytes() {
         return OSF2FMessage.ID_OS_TEXT_SEARCH_BYTES;
     }
 
+    @Override
     public String getFeatureID() {
         return OSF2FMessage.OS_FEATURE_ID;
     }
 
+    @Override
     public int getFeatureSubID() {
         return OSF2FMessage.SUBID_OS_TEXT_SEARCH;
     }
 
+    @Override
     public int getType() {
         return Message.TYPE_PROTOCOL_PAYLOAD;
     }
 
+    @Override
     public String getDescription() {
         if (description == null) {
             description = OSF2FMessage.ID_OS_TEXT_SEARCH + "\tsearchID="
@@ -75,6 +92,7 @@ public class OSF2FTextSearch extends OSF2FSearch implements OSF2FMessage {
         return description;
     }
 
+    @Override
     public DirectByteBuffer[] getData() {
         if (buffer == null) {
             buffer = DirectByteBufferPool.getBuffer(DirectByteBuffer.AL_MSG, messageLength);
@@ -87,6 +105,7 @@ public class OSF2FTextSearch extends OSF2FSearch implements OSF2FMessage {
         return new DirectByteBuffer[] { buffer };
     }
 
+    @Override
     public Message deserialize(DirectByteBuffer data, byte version) throws MessageException {
         if (data == null) {
             throw new MessageException("[" + getID() + "] decode error: data == null");
@@ -111,6 +130,7 @@ public class OSF2FTextSearch extends OSF2FSearch implements OSF2FMessage {
         }
     }
 
+    @Override
     public void destroy() {
         if (buffer != null)
             buffer.returnToPool();
@@ -120,10 +140,12 @@ public class OSF2FTextSearch extends OSF2FSearch implements OSF2FMessage {
         return type;
     }
 
+    @Override
     public int getMessageSize() {
         return messageLength;
     }
 
+    @Override
     public int getValueID() {
         return searchString.hashCode();
     }
