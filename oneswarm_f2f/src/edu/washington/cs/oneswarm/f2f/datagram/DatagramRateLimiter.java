@@ -9,7 +9,7 @@ import java.util.logging.Logger;
 public class DatagramRateLimiter {
     public final static Logger logger = Logger.getLogger(DatagramRateLimiter.class.getName());
 
-    protected volatile int availableTokens;
+    protected volatile int availableTokens = 0;
 
     protected int maxAvailableTokens;
 

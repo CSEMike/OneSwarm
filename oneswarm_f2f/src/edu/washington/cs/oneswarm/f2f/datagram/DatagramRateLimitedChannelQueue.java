@@ -46,6 +46,7 @@ public class DatagramRateLimitedChannelQueue extends DatagramRateLimiter {
     @Override
     public synchronized int refillBucket(int tokens) {
         availableTokens += tokens;
+        assert (availableTokens >= 0);
         if (logger.isLoggable(Level.FINEST)) {
             logger.finest(toString() + ": refilling " + tokens + " tokens, available="
                     + availableTokens);

@@ -296,6 +296,9 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
                 // Throw out to prevent buffer overflow.
                 logger.warning("Incoming service message dropped, exceeded message buffer.");
                 return true;
+            } else if (msg.getSequenceNumber() < serviceSequenceNumber) {
+                logger.info("Incoming service message dropped, already processed.");
+                return true;
             } else {
                 DirectByteBuffer payload = msg.transferPayload();
                 if (payload.remaining(ss) > 0) {
