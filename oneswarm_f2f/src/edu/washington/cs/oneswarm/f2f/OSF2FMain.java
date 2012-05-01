@@ -412,7 +412,7 @@ public class OSF2FMain {
                         .getNotionalAddress().getAddress().getHostAddress(), remotePub);
                 connection.close();
             } else if (f.isBlocked()) {
-                logger.warning("connection from blocked user: " + f.getNick() + ", diconnecting");
+                logger.warning("connection from blocked user: " + f.getNick() + ", disconnecting");
                 connection.close();
             } else {
                 logger.finer("connection from: " + f.getNick());
