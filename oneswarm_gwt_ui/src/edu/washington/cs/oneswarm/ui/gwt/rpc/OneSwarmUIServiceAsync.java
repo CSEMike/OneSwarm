@@ -12,9 +12,6 @@ public interface OneSwarmUIServiceAsync {
 
     public void getVersion(String session, AsyncCallback<String> callback);
 
-    public void selectFileOrDirectory(String session, boolean directory,
-            AsyncCallback<String> callback);
-
     public void createSwarmFromLocalFileSystemPath(String session, String basePath,
             ArrayList<String> path, boolean startSeeding, String announce,
             ArrayList<PermissionsGroup> inPermittedGroups, AsyncCallback<Boolean> callback);
@@ -338,5 +335,8 @@ public interface OneSwarmUIServiceAsync {
     void saveClientServices(ArrayList<ClientServiceDTO> services, AsyncCallback<Void> callback);
 
     void saveSharedServices(ArrayList<SharedServiceDTO> services, AsyncCallback<Void> callback);
+
+	void listFiles(String session, String string, AsyncCallback<FileInfo[]> callback);
+
 
 }

@@ -802,6 +802,11 @@ os-friendPanel {
 	font-weight: bold;
 }
 
+/* GWT File Browser */
+.fileBrowserPopup {
+	z-index: 2000 !important;
+}
+
 /**
  * ScrollTable
  
