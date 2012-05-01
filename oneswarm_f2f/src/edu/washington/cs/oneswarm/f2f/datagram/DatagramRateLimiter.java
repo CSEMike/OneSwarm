@@ -11,7 +11,7 @@ public class DatagramRateLimiter {
 
     protected volatile int availableTokens = 0;
 
-    protected int maxAvailableTokens;
+    protected int maxAvailableTokens = 2 * DatagramConnection.MAX_DATAGRAM_SIZE;
 
     protected final ArrayList<DatagramRateLimiter> queues = new ArrayList<DatagramRateLimiter>();
     private final Comparator<DatagramRateLimiter> comparator = new Comparator<DatagramRateLimiter>() {
