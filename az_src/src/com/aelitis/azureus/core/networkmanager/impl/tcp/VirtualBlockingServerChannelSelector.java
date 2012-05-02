@@ -22,11 +22,20 @@
 
 package com.aelitis.azureus.core.networkmanager.impl.tcp;
 
-import java.net.*;
-import java.nio.channels.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.nio.channels.AsynchronousCloseException;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 
-import org.gudy.azureus2.core3.logging.*;
-import org.gudy.azureus2.core3.util.*;
+import org.gudy.azureus2.core3.logging.LogAlert;
+import org.gudy.azureus2.core3.logging.LogEvent;
+import org.gudy.azureus2.core3.logging.LogIDs;
+import org.gudy.azureus2.core3.logging.Logger;
+import org.gudy.azureus2.core3.util.AEMonitor;
+import org.gudy.azureus2.core3.util.AEThread;
+import org.gudy.azureus2.core3.util.Debug;
+import org.gudy.azureus2.core3.util.SystemTime;
 
 import com.aelitis.azureus.core.networkmanager.VirtualServerChannelSelector;
 
@@ -65,7 +74,8 @@ public class VirtualBlockingServerChannelSelector
    * Start the server and begin accepting incoming connections.
    * 
    */
-  public void start() {
+  @Override
+public void start() {
   	try{
   		this_mon.enter();
   	
@@ -81,7 +91,8 @@ public class VirtualBlockingServerChannelSelector
 	        if (Logger.isEnabled()) 	Logger.log(new LogEvent(LOGID, "TCP incoming server socket "	+ bind_address));
 	        
 	        AEThread accept_thread = new AEThread( "VServerSelector:port" + bind_address.getPort() ) {
-	          public void runSupport() {
+	          @Override
+            public void runSupport() {
 	            accept_loop();
 	          }
 	        };
@@ -105,12 +116,14 @@ public class VirtualBlockingServerChannelSelector
   /**
    * Stop the server.
    */
-  public void stop() {
+  @Override
+public void stop() {
   	try{
   		this_mon.enter();
 
 	    if( server_channel != null ) {
 	      try {
+                    server_channel.socket().close();
 	        server_channel.close();
 	        server_channel = null;
 	      }
@@ -147,13 +160,15 @@ public class VirtualBlockingServerChannelSelector
    * Is this selector actively running
    * @return true if enabled, false if not running
    */
-  public boolean isRunning() {
+  @Override
+public boolean isRunning() {
   	if( server_channel != null && server_channel.isOpen() )  return true;
   	return false;
   }
   
   
-  public InetAddress getBoundToAddress() {
+  @Override
+public InetAddress getBoundToAddress() {
   	if( server_channel != null ) {
   		return server_channel.socket().getInetAddress();
   	}
@@ -161,7 +176,8 @@ public class VirtualBlockingServerChannelSelector
   }
   
   
-  public long getTimeOfLastAccept() {
+  @Override
+public long getTimeOfLastAccept() {
   	return last_accept_time;
   }
 }

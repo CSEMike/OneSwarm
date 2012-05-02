@@ -24,18 +24,12 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
     private PortMatcher matcher;
     final long serverSearchKey;
     final int serviceChannels;
+    private IncomingSocketChannelManager iscm;
 
     public ClientService(long key) {
         this.serverSearchKey = key;
         COConfigurationManager.setParameter(getEnabledKey(), false);
         this.serviceChannels = COConfigurationManager.getIntParameter(getChannelsKey());
-        IncomingSocketChannelManager incomingSocketChannelManager = new IncomingSocketChannelManager(
-                getPortKey(), getEnabledKey());
-        try {
-            incomingSocketChannelManager.setExplicitBindAddress(InetAddress.getByName("127.0.0.1"));
-        } catch (UnknownHostException e) {
-        }
-
     }
 
     public void activate() {
@@ -46,6 +40,12 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
             return;
         }
         active = true;
+        iscm = new IncomingSocketChannelManager(getPortKey(), getEnabledKey());
+        try {
+            iscm.setExplicitBindAddress(InetAddress.getByName("127.0.0.1"));
+        } catch (UnknownHostException e) {
+        }
+
         try {
             int port = getPort();
             COConfigurationManager.setParameter(getEnabledKey(), true);
@@ -114,6 +114,7 @@ public class ClientService implements RoutingListener, Comparable<ClientService>
         COConfigurationManager.removeParameter(getNameKey());
         COConfigurationManager.removeParameter(getPortKey());
         COConfigurationManager.removeParameter(getEnabledKey());
+        iscm.close();
     }
 
     private String getEnabledKey() {
