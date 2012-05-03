@@ -2,7 +2,6 @@ package edu.washington.cs.oneswarm.ui.gwt.client.newui.publish;
 
 import java.util.List;
 
-
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -21,7 +20,6 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmGWT;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmRPCClient;
-import edu.washington.cs.oneswarm.ui.gwt.client.fileDialog.FileBrowser;
 import edu.washington.cs.oneswarm.ui.gwt.client.i18n.OSMessages;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.OneSwarmCss;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.StringTools;
@@ -58,7 +56,7 @@ public class PublishSwarmInfoPanel extends VerticalPanel {
 
         includePreview.addClickHandler(new ClickHandler() {
             public void onClick(ClickEvent event) {
-            	FileBrowser dialog = new FileBrowser(
+                OneSwarmRPCClient.getService().selectFileOrDirectory(
                         OneSwarmRPCClient.getSessionID(), false, new AsyncCallback<String>() {
                             public void onFailure(Throwable caught) {
                                 caught.printStackTrace();
@@ -75,7 +73,6 @@ public class PublishSwarmInfoPanel extends VerticalPanel {
                                 previewImage.setVisible(true);
                             }
                         });
-            	dialog.show();
             }
         });
         lhs.add(previewImage);

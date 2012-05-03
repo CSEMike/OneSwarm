@@ -6,15 +6,14 @@ import java.util.HashMap;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants.SecurityLevel;
-import edu.washington.cs.oneswarm.ui.gwt.shared.fileDialog.FileItem;
 
 public interface OneSwarmUIServiceAsync {
     public void startBackend(AsyncCallback callback);
 
     public void getVersion(String session, AsyncCallback<String> callback);
 
-    /*void selectFileOrDirectory(String session, boolean directory,
-			AsyncCallback<String> callback);*/
+    public void selectFileOrDirectory(String session, boolean directory,
+            AsyncCallback<String> callback);
 
     public void createSwarmFromLocalFileSystemPath(String session, String basePath,
             ArrayList<String> path, boolean startSeeding, String announce,
@@ -339,8 +338,5 @@ public interface OneSwarmUIServiceAsync {
     void saveClientServices(ArrayList<ClientServiceDTO> services, AsyncCallback<Void> callback);
 
     void saveSharedServices(ArrayList<SharedServiceDTO> services, AsyncCallback<Void> callback);
-
-	void listFiles(String session, String string, AsyncCallback<FileItem[]> callback);
-
 
 }

@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.gen2.table.client.FixedWidthFlexTable;
@@ -35,7 +34,6 @@ import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmDialogBox;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmGWT;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmRPCClient;
 import edu.washington.cs.oneswarm.ui.gwt.client.Updateable;
-import edu.washington.cs.oneswarm.ui.gwt.client.fileDialog.FileBrowser;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.EntireUIRoot;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.HelpButton;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.OneSwarmCss;
@@ -795,14 +793,10 @@ public class TorrentDownloaderDialog extends OneSwarmDialogBox implements Update
             if (OneSwarmGWT.isRemoteAccess()) {
                 locationButton.setEnabled(false);
             }
-            
-            locationButton.addClickHandler(new ClickHandler(){
-
-				@Override
-				public void onClick(ClickEvent event) {
-					locationButton.setEnabled(false);
-					
-					FileBrowser dialog = new FileBrowser(
+            locationButton.addClickListener(new ClickListener() {
+                public void onClick(Widget sender) {
+                    locationButton.setEnabled(false);
+                    OneSwarmRPCClient.getService().selectFileOrDirectory(
                             OneSwarmRPCClient.getSessionID(), true, new AsyncCallback<String>() {
                                 public void onFailure(Throwable caught) {
                                     System.err.println(caught.toString());
@@ -816,13 +810,9 @@ public class TorrentDownloaderDialog extends OneSwarmDialogBox implements Update
                                                 .truncate(result, 50, true));
                                     }
                                 }
-                            }
-                      );
-					dialog.show();
-				}
-            	
+                            });
+                }
             });
-            
             locationButton.addStyleName(OneSwarmCss.SMALL_BUTTON);
             locationPanel.add(locationButton);
             locationPanel.setCellVerticalAlignment(locationLabel, VerticalPanel.ALIGN_MIDDLE);

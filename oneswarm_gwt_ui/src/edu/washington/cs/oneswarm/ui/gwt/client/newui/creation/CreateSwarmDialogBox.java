@@ -2,7 +2,6 @@ package edu.washington.cs.oneswarm.ui.gwt.client.newui.creation;
 
 import java.util.ArrayList;
 
-
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.RunAsyncCallback;
 import com.google.gwt.event.dom.client.ChangeEvent;
@@ -29,7 +28,6 @@ import edu.washington.cs.oneswarm.ui.gwt.client.FileTreePanel;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmDialogBox;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmGWT;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmRPCClient;
-import edu.washington.cs.oneswarm.ui.gwt.client.fileDialog.FileBrowser;
 import edu.washington.cs.oneswarm.ui.gwt.client.filebrowser.TorrentDownloaderDialog;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.EntireUIRoot;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.HelpButton;
@@ -520,7 +518,7 @@ public class CreateSwarmDialogBox extends OneSwarmDialogBox {
              * directory dialog box in GWT or HTML in general.
              */
             OneSwarmGWT.log("select file/dir called");
-            FileBrowser dialog = new FileBrowser(OneSwarmRPCClient.getSessionID(),
+            OneSwarmRPCClient.getService().selectFileOrDirectory(OneSwarmRPCClient.getSessionID(),
                     useDirChooser, new AsyncCallback<String>() {
                         public void onFailure(Throwable caught) {
                             caught.printStackTrace();
@@ -561,7 +559,6 @@ public class CreateSwarmDialogBox extends OneSwarmDialogBox {
                             }
                         }
                     });
-            dialog.show();
         } else {
             super.onClick(event);
         }
