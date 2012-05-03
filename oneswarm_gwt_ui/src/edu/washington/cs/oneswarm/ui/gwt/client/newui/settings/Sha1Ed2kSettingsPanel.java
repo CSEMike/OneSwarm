@@ -1,6 +1,5 @@
 package edu.washington.cs.oneswarm.ui.gwt.client.newui.settings;
 
-
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.rpc.AsyncCallback;
@@ -11,7 +10,6 @@ import com.google.gwt.user.client.ui.TextBox;
 
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmGWT;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmRPCClient;
-import edu.washington.cs.oneswarm.ui.gwt.client.fileDialog.FileBrowser;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.HelpButton;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.OneSwarmCss;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.StringTools;
@@ -74,7 +72,7 @@ public class Sha1Ed2kSettingsPanel extends SettingsPanel {
             multiSwarmBrowse.addClickHandler(new ClickHandler() {
                 public void onClick(ClickEvent event) {
                     multiSwarmBrowse.setEnabled(false);
-                    FileBrowser dialog = new FileBrowser(
+                    OneSwarmRPCClient.getService().selectFileOrDirectory(
                             OneSwarmRPCClient.getSessionID(), true, new AsyncCallback<String>() {
                                 public void onFailure(Throwable caught) {
                                     caught.printStackTrace();
@@ -95,7 +93,6 @@ public class Sha1Ed2kSettingsPanel extends SettingsPanel {
                                     }
                                 }
                             });
-                    dialog.show();
                 }
             });
         }

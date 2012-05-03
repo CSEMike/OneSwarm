@@ -7,7 +7,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-
 import com.allen_sauer.gwt.dnd.client.PickupDragController;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
@@ -52,7 +51,6 @@ import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmGWT;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmRPCClient;
 import edu.washington.cs.oneswarm.ui.gwt.client.ReportableErrorDialogBox;
 import edu.washington.cs.oneswarm.ui.gwt.client.Updateable;
-import edu.washington.cs.oneswarm.ui.gwt.client.fileDialog.FileBrowser;
 import edu.washington.cs.oneswarm.ui.gwt.client.filebrowser.TorrentDownloaderDialog;
 import edu.washington.cs.oneswarm.ui.gwt.client.filebrowser.UpdateSkippedFilesDialog;
 import edu.washington.cs.oneswarm.ui.gwt.client.i18n.OSMessages;
@@ -702,7 +700,7 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
 
         } else if (inActionKey.equals(Strings.ADD_SWARM_FILE)) {
 
-        	FileBrowser dialog = new FileBrowser(OneSwarmRPCClient.getSessionID(),
+            OneSwarmRPCClient.getService().selectFileOrDirectory(OneSwarmRPCClient.getSessionID(),
                     false, new AsyncCallback<String>() {
                         @Override
                         public void onFailure(Throwable caught) {
@@ -747,7 +745,6 @@ public class SwarmsBrowser extends VerticalPanel implements Updateable {
                                             });
                         }
                     });
-        	dialog.show();
 
         } else if (inActionKey.equals(Strings.SWARM_DELETE)) {
 

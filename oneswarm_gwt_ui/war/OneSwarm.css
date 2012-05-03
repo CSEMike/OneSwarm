@@ -800,13 +800,6 @@ os-friendPanel {
 	font-size: 16px;
 }
 
-/* Mini GWT File Browser */
-.nickmart-file-browser-popup{
-	background-color: #ffc;
-	border: 3px solid #009;
-	z-index: 2000 !important;
-}
-
 /**
  * ScrollTable
  
