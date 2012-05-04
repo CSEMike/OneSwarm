@@ -6,7 +6,6 @@ import java.util.HashMap;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants.SecurityLevel;
-import edu.washington.cs.oneswarm.ui.gwt.shared.fileDialog.FileItem;
 
 public interface OneSwarmUIServiceAsync {
     public void startBackend(AsyncCallback callback);
@@ -340,7 +339,7 @@ public interface OneSwarmUIServiceAsync {
 
     void saveSharedServices(ArrayList<SharedServiceDTO> services, AsyncCallback<Void> callback);
 
-	void listFiles(String session, String string, AsyncCallback<FileItem[]> callback);
+	void listFiles(String session, String string, AsyncCallback<FileInfo[]> callback);
 
 
 }

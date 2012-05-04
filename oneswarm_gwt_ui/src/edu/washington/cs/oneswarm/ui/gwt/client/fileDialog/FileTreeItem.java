@@ -1,15 +1,13 @@
 package edu.washington.cs.oneswarm.ui.gwt.client.fileDialog;
 
-
-import com.google.gwt.user.client.ui.IsTreeItem;
 import com.google.gwt.user.client.ui.TreeItem;
 
-import edu.washington.cs.oneswarm.ui.gwt.shared.fileDialog.FileItem;
+import edu.washington.cs.oneswarm.ui.gwt.rpc.FileInfo;
 
-public class FileTreeItem extends TreeItem implements IsTreeItem {
-	private FileItem file;
+public class FileTreeItem extends TreeItem {
+	private FileInfo file;
 
-	public FileTreeItem(FileItem file) {
+	public FileTreeItem(FileInfo file) {
 		super(file.name);
 		this.file = file;
 	}
@@ -24,5 +22,9 @@ public class FileTreeItem extends TreeItem implements IsTreeItem {
 
 	public boolean isDirectory() {
 		return file.isDirectory;
+	}
+	
+	public FileInfo.FileStatusFlag fileStatus(){
+		return file.statusFlag;
 	}
 }

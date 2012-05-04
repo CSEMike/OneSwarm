@@ -12,6 +12,7 @@ import com.google.gwt.event.logical.shared.SelectionHandler;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
+import com.google.gwt.user.client.ui.HasTreeItems;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.ScrollPanel;
@@ -20,8 +21,8 @@ import com.google.gwt.user.client.ui.TreeItem;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmRPCClient;
+import edu.washington.cs.oneswarm.ui.gwt.rpc.FileInfo;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmUIServiceAsync;
-import edu.washington.cs.oneswarm.ui.gwt.shared.fileDialog.FileItem;
 
 public class FileBrowser {
 	private String session;
@@ -31,7 +32,6 @@ public class FileBrowser {
 	private OneSwarmUIServiceAsync fileSystem;
 	private PopupPanel popup;
 
-	private String result;	
 	private Queue<FileTreeItem> openItems;
 	
 
@@ -42,46 +42,17 @@ public class FileBrowser {
 		this.session = session;
 		this.callback = callback;
 		this.directoryOk = directoryOk;
-		result = "!noSelection";
 	}
 
 	private void createPopup() {
 		openItems = new LinkedList<FileTreeItem>();
 
 		final Tree fileTree = new Tree();
-		if (fileSystem == null) {
-			//fileSystem = GWT.create(OneSwarmUIService.class);
-			fileSystem = OneSwarmRPCClient.getService();
-		}
-
-		// Init tree with filesystem roots
-		fileSystem.listFiles(session, "", new AsyncCallback<FileItem[]>() {
-			public void onFailure(Throwable caught) {
-				// Throw Error
-			}
-
-			public void onSuccess(FileItem[] result) {
-				if (result != null)
-					for (int i = 0; i < result.length; i++) {
-						FileTreeItem temp = new FileTreeItem(result[i]);
-						if (temp.isDirectory())
-							temp.setText(temp.fileName() + DIRECTORY_IDENTIFIER);
-						fileTree.addItem(temp);
-					}
-			}
-		});
-
+		growTree(fileTree,"");
+		
 		fileTree.addSelectionHandler(new SelectionHandler<TreeItem>() {
 			public void onSelection(SelectionEvent<TreeItem> event) {
 				FileTreeItem item = (FileTreeItem) event.getSelectedItem();
-				if(!item.filePath().contains("!")){
-					if(directoryOk || !item.isDirectory())
-						result = item.filePath();
-					else
-						result = "!directory";
-				}
-				else
-					result = "!noSelection";
 				if (item.isDirectory()) {
 					if (item.getChildCount() == 0)
 						growTree(item);
@@ -92,7 +63,6 @@ public class FileBrowser {
 		fileTree.addOpenHandler(new OpenHandler<TreeItem>() {
 			public void onOpen(OpenEvent<TreeItem> event) {
 				FileTreeItem item = (FileTreeItem) event.getTarget();
-				
 				closeItems(item.filePath());
 				openItems.add(item);
 			}
@@ -102,13 +72,14 @@ public class FileBrowser {
 		Button selectButton = new Button("Select");
 		selectButton.addClickHandler(new ClickHandler() {
 			public void onClick(ClickEvent event) {
-				if (result.startsWith("!noSelection"))
+				FileTreeItem item = (FileTreeItem) fileTree.getSelectedItem();
+				if(item.fileStatus() == FileInfo.FileStatusFlag.NO_READ_PERMISSION)
 					Window.alert("The selected file could not be found or does not have read permission. Please choose another file.");
-				else if (result.startsWith("!directory"))
+				else if(!directoryOk && item.isDirectory())
 					Window.alert("You have selected a directory. Please choose a file.");
-				else {
-					callback.onSuccess(result);
-					hide();
+				else{
+					callback.onSuccess(item.filePath());
+					popup.hide();
 				}
 			}
 		});
@@ -116,9 +87,8 @@ public class FileBrowser {
 		Button closeButton = new Button("Cancel");
 		closeButton.addClickHandler(new ClickHandler() {
 			public void onClick(ClickEvent event) {
-				result = null;
 				callback.onFailure(new Exception("No file Selected"));
-				hide();
+				popup.hide();
 			}
 		});
 
@@ -157,28 +127,29 @@ public class FileBrowser {
 		}
 	}
 
-	private void growTree(final FileTreeItem item) {
+	private void growTree(final FileTreeItem item){
+		growTree(item, item.filePath());
+		item.setState(true);
+	}
+	
+	private void growTree(final HasTreeItems root, String filePath) {
 		if (fileSystem == null) {
-			//fileSystem = GWT.create(OneSwarmUIService.class);
 			fileSystem = OneSwarmRPCClient.getService();
 		}
-		
-		System.out.println("NickMartTest - Calling listFiles()");
 
-		fileSystem.listFiles(session, item.filePath(), new AsyncCallback<FileItem[]>() {
+		fileSystem.listFiles(session, filePath, new AsyncCallback<FileInfo[]>() {
 			public void onFailure(Throwable caught) {
-				// Throw error?
+				callback.onFailure(caught);
 			}
 
-			public void onSuccess(FileItem[] result) {
+			public void onSuccess(FileInfo[] result) {
 				if (result != null) {
 					for (int i = 0; i < result.length; i++) {
 						FileTreeItem temp = new FileTreeItem(result[i]);
 						if (temp.isDirectory())
 							temp.setText(temp.fileName() + DIRECTORY_IDENTIFIER);
-						item.addItem(temp);
+						root.addItem(temp);
 					}
-					item.setState(true);
 				}
 			}
 		});
@@ -188,9 +159,5 @@ public class FileBrowser {
 		if (popup == null)
 			createPopup();
 		popup.center();
-	}
-
-	public void hide() {
-		popup.hide();
 	}
 }

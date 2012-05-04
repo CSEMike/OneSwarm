@@ -138,6 +138,7 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.FriendList;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.LocaleLite;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants.SecurityLevel;
+import edu.washington.cs.oneswarm.ui.gwt.rpc.FileInfo;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmException;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmUIService;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.PagedTorrentInfo;
@@ -164,7 +165,6 @@ import edu.washington.cs.oneswarm.watchdir.MagicDecider;
 import edu.washington.cs.oneswarm.watchdir.MagicDirectoryManager;
 import edu.washington.cs.oneswarm.watchdir.UpdatingFileTree;
 import edu.washington.cs.oneswarm.watchdir.UpdatingFileTreeListener;
-import edu.washington.cs.oneswarm.ui.gwt.shared.fileDialog.FileItem;
 
 public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSwarmUIService {
     private static Logger logger = Logger.getLogger(OneSwarmUIServiceImpl.class.getName());
@@ -562,7 +562,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
      * @author Nick Martindell
      */
     @Override
-    public FileItem[] listFiles(String session, String path) {
+    public FileInfo[] listFiles(String session, String path) {
     	System.out.println("NickMartTest - listFiles() Called.");
     	try {
             if (this.passedSessionIDCheck(session) == false) {
@@ -572,7 +572,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 	    	//Special Flags
 			if (path.contains("!")){
 				if(path.endsWith("!noPerm"))
-					return new FileItem[]{new FileItem("!", "-Permission Denied-", false)};
+					return new FileInfo[]{new FileInfo("", "-Permission Denied-", false, false)};
 				else
 					return null;
 			}
@@ -589,123 +589,22 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 	
 			//
 			if (directory.length > 0) {
-				FileItem[] files = new FileItem[directory.length];
+				FileInfo[] files = new FileInfo[directory.length];
 				for (int i = 0; i < files.length; i++) {
 					String name = directory[i].getName();
 					if (name.equalsIgnoreCase(""))
 						name = "/";
-					if (directory[i].canRead()) {
-						files[i] = new FileItem(directory[i].getAbsolutePath(),
-								name, directory[i].isDirectory());
-					} else {
-						files[i] = new FileItem(directory[i].getAbsolutePath()+"!noPerm", name, directory[i].isDirectory());
-					}
+
+					files[i] = new FileInfo(directory[i].getAbsolutePath(), name, directory[i].isDirectory(), directory[i].canRead());
 				}
 				return files;
 			}
-			return new FileItem[]{new FileItem(path+"!empty", "-Empty Directory-", false)};
+			return new FileInfo[]{new FileInfo(path, "-Empty Directory-", false, false)};
     	} catch (Exception e) {
     		e.printStackTrace();
     		return null;
     	}
 	}
-
-    /*public String selectFileOrDirectory(String session, final boolean directory) {
-        try {
-            if (this.passedSessionIDCheck(session) == false) {
-                throw new Exception("bad cookie");
-            }
-            if (remoteAccess) {
-                throw new Exception("call not allowed over remote access");
-            }
-            // String mode = "file";
-            // if (directory == true) {
-            // mode = "folder";
-            // }
-
-            // String os = System.getProperty("os.name");
-            // if (!os.contains("Mac OS") || true) {
-            final Semaphore semaphore = new Semaphore(0);
-            final ArrayList<String> paths = new ArrayList<String>();
-            Utils.execSWTThread(new AERunnable() {
-                @Override
-                public void runSupport() {
-                    // Display.getCurrent().
-                    Display diplay = Display.getCurrent();
-                    Shell shell = new Shell(diplay);
-                    // Point oldSize = shell.getSize();
-                    shell.setSize(1, 1);
-
-                    if (directory) {
-                        shell.setText("Select directory");
-                    } else {
-                        shell.setText("Select file");
-                    }
-                    shell.open();
-                    shell.forceActive();
-
-                    // Shell shell = Utils.findAnyShell();
-                    System.out.println("got shell: " + shell);
-                    String path;
-                    
-                    if (directory) {
-                    	DirectoryDialog dialog = new DirectoryDialog(shell);
-
-                        path = dialog.open();
-                        System.out.println("RESULT=" + path);
-                    } else {
-                        FileDialog fileDialog = new FileDialog(shell, SWT.SINGLE);
-                        path = fileDialog.open();
-                        System.out.println("RESULT=" + path);
-                    }
-
-                    if (path != null) {
-                        paths.add(path);
-                    }
-                    
-                    
-                    
-                    // shell.setSize(oldSize);
-                    shell.dispose();
-                    semaphore.release();
-                }
-            });
-            semaphore.acquire();
-            if (paths.size() > 0) {
-                return paths.get(0);
-            } else {
-                return null;
-            }
-            // } else {
-            //
-            // Process p = Runtime.getRuntime().exec(new String[] {
-            // /**
-            // * The first of these works in all browsers and pops up in
-            // * front. We use system events for hosted mode.
-            // */
-            // // "/usr/bin/osascript", "-e",
-            // //
-            // "tell application (path to frontmost application as Unicode text) to return POSIX path of (choose file)"
-            // "/usr/bin/osascript", "-e",
-            // "tell application \"System Events\" \n activate \n return POSIX path of (choose "
-            // + mode + ") \n end tell" });
-            //
-            // int status = p.waitFor();
-            // if (status != 0) {
-            // return null;
-            // }
-            //
-            // String path = (new BufferedReader(new
-            // InputStreamReader(p.getInputStream()))).readLine();
-            //
-            // return path;
-            // }
-    /*
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }*/
 
     @Override
     public Boolean createSwarmFromLocalFileSystemPath(final String session, final String basePath,

@@ -6,7 +6,6 @@ import java.util.HashMap;
 import com.google.gwt.user.client.rpc.RemoteService;
 
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants.SecurityLevel;
-import edu.washington.cs.oneswarm.ui.gwt.shared.fileDialog.FileItem;
 
 public interface OneSwarmUIService extends RemoteService {
     public Boolean startBackend() throws OneSwarmException;
@@ -294,6 +293,6 @@ public interface OneSwarmUIService extends RemoteService {
 
     public void saveSharedServices(ArrayList<SharedServiceDTO> services) throws OneSwarmException;
 
-	public FileItem[] listFiles(String session, String string);
+	public FileInfo[] listFiles(String session, String string);
 
 }
