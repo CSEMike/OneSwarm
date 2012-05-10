@@ -3,6 +3,7 @@ package edu.washington.cs.oneswarm.ui.gwt.client.newui.settings;
 import java.util.ArrayList;
 import java.util.List;
 
+
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.Window;
@@ -15,6 +16,7 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmGWT;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmRPCClient;
+import edu.washington.cs.oneswarm.ui.gwt.client.fileDialog.FileBrowser;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.OneSwarmCss;
 
 public class MagicDirectorySettingsPanel extends SettingsPanel implements ClickHandler {
@@ -235,7 +237,7 @@ public class MagicDirectorySettingsPanel extends SettingsPanel implements ClickH
         Object sender = event.getSource();
         if (sender.equals(addButton)) {
             addButton.setEnabled(false);
-            OneSwarmRPCClient.getService().selectFileOrDirectory(OneSwarmRPCClient.getSessionID(),
+            FileBrowser dialog = new FileBrowser(OneSwarmRPCClient.getSessionID(),
                     true, new AsyncCallback<String>() {
                         public void onFailure(Throwable caught) {
                             caught.printStackTrace();
@@ -272,6 +274,7 @@ public class MagicDirectorySettingsPanel extends SettingsPanel implements ClickH
                             addButton.setEnabled(true);
                         }
                     });
+            dialog.show();
         } else if (sender.equals(removeButton)) {
             if (currentList.getSelectedIndex() != -1) {
                 watchDirs.remove(currentList.getSelectedIndex());

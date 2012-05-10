@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
@@ -41,11 +40,6 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 
 import org.bouncycastle.util.encoders.Base64;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.DirectoryDialog;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.FileDialog;
-import org.eclipse.swt.widgets.Shell;
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.config.StringList;
 import org.gudy.azureus2.core3.config.impl.ConfigurationManager;
@@ -61,7 +55,6 @@ import org.gudy.azureus2.core3.torrent.TOTorrentFactory;
 import org.gudy.azureus2.core3.torrent.TOTorrentFile;
 import org.gudy.azureus2.core3.torrent.TOTorrentProgressListener;
 import org.gudy.azureus2.core3.torrent.impl.TOTorrentImpl;
-import org.gudy.azureus2.core3.util.AERunnable;
 import org.gudy.azureus2.core3.util.Base32;
 import org.gudy.azureus2.core3.util.ByteFormatter;
 import org.gudy.azureus2.core3.util.Constants;
@@ -119,7 +112,9 @@ import edu.washington.cs.oneswarm.ui.gwt.CoreInterface;
 import edu.washington.cs.oneswarm.ui.gwt.CoreTools;
 import edu.washington.cs.oneswarm.ui.gwt.RemoteAccessConfig;
 import edu.washington.cs.oneswarm.ui.gwt.RemoteAccessForward;
+import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmGWT;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmRPCClient;
+import edu.washington.cs.oneswarm.ui.gwt.client.i18n.OSMessages;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.FileTypeFilter;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.Strings;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.SwarmsBrowser;
@@ -138,6 +133,7 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.FriendList;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.LocaleLite;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants.SecurityLevel;
+import edu.washington.cs.oneswarm.ui.gwt.rpc.FileInfo;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmException;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmUIService;
 import edu.washington.cs.oneswarm.ui.gwt.rpc.PagedTorrentInfo;
@@ -177,7 +173,6 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
     private int mLastCount;
     private boolean stopped = false;
     private boolean firstRun = true;
-    private final boolean limitedrestrict = false;
     private boolean recentchanges = false;
 
     private final boolean LOG_REQUEST_TIMES = false;
@@ -554,99 +549,43 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
         }
         recentchanges = value;
     }
-
+    
+    /**
+     * Returns an array of FileItems, a compact format for transmitting information about files stored on the server.
+     * @param path The directory path to display the contents of.
+     * @return Array of FileItems's one for each file or directory in the given path.
+     * @author Nick Martindell
+     */
     @Override
-    public String selectFileOrDirectory(String session, final boolean directory) {
-        try {
+    public FileInfo[] listFiles(String session, String path) {
+    	try {
             if (this.passedSessionIDCheck(session) == false) {
                 throw new Exception("bad cookie");
             }
-            if (remoteAccess) {
-                throw new Exception("call not allowed over remote access");
-            }
-            // String mode = "file";
-            // if (directory == true) {
-            // mode = "folder";
-            // }
+	
+			//Empty path returns root dirs, otherwise list dirs under path
+			File[] directory;
+			if (path.equalsIgnoreCase("")) {
+				directory = File.listRoots();
+			} else {
+				directory = new File(path).listFiles();
+				Arrays.sort(directory);
+			}
+			
+			FileInfo[] files = new FileInfo[directory.length];
+			for (int i = 0; i < files.length; i++) {
+				String name = directory[i].getName();
+				if (name.equalsIgnoreCase(""))
+					name = "/";
 
-            // String os = System.getProperty("os.name");
-            // if (!os.contains("Mac OS") || true) {
-            final Semaphore semaphore = new Semaphore(0);
-            final ArrayList<String> paths = new ArrayList<String>();
-            Utils.execSWTThread(new AERunnable() {
-                @Override
-                public void runSupport() {
-                    // Display.getCurrent().
-                    Display diplay = Display.getCurrent();
-                    Shell shell = new Shell(diplay);
-                    // Point oldSize = shell.getSize();
-                    shell.setSize(1, 1);
-
-                    if (directory) {
-                        shell.setText("Select directory");
-                    } else {
-                        shell.setText("Select file");
-                    }
-                    shell.open();
-                    shell.forceActive();
-
-                    // Shell shell = Utils.findAnyShell();
-                    System.out.println("got shell: " + shell);
-                    String path;
-                    if (directory) {
-                        DirectoryDialog dialog = new DirectoryDialog(shell);
-
-                        path = dialog.open();
-                        System.out.println("RESULT=" + path);
-                    } else {
-                        FileDialog fileDialog = new FileDialog(shell, SWT.SINGLE);
-                        path = fileDialog.open();
-                        System.out.println("RESULT=" + path);
-                    }
-
-                    if (path != null) {
-                        paths.add(path);
-                    }
-                    // shell.setSize(oldSize);
-                    shell.dispose();
-                    semaphore.release();
-                }
-            });
-            semaphore.acquire();
-            if (paths.size() > 0) {
-                return paths.get(0);
-            } else {
-                return null;
-            }
-            // } else {
-            //
-            // Process p = Runtime.getRuntime().exec(new String[] {
-            // /**
-            // * The first of these works in all browsers and pops up in
-            // * front. We use system events for hosted mode.
-            // */
-            // // "/usr/bin/osascript", "-e",
-            // //
-            // "tell application (path to frontmost application as Unicode text) to return POSIX path of (choose file)"
-            // "/usr/bin/osascript", "-e",
-            // "tell application \"System Events\" \n activate \n return POSIX path of (choose "
-            // + mode + ") \n end tell" });
-            //
-            // int status = p.waitFor();
-            // if (status != 0) {
-            // return null;
-            // }
-            //
-            // String path = (new BufferedReader(new
-            // InputStreamReader(p.getInputStream()))).readLine();
-            //
-            // return path;
-            // }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
+				files[i] = new FileInfo(directory[i].getAbsolutePath(), name, directory[i].isDirectory(), directory[i].canRead());
+			}
+			return files;
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    		return null;
+    	}
+	}
 
     @Override
     public Boolean createSwarmFromLocalFileSystemPath(final String session, final String basePath,
@@ -675,7 +614,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
                         int task_id = -1;
 
                         try {
-                            TorrentInfo info = null;
+                            //TorrentInfo info = null;
                             String path = paths.get(current_index);
                             File file = new File(path);
 
@@ -910,7 +849,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
                     OneSwarmConstants.ERROR_REPORTING_PORT);
             DataOutputStream out = new DataOutputStream(relay.getOutputStream());
 
-            StringWriter backing = new StringWriter();
+            //StringWriter backing = new StringWriter();
 
             byte[] bytes = inError.getText().getBytes();
             out.writeInt(bytes.length);
@@ -1195,7 +1134,7 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
         usagestats.setLimits(day, week, month, year);
     }
 
-    private boolean passedSessionIDCheck(String givenId) {
+    public boolean passedSessionIDCheck(String givenId) {
         if (hostedMode) {
             return true;
         }
