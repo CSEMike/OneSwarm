@@ -12,9 +12,6 @@ public interface OneSwarmUIServiceAsync {
 
     public void getVersion(String session, AsyncCallback<String> callback);
 
-    /*void selectFileOrDirectory(String session, boolean directory,
-			AsyncCallback<String> callback);*/
-
     public void createSwarmFromLocalFileSystemPath(String session, String basePath,
             ArrayList<String> path, boolean startSeeding, String announce,
             ArrayList<PermissionsGroup> inPermittedGroups, AsyncCallback<Boolean> callback);

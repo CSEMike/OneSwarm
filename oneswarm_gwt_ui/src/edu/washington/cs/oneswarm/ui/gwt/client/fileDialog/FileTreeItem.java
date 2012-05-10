@@ -6,7 +6,14 @@ import edu.washington.cs.oneswarm.ui.gwt.rpc.FileInfo;
 
 public class FileTreeItem extends TreeItem {
 	private FileInfo file;
+	public boolean hasBeenExpanded;
 
+	public FileTreeItem(String labelText){
+		super(labelText);
+		file = new FileInfo("", labelText, false, false);
+		hasBeenExpanded = false;
+	}
+	
 	public FileTreeItem(FileInfo file) {
 		super(file.name);
 		this.file = file;

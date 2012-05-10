@@ -12,8 +12,6 @@ public interface OneSwarmUIService extends RemoteService {
 
     public String getVersion(String session);
 
-    /*public String selectFileOrDirectory(String session, boolean directory);*/
-
     public Boolean createSwarmFromLocalFileSystemPath(String session, String basePath,
             ArrayList<String> paths, boolean startSeeding, String announce,
             ArrayList<PermissionsGroup> inPermittedGroups);

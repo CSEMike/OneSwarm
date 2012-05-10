@@ -5,15 +5,15 @@ import java.io.Serializable;
 import com.google.gwt.user.client.rpc.IsSerializable;
 
 public class FileInfo implements Serializable, IsSerializable, Comparable<FileInfo>{
-	private static final long serialVersionUID = 3L;
+	private static final long serialVersionUID = 4L;
 	public String filePath;
 	public String name;
 	public boolean isDirectory;
 	public FileStatusFlag statusFlag;
 	
+	public enum FileStatusFlag implements IsSerializable {OK, NO_READ_PERMISSION}
+	
 	public FileInfo(){}
-
-	public enum FileStatusFlag {OK, NO_READ_PERMISSION}
 	
 	public FileInfo(String filePath, String name, boolean isDirectory, boolean isReadable){
 		this.filePath = filePath;

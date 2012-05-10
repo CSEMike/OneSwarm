@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-/*import java.util.concurrent.Semaphore;*/
 import java.util.concurrent.TimeUnit;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
@@ -41,11 +40,6 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 
 import org.bouncycastle.util.encoders.Base64;
-/*import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.DirectoryDialog;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.FileDialog;
-import org.eclipse.swt.widgets.Shell;*/
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.config.StringList;
 import org.gudy.azureus2.core3.config.impl.ConfigurationManager;
@@ -61,7 +55,6 @@ import org.gudy.azureus2.core3.torrent.TOTorrentFactory;
 import org.gudy.azureus2.core3.torrent.TOTorrentFile;
 import org.gudy.azureus2.core3.torrent.TOTorrentProgressListener;
 import org.gudy.azureus2.core3.torrent.impl.TOTorrentImpl;
-/*import org.gudy.azureus2.core3.util.AERunnable;*/
 import org.gudy.azureus2.core3.util.Base32;
 import org.gudy.azureus2.core3.util.ByteFormatter;
 import org.gudy.azureus2.core3.util.Constants;
@@ -119,7 +112,9 @@ import edu.washington.cs.oneswarm.ui.gwt.CoreInterface;
 import edu.washington.cs.oneswarm.ui.gwt.CoreTools;
 import edu.washington.cs.oneswarm.ui.gwt.RemoteAccessConfig;
 import edu.washington.cs.oneswarm.ui.gwt.RemoteAccessForward;
+import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmGWT;
 import edu.washington.cs.oneswarm.ui.gwt.client.OneSwarmRPCClient;
+import edu.washington.cs.oneswarm.ui.gwt.client.i18n.OSMessages;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.FileTypeFilter;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.Strings;
 import edu.washington.cs.oneswarm.ui.gwt.client.newui.SwarmsBrowser;
@@ -563,20 +558,10 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
      */
     @Override
     public FileInfo[] listFiles(String session, String path) {
-    	System.out.println("NickMartTest - listFiles() Called.");
     	try {
             if (this.passedSessionIDCheck(session) == false) {
                 throw new Exception("bad cookie");
             }
-    	
-	    	//Special Flags
-			if (path.contains("!")){
-				if(path.endsWith("!noPerm"))
-					return new FileInfo[]{new FileInfo("", "-Permission Denied-", false, false)};
-				else
-					return null;
-			}
-				
 	
 			//Empty path returns root dirs, otherwise list dirs under path
 			File[] directory;
@@ -586,20 +571,16 @@ public class OneSwarmUIServiceImpl extends RemoteServiceServlet implements OneSw
 				directory = new File(path).listFiles();
 				Arrays.sort(directory);
 			}
-	
-			//
-			if (directory.length > 0) {
-				FileInfo[] files = new FileInfo[directory.length];
-				for (int i = 0; i < files.length; i++) {
-					String name = directory[i].getName();
-					if (name.equalsIgnoreCase(""))
-						name = "/";
+			
+			FileInfo[] files = new FileInfo[directory.length];
+			for (int i = 0; i < files.length; i++) {
+				String name = directory[i].getName();
+				if (name.equalsIgnoreCase(""))
+					name = "/";
 
-					files[i] = new FileInfo(directory[i].getAbsolutePath(), name, directory[i].isDirectory(), directory[i].canRead());
-				}
-				return files;
+				files[i] = new FileInfo(directory[i].getAbsolutePath(), name, directory[i].isDirectory(), directory[i].canRead());
 			}
-			return new FileInfo[]{new FileInfo(path, "-Empty Directory-", false, false)};
+			return files;
     	} catch (Exception e) {
     		e.printStackTrace();
     		return null;
