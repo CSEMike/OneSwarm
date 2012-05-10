@@ -1,11 +1,35 @@
 package net.sourceforge.jsocks;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.net.*;
-import java.io.*;
-import net.sourceforge.jsocks.socks.*;
+import java.awt.Button;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.Label;
+import java.awt.SystemColor;
+import java.awt.TextArea;
+import java.awt.TextField;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowListener;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.DatagramPacket;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.URL;
+import java.net.UnknownHostException;
+
 import net.sourceforge.jsocks.socks.Proxy;
+import net.sourceforge.jsocks.socks.Socks5DatagramSocket;
+import net.sourceforge.jsocks.socks.Socks5Proxy;
+import net.sourceforge.jsocks.socks.SocksDialog;
+import net.sourceforge.jsocks.socks.SocksServerSocket;
+import net.sourceforge.jsocks.socks.SocksSocket;
 
 public class SocksEcho extends Frame
                        implements ActionListener, 
@@ -82,7 +106,8 @@ public class SocksEcho extends Frame
 
 //ActionListener interface
 ///////////////////////////
-   public void actionPerformed(ActionEvent ae){
+   @Override
+public void actionPerformed(ActionEvent ae){
       Object source = ae.getSource();
 
       if(source == proxy_button)
@@ -105,6 +130,7 @@ public class SocksEcho extends Frame
 //Runnable interface
 ///////////////////////////////
 
+@Override
 public void run(){
     boolean finished_OK = true;
     try{
@@ -153,7 +179,7 @@ public void run(){
 
    private void onConnect(){
       if(mode == CONNECT_MODE){
-        status("Diconnecting...");
+            status("Disconnecting...");
         abort_connection();
         return;
       }else if(mode != COMMAND_MODE)
@@ -578,22 +604,29 @@ public void run(){
 
 // WindowListener Interface
 /////////////////////////////////
-   public void windowActivated(java.awt.event.WindowEvent e){
+   @Override
+public void windowActivated(java.awt.event.WindowEvent e){
    }
-   public void windowDeactivated(java.awt.event.WindowEvent e){
+   @Override
+public void windowDeactivated(java.awt.event.WindowEvent e){
    }
-   public void windowOpened(java.awt.event.WindowEvent e){
+   @Override
+public void windowOpened(java.awt.event.WindowEvent e){
    }
-   public void windowClosing(java.awt.event.WindowEvent e){
+   @Override
+public void windowClosing(java.awt.event.WindowEvent e){
       if(e.getWindow() == this) onQuit();
       else
         e.getWindow().dispose();
    }
-   public void windowClosed(java.awt.event.WindowEvent e){
+   @Override
+public void windowClosed(java.awt.event.WindowEvent e){
    }
-   public void windowIconified(java.awt.event.WindowEvent e){
+   @Override
+public void windowIconified(java.awt.event.WindowEvent e){
    }
-   public void windowDeiconified(java.awt.event.WindowEvent e){
+   @Override
+public void windowDeiconified(java.awt.event.WindowEvent e){
    }
 
 

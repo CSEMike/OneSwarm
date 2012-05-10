@@ -15,6 +15,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import edu.washington.cs.oneswarm.f2f.datagram.DatagramConnection;
 import edu.washington.cs.oneswarm.f2f.servicesharing.EchoServer;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceSharingManager;
 import edu.washington.cs.oneswarm.test.util.TestUtils;
@@ -39,7 +40,7 @@ public class ServiceSharingChannelReuseTest extends ThreeProcessTestBase {
         logFinest(logger);
         logFinest(ServiceSharingSingleProcessTest.logger);
         logFinest(EchoServer.logger);
-        // logFinest(DatagramConnection.logger);
+        logFinest(DatagramConnection.logger);
         // logFinest(DatagramRateLimitedChannelQueue.logger);
         // logFinest(ReadController.logger);
 
