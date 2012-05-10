@@ -7,8 +7,6 @@ import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.logical.shared.OpenEvent;
 import com.google.gwt.event.logical.shared.OpenHandler;
-import com.google.gwt.event.logical.shared.SelectionEvent;
-import com.google.gwt.event.logical.shared.SelectionHandler;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.HasTreeItems;
@@ -36,10 +34,6 @@ public class FileBrowser {
 	private PopupPanel popup;
 
 	private Queue<FileTreeItem> openItems;
-	
-
-	// Will be appended to directories for display
-	static final String DIRECTORY_IDENTIFIER = " [...]";
 
 	public FileBrowser(String session, boolean directoryOk, final AsyncCallback<String> callback) {
 		this.session = session;
@@ -133,7 +127,13 @@ public class FileBrowser {
 			fileSystem = OneSwarmRPCClient.getService();
 		}
 		
-		root.removeItems();
+		if(root instanceof FileTreeItem)
+			if(((FileTreeItem) root).fileStatus() == FileInfo.FileStatusFlag.NO_READ_PERMISSION){
+				root.removeItems();
+				root.addItem(new FileTreeItem(msg.file_browser_label_unreadable_directory()));
+				((FileTreeItem) root).setState(true);
+				return;
+			}
 		
 		if(root instanceof FileTreeItem)
 			if(((FileTreeItem) root).fileStatus() == FileInfo.FileStatusFlag.NO_READ_PERMISSION){
@@ -147,6 +147,7 @@ public class FileBrowser {
 			}
 
 			public void onSuccess(FileInfo[] result) {
+				root.removeItems();
 				if (result != null) {
 					if(result.length == 0)
 						root.addItem(new FileTreeItem(msg.file_browser_label_empty_directory()));
