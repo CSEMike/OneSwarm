@@ -2,7 +2,7 @@
 
 * [WWW](http://www.oneswarm.org/)
 * [Forum](http://forum.oneswarm.org/)
-* [Wiki](https://github.com/CSEMike/OneSwarm/wiki)
+* [Wiki](https://github.com/UWNetworksLab/OneSwarm/wiki)
 
 # Building
 
@@ -37,14 +37,14 @@
 
 5.  Install [ant-contrib](http://ant-contrib.sourceforge.net/) (put the ant-contrib-1.0b3.jar in `%ANT_HOME%\lib`)
 
-6.  `git clone git://github.com/CSEMike/OneSwarm.git`
+6.  `git clone git://github.com/UWNetworksLab/OneSwarm.git`
 7.  `ant`
 8.  `ant run`
 
 
 #### Linux
 
-*  [Ubuntu](https://github.com/CSEMike/OneSwarm/wiki/Building-on-Ubuntu)
+*  [Ubuntu](https://github.com/UWNetworksLab/OneSwarm/wiki/Building-on-Ubuntu)
 
 
 # Testing
