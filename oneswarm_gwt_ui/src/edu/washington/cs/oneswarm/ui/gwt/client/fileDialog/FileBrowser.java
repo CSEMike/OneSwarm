@@ -36,10 +36,6 @@ public class FileBrowser {
 	private PopupPanel popup;
 
 	private Queue<FileTreeItem> openItems;
-	
-
-	// Will be appended to directories for display
-	static final String DIRECTORY_IDENTIFIER = " [...]";
 
 	public FileBrowser(String session, boolean directoryOk, final AsyncCallback<String> callback) {
 		this.session = session;
@@ -133,12 +129,12 @@ public class FileBrowser {
 			fileSystem = OneSwarmRPCClient.getService();
 		}
 		
-		root.removeItems();
-		
 		if(root instanceof FileTreeItem)
 			if(((FileTreeItem) root).fileStatus() == FileInfo.FileStatusFlag.NO_READ_PERMISSION){
+				root.removeItems();
 				root.addItem(new FileTreeItem(msg.file_browser_label_unreadable_directory()));
 				((FileTreeItem) root).setState(true);
+				return;
 			}
 		
 		fileSystem.listFiles(session, filePath, new AsyncCallback<FileInfo[]>() {
@@ -147,6 +143,7 @@ public class FileBrowser {
 			}
 
 			public void onSuccess(FileInfo[] result) {
+				root.removeItems();
 				if (result != null) {
 					if(result.length == 0)
 						root.addItem(new FileTreeItem(msg.file_browser_label_empty_directory()));
