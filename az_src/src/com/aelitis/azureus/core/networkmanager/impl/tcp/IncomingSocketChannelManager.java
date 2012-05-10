@@ -22,23 +22,40 @@
 
 package com.aelitis.azureus.core.networkmanager.impl.tcp;
 
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
 
-import org.gudy.azureus2.core3.config.*;
-import org.gudy.azureus2.core3.logging.*;
-import org.gudy.azureus2.core3.util.*;
+import org.gudy.azureus2.core3.config.COConfigurationManager;
+import org.gudy.azureus2.core3.config.ParameterListener;
+import org.gudy.azureus2.core3.logging.LogAlert;
+import org.gudy.azureus2.core3.logging.LogEvent;
+import org.gudy.azureus2.core3.logging.LogIDs;
+import org.gudy.azureus2.core3.logging.Logger;
+import org.gudy.azureus2.core3.util.AEMonitor;
+import org.gudy.azureus2.core3.util.Debug;
+import org.gudy.azureus2.core3.util.RandomUtils;
+import org.gudy.azureus2.core3.util.SimpleTimer;
+import org.gudy.azureus2.core3.util.SystemTime;
+import org.gudy.azureus2.core3.util.TimerEvent;
+import org.gudy.azureus2.core3.util.TimerEventPerformer;
+import org.gudy.azureus2.core3.util.TimerEventPeriodic;
 
-import com.aelitis.azureus.core.networkmanager.*;
+import com.aelitis.azureus.core.networkmanager.ConnectionEndpoint;
+import com.aelitis.azureus.core.networkmanager.Transport;
+import com.aelitis.azureus.core.networkmanager.VirtualServerChannelSelector;
+import com.aelitis.azureus.core.networkmanager.VirtualServerChannelSelectorFactory;
 import com.aelitis.azureus.core.networkmanager.admin.NetworkAdmin;
 import com.aelitis.azureus.core.networkmanager.admin.NetworkAdminPropertyChangeListener;
 import com.aelitis.azureus.core.networkmanager.impl.IncomingConnectionManager;
 import com.aelitis.azureus.core.networkmanager.impl.ProtocolDecoder;
-import com.aelitis.azureus.core.networkmanager.impl.TransportHelperFilter;
 import com.aelitis.azureus.core.networkmanager.impl.TransportCryptoManager;
+import com.aelitis.azureus.core.networkmanager.impl.TransportHelperFilter;
 
 
 /**
@@ -52,6 +69,12 @@ public class IncomingSocketChannelManager
   private final String	port_config_key;
   private final String	port_enable_config_key;
   
+    private final ParameterListener port_config_listener;
+    private final ParameterListener port_enable_config_listener;
+    private final ParameterListener rcvbuf_listener;
+    private final NetworkAdminPropertyChangeListener bind_address_listener;
+    private final TimerEventPeriodic periodic_listener;
+
   private int tcp_listen_port;
   
   private int so_rcvbuf_size = COConfigurationManager.getIntParameter( "network.tcp.socket.SO_RCVBUF" );
@@ -63,7 +86,7 @@ public class IncomingSocketChannelManager
   private VirtualServerChannelSelector[] serverSelectors = new VirtualServerChannelSelector[0];
   private int listenFailCounts[] = new int[0];
   
-  private IncomingConnectionManager	incoming_manager = IncomingConnectionManager.getSingleton();
+  private final IncomingConnectionManager	incoming_manager = IncomingConnectionManager.getSingleton();
   
   protected AEMonitor	this_mon	= new AEMonitor( "IncomingSocketChannelManager" );
 
@@ -80,56 +103,62 @@ public class IncomingSocketChannelManager
 	
 	tcp_listen_port = COConfigurationManager.getIntParameter( port_config_key );
 
-    //allow dynamic port number changes
-    COConfigurationManager.addParameterListener( port_config_key, new ParameterListener() {
-      public void parameterChanged(String parameterName) {
-        int port = COConfigurationManager.getIntParameter( port_config_key );
-        if( port != tcp_listen_port ) {
-        	tcp_listen_port = port;
-          restart();
-        }
-      }
-    });
+        // allow dynamic port number changes
+        port_config_listener = new ParameterListener() {
+            @Override
+            public void parameterChanged(String parameterName) {
+                int port = COConfigurationManager.getIntParameter(port_config_key);
+                if (port != tcp_listen_port) {
+                    tcp_listen_port = port;
+                    restart();
+                }
+            }
+        };
+        COConfigurationManager.addParameterListener(port_config_key, port_config_listener);
     
-    COConfigurationManager.addParameterListener( port_enable_config_key, new ParameterListener() {
-        public void parameterChanged(String parameterName) {
-          restart();
-        }
-      });
+        port_enable_config_listener = new ParameterListener() {
+            @Override
+            public void parameterChanged(String parameterName) {
+                restart();
+            }
+        };
+        COConfigurationManager.addParameterListener(port_enable_config_key,
+                port_enable_config_listener);
     
-    //allow dynamic receive buffer size changes
-    COConfigurationManager.addParameterListener( "network.tcp.socket.SO_RCVBUF", new ParameterListener() {
-      public void parameterChanged(String parameterName) {
-        int size = COConfigurationManager.getIntParameter( "network.tcp.socket.SO_RCVBUF" );
-        if( size != so_rcvbuf_size ) {
-          so_rcvbuf_size = size;
-          restart();
-        }
-      }
-    });
+        // allow dynamic receive buffer size changes
+        rcvbuf_listener = new ParameterListener() {
+            @Override
+            public void parameterChanged(String parameterName) {
+                int size = COConfigurationManager.getIntParameter("network.tcp.socket.SO_RCVBUF");
+                if (size != so_rcvbuf_size) {
+                    so_rcvbuf_size = size;
+                    restart();
+                }
+            }
+        };
+        COConfigurationManager
+                .addParameterListener("network.tcp.socket.SO_RCVBUF", rcvbuf_listener);
     
     //allow dynamic bind address changes
-    
-    NetworkAdmin.getSingleton().addPropertyChangeListener(
-    	new NetworkAdminPropertyChangeListener()
-    	{
-    		public void
-    		propertyChanged(
-    			String		property )
-    		{
-    			if ( property == NetworkAdmin.PR_DEFAULT_BIND_ADDRESS ){
-    			
-			        InetAddress[] addresses = NetworkAdmin.getSingleton().getMultiHomedServiceBindAddresses();
-			        
-			        if ( !Arrays.equals(addresses, default_bind_addresses)) {
-			        	
-			        	default_bind_addresses = addresses;
-			          
-			        	restart();
-			        }
-    			}
-    		}
-      });
+        bind_address_listener = new NetworkAdminPropertyChangeListener() {
+            @Override
+            public void
+ propertyChanged(String property) {
+                if (property == NetworkAdmin.PR_DEFAULT_BIND_ADDRESS) {
+
+                    InetAddress[] addresses = NetworkAdmin.getSingleton()
+                            .getMultiHomedServiceBindAddresses();
+
+                    if (!Arrays.equals(addresses, default_bind_addresses)) {
+
+                        default_bind_addresses = addresses;
+
+                        restart();
+                    }
+                }
+            }
+        };
+        NetworkAdmin.getSingleton().addPropertyChangeListener(bind_address_listener);
  
     
     //start processing
@@ -140,9 +169,11 @@ public class IncomingSocketChannelManager
     	//it seems that sometimes under OSX that listen server sockets sometimes stop accepting incoming connections for some unknown reason
     	//this checker tests to make sure the listen socket is still accepting connections, and if not, recreates the socket
     
-    SimpleTimer.addPeriodicEvent("IncomingSocketChannelManager:concheck", 60 * 1000, new TimerEventPerformer()
+        periodic_listener = SimpleTimer.addPeriodicEvent("IncomingSocketChannelManager:concheck",
+                60 * 1000, new TimerEventPerformer()
 		{
-			public void 
+			@Override
+            public void 
 			perform(
 				TimerEvent ev ) 
 			{
@@ -198,6 +229,20 @@ public class IncomingSocketChannelManager
 		});
 	}
   
+    /**
+     * Stop listeners associated with this Channel Manager, so that it is safe
+     * to dispose of.
+     */
+    public void close() {
+        COConfigurationManager.removeParameterListener(port_config_key, port_config_listener);
+        COConfigurationManager.removeParameterListener(port_enable_config_key,
+                port_enable_config_listener);
+        COConfigurationManager.removeParameterListener("network.tcp.socket.SO_RCVBUF",
+                rcvbuf_listener);
+        NetworkAdmin.getSingleton().removePropertyChangeListener(bind_address_listener);
+        periodic_listener.cancel();
+    }
+
   public boolean
   isEnabled()
   {
@@ -258,7 +303,8 @@ public class IncomingSocketChannelManager
   TcpSelectListener implements 
   VirtualServerChannelSelector.SelectListener 
   {
-	  public void newConnectionAccepted( final ServerSocketChannel server, final SocketChannel channel ) {
+	  @Override
+    public void newConnectionAccepted( final ServerSocketChannel server, final SocketChannel channel ) {
 
 		  InetAddress remote_ia = channel.socket().getInetAddress();
 
@@ -271,11 +317,13 @@ public class IncomingSocketChannelManager
 		  final TCPTransportHelper	helper = new TCPTransportHelper( channel );
 
 		  TransportCryptoManager.getSingleton().manageCrypto( helper, null, true, null, new TransportCryptoManager.HandshakeListener() {
-			  public void handshakeSuccess( ProtocolDecoder decoder, ByteBuffer remaining_initial_data ) {
+			  @Override
+            public void handshakeSuccess( ProtocolDecoder decoder, ByteBuffer remaining_initial_data ) {
 				  process( server.socket().getLocalPort(), decoder.getFilter());
 			  }
 
-			  public void 
+			  @Override
+            public void 
 			  handshakeFailure( 
 					  Throwable failure_msg ) 
 			  {
@@ -306,19 +354,22 @@ public class IncomingSocketChannelManager
 				  helper.close( "Handshake failure: " + Debug.getNestedExceptionMessage( failure_msg ));
 			  }
 
-			  public void
+			  @Override
+            public void
 			  gotSecret(
 					  byte[]				session_secret )
 			  {
 			  }
 
-			  public int
+			  @Override
+            public int
 			  getMaximumPlainHeaderLength()
 			  {
 				  return( incoming_manager.getMaxMinMatchBufferSize());
 			  }
 
-			  public int
+			  @Override
+            public int
 			  matchPlainHeader(
 					  ByteBuffer			buffer )
 			  {

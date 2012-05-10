@@ -137,6 +137,12 @@ public class FileBrowser {
 				return;
 			}
 		
+		if(root instanceof FileTreeItem)
+			if(((FileTreeItem) root).fileStatus() == FileInfo.FileStatusFlag.NO_READ_PERMISSION){
+				root.addItem(new FileTreeItem(msg.file_browser_label_unreadable_directory()));
+				((FileTreeItem) root).setState(true);
+			}
+		
 		fileSystem.listFiles(session, filePath, new AsyncCallback<FileInfo[]>() {
 			public void onFailure(Throwable caught) {
 				callback.onFailure(caught);
