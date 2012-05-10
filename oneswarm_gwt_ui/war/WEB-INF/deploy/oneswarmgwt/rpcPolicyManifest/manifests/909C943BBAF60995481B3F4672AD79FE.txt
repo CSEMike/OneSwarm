@@ -1,0 +1,2 @@
+serviceClass: edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmUIService
+path: 65A1F1040B958B8EA6CF0134CFBE499D.gwt.rpc

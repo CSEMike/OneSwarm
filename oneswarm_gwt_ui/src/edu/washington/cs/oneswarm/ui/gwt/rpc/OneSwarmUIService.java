@@ -6,13 +6,14 @@ import java.util.HashMap;
 import com.google.gwt.user.client.rpc.RemoteService;
 
 import edu.washington.cs.oneswarm.ui.gwt.rpc.OneSwarmConstants.SecurityLevel;
+import edu.washington.cs.oneswarm.ui.gwt.shared.fileDialog.FileItem;
 
 public interface OneSwarmUIService extends RemoteService {
     public Boolean startBackend() throws OneSwarmException;
 
     public String getVersion(String session);
 
-    public String selectFileOrDirectory(String session, boolean directory);
+    /*public String selectFileOrDirectory(String session, boolean directory);*/
 
     public Boolean createSwarmFromLocalFileSystemPath(String session, String basePath,
             ArrayList<String> paths, boolean startSeeding, String announce,
@@ -292,5 +293,7 @@ public interface OneSwarmUIService extends RemoteService {
     ArrayList<SharedServiceDTO> getSharedServices();
 
     public void saveSharedServices(ArrayList<SharedServiceDTO> services) throws OneSwarmException;
+
+	public FileItem[] listFiles(String session, String string);
 
 }
