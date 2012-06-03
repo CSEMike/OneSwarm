@@ -176,14 +176,14 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
 
         ServiceChannelEndpoint[] channels = this.networkChannels.toArray(new ServiceChannelEndpoint[0]);
         this.networkChannels.clear();
-        for (ServiceChannelEndpoint conn : channels) {
-            conn.removeDelegate(this);
-        }
-        this.serviceChannel.close();
         if (channels.length > 0) {
             // Send RST Packet.
             channels[0].writeMessage(mmt.nextMsg(), null, FEATURES.contains(ServiceFeatures.UDP));
         }
+        for (ServiceChannelEndpoint conn : channels) {
+            conn.removeDelegate(this);
+        }
+        this.serviceChannel.close();
 
         synchronized (bufferedServiceMessages) {
             for (int i = 0; i < SERVICE_MSG_BUFFER_SIZE; i++) {
