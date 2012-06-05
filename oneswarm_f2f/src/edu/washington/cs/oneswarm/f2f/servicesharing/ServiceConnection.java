@@ -304,12 +304,14 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
                 if (payload.remaining(ss) > 0) {
                     bufferedServiceMessages[msg.getSequenceNumber() & (SERVICE_MSG_BUFFER_SIZE - 1)] = payload;
                 } else {
-                    logger.warning("Received 0 length message.  Dropped.");
+                    logger.info("Received 0 length message.  Dropped.");
                 }
             }
         }
         flushServiceQueue();
-        return true;
+        // If message is Rst, mark it as unhandled so that it is also given to
+        // the ServiceConnectionManager to initiate teardown.
+        return !msg.isRst();
     }
 
     private void flushServiceQueue() {

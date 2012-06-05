@@ -350,6 +350,11 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
                 if (self == null || closed) {
                     return;
                 }
+                // Don't retransmit RST messages.
+                if (rst) {
+                    msg.returnToPool();
+                    return;
+                }
                 if (self.attempt != attempt) {
                     logger.warning("Message queue concurency issues");
                     sentMessages.put(num, self);
