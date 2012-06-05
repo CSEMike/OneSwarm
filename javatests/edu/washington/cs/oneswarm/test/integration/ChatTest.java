@@ -43,7 +43,7 @@ public class ChatTest extends TwoProcessTestBase {
             final String chatMessage = "ChatMessage JVM to Local";
             TestUtils.awaitElement(selenium, "chatTextBox");
             selenium.focus("chatTextBox");
-            selenium.typeKeys("chatTextBox", chatMessage);
+            selenium.type("chatTextBox", chatMessage);
             selenium.keyDown("chatTextBox", "\\13");
             selenium.keyUp("chatTextBox", "\\13");
 
