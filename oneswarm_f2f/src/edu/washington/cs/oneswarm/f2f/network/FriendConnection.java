@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.bouncycastle.util.encoders.Base64;
 import org.gudy.azureus2.core3.config.COConfigurationManager;
 import org.gudy.azureus2.core3.global.GlobalManagerStats;
 import org.gudy.azureus2.core3.util.Average;
@@ -41,7 +42,6 @@ import com.aelitis.azureus.core.networkmanager.impl.tcp.ProtocolEndpointTCP;
 import com.aelitis.azureus.core.peermanager.messaging.Message;
 import com.aelitis.azureus.core.peermanager.messaging.MessageException;
 import com.aelitis.azureus.core.peermanager.messaging.bittorrent.BTKeepAlive;
-import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 import edu.washington.cs.oneswarm.f2f.BigFatLock;
 import edu.washington.cs.oneswarm.f2f.FileList;
@@ -580,7 +580,7 @@ public class FriendConnection implements DatagramListener {
         try {
             f = overlayForwards.remove(channelId);
             recentlyClosedChannels.put(channelId, System.currentTimeMillis());
-            activeOverlays--;
+            setActiveOverlays(getActiveOverlays() - 1);
         } finally {
             lock.unlock();
         }
@@ -619,7 +619,7 @@ public class FriendConnection implements DatagramListener {
             EndpointInterface exists = overlayTransports.remove(channelId);
             recentlyClosedChannels.put(channelId, System.currentTimeMillis());
             if (exists != null) {
-                activeOverlays--;
+                setActiveOverlays(getActiveOverlays() - 1);
             }
             if (overlayPathLogger.isEnabled()) {
                 overlayPathLogger
@@ -1357,7 +1357,7 @@ public class FriendConnection implements DatagramListener {
                     new OverlayForward(currentSetupMsg.getChannelID(), conn, search,
                             currentSetupMsg, searcherSide));
 
-            activeOverlays++;
+            setActiveOverlays(getActiveOverlays() + 1);
 
         } finally {
             lock.unlock();
@@ -1387,7 +1387,7 @@ public class FriendConnection implements DatagramListener {
                 }
                 overlayTransportPathsId.put(pathID, true);
             }
-            activeOverlays++;
+            setActiveOverlays(getActiveOverlays() + 1);
 
         } finally {
             lock.unlock();
@@ -2528,5 +2528,13 @@ public class FriendConnection implements DatagramListener {
     @Override
     public void sendDatagramOk(OSF2FDatagramOk osf2fDatagramOk) {
         sendMessage(osf2fDatagramOk, true);
+    }
+
+    public int getActiveOverlays() {
+        return activeOverlays;
+    }
+
+    public void setActiveOverlays(int activeOverlays) {
+        this.activeOverlays = activeOverlays;
     }
 }

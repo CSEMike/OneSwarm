@@ -176,14 +176,14 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
 
         ServiceChannelEndpoint[] channels = this.networkChannels.toArray(new ServiceChannelEndpoint[0]);
         this.networkChannels.clear();
-        for (ServiceChannelEndpoint conn : channels) {
-            conn.removeDelegate(this);
-        }
-        this.serviceChannel.close();
         if (channels.length > 0) {
             // Send RST Packet.
             channels[0].writeMessage(mmt.nextMsg(), null, FEATURES.contains(ServiceFeatures.UDP));
         }
+        for (ServiceChannelEndpoint conn : channels) {
+            conn.removeDelegate(this);
+        }
+        this.serviceChannel.close();
 
         synchronized (bufferedServiceMessages) {
             for (int i = 0; i < SERVICE_MSG_BUFFER_SIZE; i++) {
@@ -304,12 +304,14 @@ public class ServiceConnection implements ServiceChannelEndpointDelegate {
                 if (payload.remaining(ss) > 0) {
                     bufferedServiceMessages[msg.getSequenceNumber() & (SERVICE_MSG_BUFFER_SIZE - 1)] = payload;
                 } else {
-                    logger.warning("Received 0 length message.  Dropped.");
+                    logger.info("Received 0 length message.  Dropped.");
                 }
             }
         }
         flushServiceQueue();
-        return true;
+        // If message is Rst, mark it as unhandled so that it is also given to
+        // the ServiceConnectionManager to initiate teardown.
+        return !msg.isRst();
     }
 
     private void flushServiceQueue() {

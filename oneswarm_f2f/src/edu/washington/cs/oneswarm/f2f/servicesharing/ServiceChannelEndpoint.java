@@ -170,7 +170,7 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
         }
         OSF2FServiceDataMsg newMessage = (OSF2FServiceDataMsg) msg;
         // logger.fine("Received msg with sequence number " +
-        if (!newMessage.isAck()) {
+        if (!newMessage.isAck() && !newMessage.isRst()) {
             logger.finest("ack enqueued for " + newMessage.getDescription());
             super.writeMessage(OSF2FServiceDataMsg.acknowledge(OSF2FMessage.CURRENT_VERSION,
                     channelId, newMessage.getSubchannel(),
@@ -348,6 +348,11 @@ public class ServiceChannelEndpoint extends OverlayEndpoint {
             synchronized (sentMessages) {
                 sentMessage self = sentMessages.remove(num);
                 if (self == null || closed) {
+                    return;
+                }
+                // Don't retransmit RST messages.
+                if (rst) {
+                    msg.returnToPool();
                     return;
                 }
                 if (self.attempt != attempt) {
