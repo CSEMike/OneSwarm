@@ -18,7 +18,6 @@ import org.junit.Test;
 
 import com.aelitis.azureus.ui.UIFunctionsManager;
 
-import edu.uw.cse.netlab.utils.ByteManip;
 import edu.washington.cs.oneswarm.f2f.network.SearchManager;
 import edu.washington.cs.oneswarm.f2f.servicesharing.DataMessage;
 import edu.washington.cs.oneswarm.f2f.servicesharing.ServiceChannelEndpoint;
@@ -102,7 +101,7 @@ public class ServiceSharingClientTest extends LocalProcessesTestBase {
             testDataSent("t".getBytes("UTF-8"));
 
             // test a couple of bytes
-            testDataSent("hellš".getBytes("UTF-8"));
+            testDataSent("hellï¿½".getBytes("UTF-8"));
 
             // Send
             testRandomDataSent(DataMessage.MAX_PAYLOAD_SIZE);
