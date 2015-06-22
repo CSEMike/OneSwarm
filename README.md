@@ -44,8 +44,15 @@
 
 #### Linux
 
-*  [Ubuntu](https://github.com/CSEMike/OneSwarm/wiki/Building-on-Ubuntu)
+1.  sudo apt-get install ant ant-contrib
+2.  git clone git://github.com/CSEMike/OneSwarm.git
+3.  From OneSwarm directory:
+  *  ant -lib /usr/share/java
+  *  ant -lib /usr/share/java run
 
+I have been able to successfully compile with OpenJDK which I recommend to use. But if there are errors/problems, please use the SunJDK as mentioned in the link below.
+																																																																																																																																																																																																																																																																	
+*  [Ubuntu](https://github.com/CSEMike/OneSwarm/wiki/Building-on-Ubuntu)
 
 # Testing
 
